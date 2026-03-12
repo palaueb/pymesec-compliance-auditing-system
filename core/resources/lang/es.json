@@ -31,5 +31,11 @@
   "core.shell.theme_rule_core": "El core es propietario del marco comun y de los tokens visuales.",
   "core.shell.theme_rule_plugins": "Los plugins aportan menus y pantallas, no CSS arbitrario del shell.",
   "core.shell.theme_rule_tokens": "El cambio de tema es seguro porque solo cambia tokens aprobados.",
-  "core.shell.debug_payload": "Payload del Menu Visible"
+  "core.shell.debug_payload": "Payload del Menu Visible",
+  "core.shell.debug_panel": "Herramientas de Desarrollo",
+  "core.shell.debug_title": "Runtime de Debug",
+  "core.shell.debug_copy": "El contexto estructurado del runtime sigue disponible, pero ahora vive fuera del workspace operativo.",
+  "core.shell.debug_button": "Abrir Debug",
+  "core.shell.close_debug": "Cerrar",
+  "core.shell.debug_footer": "Usa este panel para inspeccionar el estado del shell, la resolucion de menus y los datos runtime sin mezclarlo con la UI principal."
 }

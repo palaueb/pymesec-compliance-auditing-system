@@ -6,7 +6,7 @@
     "type": "domain",
     "description": "Functional plugin for control catalog governance and review.",
     "vendor": "pymesec",
-    "license": "MIT"
+    "license": "AGPL-3.0-or-later"
   },
   "compatibility": {
     "core": "^0.1.0",

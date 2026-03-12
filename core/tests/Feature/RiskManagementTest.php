@@ -31,7 +31,8 @@ class RiskManagementTest extends TestCase
             ->assertSee('Risk Register')
             ->assertSee('Privileged access drift')
             ->assertSee('Quarterly certification and emergency access review.')
-            ->assertSee('Ava Mason');
+            ->assertSee('Ava Mason')
+            ->assertSee('Create Risk');
     }
 
     public function test_risk_transition_and_artifact_render_on_the_board(): void
@@ -71,5 +72,53 @@ class RiskManagementTest extends TestCase
             ->assertOk()
             ->assertSee('View-only access')
             ->assertDontSee('Start Assessment');
+    }
+
+    public function test_risks_can_be_created_and_edited_from_the_shell_runtime(): void
+    {
+        $payload = [
+            'principal_id' => 'principal-org-a',
+            'organization_id' => 'org-a',
+            'locale' => 'en',
+            'menu' => 'plugin.risk-management.root',
+            'membership_id' => 'membership-org-a-hello',
+        ];
+
+        $this->post('/plugins/risks', [
+            ...$payload,
+            'title' => 'Supplier onboarding gap',
+            'category' => 'Third Parties',
+            'inherent_score' => 22,
+            'residual_score' => 12,
+            'linked_asset_id' => 'asset-erp-prod',
+            'linked_control_id' => 'control-access-review',
+            'treatment' => 'Add supplier onboarding approval review.',
+            'scope_id' => 'scope-eu',
+            'owner_actor_id' => 'actor-ava-mason',
+        ])->assertFound();
+
+        $this->get('/app?menu=plugin.risk-management.root&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
+            ->assertOk()
+            ->assertSee('Supplier onboarding gap')
+            ->assertSee('Add supplier onboarding approval review.');
+
+        $this->post('/plugins/risks/risk-supplier-onboarding-gap', [
+            ...$payload,
+            'title' => 'Supplier onboarding coverage gap',
+            'category' => 'Third Parties',
+            'inherent_score' => 24,
+            'residual_score' => 11,
+            'linked_asset_id' => 'asset-erp-prod',
+            'linked_control_id' => 'control-access-review',
+            'treatment' => 'Add onboarding approvals and quarterly supplier review.',
+            'scope_id' => 'scope-eu',
+            'owner_actor_id' => 'actor-compliance-office',
+        ])->assertFound();
+
+        $this->get('/app?menu=plugin.risk-management.root&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
+            ->assertOk()
+            ->assertSee('Supplier onboarding coverage gap')
+            ->assertSee('Add onboarding approvals and quarterly supplier review.')
+            ->assertSee('Compliance Office');
     }
 }

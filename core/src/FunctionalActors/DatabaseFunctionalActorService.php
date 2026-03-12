@@ -260,6 +260,46 @@ class DatabaseFunctionalActorService implements FunctionalActorServiceInterface
         return $assignment;
     }
 
+    public function syncSingleAssignment(
+        string $actorId,
+        string $domainObjectType,
+        string $domainObjectId,
+        string $assignmentType,
+        string $organizationId,
+        ?string $scopeId = null,
+        array $metadata = [],
+        ?string $assignedByPrincipalId = null,
+    ): FunctionalAssignment {
+        DB::table('functional_assignments')
+            ->where('domain_object_type', $domainObjectType)
+            ->where('domain_object_id', $domainObjectId)
+            ->where('assignment_type', $assignmentType)
+            ->where('organization_id', $organizationId)
+            ->when(
+                $scopeId !== null && $scopeId !== '',
+                fn ($query) => $query->where(function ($inner) use ($scopeId): void {
+                    $inner->whereNull('scope_id')->orWhere('scope_id', $scopeId);
+                }),
+                fn ($query) => $query->whereNull('scope_id'),
+            )
+            ->where('functional_actor_id', '!=', $actorId)
+            ->update([
+                'is_active' => false,
+                'updated_at' => now(),
+            ]);
+
+        return $this->assignActor(
+            actorId: $actorId,
+            domainObjectType: $domainObjectType,
+            domainObjectId: $domainObjectId,
+            assignmentType: $assignmentType,
+            organizationId: $organizationId,
+            scopeId: $scopeId,
+            metadata: $metadata,
+            assignedByPrincipalId: $assignedByPrincipalId,
+        );
+    }
+
     public function linksForPrincipal(string $principalId, ?string $organizationId = null): array
     {
         $query = DB::table('principal_functional_actor_links')

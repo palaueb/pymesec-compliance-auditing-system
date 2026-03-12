@@ -32,7 +32,8 @@ class ControlsCatalogTest extends TestCase
             ->assertSee('Controls Catalog')
             ->assertSee('Quarterly Access Review')
             ->assertSee('Backup Governance')
-            ->assertSee('Ava Mason');
+            ->assertSee('Ava Mason')
+            ->assertSee('Create Control');
     }
 
     public function test_control_review_transition_creates_due_notification_and_scheduler_dispatches_it(): void
@@ -116,5 +117,47 @@ class ControlsCatalogTest extends TestCase
             ->assertOk()
             ->assertSee('Quarterly export')
             ->assertSee('quarterly-export.csv');
+    }
+
+    public function test_controls_can_be_created_and_edited_from_the_shell_runtime(): void
+    {
+        $payload = [
+            'principal_id' => 'principal-org-a',
+            'organization_id' => 'org-a',
+            'locale' => 'en',
+            'menu' => 'plugin.controls-catalog.root',
+            'membership_id' => 'membership-org-a-hello',
+        ];
+
+        $this->post('/plugins/controls', [
+            ...$payload,
+            'name' => 'Supplier Access Revalidation',
+            'framework' => 'ISO 27001',
+            'domain' => 'Third Parties',
+            'evidence' => 'Annual supplier entitlement review',
+            'scope_id' => 'scope-eu',
+            'owner_actor_id' => 'actor-ava-mason',
+        ])->assertFound();
+
+        $this->get('/app?menu=plugin.controls-catalog.root&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
+            ->assertOk()
+            ->assertSee('Supplier Access Revalidation')
+            ->assertSee('Annual supplier entitlement review');
+
+        $this->post('/plugins/controls/control-supplier-access-revalidation', [
+            ...$payload,
+            'name' => 'Supplier Access Recertification',
+            'framework' => 'ISO 27001',
+            'domain' => 'Third Parties',
+            'evidence' => 'Semi-annual supplier entitlement review',
+            'scope_id' => 'scope-eu',
+            'owner_actor_id' => 'actor-compliance-office',
+        ])->assertFound();
+
+        $this->get('/app?menu=plugin.controls-catalog.root&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
+            ->assertOk()
+            ->assertSee('Supplier Access Recertification')
+            ->assertSee('Semi-annual supplier entitlement review')
+            ->assertSee('Compliance Office');
     }
 }

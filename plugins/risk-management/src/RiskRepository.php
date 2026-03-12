@@ -2,6 +2,9 @@
 
 namespace PymeSec\Plugins\RiskManagement;
 
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+
 class RiskRepository
 {
     /**
@@ -9,17 +12,17 @@ class RiskRepository
      */
     public function all(string $organizationId, ?string $scopeId = null): array
     {
-        return array_values(array_filter($this->risks(), static function (array $risk) use ($organizationId, $scopeId): bool {
-            if ($risk['organization_id'] !== $organizationId) {
-                return false;
-            }
+        $query = DB::table('risks')
+            ->where('organization_id', $organizationId)
+            ->orderBy('title');
 
-            if ($scopeId === null || $scopeId === '') {
-                return true;
-            }
+        if ($scopeId !== null && $scopeId !== '') {
+            $query->where('scope_id', $scopeId);
+        }
 
-            return ($risk['scope_id'] ?? null) === $scopeId;
-        }));
+        return $query->get()
+            ->map(fn ($risk): array => $this->mapRisk($risk))
+            ->all();
     }
 
     /**
@@ -27,57 +30,95 @@ class RiskRepository
      */
     public function find(string $riskId): ?array
     {
-        foreach ($this->risks() as $risk) {
-            if ($risk['id'] === $riskId) {
-                return $risk;
-            }
-        }
+        $risk = DB::table('risks')->where('id', $riskId)->first();
 
-        return null;
+        return $risk !== null ? $this->mapRisk($risk) : null;
     }
 
     /**
-     * @return array<int, array<string, string>>
+     * @param  array<string, string|null>  $data
+     * @return array<string, string>
      */
-    private function risks(): array
+    public function create(array $data): array
+    {
+        $id = $this->nextId((string) ($data['title'] ?? 'risk'));
+
+        DB::table('risks')->insert([
+            'id' => $id,
+            'organization_id' => $data['organization_id'],
+            'scope_id' => ($data['scope_id'] ?? null) ?: null,
+            'title' => $data['title'],
+            'category' => $data['category'],
+            'inherent_score' => (int) $data['inherent_score'],
+            'residual_score' => (int) $data['residual_score'],
+            'linked_asset_id' => ($data['linked_asset_id'] ?? null) ?: null,
+            'linked_control_id' => ($data['linked_control_id'] ?? null) ?: null,
+            'treatment' => $data['treatment'],
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        /** @var array<string, string> $risk */
+        $risk = $this->find($id);
+
+        return $risk;
+    }
+
+    /**
+     * @param  array<string, string|null>  $data
+     * @return array<string, string> | null
+     */
+    public function update(string $riskId, array $data): ?array
+    {
+        $updated = DB::table('risks')
+            ->where('id', $riskId)
+            ->update([
+                'scope_id' => ($data['scope_id'] ?? null) ?: null,
+                'title' => $data['title'],
+                'category' => $data['category'],
+                'inherent_score' => (int) $data['inherent_score'],
+                'residual_score' => (int) $data['residual_score'],
+                'linked_asset_id' => ($data['linked_asset_id'] ?? null) ?: null,
+                'linked_control_id' => ($data['linked_control_id'] ?? null) ?: null,
+                'treatment' => $data['treatment'],
+                'updated_at' => now(),
+            ]);
+
+        if ($updated === 0) {
+            return $this->find($riskId);
+        }
+
+        return $this->find($riskId);
+    }
+
+    private function nextId(string $title): string
+    {
+        $base = 'risk-'.Str::slug($title);
+        $candidate = $base !== 'risk-' ? $base : 'risk-'.Str::lower(Str::ulid());
+
+        if (! DB::table('risks')->where('id', $candidate)->exists()) {
+            return $candidate;
+        }
+
+        return $candidate.'-'.Str::lower(Str::random(4));
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function mapRisk(object $risk): array
     {
         return [
-            [
-                'id' => 'risk-access-drift',
-                'organization_id' => 'org-a',
-                'scope_id' => 'scope-eu',
-                'title' => 'Privileged access drift',
-                'category' => 'Identity',
-                'inherent_score' => '20',
-                'residual_score' => '10',
-                'linked_asset_id' => 'asset-erp-prod',
-                'linked_control_id' => 'control-access-review',
-                'treatment' => 'Quarterly certification and emergency access review.',
-            ],
-            [
-                'id' => 'risk-backup-assurance',
-                'organization_id' => 'org-a',
-                'scope_id' => 'scope-it',
-                'title' => 'Restore assurance gap',
-                'category' => 'Resilience',
-                'inherent_score' => '16',
-                'residual_score' => '8',
-                'linked_asset_id' => 'asset-laptop-fleet',
-                'linked_control_id' => 'control-backup-governance',
-                'treatment' => 'Evidence monthly restore tests and tighten backup ownership.',
-            ],
-            [
-                'id' => 'risk-route-blackout',
-                'organization_id' => 'org-b',
-                'scope_id' => 'scope-ops',
-                'title' => 'Route telemetry blackout',
-                'category' => 'Operations',
-                'inherent_score' => '18',
-                'residual_score' => '9',
-                'linked_asset_id' => 'asset-route-planner',
-                'linked_control_id' => 'control-route-integrity',
-                'treatment' => 'Correlate route planner telemetry with warehouse monitoring.',
-            ],
+            'id' => (string) $risk->id,
+            'organization_id' => (string) $risk->organization_id,
+            'scope_id' => is_string($risk->scope_id) ? $risk->scope_id : '',
+            'title' => (string) $risk->title,
+            'category' => (string) $risk->category,
+            'inherent_score' => (string) $risk->inherent_score,
+            'residual_score' => (string) $risk->residual_score,
+            'linked_asset_id' => is_string($risk->linked_asset_id) ? $risk->linked_asset_id : '',
+            'linked_control_id' => is_string($risk->linked_control_id) ? $risk->linked_control_id : '',
+            'treatment' => (string) $risk->treatment,
         ];
     }
 }

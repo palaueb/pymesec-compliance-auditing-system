@@ -1,0 +1,92 @@
+{
+  "plugin": {
+    "id": "findings-remediation",
+    "name": "Findings & Remediation",
+    "version": "0.1.0",
+    "type": "domain",
+    "description": "Functional plugin for findings tracking, corrective actions, and remediation follow-up.",
+    "vendor": "pymesec",
+    "license": "AGPL-3.0-or-later"
+  },
+  "compatibility": {
+    "core": "^0.1.0",
+    "sdk": "^0.1.0"
+  },
+  "dependencies": [
+    "actor-directory",
+    "controls-catalog",
+    "risk-management"
+  ],
+  "permissions": [
+    {
+      "key": "plugin.findings-remediation.findings.view",
+      "label": "View findings",
+      "description": "View findings, remediation actions, and closure context.",
+      "feature_area": "findings",
+      "operation": "view",
+      "contexts": [
+        "organization"
+      ]
+    },
+    {
+      "key": "plugin.findings-remediation.findings.manage",
+      "label": "Manage findings",
+      "description": "Create findings, manage remediation actions, and transition closure states.",
+      "feature_area": "findings",
+      "operation": "manage",
+      "contexts": [
+        "organization"
+      ]
+    }
+  ],
+  "routes": [
+    {
+      "id": "findings-remediation.web",
+      "type": "web",
+      "file": "routes/web.php",
+      "middleware": [
+        "web"
+      ],
+      "permission": "plugin.findings-remediation.findings.view"
+    }
+  ],
+  "menus": [
+    {
+      "id": "plugin.findings-remediation.root",
+      "label_key": "plugin.findings-remediation.nav.root",
+      "route": "plugin.findings-remediation.index",
+      "icon": "alert",
+      "order": 38,
+      "permission": "plugin.findings-remediation.findings.view"
+    },
+    {
+      "id": "plugin.findings-remediation.board",
+      "label_key": "plugin.findings-remediation.nav.board",
+      "route": "plugin.findings-remediation.board",
+      "parent_id": "plugin.findings-remediation.root",
+      "icon": "checklist",
+      "order": 10,
+      "permission": "plugin.findings-remediation.findings.view"
+    }
+  ],
+  "migrations": [],
+  "translations": {
+    "default_locale": "en",
+    "supported_locales": [
+      "en",
+      "es",
+      "fr",
+      "de"
+    ],
+    "path": "resources/lang"
+  },
+  "lifecycle": {},
+  "runtime": {
+    "class": "PymeSec\\Plugins\\FindingsRemediation\\FindingsRemediationPlugin",
+    "autoload": {
+      "psr-4": {
+        "PymeSec\\Plugins\\FindingsRemediation\\": "src"
+      }
+    }
+  }
+}

@@ -2,6 +2,21 @@
 
 Initial technical bootstrap of the main repository based on the PRD and ADRs.
 
+## License
+
+This repository is licensed under `GNU Affero General Public License v3.0 or later`.
+
+- The monorepo root is covered by [LICENSE](/media/marc/4T_EXFAT/web/pymesec.com/pymesec/LICENSE).
+- The `core` declares `AGPL-3.0-or-later` in [core/composer.json](/media/marc/4T_EXFAT/web/pymesec.com/pymesec/core/composer.json).
+- The official plugins currently shipped in `plugins/` also declare `AGPL-3.0-or-later` in their manifests.
+
+The practical policy in this repository is simple:
+
+- bundled official plugins are licensed under the same AGPL terms as the core
+- external plugins may declare their own license, but compatibility and redistribution obligations depend on how tightly they are combined with the core runtime
+
+This repository does not define any plugin linking exception.
+
 The current state sets up:
 
 - `core/` as the Laravel application for the platform core

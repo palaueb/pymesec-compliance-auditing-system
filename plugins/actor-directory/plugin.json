@@ -6,7 +6,7 @@
     "type": "domain-actor",
     "description": "Functional actor directory and accountability linkage plugin.",
     "vendor": "pymesec",
-    "license": "MIT"
+    "license": "AGPL-3.0-or-later"
   },
   "compatibility": {
     "core": "^0.1.0",

@@ -8,6 +8,7 @@ use PymeSec\Core\Permissions\AuthorizationContext;
 use PymeSec\Core\Permissions\Contracts\AuthorizationServiceInterface;
 use PymeSec\Core\Plugins\Contracts\PluginInterface;
 use PymeSec\Core\Plugins\PluginContext;
+use PymeSec\Core\Tenancy\Contracts\TenancyServiceInterface;
 use PymeSec\Core\UI\ScreenDefinition;
 use PymeSec\Core\UI\ScreenRenderContext;
 use PymeSec\Core\UI\ToolbarAction;
@@ -68,15 +69,14 @@ class RiskManagementPlugin implements PluginInterface
 
                 return [
                     new ToolbarAction(
+                        label: 'Add risk',
+                        url: '#risk-editor',
+                        variant: 'primary',
+                    ),
+                    new ToolbarAction(
                         label: 'Risk board',
                         url: route('core.shell.index', [...$query, 'menu' => 'plugin.risk-management.board']),
                         variant: 'secondary',
-                    ),
-                    new ToolbarAction(
-                        label: 'Plugin route',
-                        url: route('plugin.risk-management.index', $query),
-                        variant: 'primary',
-                        target: '_self',
                     ),
                 ];
             },
@@ -114,6 +114,7 @@ class RiskManagementPlugin implements PluginInterface
         $workflow = $context->app()->make(WorkflowServiceInterface::class);
         $actors = $context->app()->make(FunctionalActorServiceInterface::class);
         $authorization = $context->app()->make(AuthorizationServiceInterface::class);
+        $tenancy = $context->app()->make(TenancyServiceInterface::class);
         $organizationId = $screenContext->organizationId ?? 'org-a';
         $canManage = $screenContext->principal !== null && $authorization->authorize(new AuthorizationContext(
             principal: $screenContext->principal,
@@ -144,13 +145,24 @@ class RiskManagementPlugin implements PluginInterface
                 'transitions' => $canManage ? $this->transitionsForState($instance->currentState) : [],
                 'transition_route' => route('plugin.risk-management.transition', ['riskId' => $risk['id'], 'transitionKey' => '__TRANSITION__']),
                 'artifact_upload_route' => route('plugin.risk-management.artifacts.store', ['riskId' => $risk['id']]),
+                'update_route' => route('plugin.risk-management.update', ['riskId' => $risk['id']]),
             ];
         }
+
+        $scopeContext = $tenancy->resolveContext(
+            principalId: $screenContext->principal?->id,
+            requestedOrganizationId: $organizationId,
+            requestedScopeId: $screenContext->scopeId,
+            requestedMembershipIds: array_map(static fn ($membership): string => $membership->id, $screenContext->memberships),
+        );
 
         return [
             'risks' => $risks,
             'can_manage_risks' => $canManage,
             'query' => $this->baseQuery($screenContext),
+            'create_route' => route('plugin.risk-management.store'),
+            'owner_actor_options' => $this->actorOptions($actors, $organizationId, $screenContext->scopeId),
+            'scope_options' => array_map(static fn ($scope): array => $scope->toArray(), $scopeContext->scopes),
         ];
     }
 
@@ -253,5 +265,19 @@ class RiskManagementPlugin implements PluginInterface
         }
 
         return null;
+    }
+
+    /**
+     * @return array<int, array{id: string, label: string}>
+     */
+    private function actorOptions(
+        FunctionalActorServiceInterface $actors,
+        string $organizationId,
+        ?string $scopeId,
+    ): array {
+        return array_map(static fn ($actor): array => [
+            'id' => $actor->id,
+            'label' => sprintf('%s (%s)', $actor->displayName, $actor->kind),
+        ], $actors->actors($organizationId, $scopeId));
     }
 }

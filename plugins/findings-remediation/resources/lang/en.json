@@ -1,0 +1,8 @@
+{
+  "plugin.findings-remediation.nav.root": "Findings",
+  "plugin.findings-remediation.nav.board": "Remediation",
+  "plugin.findings-remediation.screen.register.title": "Findings Register",
+  "plugin.findings-remediation.screen.register.subtitle": "Track nonconformities, gaps, and linked remediation ownership.",
+  "plugin.findings-remediation.screen.board.title": "Remediation Board",
+  "plugin.findings-remediation.screen.board.subtitle": "Corrective actions by status, owner, and due date."
+}

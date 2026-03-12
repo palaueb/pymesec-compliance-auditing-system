@@ -29,43 +29,51 @@
             margin: 0;
             min-height: 100vh;
             background:
-                linear-gradient(180deg, rgba(255,255,255,0.28), transparent 18%),
+                linear-gradient(180deg, rgba(255,255,255,0.2), transparent 16%),
                 linear-gradient(135deg, var(--bg), var(--bg-alt));
             color: var(--ink);
             font-family: var(--font-body);
         }
 
+        body.debug-open {
+            overflow: hidden;
+        }
+
         .shell {
             min-height: 100vh;
             display: grid;
-            grid-template-columns: 280px 1fr;
+            grid-template-columns: 272px minmax(0, 1fr);
         }
 
         .sidebar {
-            padding: 20px 16px;
             background:
-                linear-gradient(180deg, rgba(255,255,255,0.22), rgba(255,255,255,0.03)),
+                linear-gradient(180deg, rgba(255,255,255,0.18), rgba(255,255,255,0.03)),
                 var(--panel-alt);
             border-right: 1px solid var(--line);
-            display: flex;
-            flex-direction: column;
-            gap: 16px;
+            padding: 18px 14px 20px;
+            display: grid;
+            grid-template-rows: auto 1fr auto;
+            gap: 18px;
         }
 
         .brand {
-            display: grid;
-            gap: 6px;
             padding: 16px 16px 16px 18px;
             border: 1px solid var(--line);
             border-left: 5px solid var(--accent);
-            border-radius: 6px;
             background: rgba(255,255,255,0.34);
-            box-shadow: inset 0 1px 0 rgba(255,255,255,0.3);
+            border-radius: 6px;
+            display: grid;
+            gap: 6px;
         }
 
-        .brand-kicker {
+        .brand-kicker,
+        .eyebrow,
+        .field-label,
+        .rail-label,
+        .metric-label,
+        .table-key {
             font-size: 11px;
-            letter-spacing: 0.16em;
+            letter-spacing: 0.12em;
             text-transform: uppercase;
             color: var(--muted);
         }
@@ -76,22 +84,28 @@
             line-height: 1;
         }
 
-        .brand-copy {
+        .brand-copy,
+        .body-copy,
+        .field-note,
+        .muted-note,
+        .table-note,
+        .meta-copy {
             color: var(--muted);
-            font-size: 14px;
+            font-size: 13px;
+            line-height: 1.45;
         }
 
         .menu-stack {
             display: grid;
             gap: 8px;
+            align-content: start;
         }
 
         .menu-card {
-            background: rgba(255,255,255,0.2);
             border: 1px solid var(--line);
             border-radius: 6px;
+            background: rgba(255,255,255,0.18);
             padding: 4px;
-            box-shadow: none;
         }
 
         .menu-link,
@@ -104,24 +118,17 @@
             border-radius: 4px;
         }
 
-        .menu-link {
-            padding: 11px 12px;
-        }
-
-        .menu-child {
-            padding: 9px 12px 9px 44px;
-            color: var(--muted);
-        }
+        .menu-link { padding: 11px 12px; }
+        .menu-child { padding: 9px 12px 9px 44px; }
 
         .menu-link:hover,
         .menu-child:hover {
-            background: rgba(255,255,255,0.32);
+            background: rgba(255,255,255,0.28);
         }
 
         .menu-link.active,
         .menu-child.active {
             background: linear-gradient(90deg, var(--accent-soft), rgba(255,255,255,0.72));
-            color: var(--ink);
             box-shadow: inset 3px 0 0 var(--accent);
         }
 
@@ -132,12 +139,12 @@
             display: inline-flex;
             align-items: center;
             justify-content: center;
+            border: 1px solid rgba(31, 42, 34, 0.08);
+            background: rgba(31, 42, 34, 0.05);
+            color: var(--accent-alt);
             font-size: 11px;
             font-weight: 700;
             text-transform: uppercase;
-            background: rgba(31, 42, 34, 0.05);
-            border: 1px solid rgba(31, 42, 34, 0.08);
-            color: var(--accent-alt);
             flex: 0 0 auto;
         }
 
@@ -160,24 +167,30 @@
             white-space: nowrap;
         }
 
-        .main {
-            padding: 28px;
+        .sidebar-footer {
+            border-top: 1px solid rgba(31,42,34,0.08);
+            padding-top: 12px;
             display: grid;
-            gap: 20px;
+            gap: 8px;
+        }
+
+        .workspace {
+            padding: 24px 26px 28px;
+            display: grid;
+            gap: 18px;
             background-image:
-                linear-gradient(rgba(255,255,255,0.11) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(255,255,255,0.11) 1px, transparent 1px);
-            background-size: 40px 40px;
+                linear-gradient(rgba(255,255,255,0.09) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.09) 1px, transparent 1px);
+            background-size: 42px 42px;
         }
 
         .topbar {
             display: flex;
-            flex-wrap: wrap;
             justify-content: space-between;
-            gap: 14px;
+            gap: 18px;
             align-items: flex-start;
             padding-bottom: 14px;
-            border-bottom: 1px solid rgba(31, 42, 34, 0.1);
+            border-bottom: 1px solid rgba(31,42,34,0.1);
         }
 
         .headline {
@@ -185,29 +198,37 @@
             gap: 6px;
         }
 
-        .headline h1 {
+        .headline h1,
+        .screen-title,
+        .rail-title {
             margin: 0;
             font-family: var(--font-heading);
-            font-size: clamp(32px, 5vw, 52px);
-            line-height: 0.95;
+        }
+
+        .headline h1 {
+            font-size: clamp(30px, 4.8vw, 48px);
+            line-height: 0.94;
         }
 
         .headline p {
             margin: 0;
-            color: var(--muted);
             max-width: 64ch;
+            color: var(--muted);
         }
 
-        .theme-switcher {
+        .utility-stack {
+            display: grid;
+            gap: 12px;
+            justify-items: end;
+        }
+
+        .theme-switcher,
+        .utility-actions,
+        .toolbar,
+        .action-cluster {
             display: flex;
             flex-wrap: wrap;
             gap: 8px;
-        }
-
-        .topbar-stack {
-            display: grid;
-            gap: 12px;
-            align-items: start;
         }
 
         .context-forms {
@@ -217,188 +238,371 @@
             justify-content: flex-end;
         }
 
-        .context-form {
-            display: flex;
-            align-items: end;
-            gap: 8px;
-            padding: 10px 12px;
+        .context-form,
+        .rail-card,
+        .metric-card,
+        .surface-card,
+        .table-card {
             border: 1px solid var(--line);
-            background: rgba(255,255,255,0.58);
-            border-radius: 4px;
+            background: rgba(255,255,255,0.72);
+            border-radius: 6px;
         }
 
-        .context-field {
+        .context-form {
+            padding: 10px 12px;
+            display: flex;
+            gap: 8px;
+            align-items: end;
+        }
+
+        .field {
             display: grid;
             gap: 4px;
             min-width: 180px;
         }
 
-        .context-label {
-            font-size: 11px;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-            color: var(--muted);
-        }
-
-        .context-select {
-            border: 1px solid var(--line);
-            background: rgba(255,255,255,0.72);
-            color: var(--ink);
-            padding: 9px 10px;
-            border-radius: 4px;
+        .field-input,
+        .field-select,
+        .upload-form input[type="text"],
+        .upload-form input[type="file"] {
+            width: 100%;
             min-height: 40px;
+            border: 1px solid var(--line);
+            border-radius: 4px;
+            background: rgba(255,255,255,0.84);
+            color: var(--ink);
             font: inherit;
+            padding: 9px 10px;
         }
 
-        .context-note {
-            color: var(--muted);
-            font-size: 12px;
+        .button {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            min-height: 40px;
+            padding: 10px 14px;
+            border-radius: 4px;
+            border: 1px solid var(--line);
+            background: rgba(255,255,255,0.58);
+            color: inherit;
+            text-decoration: none;
+            cursor: pointer;
+            font: inherit;
+            font-weight: 700;
         }
 
-        .toolbar {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            justify-content: flex-end;
+        .button-primary {
+            border-color: var(--accent);
+            background: var(--accent);
+            color: #fff;
+        }
+
+        .button-secondary {
+            background: rgba(255,255,255,0.58);
+        }
+
+        .button-ghost {
+            background: rgba(255,255,255,0.38);
         }
 
         .theme-chip {
             display: inline-flex;
             align-items: center;
             gap: 8px;
+            min-height: 36px;
+            padding: 8px 12px;
             border: 1px solid var(--line);
-            background: rgba(255,255,255,0.56);
-            padding: 9px 12px;
             border-radius: 4px;
-            color: inherit;
+            background: rgba(255,255,255,0.56);
             text-decoration: none;
+            color: inherit;
             font-size: 13px;
         }
 
         .theme-chip.active {
             background: var(--ink);
-            color: white;
             border-color: var(--ink);
-        }
-
-        .cards {
-            display: grid;
-            grid-template-columns: repeat(3, minmax(0, 1fr));
-            gap: 16px;
-        }
-
-        .card,
-        .detail-card {
-            background: rgba(255,255,255,0.78);
-            border: 1px solid var(--line);
-            border-radius: 8px;
-            padding: 20px;
-            box-shadow: 0 6px 18px rgba(0,0,0,0.045);
-        }
-
-        .card-label {
-            color: var(--muted);
-            font-size: 12px;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-        }
-
-        .card-value {
-            margin-top: 6px;
-            font-family: var(--font-heading);
-            font-size: 28px;
-        }
-
-        .layout {
-            display: grid;
-            grid-template-columns: minmax(0, 1.7fr) minmax(300px, 0.72fr);
-            gap: 18px;
-        }
-
-        .detail-grid {
-            display: grid;
-            grid-template-columns: repeat(2, minmax(0, 1fr));
-            gap: 12px;
-            margin-top: 18px;
-        }
-
-        .detail-cell {
-            border: 1px solid var(--line);
-            border-radius: 4px;
-            padding: 12px 14px;
-            background: rgba(255,255,255,0.36);
-        }
-
-        .detail-key {
-            color: var(--muted);
-            font-size: 11px;
-            text-transform: uppercase;
-            letter-spacing: 0.08em;
-        }
-
-        .detail-value {
-            margin-top: 5px;
-            font-size: 14px;
-            word-break: break-word;
-        }
-
-        .actions {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            margin-top: 18px;
-        }
-
-        .button {
-            display: inline-flex;
-            align-items: center;
-            gap: 8px;
-            text-decoration: none;
-            border-radius: 4px;
-            padding: 11px 16px;
-            font-weight: 700;
-        }
-
-        .button-primary {
-            background: var(--accent);
             color: #fff;
         }
 
-        .button-secondary {
-            border: 1px solid var(--line);
-            color: var(--ink);
-            background: rgba(255,255,255,0.44);
+        .status-strip,
+        .overview-grid {
+            display: grid;
+            grid-template-columns: repeat(4, minmax(0, 1fr));
+            gap: 14px;
         }
 
-        .stack {
+        .metric-card {
+            padding: 16px 18px;
+            display: grid;
+            gap: 6px;
+        }
+
+        .metric-value {
+            font-family: var(--font-heading);
+            font-size: 24px;
+            line-height: 1;
+        }
+
+        .content-grid {
+            display: grid;
+            grid-template-columns: minmax(0, 1.8fr) minmax(290px, 0.72fr);
+            gap: 18px;
+            align-items: start;
+        }
+
+        .surface-card,
+        .table-card,
+        .rail-card {
+            padding: 18px;
+        }
+
+        .screen-header {
+            display: flex;
+            justify-content: space-between;
+            gap: 18px;
+            align-items: flex-start;
+            padding-bottom: 14px;
+            border-bottom: 1px solid rgba(31,42,34,0.08);
+            margin-bottom: 18px;
+        }
+
+        .screen-title {
+            font-size: 34px;
+            line-height: 0.98;
+        }
+
+        .screen-subtitle {
+            margin: 8px 0 0;
+            color: var(--muted);
+            max-width: 62ch;
+        }
+
+        .screen-body > *:first-child {
+            margin-top: 0;
+        }
+
+        .screen-body > *:last-child {
+            margin-bottom: 0;
+        }
+
+        .rail-stack {
+            display: grid;
+            gap: 14px;
+        }
+
+        .rail-title {
+            font-size: 24px;
+            line-height: 1;
+        }
+
+        .rail-list,
+        .data-list {
+            display: grid;
+            gap: 10px;
+            margin-top: 14px;
+        }
+
+        .rail-item,
+        .data-item {
+            border: 1px solid rgba(31,42,34,0.08);
+            border-radius: 4px;
+            background: rgba(255,255,255,0.42);
+            padding: 10px 12px;
+        }
+
+        .module-screen {
             display: grid;
             gap: 16px;
         }
 
-        .screen-body > *:first-child { margin-top: 0; }
-        .screen-body > *:last-child { margin-bottom: 0; }
+        .module-screen.compact {
+            gap: 14px;
+        }
 
-        .list {
-            margin: 0;
-            padding-left: 18px;
+        .surface-note {
+            border: 1px solid rgba(31,42,34,0.08);
+            border-left: 4px solid var(--accent);
+            background: rgba(255,255,255,0.54);
+            border-radius: 4px;
+            padding: 12px 14px;
+        }
+
+        .entity-table {
+            width: 100%;
+            border-collapse: collapse;
+            border: 1px solid var(--line);
+            background: rgba(255,255,255,0.56);
+        }
+
+        .entity-table th,
+        .entity-table td {
+            padding: 12px 14px;
+            border-bottom: 1px solid rgba(31,42,34,0.08);
+            text-align: left;
+            vertical-align: top;
+            font-size: 14px;
+        }
+
+        .entity-table th {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 0.08em;
             color: var(--muted);
+            background: rgba(255,255,255,0.42);
+        }
+
+        .entity-title {
+            font-weight: 700;
+        }
+
+        .entity-id {
+            margin-top: 4px;
+            color: var(--muted);
+            font-size: 12px;
+        }
+
+        .pill,
+        .tag {
+            display: inline-flex;
+            align-items: center;
+            border: 1px solid var(--line);
+            border-radius: 4px;
+            padding: 4px 8px;
+            background: rgba(255,255,255,0.58);
+            font-size: 12px;
+            font-weight: 700;
+        }
+
+        .pill {
+            text-transform: capitalize;
+        }
+
+        .tag {
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+        }
+
+        .stack,
+        .data-stack,
+        .upload-form,
+        .workflow-stack {
+            display: grid;
+            gap: 8px;
+        }
+
+        .mini-metrics {
+            display: grid;
+            grid-template-columns: repeat(3, minmax(0, 1fr));
+            gap: 12px;
+        }
+
+        .workflow-card {
+            border: 1px solid var(--line);
+            border-radius: 6px;
+            background: rgba(255,255,255,0.62);
+            padding: 14px 16px;
+        }
+
+        .workflow-header,
+        .row-between {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            align-items: flex-start;
+        }
+
+        .workflow-history {
+            border-top: 1px solid rgba(31,42,34,0.08);
+            margin-top: 12px;
+            padding-top: 12px;
+            display: grid;
+            gap: 8px;
+        }
+
+        .workflow-row {
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            color: var(--muted);
+            font-size: 13px;
+        }
+
+        .debug-modal[hidden] {
+            display: none;
+        }
+
+        .debug-modal {
+            position: fixed;
+            inset: 0;
+            z-index: 40;
+        }
+
+        .debug-backdrop {
+            position: absolute;
+            inset: 0;
+            background: rgba(10, 14, 19, 0.58);
+            backdrop-filter: blur(3px);
+        }
+
+        .debug-dialog {
+            position: relative;
+            z-index: 41;
+            width: min(980px, calc(100vw - 32px));
+            max-height: calc(100vh - 48px);
+            margin: 24px auto;
+            background: #18212b;
+            color: #ebf0f2;
+            border: 1px solid rgba(255,255,255,0.12);
+            border-radius: 8px;
+            display: grid;
+            grid-template-rows: auto 1fr auto;
+            overflow: hidden;
+            box-shadow: 0 24px 70px rgba(0,0,0,0.36);
+        }
+
+        .debug-header,
+        .debug-footer {
+            padding: 14px 16px;
+            border-bottom: 1px solid rgba(255,255,255,0.08);
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            align-items: center;
+        }
+
+        .debug-footer {
+            border-top: 1px solid rgba(255,255,255,0.08);
+            border-bottom: 0;
+        }
+
+        .debug-title {
+            margin: 0;
+            font-size: 18px;
+            font-family: var(--font-heading);
+        }
+
+        .debug-copy {
+            color: rgba(235,240,242,0.72);
+            font-size: 13px;
         }
 
         pre {
             margin: 0;
-            padding: 16px;
-            background: #18212b;
-            color: #ebf0f2;
-            border-radius: 6px;
+            padding: 18px;
             overflow: auto;
+            background: transparent;
+            color: inherit;
             font-family: var(--font-mono);
             font-size: 12px;
-            line-height: 1.5;
+            line-height: 1.55;
         }
 
-        .empty-note {
-            color: var(--muted);
-            padding: 12px 0;
+        @media (max-width: 1180px) {
+            .content-grid {
+                grid-template-columns: 1fr;
+            }
         }
 
         @media (max-width: 1080px) {
@@ -409,12 +613,54 @@
             .sidebar {
                 border-right: 0;
                 border-bottom: 1px solid var(--line);
+                grid-template-rows: auto auto auto;
+            }
+        }
+
+        @media (max-width: 960px) {
+            .status-strip,
+            .overview-grid,
+            .mini-metrics {
+                grid-template-columns: repeat(2, minmax(0, 1fr));
             }
 
-            .cards,
-            .layout,
-            .detail-grid {
+            .topbar,
+            .screen-header {
+                flex-direction: column;
+            }
+
+            .utility-stack {
+                justify-items: stretch;
+            }
+
+            .context-forms {
+                justify-content: stretch;
+            }
+
+            .context-form {
+                width: 100%;
+            }
+        }
+
+        @media (max-width: 720px) {
+            .workspace {
+                padding: 18px 16px 24px;
+            }
+
+            .status-strip,
+            .overview-grid,
+            .mini-metrics {
                 grid-template-columns: 1fr;
+            }
+
+            .field {
+                min-width: 0;
+            }
+
+            .debug-dialog {
+                width: calc(100vw - 16px);
+                margin: 8px auto;
+                max-height: calc(100vh - 16px);
             }
         }
     </style>
@@ -447,16 +693,28 @@
                 </section>
             @endforeach
         </nav>
+
+        <div class="sidebar-footer">
+            <div class="rail-label">{{ __('core.shell.theme') }}</div>
+            <div class="body-copy">{{ $theme['label'] }} · {{ $principalId }}</div>
+        </div>
     </aside>
 
-    <main class="main">
+    <main class="workspace">
         <header class="topbar">
             <div class="headline">
+                <div class="eyebrow">{{ __('core.shell.active_menu') }}</div>
                 <h1>{{ __('core.shell.title') }}</h1>
                 <p>{{ __('core.shell.subtitle') }}</p>
             </div>
 
-            <div class="topbar-stack">
+            <div class="utility-stack">
+                <div class="utility-actions">
+                    <button type="button" class="button button-ghost" data-debug-open>
+                        {{ __('core.shell.debug_button') }}
+                    </button>
+                </div>
+
                 <div class="theme-switcher">
                     @foreach ($themeOptions as $option)
                         <a href="{{ $option['url'] }}" class="theme-chip {{ $option['active'] ? 'active' : '' }}">
@@ -473,9 +731,9 @@
                         @if ($selectedMenuId !== null)
                             <input type="hidden" name="menu" value="{{ $selectedMenuId }}">
                         @endif
-                        <div class="context-field">
-                            <label class="context-label" for="organization_id">{{ __('core.shell.organization_selector') }}</label>
-                            <select class="context-select" id="organization_id" name="organization_id">
+                        <div class="field">
+                            <label class="field-label" for="organization_id">{{ __('core.shell.organization_selector') }}</label>
+                            <select class="field-select" id="organization_id" name="organization_id">
                                 @foreach ($organizations as $organization)
                                     <option value="{{ $organization['id'] }}" @selected($organizationId === $organization['id'])>
                                         {{ $organization['name'] }}
@@ -496,9 +754,9 @@
                         @if ($organizationId !== null)
                             <input type="hidden" name="organization_id" value="{{ $organizationId }}">
                         @endif
-                        <div class="context-field">
-                            <label class="context-label" for="scope_id">{{ __('core.shell.scope_selector') }}</label>
-                            <select class="context-select" id="scope_id" name="scope_id">
+                        <div class="field">
+                            <label class="field-label" for="scope_id">{{ __('core.shell.scope_selector') }}</label>
+                            <select class="field-select" id="scope_id" name="scope_id">
                                 <option value="">{{ __('core.shell.all_scopes') }}</option>
                                 @foreach ($scopes as $scope)
                                     <option value="{{ $scope['id'] }}" @selected($scopeId === $scope['id'])>
@@ -513,35 +771,37 @@
             </div>
         </header>
 
-        <section class="cards">
-            <article class="card">
-                <div class="card-label">{{ __('core.shell.principal') }}</div>
-                <div class="card-value">{{ $principalId }}</div>
+        <section class="status-strip">
+            <article class="metric-card">
+                <div class="metric-label">{{ __('core.shell.principal') }}</div>
+                <div class="metric-value">{{ $principalId }}</div>
+                <div class="field-note">runtime principal</div>
             </article>
-            <article class="card">
-                <div class="card-label">{{ __('core.shell.organization') }}</div>
-                <div class="card-value">{{ $selectedOrganization['name'] ?? ($organizationId ?? 'n/a') }}</div>
-                <div class="context-note">{{ $organizationId ?? 'n/a' }}</div>
+            <article class="metric-card">
+                <div class="metric-label">{{ __('core.shell.organization') }}</div>
+                <div class="metric-value">{{ $selectedOrganization['name'] ?? ($organizationId ?? 'n/a') }}</div>
+                <div class="field-note">{{ $organizationId ?? 'n/a' }}</div>
             </article>
-            <article class="card">
-                <div class="card-label">{{ __('core.shell.scope') }}</div>
-                <div class="card-value">{{ $selectedScope['name'] ?? __('core.shell.all_scopes') }}</div>
-                <div class="context-note">{{ $scopeId ?? __('core.shell.organization_wide') }}</div>
+            <article class="metric-card">
+                <div class="metric-label">{{ __('core.shell.scope') }}</div>
+                <div class="metric-value">{{ $selectedScope['name'] ?? __('core.shell.all_scopes') }}</div>
+                <div class="field-note">{{ $scopeId ?? __('core.shell.organization_wide') }}</div>
+            </article>
+            <article class="metric-card">
+                <div class="metric-label">{{ __('core.shell.active_menu') }}</div>
+                <div class="metric-value">{{ $screen?->title ?? ($selectedMenu['label'] ?? 'n/a') }}</div>
+                <div class="field-note">{{ $selectedMenu['owner'] ?? 'core' }}</div>
             </article>
         </section>
 
-        <section class="layout">
-            <article class="detail-card">
-                <div class="card-label">{{ __('core.shell.active_menu') }}</div>
+        <section class="content-grid">
+            <article class="surface-card">
                 @if ($selectedMenu !== null)
-                    <div style="display:flex;justify-content:space-between;gap:16px;align-items:flex-start;flex-wrap:wrap;">
+                    <div class="screen-header">
                         <div>
-                            <h2 style="margin: 10px 0 0; font-family: var(--font-heading); font-size: 34px;">
-                                {{ $screen?->title ?? $selectedMenu['label'] }}
-                            </h2>
-                            <p style="margin: 8px 0 0; color: var(--muted);">
-                                {{ $screen?->subtitle ?? __('core.shell.preview') }}
-                            </p>
+                            <div class="eyebrow">{{ $selectedMenu['owner'] }}</div>
+                            <h2 class="screen-title">{{ $screen?->title ?? $selectedMenu['label'] }}</h2>
+                            <p class="screen-subtitle">{{ $screen?->subtitle ?? __('core.shell.preview') }}</p>
                         </div>
                         @if ($screen !== null && $screen->toolbarActions !== [])
                             <div class="toolbar">
@@ -555,64 +815,136 @@
                     </div>
 
                     @if ($screen !== null)
-                        <div class="screen-body" style="margin-top:18px;">
+                        <div class="screen-body">
                             {!! $screen->content !!}
                         </div>
                     @else
-                        <div class="detail-grid">
-                            <div class="detail-cell">
-                                <div class="detail-key">ID</div>
-                                <div class="detail-value">{{ $selectedMenu['id'] }}</div>
+                        <div class="overview-grid">
+                            <div class="metric-card">
+                                <div class="metric-label">ID</div>
+                                <div class="meta-copy">{{ $selectedMenu['id'] }}</div>
                             </div>
-                            <div class="detail-cell">
-                                <div class="detail-key">Owner</div>
-                                <div class="detail-value">{{ $selectedMenu['owner'] }}</div>
+                            <div class="metric-card">
+                                <div class="metric-label">Owner</div>
+                                <div class="meta-copy">{{ $selectedMenu['owner'] }}</div>
                             </div>
-                            <div class="detail-cell">
-                                <div class="detail-key">Route</div>
-                                <div class="detail-value">{{ $selectedMenu['route'] ?? 'n/a' }}</div>
+                            <div class="metric-card">
+                                <div class="metric-label">Route</div>
+                                <div class="meta-copy">{{ $selectedMenu['route'] ?? 'n/a' }}</div>
                             </div>
-                            <div class="detail-cell">
-                                <div class="detail-key">Permission</div>
-                                <div class="detail-value">{{ $selectedMenu['permission'] ?? 'n/a' }}</div>
+                            <div class="metric-card">
+                                <div class="metric-label">Permission</div>
+                                <div class="meta-copy">{{ $selectedMenu['permission'] ?? 'n/a' }}</div>
                             </div>
                         </div>
                     @endif
 
-                    <div class="actions">
-                        @if ($selectedMenu['url'] !== null)
+                    @if ($selectedMenu['url'] !== null)
+                        <div class="action-cluster" style="margin-top:18px;">
                             <a class="button button-primary" href="{{ $selectedMenu['url'] }}" target="_blank" rel="noreferrer">
                                 {{ __('core.shell.open_route') }}
                             </a>
-                        @endif
-                        <a class="button button-secondary" href="{{ $menuApiUrl }}" target="_blank" rel="noreferrer">
-                            {{ __('core.shell.menu_registry') }}
-                        </a>
-                    </div>
+                        </div>
+                    @endif
                 @else
-                    <div class="empty-note">{{ __('core.shell.no_selection') }}</div>
+                    <div class="muted-note">{{ __('core.shell.no_selection') }}</div>
                 @endif
             </article>
 
-            <section class="stack">
-                <article class="detail-card">
-                    <div class="card-label">{{ __('core.shell.theme') }}</div>
-                    <h2 style="margin: 10px 0 0; font-family: var(--font-heading); font-size: 28px;">{{ $theme['label'] }}</h2>
-                    <p style="margin: 10px 0 0; color: var(--muted);">{{ __('core.shell.theme_copy') }}</p>
-                    <ul class="list">
-                        <li>{{ __('core.shell.theme_rule_core') }}</li>
-                        <li>{{ __('core.shell.theme_rule_plugins') }}</li>
-                        <li>{{ __('core.shell.theme_rule_tokens') }}</li>
-                    </ul>
+            <aside class="rail-stack">
+                <article class="rail-card">
+                    <div class="rail-label">{{ __('core.shell.organization_selector') }}</div>
+                    <h3 class="rail-title">{{ $selectedOrganization['name'] ?? 'n/a' }}</h3>
+                    <div class="rail-list">
+                        <div class="rail-item">
+                            <div class="table-key">{{ __('core.shell.scope') }}</div>
+                            <div class="body-copy">{{ $selectedScope['name'] ?? __('core.shell.all_scopes') }}</div>
+                        </div>
+                        <div class="rail-item">
+                            <div class="table-key">Memberships</div>
+                            <div class="body-copy">{{ count($baseQuery['membership_ids'] ?? []) }}</div>
+                        </div>
+                    </div>
                 </article>
 
-                <article class="detail-card">
-                    <div class="card-label">{{ __('core.shell.debug_payload') }}</div>
-                    <pre>{{ $visibleMenusJson }}</pre>
+                <article class="rail-card">
+                    <div class="rail-label">{{ __('core.shell.theme') }}</div>
+                    <h3 class="rail-title">{{ $theme['label'] }}</h3>
+                    <p class="body-copy">{{ __('core.shell.theme_copy') }}</p>
+                    <div class="rail-list">
+                        <div class="rail-item">{{ __('core.shell.theme_rule_core') }}</div>
+                        <div class="rail-item">{{ __('core.shell.theme_rule_plugins') }}</div>
+                        <div class="rail-item">{{ __('core.shell.theme_rule_tokens') }}</div>
+                    </div>
                 </article>
-            </section>
+
+                <article class="rail-card">
+                    <div class="rail-label">{{ __('core.shell.debug_panel') }}</div>
+                    <h3 class="rail-title">{{ __('core.shell.debug_title') }}</h3>
+                    <p class="body-copy">{{ __('core.shell.debug_copy') }}</p>
+                    <div class="action-cluster" style="margin-top:14px;">
+                        <button type="button" class="button button-secondary" data-debug-open>
+                            {{ __('core.shell.debug_button') }}
+                        </button>
+                        <a class="button button-ghost" href="{{ $menuApiUrl }}" target="_blank" rel="noreferrer">
+                            {{ __('core.shell.menu_registry') }}
+                        </a>
+                    </div>
+                </article>
+            </aside>
         </section>
     </main>
 </div>
+
+<div class="debug-modal" data-debug-modal hidden>
+    <div class="debug-backdrop" data-debug-close></div>
+    <section class="debug-dialog" role="dialog" aria-modal="true" aria-labelledby="debug-title">
+        <header class="debug-header">
+            <div>
+                <h2 class="debug-title" id="debug-title">{{ __('core.shell.debug_title') }}</h2>
+                <div class="debug-copy">{{ __('core.shell.debug_copy') }}</div>
+            </div>
+            <button type="button" class="button button-secondary" data-debug-close>{{ __('core.shell.close_debug') }}</button>
+        </header>
+        <pre>{{ $debugPayloadJson }}</pre>
+        <footer class="debug-footer">
+            <div class="debug-copy">{{ __('core.shell.debug_footer') }}</div>
+            <a class="button button-secondary" href="{{ $menuApiUrl }}" target="_blank" rel="noreferrer">
+                {{ __('core.shell.menu_registry') }}
+            </a>
+        </footer>
+    </section>
+</div>
+
+<script>
+    (() => {
+        const modal = document.querySelector('[data-debug-modal]');
+        const openButtons = document.querySelectorAll('[data-debug-open]');
+        const closeButtons = document.querySelectorAll('[data-debug-close]');
+
+        if (!modal || openButtons.length === 0) {
+            return;
+        }
+
+        const openModal = () => {
+            modal.hidden = false;
+            document.body.classList.add('debug-open');
+        };
+
+        const closeModal = () => {
+            modal.hidden = true;
+            document.body.classList.remove('debug-open');
+        };
+
+        openButtons.forEach((button) => button.addEventListener('click', openModal));
+        closeButtons.forEach((button) => button.addEventListener('click', closeModal));
+
+        document.addEventListener('keydown', (event) => {
+            if (event.key === 'Escape' && !modal.hidden) {
+                closeModal();
+            }
+        });
+    })();
+</script>
 </body>
 </html>

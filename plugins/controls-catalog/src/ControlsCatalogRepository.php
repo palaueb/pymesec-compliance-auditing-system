@@ -2,6 +2,9 @@
 
 namespace PymeSec\Plugins\ControlsCatalog;
 
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+
 class ControlsCatalogRepository
 {
     /**
@@ -9,17 +12,17 @@ class ControlsCatalogRepository
      */
     public function all(string $organizationId, ?string $scopeId = null): array
     {
-        return array_values(array_filter($this->controls(), static function (array $control) use ($organizationId, $scopeId): bool {
-            if ($control['organization_id'] !== $organizationId) {
-                return false;
-            }
+        $query = DB::table('controls')
+            ->where('organization_id', $organizationId)
+            ->orderBy('name');
 
-            if ($scopeId === null || $scopeId === '') {
-                return true;
-            }
+        if ($scopeId !== null && $scopeId !== '') {
+            $query->where('scope_id', $scopeId);
+        }
 
-            return ($control['scope_id'] ?? null) === $scopeId;
-        }));
+        return $query->get()
+            ->map(fn ($control): array => $this->mapControl($control))
+            ->all();
     }
 
     /**
@@ -27,48 +30,86 @@ class ControlsCatalogRepository
      */
     public function find(string $controlId): ?array
     {
-        foreach ($this->controls() as $control) {
-            if ($control['id'] === $controlId) {
-                return $control;
-            }
-        }
+        $control = DB::table('controls')->where('id', $controlId)->first();
 
-        return null;
+        return $control !== null ? $this->mapControl($control) : null;
     }
 
     /**
-     * @return array<int, array<string, string>>
+     * @param  array<string, string|null>  $data
+     * @return array<string, string>
      */
-    private function controls(): array
+    public function create(array $data): array
+    {
+        $id = $this->nextId((string) ($data['name'] ?? 'control'));
+
+        DB::table('controls')->insert([
+            'id' => $id,
+            'organization_id' => $data['organization_id'],
+            'scope_id' => ($data['scope_id'] ?? null) ?: null,
+            'name' => $data['name'],
+            'framework' => $data['framework'],
+            'domain' => $data['domain'],
+            'evidence' => $data['evidence'],
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        /** @var array<string, string> $control */
+        $control = $this->find($id);
+
+        return $control;
+    }
+
+    /**
+     * @param  array<string, string|null>  $data
+     * @return array<string, string> | null
+     */
+    public function update(string $controlId, array $data): ?array
+    {
+        $updated = DB::table('controls')
+            ->where('id', $controlId)
+            ->update([
+                'scope_id' => ($data['scope_id'] ?? null) ?: null,
+                'name' => $data['name'],
+                'framework' => $data['framework'],
+                'domain' => $data['domain'],
+                'evidence' => $data['evidence'],
+                'updated_at' => now(),
+            ]);
+
+        if ($updated === 0) {
+            return $this->find($controlId);
+        }
+
+        return $this->find($controlId);
+    }
+
+    private function nextId(string $name): string
+    {
+        $base = 'control-'.Str::slug($name);
+        $candidate = $base !== 'control-' ? $base : 'control-'.Str::lower(Str::ulid());
+
+        if (! DB::table('controls')->where('id', $candidate)->exists()) {
+            return $candidate;
+        }
+
+        return $candidate.'-'.Str::lower(Str::random(4));
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function mapControl(object $control): array
     {
         return [
-            [
-                'id' => 'control-access-review',
-                'organization_id' => 'org-a',
-                'scope_id' => 'scope-eu',
-                'name' => 'Quarterly Access Review',
-                'framework' => 'ISO 27001',
-                'domain' => 'Identity',
-                'evidence' => 'Access certification pack',
-            ],
-            [
-                'id' => 'control-backup-governance',
-                'organization_id' => 'org-a',
-                'scope_id' => 'scope-it',
-                'name' => 'Backup Governance',
-                'framework' => 'NIS2',
-                'domain' => 'Resilience',
-                'evidence' => 'Backup policy and restore tests',
-            ],
-            [
-                'id' => 'control-route-integrity',
-                'organization_id' => 'org-b',
-                'scope_id' => 'scope-ops',
-                'name' => 'Route Integrity Monitoring',
-                'framework' => 'SOC 2',
-                'domain' => 'Operations',
-                'evidence' => 'Telemetry reviews',
-            ],
+            'id' => (string) $control->id,
+            'organization_id' => (string) $control->organization_id,
+            'scope_id' => is_string($control->scope_id) ? $control->scope_id : '',
+            'name' => (string) $control->name,
+            'framework' => (string) $control->framework,
+            'domain' => (string) $control->domain,
+            'evidence' => (string) $control->evidence,
         ];
     }
 }

@@ -31,5 +31,11 @@
   "core.shell.theme_rule_core": "Le core possede le cadre commun et les tokens visuels.",
   "core.shell.theme_rule_plugins": "Les plugins ajoutent des menus et ecrans, pas du CSS libre du shell.",
   "core.shell.theme_rule_tokens": "Le changement de theme reste sur car il ne modifie que des tokens approuves.",
-  "core.shell.debug_payload": "Payload du Menu Visible"
+  "core.shell.debug_payload": "Payload du Menu Visible",
+  "core.shell.debug_panel": "Outils de Developpement",
+  "core.shell.debug_title": "Runtime de Debug",
+  "core.shell.debug_copy": "Le contexte runtime structure reste disponible, mais vit maintenant hors de l'espace operationnel principal.",
+  "core.shell.debug_button": "Ouvrir le Debug",
+  "core.shell.close_debug": "Fermer",
+  "core.shell.debug_footer": "Utilisez ce panneau pour inspecter l'etat du shell, la resolution des menus et les donnees runtime sans les melanger avec l'interface principale."
 }

@@ -31,5 +31,11 @@
   "core.shell.theme_rule_core": "Der Core besitzt den gemeinsamen Rahmen und die visuellen Tokens.",
   "core.shell.theme_rule_plugins": "Plugins liefern Menus und Seiten, aber kein beliebiges Shell-CSS.",
   "core.shell.theme_rule_tokens": "Theme-Wechsel bleiben sicher, weil nur freigegebene Tokens getauscht werden.",
-  "core.shell.debug_payload": "Sichtbares Menu-Payload"
+  "core.shell.debug_payload": "Sichtbares Menu-Payload",
+  "core.shell.debug_panel": "Entwicklerwerkzeuge",
+  "core.shell.debug_title": "Debug-Laufzeit",
+  "core.shell.debug_copy": "Der strukturierte Laufzeitkontext bleibt verfugbar, lebt jetzt aber ausserhalb des operativen Arbeitsbereichs.",
+  "core.shell.debug_button": "Debug Offnen",
+  "core.shell.close_debug": "Schliessen",
+  "core.shell.debug_footer": "Nutze dieses Panel, um Shell-Zustand, Menuresolution und Screen-Laufzeitdaten zu prufen, ohne die Hauptoberflache zu vermischen."
 }

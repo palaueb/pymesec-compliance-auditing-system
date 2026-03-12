@@ -6,7 +6,7 @@
     "type": "identity",
     "description": "Placeholder manifest for the local identity plugin skeleton.",
     "vendor": "pymesec",
-    "license": "TBD"
+    "license": "AGPL-3.0-or-later"
   },
   "compatibility": {
     "core": "^0.1.0",

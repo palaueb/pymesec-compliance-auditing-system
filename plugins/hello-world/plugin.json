@@ -6,7 +6,7 @@
     "type": "ui",
     "description": "Example plugin used to validate plugin discovery and runtime bootstrapping.",
     "vendor": "pymesec",
-    "license": "MIT"
+    "license": "AGPL-3.0-or-later"
   },
   "compatibility": {
     "core": "^0.1.0",

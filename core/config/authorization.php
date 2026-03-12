@@ -75,6 +75,19 @@ return [
                 'plugin.risk-management.risks.view',
             ],
         ],
+        'findings-operator' => [
+            'label' => 'Findings operator',
+            'permissions' => [
+                'plugin.findings-remediation.findings.view',
+                'plugin.findings-remediation.findings.manage',
+            ],
+        ],
+        'findings-viewer' => [
+            'label' => 'Findings viewer',
+            'permissions' => [
+                'plugin.findings-remediation.findings.view',
+            ],
+        ],
     ],
     'grants' => [
         [
@@ -126,6 +139,14 @@ return [
         ],
         [
             'target_type' => 'membership',
+            'target_id' => 'membership-org-a-hello',
+            'grant_type' => 'role',
+            'value' => 'findings-operator',
+            'context_type' => 'organization',
+            'organization_id' => 'org-a',
+        ],
+        [
+            'target_type' => 'membership',
             'target_id' => 'membership-org-a-viewer',
             'grant_type' => 'role',
             'value' => 'asset-viewer',
@@ -158,6 +179,14 @@ return [
         ],
         [
             'target_type' => 'membership',
+            'target_id' => 'membership-org-a-viewer',
+            'grant_type' => 'role',
+            'value' => 'findings-viewer',
+            'context_type' => 'organization',
+            'organization_id' => 'org-a',
+        ],
+        [
+            'target_type' => 'membership',
             'target_id' => 'membership-org-b-ops',
             'grant_type' => 'role',
             'value' => 'asset-viewer',
@@ -185,6 +214,14 @@ return [
             'target_id' => 'membership-org-b-ops',
             'grant_type' => 'role',
             'value' => 'risk-viewer',
+            'context_type' => 'organization',
+            'organization_id' => 'org-b',
+        ],
+        [
+            'target_type' => 'membership',
+            'target_id' => 'membership-org-b-ops',
+            'grant_type' => 'role',
+            'value' => 'findings-viewer',
             'context_type' => 'organization',
             'organization_id' => 'org-b',
         ],

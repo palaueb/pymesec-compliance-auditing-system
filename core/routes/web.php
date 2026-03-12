@@ -156,6 +156,34 @@ Route::get('/app', function (
         ];
     }
 
+    $debugPayload = [
+        'principal_id' => $principalId,
+        'locale' => $locale,
+        'theme' => $themeKey,
+        'selected_menu_id' => $selectedMenuId,
+        'selected_menu' => $selectedMenu,
+        'organization_id' => $organizationId,
+        'scope_id' => $scopeId,
+        'memberships' => array_map(static fn ($membership): array => $membership->toArray(), $memberships),
+        'screen' => $screen !== null
+            ? [
+                'title' => $screen->title,
+                'subtitle' => $screen->subtitle,
+                'toolbar_actions' => array_map(
+                    static fn ($action): array => [
+                        'label' => $action->label,
+                        'url' => $action->url,
+                        'variant' => $action->variant,
+                        'target' => $action->target,
+                    ],
+                    $screen->toolbarActions,
+                ),
+            ]
+            : null,
+        'menus' => $visibleMenus,
+        'query' => $baseQuery,
+    ];
+
     return response()->view('shell', [
         'locale' => $locale,
         'theme' => $theme,
@@ -166,7 +194,7 @@ Route::get('/app', function (
         'selectedMenu' => $selectedMenu,
         'screen' => $screen,
         'menuApiUrl' => route('core.menus.index', $baseQuery),
-        'visibleMenusJson' => json_encode($visibleMenus, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES),
+        'debugPayloadJson' => json_encode($debugPayload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES),
         'principalId' => $principalId,
         'organizationId' => $organizationId,
         'scopeId' => $scopeId,

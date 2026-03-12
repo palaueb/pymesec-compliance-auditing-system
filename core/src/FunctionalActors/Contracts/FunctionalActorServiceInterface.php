@@ -62,6 +62,20 @@ interface FunctionalActorServiceInterface
     ): FunctionalAssignment;
 
     /**
+     * @param  array<string, mixed>  $metadata
+     */
+    public function syncSingleAssignment(
+        string $actorId,
+        string $domainObjectType,
+        string $domainObjectId,
+        string $assignmentType,
+        string $organizationId,
+        ?string $scopeId = null,
+        array $metadata = [],
+        ?string $assignedByPrincipalId = null,
+    ): FunctionalAssignment;
+
+    /**
      * @return array<int, FunctionalActorLink>
      */
     public function linksForPrincipal(string $principalId, ?string $organizationId = null): array;
