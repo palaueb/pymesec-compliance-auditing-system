@@ -2,6 +2,7 @@
 
 namespace PymeSec\Plugins\RiskManagement;
 
+use Illuminate\Support\Facades\DB;
 use PymeSec\Core\Artifacts\Contracts\ArtifactServiceInterface;
 use PymeSec\Core\FunctionalActors\Contracts\FunctionalActorServiceInterface;
 use PymeSec\Core\Permissions\AuthorizationContext;
@@ -123,6 +124,13 @@ class RiskManagementPlugin implements PluginInterface
             organizationId: $organizationId,
             scopeId: $screenContext->scopeId,
         ))->allowed();
+        $assetOptions = $this->linkedOptions('assets', 'id', 'name', $organizationId, $screenContext->scopeId);
+        $assetLabels = [];
+
+        foreach ($assetOptions as $option) {
+            $assetLabels[$option['id']] = $option['label'];
+        }
+
         $risks = [];
 
         foreach ($repository->all($organizationId, $screenContext->scopeId) as $risk) {
@@ -146,6 +154,7 @@ class RiskManagementPlugin implements PluginInterface
                 'transition_route' => route('plugin.risk-management.transition', ['riskId' => $risk['id'], 'transitionKey' => '__TRANSITION__']),
                 'artifact_upload_route' => route('plugin.risk-management.artifacts.store', ['riskId' => $risk['id']]),
                 'update_route' => route('plugin.risk-management.update', ['riskId' => $risk['id']]),
+                'linked_asset_label' => $assetLabels[$risk['linked_asset_id']] ?? null,
             ];
         }
 
@@ -163,6 +172,7 @@ class RiskManagementPlugin implements PluginInterface
             'create_route' => route('plugin.risk-management.store'),
             'owner_actor_options' => $this->actorOptions($actors, $organizationId, $screenContext->scopeId),
             'scope_options' => array_map(static fn ($scope): array => $scope->toArray(), $scopeContext->scopes),
+            'asset_options' => $assetOptions,
         ];
     }
 
@@ -279,5 +289,32 @@ class RiskManagementPlugin implements PluginInterface
             'id' => $actor->id,
             'label' => sprintf('%s (%s)', $actor->displayName, $actor->kind),
         ], $actors->actors($organizationId, $scopeId));
+    }
+
+    /**
+     * @return array<int, array{id: string, label: string}>
+     */
+    private function linkedOptions(
+        string $table,
+        string $idColumn,
+        string $labelColumn,
+        string $organizationId,
+        ?string $scopeId,
+    ): array {
+        $query = DB::table($table)
+            ->where('organization_id', $organizationId)
+            ->orderBy($labelColumn);
+
+        if ($scopeId !== null && $scopeId !== '') {
+            $query->where(function ($nested) use ($scopeId): void {
+                $nested->where('scope_id', $scopeId)->orWhereNull('scope_id');
+            });
+        }
+
+        return $query->get([$idColumn, $labelColumn])
+            ->map(static fn ($row): array => [
+                'id' => (string) $row->{$idColumn},
+                'label' => sprintf('%s [%s]', (string) $row->{$labelColumn}, (string) $row->{$idColumn}),
+            ])->all();
     }
 }

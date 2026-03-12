@@ -152,6 +152,13 @@ class ContinuityBcmPlugin implements PluginInterface
         $tenancy = $context->app()->make(TenancyServiceInterface::class);
         $organizationId = $screenContext->organizationId ?? 'org-a';
         $canManage = $this->canManage($authorization, $screenContext, $organizationId);
+        $assetOptions = $this->linkedOptions('assets', 'id', 'name', $organizationId, $screenContext->scopeId);
+        $assetLabels = [];
+
+        foreach ($assetOptions as $option) {
+            $assetLabels[$option['id']] = $option['label'];
+        }
+
         $services = [];
 
         foreach ($repository->allServices($organizationId, $screenContext->scopeId) as $service) {
@@ -179,6 +186,7 @@ class ContinuityBcmPlugin implements PluginInterface
                 'update_route' => route('plugin.continuity-bcm.update', ['serviceId' => $service['id']]),
                 'plan_store_route' => route('plugin.continuity-bcm.plans.store', ['serviceId' => $service['id']]),
                 'plan_count' => count($plans),
+                'linked_asset_label' => $assetLabels[$service['linked_asset_id']] ?? null,
             ];
         }
 
@@ -196,6 +204,7 @@ class ContinuityBcmPlugin implements PluginInterface
             'create_route' => route('plugin.continuity-bcm.store'),
             'owner_actor_options' => $this->actorOptions($actors, $organizationId, $screenContext->scopeId),
             'scope_options' => array_map(static fn ($scope): array => $scope->toArray(), $scopeContext->scopes),
+            'asset_options' => $assetOptions,
             'risk_options' => $this->linkedOptions('risks', 'id', 'title', $organizationId, $screenContext->scopeId),
             'policy_options' => $this->linkedOptions('policies', 'id', 'title', $organizationId, $screenContext->scopeId),
             'finding_options' => $this->linkedOptions('findings', 'id', 'title', $organizationId, $screenContext->scopeId),

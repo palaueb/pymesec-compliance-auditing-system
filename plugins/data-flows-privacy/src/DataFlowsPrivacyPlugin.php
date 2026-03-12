@@ -152,6 +152,13 @@ class DataFlowsPrivacyPlugin implements PluginInterface
         $tenancy = $context->app()->make(TenancyServiceInterface::class);
         $organizationId = $screenContext->organizationId ?? 'org-a';
         $canManage = $this->canManage($authorization, $screenContext, $organizationId);
+        $assetOptions = $this->linkedOptions('assets', 'id', 'name', $organizationId, $screenContext->scopeId);
+        $assetLabels = [];
+
+        foreach ($assetOptions as $option) {
+            $assetLabels[$option['id']] = $option['label'];
+        }
+
         $dataFlows = [];
 
         foreach ($repository->allDataFlows($organizationId, $screenContext->scopeId) as $flow) {
@@ -175,6 +182,7 @@ class DataFlowsPrivacyPlugin implements PluginInterface
                 'transition_route' => route('plugin.data-flows-privacy.transition', ['flowId' => $flow['id'], 'transitionKey' => '__TRANSITION__']),
                 'artifact_upload_route' => route('plugin.data-flows-privacy.artifacts.store', ['flowId' => $flow['id']]),
                 'update_route' => route('plugin.data-flows-privacy.update', ['flowId' => $flow['id']]),
+                'linked_asset_label' => $assetLabels[$flow['linked_asset_id']] ?? null,
             ];
         }
 
@@ -192,6 +200,7 @@ class DataFlowsPrivacyPlugin implements PluginInterface
             'create_route' => route('plugin.data-flows-privacy.store'),
             'owner_actor_options' => $this->actorOptions($actors, $organizationId, $screenContext->scopeId),
             'scope_options' => array_map(static fn ($scope): array => $scope->toArray(), $scopeContext->scopes),
+            'asset_options' => $assetOptions,
             'risk_options' => $this->linkedOptions('risks', 'id', 'title', $organizationId, $screenContext->scopeId),
         ];
     }

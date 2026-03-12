@@ -48,7 +48,12 @@
                     </div>
                     <div class="field">
                         <label class="field-label" for="flow-asset">Linked asset</label>
-                        <input class="field-input" id="flow-asset" name="linked_asset_id" placeholder="asset-erp-prod">
+                        <select class="field-select" id="flow-asset" name="linked_asset_id">
+                            <option value="">No linked asset</option>
+                            @foreach ($asset_options as $asset)
+                                <option value="{{ $asset['id'] }}">{{ $asset['label'] }}</option>
+                            @endforeach
+                        </select>
                     </div>
                     <div class="field">
                         <label class="field-label" for="flow-risk">Linked risk</label>
@@ -123,7 +128,7 @@
                             @endif
                         </td>
                         <td>
-                            <div>Asset: {{ $flow['linked_asset_id'] !== '' ? $flow['linked_asset_id'] : 'None' }}</div>
+                            <div>Asset: {{ $flow['linked_asset_label'] ?? ($flow['linked_asset_id'] !== '' ? $flow['linked_asset_id'] : 'None') }}</div>
                             <div>Risk: {{ $flow['linked_risk_id'] !== '' ? $flow['linked_risk_id'] : 'None' }}</div>
                         </td>
                         <td>{{ $flow['review_due_on'] !== '' ? $flow['review_due_on'] : 'No review date' }}</td>
@@ -203,7 +208,12 @@
                                         </div>
                                         <div class="field">
                                             <label class="field-label">Linked asset</label>
-                                            <input class="field-input" name="linked_asset_id" value="{{ $flow['linked_asset_id'] }}">
+                                            <select class="field-select" name="linked_asset_id">
+                                                <option value="">No linked asset</option>
+                                                @foreach ($asset_options as $asset)
+                                                    <option value="{{ $asset['id'] }}" @selected($flow['linked_asset_id'] === $asset['id'])>{{ $asset['label'] }}</option>
+                                                @endforeach
+                                            </select>
                                         </div>
                                         <div class="field">
                                             <label class="field-label">Linked risk</label>

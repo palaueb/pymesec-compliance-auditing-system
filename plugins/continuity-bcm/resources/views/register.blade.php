@@ -35,7 +35,12 @@
                     </div>
                     <div class="field">
                         <label class="field-label" for="service-asset">Linked asset</label>
-                        <input class="field-input" id="service-asset" name="linked_asset_id" placeholder="asset-erp-prod">
+                        <select class="field-select" id="service-asset" name="linked_asset_id">
+                            <option value="">No linked asset</option>
+                            @foreach ($asset_options as $asset)
+                                <option value="{{ $asset['id'] }}">{{ $asset['label'] }}</option>
+                            @endforeach
+                        </select>
                     </div>
                     <div class="field">
                         <label class="field-label" for="service-risk">Linked risk</label>
@@ -114,7 +119,7 @@
                             @endif
                         </td>
                         <td>
-                            <div>Asset: {{ $service['linked_asset_id'] !== '' ? $service['linked_asset_id'] : 'None' }}</div>
+                            <div>Asset: {{ $service['linked_asset_label'] ?? ($service['linked_asset_id'] !== '' ? $service['linked_asset_id'] : 'None') }}</div>
                             <div>Risk: {{ $service['linked_risk_id'] !== '' ? $service['linked_risk_id'] : 'None' }}</div>
                         </td>
                         <td>
@@ -189,7 +194,12 @@
                                         </div>
                                         <div class="field">
                                             <label class="field-label">Linked asset</label>
-                                            <input class="field-input" name="linked_asset_id" value="{{ $service['linked_asset_id'] }}">
+                                            <select class="field-select" name="linked_asset_id">
+                                                <option value="">No linked asset</option>
+                                                @foreach ($asset_options as $asset)
+                                                    <option value="{{ $asset['id'] }}" @selected($service['linked_asset_id'] === $asset['id'])>{{ $asset['label'] }}</option>
+                                                @endforeach
+                                            </select>
                                         </div>
                                         <div class="field">
                                             <label class="field-label">Linked risk</label>
