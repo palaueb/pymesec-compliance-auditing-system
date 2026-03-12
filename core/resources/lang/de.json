@@ -1,0 +1,7 @@
+{
+  "core.app.name": "PymeSec",
+  "core.nav.dashboard": "Dashboard",
+  "core.actions.save": "Speichern",
+  "core.actions.cancel": "Abbrechen",
+  "core.system.placeholder": "Platzhalter"
+}

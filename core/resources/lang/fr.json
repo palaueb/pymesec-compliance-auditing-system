@@ -1,0 +1,7 @@
+{
+  "core.app.name": "PymeSec",
+  "core.nav.dashboard": "Tableau de bord",
+  "core.actions.save": "Enregistrer",
+  "core.actions.cancel": "Annuler",
+  "core.system.placeholder": "Espace reserve"
+}

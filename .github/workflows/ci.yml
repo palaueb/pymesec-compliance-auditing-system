@@ -1,0 +1,93 @@
+name: Core CI
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+  pull_request:
+
+jobs:
+  core:
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_DB: pymesec
+          POSTGRES_USER: pymesec
+          POSTGRES_PASSWORD: pymesec
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U pymesec -d pymesec"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+      redis:
+        image: redis:7
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.4'
+          extensions: bcmath, intl, mbstring, pdo_pgsql, pdo_sqlite, pgsql, redis, zip
+          tools: composer:v2
+          coverage: none
+
+      - name: Cache Composer dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.composer/cache/files
+            core/vendor
+          key: ${{ runner.os }}-php-8.4-composer-${{ hashFiles('core/composer.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-php-8.4-composer-
+
+      - name: Prepare environment
+        working-directory: core
+        run: cp .env.example .env
+
+      - name: Install dependencies
+        working-directory: core
+        run: composer install --no-interaction --prefer-dist --no-progress
+
+      - name: Run migrations
+        working-directory: core
+        env:
+          APP_ENV: local
+          APP_KEY: base64:uTJJ+kkSZfpOWsk2uK/dF+FnIfhi5Klf5Ll+sdC9mLk=
+          DB_CONNECTION: pgsql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 5432
+          DB_DATABASE: pymesec
+          DB_USERNAME: pymesec
+          DB_PASSWORD: pymesec
+          CACHE_STORE: redis
+          QUEUE_CONNECTION: redis
+          SESSION_DRIVER: file
+          REDIS_CLIENT: phpredis
+          REDIS_HOST: 127.0.0.1
+          REDIS_PORT: 6379
+        run: php artisan migrate --force
+
+      - name: Lint
+        working-directory: core
+        run: composer lint
+
+      - name: Test
+        working-directory: core
+        run: composer test

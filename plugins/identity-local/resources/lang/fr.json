@@ -1,0 +1,7 @@
+{
+  "plugin.identity-local.plugin.name": "Identite locale",
+  "plugin.identity-local.nav.users": "Utilisateurs",
+  "plugin.identity-local.nav.memberships": "Adhesions",
+  "plugin.identity-local.fields.email.label": "Adresse e-mail",
+  "plugin.identity-local.system.placeholder": "Espace reserve"
+}

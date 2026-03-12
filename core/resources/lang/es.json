@@ -1,0 +1,7 @@
+{
+  "core.app.name": "PymeSec",
+  "core.nav.dashboard": "Panel",
+  "core.actions.save": "Guardar",
+  "core.actions.cancel": "Cancelar",
+  "core.system.placeholder": "Marcador de posicion"
+}
