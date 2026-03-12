@@ -88,6 +88,19 @@ return [
                 'plugin.findings-remediation.findings.view',
             ],
         ],
+        'policy-operator' => [
+            'label' => 'Policy operator',
+            'permissions' => [
+                'plugin.policy-exceptions.policies.view',
+                'plugin.policy-exceptions.policies.manage',
+            ],
+        ],
+        'policy-viewer' => [
+            'label' => 'Policy viewer',
+            'permissions' => [
+                'plugin.policy-exceptions.policies.view',
+            ],
+        ],
     ],
     'grants' => [
         [
@@ -147,6 +160,14 @@ return [
         ],
         [
             'target_type' => 'membership',
+            'target_id' => 'membership-org-a-hello',
+            'grant_type' => 'role',
+            'value' => 'policy-operator',
+            'context_type' => 'organization',
+            'organization_id' => 'org-a',
+        ],
+        [
+            'target_type' => 'membership',
             'target_id' => 'membership-org-a-viewer',
             'grant_type' => 'role',
             'value' => 'asset-viewer',
@@ -187,6 +208,14 @@ return [
         ],
         [
             'target_type' => 'membership',
+            'target_id' => 'membership-org-a-viewer',
+            'grant_type' => 'role',
+            'value' => 'policy-viewer',
+            'context_type' => 'organization',
+            'organization_id' => 'org-a',
+        ],
+        [
+            'target_type' => 'membership',
             'target_id' => 'membership-org-b-ops',
             'grant_type' => 'role',
             'value' => 'asset-viewer',
@@ -222,6 +251,14 @@ return [
             'target_id' => 'membership-org-b-ops',
             'grant_type' => 'role',
             'value' => 'findings-viewer',
+            'context_type' => 'organization',
+            'organization_id' => 'org-b',
+        ],
+        [
+            'target_type' => 'membership',
+            'target_id' => 'membership-org-b-ops',
+            'grant_type' => 'role',
+            'value' => 'policy-viewer',
             'context_type' => 'organization',
             'organization_id' => 'org-b',
         ],

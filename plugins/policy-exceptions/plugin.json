@@ -1,0 +1,92 @@
+{
+  "plugin": {
+    "id": "policy-exceptions",
+    "name": "Policies & Exceptions",
+    "version": "0.1.0",
+    "type": "domain",
+    "description": "Functional plugin for governance policies, exceptions, approvals, and review follow-up.",
+    "vendor": "pymesec",
+    "license": "AGPL-3.0-or-later"
+  },
+  "compatibility": {
+    "core": "^0.1.0",
+    "sdk": "^0.1.0"
+  },
+  "dependencies": [
+    "actor-directory",
+    "controls-catalog",
+    "findings-remediation"
+  ],
+  "permissions": [
+    {
+      "key": "plugin.policy-exceptions.policies.view",
+      "label": "View policies",
+      "description": "View governance policies and active exceptions.",
+      "feature_area": "policies",
+      "operation": "view",
+      "contexts": [
+        "organization"
+      ]
+    },
+    {
+      "key": "plugin.policy-exceptions.policies.manage",
+      "label": "Manage policies",
+      "description": "Create policies, approve exceptions, and manage governance lifecycles.",
+      "feature_area": "policies",
+      "operation": "manage",
+      "contexts": [
+        "organization"
+      ]
+    }
+  ],
+  "routes": [
+    {
+      "id": "policy-exceptions.web",
+      "type": "web",
+      "file": "routes/web.php",
+      "middleware": [
+        "web"
+      ],
+      "permission": "plugin.policy-exceptions.policies.view"
+    }
+  ],
+  "menus": [
+    {
+      "id": "plugin.policy-exceptions.root",
+      "label_key": "plugin.policy-exceptions.nav.root",
+      "route": "plugin.policy-exceptions.index",
+      "icon": "book",
+      "order": 42,
+      "permission": "plugin.policy-exceptions.policies.view"
+    },
+    {
+      "id": "plugin.policy-exceptions.exceptions",
+      "label_key": "plugin.policy-exceptions.nav.exceptions",
+      "route": "plugin.policy-exceptions.exceptions",
+      "parent_id": "plugin.policy-exceptions.root",
+      "icon": "warning",
+      "order": 10,
+      "permission": "plugin.policy-exceptions.policies.view"
+    }
+  ],
+  "migrations": [],
+  "translations": {
+    "default_locale": "en",
+    "supported_locales": [
+      "en",
+      "es",
+      "fr",
+      "de"
+    ],
+    "path": "resources/lang"
+  },
+  "lifecycle": {},
+  "runtime": {
+    "class": "PymeSec\\Plugins\\PolicyExceptions\\PolicyExceptionsPlugin",
+    "autoload": {
+      "psr-4": {
+        "PymeSec\\Plugins\\PolicyExceptions\\": "src"
+      }
+    }
+  }
+}

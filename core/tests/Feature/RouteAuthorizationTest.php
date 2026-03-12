@@ -252,4 +252,123 @@ class RouteAuthorizationTest extends TestCase
             'status' => 'done',
         ])->assertFound();
     }
+
+    public function test_the_policy_routes_require_manage_permission(): void
+    {
+        $payload = [
+            'principal_id' => 'principal-org-a',
+            'organization_id' => 'org-a',
+            'locale' => 'en',
+            'menu' => 'plugin.policy-exceptions.root',
+            'membership_id' => 'membership-org-a-viewer',
+        ];
+
+        $this->post('/plugins/policies/policy-access-governance/transitions/submit-review', $payload)
+            ->assertForbidden();
+
+        $this->post('/plugins/policies/exceptions/exception-break-glass-window/transitions/approve', [
+            ...$payload,
+            'menu' => 'plugin.policy-exceptions.exceptions',
+        ])->assertForbidden();
+
+        $this->post('/plugins/policies/policy-access-governance/artifacts', [
+            ...$payload,
+            'label' => 'Viewer policy attempt',
+            'artifact_type' => 'document',
+            'artifact' => \Illuminate\Http\UploadedFile::fake()->createWithContent('viewer-policy.txt', 'viewer'),
+        ])->assertForbidden();
+
+        $this->post('/plugins/policies/exceptions/exception-break-glass-window/artifacts', [
+            ...$payload,
+            'menu' => 'plugin.policy-exceptions.exceptions',
+            'label' => 'Viewer exception attempt',
+            'artifact_type' => 'evidence',
+            'artifact' => \Illuminate\Http\UploadedFile::fake()->createWithContent('viewer-exception.txt', 'viewer'),
+        ])->assertForbidden();
+
+        $this->post('/plugins/policies', [
+            ...$payload,
+            'title' => 'Viewer policy',
+            'area' => 'Governance',
+            'version_label' => 'v0',
+            'statement' => 'Viewer should not create policies.',
+        ])->assertForbidden();
+
+        $this->post('/plugins/policies/policy-access-governance', [
+            ...$payload,
+            'title' => 'Viewer update',
+            'area' => 'Governance',
+            'version_label' => 'v0',
+            'statement' => 'Viewer should not update policies.',
+        ])->assertForbidden();
+
+        $this->post('/plugins/policies/policy-access-governance/exceptions', [
+            ...$payload,
+            'menu' => 'plugin.policy-exceptions.exceptions',
+            'title' => 'Viewer exception',
+            'rationale' => 'Viewer should not create exceptions.',
+        ])->assertForbidden();
+
+        $this->post('/plugins/policies/exceptions/exception-break-glass-window', [
+            ...$payload,
+            'menu' => 'plugin.policy-exceptions.exceptions',
+            'title' => 'Viewer exception update',
+            'rationale' => 'Viewer should not update exceptions.',
+        ])->assertForbidden();
+
+        $payload['membership_id'] = 'membership-org-a-hello';
+
+        $this->post('/plugins/policies/policy-access-governance/transitions/submit-review', $payload)
+            ->assertFound();
+
+        $this->post('/plugins/policies/exceptions/exception-break-glass-window/transitions/approve', [
+            ...$payload,
+            'menu' => 'plugin.policy-exceptions.exceptions',
+        ])->assertFound();
+
+        $this->post('/plugins/policies/policy-access-governance/artifacts', [
+            ...$payload,
+            'label' => 'Operator policy evidence',
+            'artifact_type' => 'document',
+            'artifact' => \Illuminate\Http\UploadedFile::fake()->createWithContent('operator-policy.txt', 'operator'),
+        ])->assertFound();
+
+        $this->post('/plugins/policies/exceptions/exception-break-glass-window/artifacts', [
+            ...$payload,
+            'menu' => 'plugin.policy-exceptions.exceptions',
+            'label' => 'Operator exception evidence',
+            'artifact_type' => 'evidence',
+            'artifact' => \Illuminate\Http\UploadedFile::fake()->createWithContent('operator-exception.txt', 'operator'),
+        ])->assertFound();
+
+        $this->post('/plugins/policies', [
+            ...$payload,
+            'title' => 'Operator policy',
+            'area' => 'Governance',
+            'version_label' => 'v1',
+            'statement' => 'Operator can create policies.',
+        ])->assertFound();
+
+        $this->post('/plugins/policies/policy-access-governance', [
+            ...$payload,
+            'title' => 'Operator updated policy',
+            'area' => 'Governance',
+            'version_label' => 'v2',
+            'statement' => 'Operator can update policies.',
+        ])->assertFound();
+
+        $this->post('/plugins/policies/policy-access-governance/exceptions', [
+            ...$payload,
+            'menu' => 'plugin.policy-exceptions.exceptions',
+            'title' => 'Operator exception',
+            'rationale' => 'Operator can create exceptions.',
+        ])->assertFound();
+
+        $this->post('/plugins/policies/exceptions/exception-break-glass-window', [
+            ...$payload,
+            'menu' => 'plugin.policy-exceptions.exceptions',
+            'title' => 'Operator updated exception',
+            'rationale' => 'Operator can update exceptions.',
+        ])->assertFound();
+    }
 }

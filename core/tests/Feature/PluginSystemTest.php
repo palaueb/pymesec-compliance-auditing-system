@@ -68,6 +68,14 @@ class PluginSystemTest extends TestCase
                 'route_count' => 1,
                 'menu_count' => 2,
                 'runtime_contract_satisfied' => true,
+            ])
+            ->assertJsonFragment([
+                'id' => 'policy-exceptions',
+                'enabled' => true,
+                'booted' => true,
+                'route_count' => 1,
+                'menu_count' => 2,
+                'runtime_contract_satisfied' => true,
             ]);
     }
 
@@ -114,6 +122,7 @@ class PluginSystemTest extends TestCase
                     ['findings-remediation', 'domain', 'yes', 'yes', '2', '1', '2', ''],
                     ['hello-world', 'ui', 'yes', 'yes', '1', '1', '2', ''],
                     ['identity-local', 'identity', 'no', 'no', '1', '0', '0', 'plugin_not_enabled'],
+                    ['policy-exceptions', 'domain', 'yes', 'yes', '2', '1', '2', ''],
                     ['risk-management', 'domain', 'yes', 'yes', '2', '1', '2', ''],
                 ],
             )
@@ -152,6 +161,8 @@ class PluginSystemTest extends TestCase
                     ['plugin.findings-remediation.findings.manage', 'findings-remediation', 'manage', 'organization'],
                     ['plugin.findings-remediation.findings.view', 'findings-remediation', 'view', 'organization'],
                     ['plugin.hello-world.hello.view', 'hello-world', 'view', 'organization'],
+                    ['plugin.policy-exceptions.policies.manage', 'policy-exceptions', 'manage', 'organization'],
+                    ['plugin.policy-exceptions.policies.view', 'policy-exceptions', 'view', 'organization'],
                     ['plugin.risk-management.risks.manage', 'risk-management', 'manage', 'organization'],
                     ['plugin.risk-management.risks.view', 'risk-management', 'view', 'organization'],
                 ],
@@ -167,7 +178,7 @@ class PluginSystemTest extends TestCase
 
         $effective = $this->app->make(PluginStateStore::class)->effectiveEnabled(config('plugins.enabled', []));
 
-        $this->assertSame(['hello-world', 'asset-catalog', 'actor-directory', 'controls-catalog', 'risk-management', 'findings-remediation', 'identity-local'], $effective);
+        $this->assertSame(['hello-world', 'asset-catalog', 'actor-directory', 'controls-catalog', 'risk-management', 'findings-remediation', 'policy-exceptions', 'identity-local'], $effective);
     }
 
     public function test_the_plugins_disable_command_persists_a_local_override(): void
@@ -178,7 +189,7 @@ class PluginSystemTest extends TestCase
 
         $effective = $this->app->make(PluginStateStore::class)->effectiveEnabled(config('plugins.enabled', []));
 
-        $this->assertSame(['asset-catalog', 'actor-directory', 'controls-catalog', 'risk-management', 'findings-remediation'], $effective);
+        $this->assertSame(['asset-catalog', 'actor-directory', 'controls-catalog', 'risk-management', 'findings-remediation', 'policy-exceptions'], $effective);
     }
 
     public function test_the_plugins_disable_command_removes_a_previous_local_enable_override(): void
@@ -192,7 +203,7 @@ class PluginSystemTest extends TestCase
 
         $effective = $this->app->make(PluginStateStore::class)->effectiveEnabled(config('plugins.enabled', []));
 
-        $this->assertSame(['hello-world', 'asset-catalog', 'actor-directory', 'controls-catalog', 'risk-management', 'findings-remediation'], $effective);
+        $this->assertSame(['hello-world', 'asset-catalog', 'actor-directory', 'controls-catalog', 'risk-management', 'findings-remediation', 'policy-exceptions'], $effective);
     }
 
     public function test_the_plugins_enable_command_rejects_unknown_plugins(): void
@@ -214,6 +225,7 @@ class PluginSystemTest extends TestCase
             ->assertJsonPath('menus.4.id', 'plugin.risk-management.root')
             ->assertJsonPath('menus.5.id', 'plugin.findings-remediation.root')
             ->assertJsonPath('menus.6.id', 'plugin.actor-directory.root')
+            ->assertJsonPath('menus.7.id', 'plugin.policy-exceptions.root')
             ->assertJsonPath('issues', []);
     }
 
@@ -256,6 +268,8 @@ class PluginSystemTest extends TestCase
                     ['plugin.findings-remediation.board', 'findings-remediation', 'plugin.findings-remediation.root', 'plugin.findings-remediation.board', 'plugin.findings-remediation.findings.view', '10'],
                     ['plugin.actor-directory.root', 'actor-directory', '', 'plugin.actor-directory.index', 'plugin.actor-directory.actors.view', '40'],
                     ['plugin.actor-directory.assignments', 'actor-directory', 'plugin.actor-directory.root', 'plugin.actor-directory.assignments', 'plugin.actor-directory.actors.view', '10'],
+                    ['plugin.policy-exceptions.root', 'policy-exceptions', '', 'plugin.policy-exceptions.index', 'plugin.policy-exceptions.policies.view', '42'],
+                    ['plugin.policy-exceptions.exceptions', 'policy-exceptions', 'plugin.policy-exceptions.root', 'plugin.policy-exceptions.exceptions', 'plugin.policy-exceptions.policies.view', '10'],
                 ],
             )
             ->assertExitCode(0);

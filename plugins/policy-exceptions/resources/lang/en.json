@@ -1,0 +1,8 @@
+{
+  "plugin.policy-exceptions.nav.root": "Policies",
+  "plugin.policy-exceptions.nav.exceptions": "Exceptions",
+  "plugin.policy-exceptions.screen.register.title": "Policies Register",
+  "plugin.policy-exceptions.screen.register.subtitle": "Governance policies with owners, lifecycle, control links, and review cadence.",
+  "plugin.policy-exceptions.screen.exceptions.title": "Policy Exceptions",
+  "plugin.policy-exceptions.screen.exceptions.subtitle": "Track approved deviations, compensating controls, expiry dates, and linked findings."
+}
