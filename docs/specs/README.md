@@ -11,6 +11,7 @@ Current notable documents:
 - `notifications-and-reminders-v1.md`
 - `menu-system-ui-shell-v1.md`
 - `plugin-ui-contract-v1.md`
+- `risk-management-plugin-v1.md`
 - `workflow-engine-v1.md`
 - `plugin-manifest-v1.md`
 - `plugin-development-flow-v1.md`

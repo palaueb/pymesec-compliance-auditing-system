@@ -1,0 +1,8 @@
+{
+  "plugin.risk-management.nav.root": "Risks",
+  "plugin.risk-management.nav.board": "Board",
+  "plugin.risk-management.screen.register.title": "Risk Register",
+  "plugin.risk-management.screen.register.subtitle": "Risk register linked to assets, controls, owners, workflow, and evidence.",
+  "plugin.risk-management.screen.board.title": "Risk Board",
+  "plugin.risk-management.screen.board.subtitle": "Lifecycle and evidence board for treated and accepted risks."
+}

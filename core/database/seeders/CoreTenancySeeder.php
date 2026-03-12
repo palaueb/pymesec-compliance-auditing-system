@@ -327,6 +327,51 @@ class CoreTenancySeeder extends Seeder
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
+            [
+                'id' => 'assignment-risk-access-owner',
+                'functional_actor_id' => 'actor-ava-mason',
+                'domain_object_type' => 'risk',
+                'domain_object_id' => 'risk-access-drift',
+                'assignment_type' => 'owner',
+                'organization_id' => 'org-a',
+                'scope_id' => 'scope-eu',
+                'metadata' => json_encode([
+                    'source' => 'seed',
+                ], JSON_THROW_ON_ERROR),
+                'is_active' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'id' => 'assignment-risk-backup-owner',
+                'functional_actor_id' => 'actor-it-services',
+                'domain_object_type' => 'risk',
+                'domain_object_id' => 'risk-backup-assurance',
+                'assignment_type' => 'owner',
+                'organization_id' => 'org-a',
+                'scope_id' => 'scope-it',
+                'metadata' => json_encode([
+                    'source' => 'seed',
+                ], JSON_THROW_ON_ERROR),
+                'is_active' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'id' => 'assignment-risk-route-owner',
+                'functional_actor_id' => 'actor-operations-control',
+                'domain_object_type' => 'risk',
+                'domain_object_id' => 'risk-route-blackout',
+                'assignment_type' => 'owner',
+                'organization_id' => 'org-b',
+                'scope_id' => 'scope-ops',
+                'metadata' => json_encode([
+                    'source' => 'seed',
+                ], JSON_THROW_ON_ERROR),
+                'is_active' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
         ]);
     }
 }

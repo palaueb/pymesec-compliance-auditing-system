@@ -1,0 +1,90 @@
+{
+  "plugin": {
+    "id": "risk-management",
+    "name": "Risk Management",
+    "version": "0.1.0",
+    "type": "domain",
+    "description": "Functional plugin for organization risk register, treatment workflow, and evidence.",
+    "vendor": "pymesec",
+    "license": "MIT"
+  },
+  "compatibility": {
+    "core": "^0.1.0",
+    "sdk": "^0.1.0"
+  },
+  "dependencies": [
+    "actor-directory"
+  ],
+  "permissions": [
+    {
+      "key": "plugin.risk-management.risks.view",
+      "label": "View risks",
+      "description": "View the organization risk register and lifecycle board.",
+      "feature_area": "risks",
+      "operation": "view",
+      "contexts": [
+        "organization"
+      ]
+    },
+    {
+      "key": "plugin.risk-management.risks.manage",
+      "label": "Manage risks",
+      "description": "Transition risks through assessment and acceptance workflows and attach evidence.",
+      "feature_area": "risks",
+      "operation": "manage",
+      "contexts": [
+        "organization"
+      ]
+    }
+  ],
+  "routes": [
+    {
+      "id": "risk-management.web",
+      "type": "web",
+      "file": "routes/web.php",
+      "middleware": [
+        "web"
+      ],
+      "permission": "plugin.risk-management.risks.view"
+    }
+  ],
+  "menus": [
+    {
+      "id": "plugin.risk-management.root",
+      "label_key": "plugin.risk-management.nav.root",
+      "route": "plugin.risk-management.index",
+      "icon": "risk",
+      "order": 35,
+      "permission": "plugin.risk-management.risks.view"
+    },
+    {
+      "id": "plugin.risk-management.board",
+      "label_key": "plugin.risk-management.nav.board",
+      "route": "plugin.risk-management.board",
+      "parent_id": "plugin.risk-management.root",
+      "icon": "flow",
+      "order": 10,
+      "permission": "plugin.risk-management.risks.view"
+    }
+  ],
+  "migrations": [],
+  "translations": {
+    "default_locale": "en",
+    "supported_locales": [
+      "en",
+      "es",
+      "fr",
+      "de"
+    ],
+    "path": "resources/lang"
+  },
+  "lifecycle": {},
+  "runtime": {
+    "class": "PymeSec\\Plugins\\RiskManagement\\RiskManagementPlugin",
+    "autoload": {
+      "psr-4": {
+        "PymeSec\\Plugins\\RiskManagement\\": "src"
+      }
+    }
+  }
+}

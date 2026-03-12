@@ -62,6 +62,19 @@ return [
                 'plugin.controls-catalog.controls.view',
             ],
         ],
+        'risk-operator' => [
+            'label' => 'Risk operator',
+            'permissions' => [
+                'plugin.risk-management.risks.view',
+                'plugin.risk-management.risks.manage',
+            ],
+        ],
+        'risk-viewer' => [
+            'label' => 'Risk viewer',
+            'permissions' => [
+                'plugin.risk-management.risks.view',
+            ],
+        ],
     ],
     'grants' => [
         [
@@ -105,6 +118,14 @@ return [
         ],
         [
             'target_type' => 'membership',
+            'target_id' => 'membership-org-a-hello',
+            'grant_type' => 'role',
+            'value' => 'risk-operator',
+            'context_type' => 'organization',
+            'organization_id' => 'org-a',
+        ],
+        [
+            'target_type' => 'membership',
             'target_id' => 'membership-org-a-viewer',
             'grant_type' => 'role',
             'value' => 'asset-viewer',
@@ -129,6 +150,14 @@ return [
         ],
         [
             'target_type' => 'membership',
+            'target_id' => 'membership-org-a-viewer',
+            'grant_type' => 'role',
+            'value' => 'risk-viewer',
+            'context_type' => 'organization',
+            'organization_id' => 'org-a',
+        ],
+        [
+            'target_type' => 'membership',
             'target_id' => 'membership-org-b-ops',
             'grant_type' => 'role',
             'value' => 'asset-viewer',
@@ -148,6 +177,14 @@ return [
             'target_id' => 'membership-org-b-ops',
             'grant_type' => 'role',
             'value' => 'control-viewer',
+            'context_type' => 'organization',
+            'organization_id' => 'org-b',
+        ],
+        [
+            'target_type' => 'membership',
+            'target_id' => 'membership-org-b-ops',
+            'grant_type' => 'role',
+            'value' => 'risk-viewer',
             'context_type' => 'organization',
             'organization_id' => 'org-b',
         ],

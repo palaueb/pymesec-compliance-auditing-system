@@ -52,6 +52,14 @@ class PluginSystemTest extends TestCase
                 'enabled' => false,
                 'booted' => false,
                 'reason' => 'plugin_not_enabled',
+            ])
+            ->assertJsonFragment([
+                'id' => 'risk-management',
+                'enabled' => true,
+                'booted' => true,
+                'route_count' => 1,
+                'menu_count' => 2,
+                'runtime_contract_satisfied' => true,
             ]);
     }
 
@@ -97,6 +105,7 @@ class PluginSystemTest extends TestCase
                     ['controls-catalog', 'domain', 'yes', 'yes', '2', '1', '2', ''],
                     ['hello-world', 'ui', 'yes', 'yes', '1', '1', '2', ''],
                     ['identity-local', 'identity', 'no', 'no', '1', '0', '0', 'plugin_not_enabled'],
+                    ['risk-management', 'domain', 'yes', 'yes', '2', '1', '2', ''],
                 ],
             )
             ->assertExitCode(0);
@@ -132,6 +141,8 @@ class PluginSystemTest extends TestCase
                     ['plugin.controls-catalog.controls.manage', 'controls-catalog', 'manage', 'organization'],
                     ['plugin.controls-catalog.controls.view', 'controls-catalog', 'view', 'organization'],
                     ['plugin.hello-world.hello.view', 'hello-world', 'view', 'organization'],
+                    ['plugin.risk-management.risks.manage', 'risk-management', 'manage', 'organization'],
+                    ['plugin.risk-management.risks.view', 'risk-management', 'view', 'organization'],
                 ],
             )
             ->assertExitCode(0);
@@ -145,7 +156,7 @@ class PluginSystemTest extends TestCase
 
         $effective = $this->app->make(PluginStateStore::class)->effectiveEnabled(config('plugins.enabled', []));
 
-        $this->assertSame(['hello-world', 'asset-catalog', 'actor-directory', 'controls-catalog', 'identity-local'], $effective);
+        $this->assertSame(['hello-world', 'asset-catalog', 'actor-directory', 'controls-catalog', 'risk-management', 'identity-local'], $effective);
     }
 
     public function test_the_plugins_disable_command_persists_a_local_override(): void
@@ -156,7 +167,7 @@ class PluginSystemTest extends TestCase
 
         $effective = $this->app->make(PluginStateStore::class)->effectiveEnabled(config('plugins.enabled', []));
 
-        $this->assertSame(['asset-catalog', 'actor-directory', 'controls-catalog'], $effective);
+        $this->assertSame(['asset-catalog', 'actor-directory', 'controls-catalog', 'risk-management'], $effective);
     }
 
     public function test_the_plugins_disable_command_removes_a_previous_local_enable_override(): void
@@ -170,7 +181,7 @@ class PluginSystemTest extends TestCase
 
         $effective = $this->app->make(PluginStateStore::class)->effectiveEnabled(config('plugins.enabled', []));
 
-        $this->assertSame(['hello-world', 'asset-catalog', 'actor-directory', 'controls-catalog'], $effective);
+        $this->assertSame(['hello-world', 'asset-catalog', 'actor-directory', 'controls-catalog', 'risk-management'], $effective);
     }
 
     public function test_the_plugins_enable_command_rejects_unknown_plugins(): void
@@ -189,7 +200,8 @@ class PluginSystemTest extends TestCase
             ->assertJsonPath('menus.1.children.0.id', 'plugin.asset-catalog.lifecycle')
             ->assertJsonPath('menus.2.id', 'plugin.controls-catalog.root')
             ->assertJsonPath('menus.3.id', 'plugin.hello-world.root')
-            ->assertJsonPath('menus.4.id', 'plugin.actor-directory.root')
+            ->assertJsonPath('menus.4.id', 'plugin.risk-management.root')
+            ->assertJsonPath('menus.5.id', 'plugin.actor-directory.root')
             ->assertJsonPath('issues', []);
     }
 
@@ -226,6 +238,8 @@ class PluginSystemTest extends TestCase
                     ['plugin.controls-catalog.reviews', 'controls-catalog', 'plugin.controls-catalog.root', 'plugin.controls-catalog.reviews', 'plugin.controls-catalog.controls.view', '10'],
                     ['plugin.hello-world.root', 'hello-world', '', 'plugin.hello-world.index', 'plugin.hello-world.hello.view', '30'],
                     ['plugin.hello-world.examples', 'hello-world', 'plugin.hello-world.root', 'plugin.hello-world.index', 'plugin.hello-world.hello.view', '10'],
+                    ['plugin.risk-management.root', 'risk-management', '', 'plugin.risk-management.index', 'plugin.risk-management.risks.view', '35'],
+                    ['plugin.risk-management.board', 'risk-management', 'plugin.risk-management.root', 'plugin.risk-management.board', 'plugin.risk-management.risks.view', '10'],
                     ['plugin.actor-directory.root', 'actor-directory', '', 'plugin.actor-directory.index', 'plugin.actor-directory.actors.view', '40'],
                     ['plugin.actor-directory.assignments', 'actor-directory', 'plugin.actor-directory.root', 'plugin.actor-directory.assignments', 'plugin.actor-directory.actors.view', '10'],
                 ],

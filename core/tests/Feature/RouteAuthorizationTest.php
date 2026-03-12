@@ -75,4 +75,37 @@ class RouteAuthorizationTest extends TestCase
         $this->post('/plugins/controls/control-access-review/artifacts', $payload)
             ->assertFound();
     }
+
+    public function test_the_risk_transition_and_artifact_routes_require_manage_permission(): void
+    {
+        $payload = [
+            'principal_id' => 'principal-org-a',
+            'organization_id' => 'org-a',
+            'locale' => 'en',
+            'menu' => 'plugin.risk-management.root',
+            'membership_id' => 'membership-org-a-viewer',
+        ];
+
+        $this->post('/plugins/risks/risk-access-drift/transitions/start-assessment', $payload)
+            ->assertForbidden();
+
+        $this->post('/plugins/risks/risk-access-drift/artifacts', [
+            ...$payload,
+            'label' => 'Viewer risk attempt',
+            'artifact_type' => 'evidence',
+            'artifact' => \Illuminate\Http\UploadedFile::fake()->createWithContent('viewer-risk.txt', 'viewer'),
+        ])->assertForbidden();
+
+        $payload['membership_id'] = 'membership-org-a-hello';
+
+        $this->post('/plugins/risks/risk-access-drift/transitions/start-assessment', $payload)
+            ->assertFound();
+
+        $this->post('/plugins/risks/risk-access-drift/artifacts', [
+            ...$payload,
+            'label' => 'Operator risk evidence',
+            'artifact_type' => 'evidence',
+            'artifact' => \Illuminate\Http\UploadedFile::fake()->createWithContent('operator-risk.txt', 'operator'),
+        ])->assertFound();
+    }
 }
