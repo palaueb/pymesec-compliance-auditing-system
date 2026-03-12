@@ -1,61 +1,61 @@
 # PymeSec
 
-Bootstrap tecnic inicial del repositori principal segons el PRD i els ADR.
+Initial technical bootstrap of the main repository based on the PRD and ADRs.
 
-L'estat actual deixa preparat:
+The current state sets up:
 
-- `core/` com a aplicacio Laravel del nucli
-- desenvolupament local amb Docker
-- serveis locals minims: `nginx`, `php-fpm`, `postgres`, `redis`
-- scripts de treball via `Makefile`
-- CI minima per validar instal·lacio, lint i tests
+- `core/` as the Laravel application for the platform core
+- local development with Docker
+- minimal local services: `nginx`, `php-fpm`, `postgres`, `redis`
+- working scripts via `Makefile`
+- minimal CI to validate installation, linting, and tests
 
-Encara fora d'abast:
+Still out of scope:
 
-- logica de negoci de compliance
-- implementacio de plugins funcionals mes enlla del seu esquelet
-- UI funcional de producte
+- compliance business logic
+- implementation of functional plugins beyond their skeletons
+- functional product UI
 
-## Requisits previs
+## Prerequisites
 
 - Docker
 - Docker Compose
 - GNU Make
 
-## Arrencada rapida
+## Quick Start
 
-1. Copia la configuracio d'entorn de l'arrel:
+1. Copy the root environment configuration:
 
 ```bash
 cp .env.example .env
 ```
 
-2. Copia la configuracio del core:
+2. Copy the core configuration:
 
 ```bash
 cp core/.env.example core/.env
 ```
 
-3. Arranca l'entorn:
+3. Start the environment:
 
 ```bash
 make up
 ```
 
-4. Executa les migracions del core:
+4. Run the core migrations:
 
 ```bash
 make migrate
 ```
 
-5. Comprova que Laravel respon:
+5. Verify that Laravel responds:
 
 ```bash
 curl http://localhost:8080/up
 curl http://localhost:8080/
 ```
 
-## Comandes habituals
+## Common Commands
 
 ```bash
 make up
@@ -67,15 +67,15 @@ make lint
 make logs
 ```
 
-## Notes d'entorn
+## Environment Notes
 
-- El `core` fa servir PostgreSQL i Redis en local.
-- Els tests base corren amb SQLite en memoria per mantenir-los rapids i aillats.
-- El `core` no implementa encara cap model d'identitat funcional; s'ha retirat el `User` per defecte de Laravel per respectar els ADR.
+- The `core` uses PostgreSQL and Redis locally.
+- The base tests run on in-memory SQLite to keep them fast and isolated.
+- The `core` does not yet implement any functional identity model; Laravel's default `User` has been removed to respect the ADRs.
 
-## Suposits temporals documentats
+## Documented Temporary Assumptions
 
-- Laravel s'instal·la directament dins `core/` com a aplicacio principal del nucli.
-- El manifest de plugins continua temporalment a `plugin.json` fins que es tanqui definitivament aquesta decisio.
-- El desenvolupament local es resol amb `nginx + php-fpm + postgres + redis`.
-- La CI minima valida instal·lacio, migracions, lint i tests, pero no encara matrius de compatibilitat de plugins.
+- Laravel is installed directly inside `core/` as the main application for the platform core.
+- The plugin manifest temporarily remains in `plugin.json` until that decision is finalized.
+- Local development is handled with `nginx + php-fpm + postgres + redis`.
+- The minimal CI validates installation, migrations, linting, and tests, but not yet plugin compatibility matrices.

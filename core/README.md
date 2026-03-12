@@ -1,12 +1,12 @@
 # Core
 
-Bootstrap Laravel del nucli de la plataforma.
+Laravel bootstrap for the platform core.
 
-Aquest directori ha de mantenir-se:
+This directory must remain:
 
-- minim
-- estable
-- agnostic de domini
-- independent d'un provider d'identitat concret
+- minimal
+- stable
+- domain-agnostic
+- independent from any specific identity provider
 
-El `core` conte nomes infraestructura de plataforma i cap logica funcional de compliance.
+The `core` contains only platform infrastructure and no functional compliance logic.
