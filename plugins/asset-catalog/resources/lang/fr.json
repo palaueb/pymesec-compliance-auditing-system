@@ -1,0 +1,8 @@
+{
+    "plugin.asset-catalog.nav.root": "Actifs",
+    "plugin.asset-catalog.nav.lifecycle": "Cycle de vie",
+    "plugin.asset-catalog.screen.catalog.title": "Catalogue des Actifs",
+    "plugin.asset-catalog.screen.catalog.subtitle": "Ecran fonctionnel de plugin rendu dans le shell du core.",
+    "plugin.asset-catalog.screen.lifecycle.title": "Tableau du Cycle de Vie",
+    "plugin.asset-catalog.screen.lifecycle.subtitle": "Historique de workflow et etat courant des actifs."
+}

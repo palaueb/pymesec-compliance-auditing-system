@@ -1,6 +1,6 @@
 FROM composer:2 AS composer
 
-FROM php:8.4-fpm-bookworm
+FROM php:8.4-apache-bookworm
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends \
@@ -8,7 +8,6 @@ RUN apt-get update \
         git \
         libicu-dev \
         libonig-dev \
-        libpq-dev \
         libsqlite3-dev \
         libzip-dev \
         unzip \
@@ -17,20 +16,19 @@ RUN apt-get update \
         bcmath \
         intl \
         pcntl \
-        pdo_pgsql \
+        pdo_mysql \
         pdo_sqlite \
-        pgsql \
         zip \
-    && pecl install redis \
-    && docker-php-ext-enable redis \
+    && a2enmod rewrite \
     && rm -rf /var/lib/apt/lists/*
 
 COPY --from=composer /usr/bin/composer /usr/bin/composer
 COPY docker/php/entrypoint.sh /usr/local/bin/pymesec-entrypoint
+COPY docker/php/000-default.conf /etc/apache2/sites-available/000-default.conf
 
 RUN chmod +x /usr/local/bin/pymesec-entrypoint
 
 WORKDIR /var/www/html
 
 ENTRYPOINT ["/usr/local/bin/pymesec-entrypoint"]
-CMD ["php-fpm"]
+CMD ["apache2-foreground"]

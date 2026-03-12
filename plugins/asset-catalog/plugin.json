@@ -1,0 +1,88 @@
+{
+  "plugin": {
+    "id": "asset-catalog",
+    "name": "Asset Catalog",
+    "version": "0.1.0",
+    "type": "domain",
+    "description": "Initial functional plugin for organization assets and lifecycle review.",
+    "vendor": "pymesec",
+    "license": "MIT"
+  },
+  "compatibility": {
+    "core": "^0.1.0",
+    "sdk": "^0.1.0"
+  },
+  "dependencies": [],
+  "permissions": [
+    {
+      "key": "plugin.asset-catalog.assets.view",
+      "label": "View assets",
+      "description": "View the functional asset catalog.",
+      "feature_area": "assets",
+      "operation": "view",
+      "contexts": [
+        "organization"
+      ]
+    },
+    {
+      "key": "plugin.asset-catalog.assets.manage",
+      "label": "Manage assets",
+      "description": "Transition asset lifecycle states and manage the functional catalog.",
+      "feature_area": "assets",
+      "operation": "manage",
+      "contexts": [
+        "organization"
+      ]
+    }
+  ],
+  "routes": [
+    {
+      "id": "asset-catalog.web",
+      "type": "web",
+      "file": "routes/web.php",
+      "middleware": [
+        "web"
+      ],
+      "permission": "plugin.asset-catalog.assets.view"
+    }
+  ],
+  "menus": [
+    {
+      "id": "plugin.asset-catalog.root",
+      "label_key": "plugin.asset-catalog.nav.root",
+      "route": "plugin.asset-catalog.index",
+      "icon": "assets",
+      "order": 20,
+      "permission": "plugin.asset-catalog.assets.view"
+    },
+    {
+      "id": "plugin.asset-catalog.lifecycle",
+      "label_key": "plugin.asset-catalog.nav.lifecycle",
+      "route": "plugin.asset-catalog.lifecycle",
+      "parent_id": "plugin.asset-catalog.root",
+      "icon": "flow",
+      "order": 10,
+      "permission": "plugin.asset-catalog.assets.view"
+    }
+  ],
+  "migrations": [],
+  "translations": {
+    "default_locale": "en",
+    "supported_locales": [
+      "en",
+      "es",
+      "fr",
+      "de"
+    ],
+    "path": "resources/lang"
+  },
+  "lifecycle": {},
+  "runtime": {
+    "class": "PymeSec\\Plugins\\AssetCatalog\\AssetCatalogPlugin",
+    "autoload": {
+      "psr-4": {
+        "PymeSec\\Plugins\\AssetCatalog\\": "src"
+      }
+    }
+  }
+}

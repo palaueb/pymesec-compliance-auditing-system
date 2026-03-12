@@ -1,0 +1,155 @@
+<?php
+
+return [
+    'roles' => [
+        'platform-admin' => [
+            'label' => 'Platform administrator',
+            'permissions' => [
+                'core.audit-logs.export',
+                'core.audit-logs.view',
+                'core.artifacts.manage',
+                'core.artifacts.view',
+                'core.events.view',
+                'core.functional-actors.manage',
+                'core.functional-actors.view',
+                'core.menus.view',
+                'core.notifications.manage',
+                'core.notifications.view',
+                'core.plugins.view',
+                'core.plugins.manage',
+                'core.permissions.view',
+                'core.permissions.manage',
+                'core.tenancy.view',
+                'core.tenancy.manage',
+                'core.workflows.view',
+            ],
+        ],
+        'hello-viewer' => [
+            'label' => 'Hello world viewer',
+            'permissions' => [
+                'plugin.hello-world.hello.view',
+            ],
+        ],
+        'asset-operator' => [
+            'label' => 'Asset operator',
+            'permissions' => [
+                'plugin.asset-catalog.assets.view',
+                'plugin.asset-catalog.assets.manage',
+            ],
+        ],
+        'asset-viewer' => [
+            'label' => 'Asset viewer',
+            'permissions' => [
+                'plugin.asset-catalog.assets.view',
+            ],
+        ],
+        'actor-viewer' => [
+            'label' => 'Functional actor viewer',
+            'permissions' => [
+                'plugin.actor-directory.actors.view',
+            ],
+        ],
+        'control-operator' => [
+            'label' => 'Control operator',
+            'permissions' => [
+                'plugin.controls-catalog.controls.view',
+                'plugin.controls-catalog.controls.manage',
+            ],
+        ],
+        'control-viewer' => [
+            'label' => 'Control viewer',
+            'permissions' => [
+                'plugin.controls-catalog.controls.view',
+            ],
+        ],
+    ],
+    'grants' => [
+        [
+            'target_type' => 'principal',
+            'target_id' => 'principal-admin',
+            'grant_type' => 'role',
+            'value' => 'platform-admin',
+            'context_type' => 'platform',
+        ],
+        [
+            'target_type' => 'membership',
+            'target_id' => 'membership-org-a-hello',
+            'grant_type' => 'role',
+            'value' => 'hello-viewer',
+            'context_type' => 'organization',
+            'organization_id' => 'org-a',
+        ],
+        [
+            'target_type' => 'membership',
+            'target_id' => 'membership-org-a-hello',
+            'grant_type' => 'role',
+            'value' => 'asset-operator',
+            'context_type' => 'organization',
+            'organization_id' => 'org-a',
+        ],
+        [
+            'target_type' => 'membership',
+            'target_id' => 'membership-org-a-hello',
+            'grant_type' => 'role',
+            'value' => 'actor-viewer',
+            'context_type' => 'organization',
+            'organization_id' => 'org-a',
+        ],
+        [
+            'target_type' => 'membership',
+            'target_id' => 'membership-org-a-hello',
+            'grant_type' => 'role',
+            'value' => 'control-operator',
+            'context_type' => 'organization',
+            'organization_id' => 'org-a',
+        ],
+        [
+            'target_type' => 'membership',
+            'target_id' => 'membership-org-a-viewer',
+            'grant_type' => 'role',
+            'value' => 'asset-viewer',
+            'context_type' => 'organization',
+            'organization_id' => 'org-a',
+        ],
+        [
+            'target_type' => 'membership',
+            'target_id' => 'membership-org-a-viewer',
+            'grant_type' => 'role',
+            'value' => 'actor-viewer',
+            'context_type' => 'organization',
+            'organization_id' => 'org-a',
+        ],
+        [
+            'target_type' => 'membership',
+            'target_id' => 'membership-org-a-viewer',
+            'grant_type' => 'role',
+            'value' => 'control-viewer',
+            'context_type' => 'organization',
+            'organization_id' => 'org-a',
+        ],
+        [
+            'target_type' => 'membership',
+            'target_id' => 'membership-org-b-ops',
+            'grant_type' => 'role',
+            'value' => 'asset-viewer',
+            'context_type' => 'organization',
+            'organization_id' => 'org-b',
+        ],
+        [
+            'target_type' => 'membership',
+            'target_id' => 'membership-org-b-ops',
+            'grant_type' => 'role',
+            'value' => 'actor-viewer',
+            'context_type' => 'organization',
+            'organization_id' => 'org-b',
+        ],
+        [
+            'target_type' => 'membership',
+            'target_id' => 'membership-org-b-ops',
+            'grant_type' => 'role',
+            'value' => 'control-viewer',
+            'context_type' => 'organization',
+            'organization_id' => 'org-b',
+        ],
+    ],
+];

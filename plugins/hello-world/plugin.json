@@ -1,0 +1,75 @@
+{
+  "plugin": {
+    "id": "hello-world",
+    "name": "Hello World",
+    "version": "0.1.0",
+    "type": "ui",
+    "description": "Example plugin used to validate plugin discovery and runtime bootstrapping.",
+    "vendor": "pymesec",
+    "license": "MIT"
+  },
+  "compatibility": {
+    "core": "^0.1.0",
+    "sdk": "^0.1.0"
+  },
+  "dependencies": [],
+  "permissions": [
+    {
+      "key": "plugin.hello-world.hello.view",
+      "label": "View hello world plugin",
+      "description": "Access the hello world example plugin endpoint.",
+      "feature_area": "hello",
+      "operation": "view",
+      "contexts": [
+        "organization"
+      ]
+    }
+  ],
+  "routes": [
+    {
+      "id": "hello-world.web",
+      "type": "web",
+      "file": "routes/web.php",
+      "middleware": [
+        "web"
+      ],
+      "permission": "plugin.hello-world.hello.view"
+    }
+  ],
+  "menus": [
+    {
+      "id": "plugin.hello-world.root",
+      "label_key": "plugin.hello-world.nav.root",
+      "route": "plugin.hello-world.index",
+      "icon": "sparkles",
+      "order": 30,
+      "permission": "plugin.hello-world.hello.view"
+    },
+    {
+      "id": "plugin.hello-world.examples",
+      "label_key": "plugin.hello-world.nav.examples",
+      "route": "plugin.hello-world.index",
+      "parent_id": "plugin.hello-world.root",
+      "icon": "file-text",
+      "order": 10,
+      "permission": "plugin.hello-world.hello.view"
+    }
+  ],
+  "migrations": [],
+  "translations": {
+    "default_locale": "en",
+    "supported_locales": [
+      "en"
+    ],
+    "path": "resources/lang"
+  },
+  "lifecycle": {},
+  "runtime": {
+    "class": "PymeSec\\Plugins\\HelloWorld\\HelloWorldPlugin",
+    "autoload": {
+      "psr-4": {
+        "PymeSec\\Plugins\\HelloWorld\\": "src"
+      }
+    }
+  }
+}

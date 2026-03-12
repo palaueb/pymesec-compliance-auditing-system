@@ -1,0 +1,88 @@
+{
+  "plugin": {
+    "id": "actor-directory",
+    "name": "Actor Directory",
+    "version": "0.1.0",
+    "type": "domain-actor",
+    "description": "Functional actor directory and accountability linkage plugin.",
+    "vendor": "pymesec",
+    "license": "MIT"
+  },
+  "compatibility": {
+    "core": "^0.1.0",
+    "sdk": "^0.1.0"
+  },
+  "dependencies": [],
+  "permissions": [
+    {
+      "key": "plugin.actor-directory.actors.view",
+      "label": "View functional actors",
+      "description": "View the functional actor directory and responsibility overview.",
+      "feature_area": "functional-actors",
+      "operation": "view",
+      "contexts": [
+        "organization"
+      ]
+    },
+    {
+      "key": "plugin.actor-directory.actors.manage",
+      "label": "Manage functional actors",
+      "description": "Create or link functional actors and manage assignments.",
+      "feature_area": "functional-actors",
+      "operation": "manage",
+      "contexts": [
+        "organization"
+      ]
+    }
+  ],
+  "routes": [
+    {
+      "id": "actor-directory.web",
+      "type": "web",
+      "file": "routes/web.php",
+      "middleware": [
+        "web"
+      ],
+      "permission": "plugin.actor-directory.actors.view"
+    }
+  ],
+  "menus": [
+    {
+      "id": "plugin.actor-directory.root",
+      "label_key": "plugin.actor-directory.nav.root",
+      "route": "plugin.actor-directory.index",
+      "icon": "users",
+      "order": 40,
+      "permission": "plugin.actor-directory.actors.view"
+    },
+    {
+      "id": "plugin.actor-directory.assignments",
+      "label_key": "plugin.actor-directory.nav.assignments",
+      "route": "plugin.actor-directory.assignments",
+      "parent_id": "plugin.actor-directory.root",
+      "icon": "link",
+      "order": 10,
+      "permission": "plugin.actor-directory.actors.view"
+    }
+  ],
+  "migrations": [],
+  "translations": {
+    "default_locale": "en",
+    "supported_locales": [
+      "en",
+      "es",
+      "fr",
+      "de"
+    ],
+    "path": "resources/lang"
+  },
+  "lifecycle": {},
+  "runtime": {
+    "class": "PymeSec\\Plugins\\ActorDirectory\\ActorDirectoryPlugin",
+    "autoload": {
+      "psr-4": {
+        "PymeSec\\Plugins\\ActorDirectory\\": "src"
+      }
+    }
+  }
+}

@@ -2,11 +2,13 @@
 
 namespace Tests\Feature;
 
-// use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
 class ExampleTest extends TestCase
 {
+    use RefreshDatabase;
+
     /**
      * A basic test example.
      */
@@ -25,5 +27,14 @@ class ExampleTest extends TestCase
     public function test_the_health_endpoint_returns_a_successful_response(): void
     {
         $this->get('/up')->assertOk();
+    }
+
+    public function test_the_shell_preview_renders_successfully(): void
+    {
+        $this->get('/app')
+            ->assertOk()
+            ->assertSee('Core Shell Preview')
+            ->assertSee('Asset Catalog')
+            ->assertSee('ERP Production');
     }
 }

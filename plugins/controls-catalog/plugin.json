@@ -1,0 +1,90 @@
+{
+  "plugin": {
+    "id": "controls-catalog",
+    "name": "Controls Catalog",
+    "version": "0.1.0",
+    "type": "domain",
+    "description": "Functional plugin for control catalog governance and review.",
+    "vendor": "pymesec",
+    "license": "MIT"
+  },
+  "compatibility": {
+    "core": "^0.1.0",
+    "sdk": "^0.1.0"
+  },
+  "dependencies": [
+    "actor-directory"
+  ],
+  "permissions": [
+    {
+      "key": "plugin.controls-catalog.controls.view",
+      "label": "View controls",
+      "description": "View the organization control catalog.",
+      "feature_area": "controls",
+      "operation": "view",
+      "contexts": [
+        "organization"
+      ]
+    },
+    {
+      "key": "plugin.controls-catalog.controls.manage",
+      "label": "Manage controls",
+      "description": "Transition control review workflows and manage the control catalog.",
+      "feature_area": "controls",
+      "operation": "manage",
+      "contexts": [
+        "organization"
+      ]
+    }
+  ],
+  "routes": [
+    {
+      "id": "controls-catalog.web",
+      "type": "web",
+      "file": "routes/web.php",
+      "middleware": [
+        "web"
+      ],
+      "permission": "plugin.controls-catalog.controls.view"
+    }
+  ],
+  "menus": [
+    {
+      "id": "plugin.controls-catalog.root",
+      "label_key": "plugin.controls-catalog.nav.root",
+      "route": "plugin.controls-catalog.index",
+      "icon": "shield",
+      "order": 25,
+      "permission": "plugin.controls-catalog.controls.view"
+    },
+    {
+      "id": "plugin.controls-catalog.reviews",
+      "label_key": "plugin.controls-catalog.nav.reviews",
+      "route": "plugin.controls-catalog.reviews",
+      "parent_id": "plugin.controls-catalog.root",
+      "icon": "flow",
+      "order": 10,
+      "permission": "plugin.controls-catalog.controls.view"
+    }
+  ],
+  "migrations": [],
+  "translations": {
+    "default_locale": "en",
+    "supported_locales": [
+      "en",
+      "es",
+      "fr",
+      "de"
+    ],
+    "path": "resources/lang"
+  },
+  "lifecycle": {},
+  "runtime": {
+    "class": "PymeSec\\Plugins\\ControlsCatalog\\ControlsCatalogPlugin",
+    "autoload": {
+      "psr-4": {
+        "PymeSec\\Plugins\\ControlsCatalog\\": "src"
+      }
+    }
+  }
+}

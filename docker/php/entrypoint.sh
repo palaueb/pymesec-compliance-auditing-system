@@ -12,5 +12,6 @@ if [ ! -f vendor/autoload.php ] || [ composer.lock -nt vendor/autoload.php ]; th
 fi
 
 mkdir -p storage/framework/cache storage/framework/sessions storage/framework/views storage/logs bootstrap/cache
+chmod -R 0777 storage bootstrap/cache
 
 exec "$@"

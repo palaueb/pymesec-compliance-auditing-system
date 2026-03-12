@@ -14,6 +14,8 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // Seeders intentionally left empty until core infrastructure data is defined.
+        $this->call([
+            CoreTenancySeeder::class,
+        ]);
     }
 }

@@ -1,0 +1,8 @@
+{
+  "plugin.controls-catalog.nav.root": "Controls",
+  "plugin.controls-catalog.nav.reviews": "Reviews",
+  "plugin.controls-catalog.screen.catalog.title": "Controls Catalog",
+  "plugin.controls-catalog.screen.catalog.subtitle": "Catalog of organization controls with workflow, ownership and evidence context.",
+  "plugin.controls-catalog.screen.reviews.title": "Control Reviews",
+  "plugin.controls-catalog.screen.reviews.subtitle": "Review board for control workflows and related notifications."
+}

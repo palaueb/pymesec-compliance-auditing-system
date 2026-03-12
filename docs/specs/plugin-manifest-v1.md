@@ -171,6 +171,8 @@ Constraints:
 - routes must not shadow core routes unless the platform explicitly supports an extension contract for that case
 - route protection must integrate with the core permission engine
 
+If a route entry declares `permission`, the core must attach the authorization middleware for that permission to the route group loaded from that manifest entry.
+
 ## 9. `menus` Section
 
 This section declares menu contributions to the UI shell.
@@ -180,7 +182,7 @@ Each menu entry should declare:
 - menu item identifier
 - target route reference
 - label translation key
-- parent location or menu slot
+- optional parent menu identifier
 - ordering hint
 - visibility rule or permission reference
 
@@ -189,6 +191,9 @@ Constraints:
 - menu labels must use translation keys, not hardcoded UI text
 - menu visibility must be permission-aware
 - menu contributions must be removable when the plugin is disabled
+- top-level items are allowed
+- child items may target the core or another plugin only when platform policy and declared dependencies allow it
+- v1 menu hierarchy is limited to one child level below top-level navigation
 
 ## 10. `migrations` Section
 

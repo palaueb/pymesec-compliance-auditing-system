@@ -13,7 +13,18 @@
     "sdk": "^0.1.0"
   },
   "dependencies": [],
-  "permissions": [],
+  "permissions": [
+    {
+      "key": "plugin.identity-local.principals.view",
+      "label": "View local identity principals",
+      "description": "View principals managed by the local identity plugin.",
+      "feature_area": "principals",
+      "operation": "view",
+      "contexts": [
+        "organization"
+      ]
+    }
+  ],
   "routes": [],
   "menus": [],
   "migrations": [],
@@ -27,5 +38,13 @@
     ],
     "path": "resources/lang"
   },
-  "lifecycle": {}
+  "lifecycle": {},
+  "runtime": {
+    "class": "PymeSec\\Plugins\\IdentityLocal\\IdentityLocalPlugin",
+    "autoload": {
+      "psr-4": {
+        "PymeSec\\Plugins\\IdentityLocal\\": "src"
+      }
+    }
+  }
 }

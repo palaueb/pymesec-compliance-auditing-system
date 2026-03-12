@@ -10,4 +10,16 @@ Intended responsibilities:
 - mapping authenticated subjects into core principal abstractions
 
 This is a structural placeholder only.
+Identity plugin skeleton aligned with ADR-003.
 
+Current scope:
+
+- declares itself as an `identity` plugin
+- implements the core identity plugin contract
+- contributes permission metadata through `plugin.json`
+
+Still intentionally missing:
+
+- authentication flows
+- principal persistence
+- membership provisioning

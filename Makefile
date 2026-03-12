@@ -25,4 +25,4 @@ ci:
 	$(DOCKER_COMPOSE) exec app php artisan test
 
 logs:
-	$(DOCKER_COMPOSE) logs -f app web postgres redis
+	$(DOCKER_COMPOSE) logs -f app mysql

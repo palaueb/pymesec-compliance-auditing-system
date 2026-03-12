@@ -15,3 +15,12 @@ Plugin categories may include:
 
 Each plugin should remain self-contained with its own manifest, translations, migrations, and source tree.
 
+Minimal recommended structure:
+
+- `plugin.json`
+- `src/`
+- `routes/`
+- `config/`
+- `database/migrations/`
+- `resources/lang/`
+- `README.md`
