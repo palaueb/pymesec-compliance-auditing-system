@@ -2,7 +2,7 @@
     "plugin.asset-catalog.nav.root": "Activos",
     "plugin.asset-catalog.nav.lifecycle": "Ciclo de vida",
     "plugin.asset-catalog.screen.catalog.title": "Catalogo de Activos",
-    "plugin.asset-catalog.screen.catalog.subtitle": "Pantalla funcional de plugin renderizada dentro del shell del core.",
+    "plugin.asset-catalog.screen.catalog.subtitle": "Gestiona activos de negocio, ownership y estado de ciclo de vida.",
     "plugin.asset-catalog.screen.lifecycle.title": "Panel de Ciclo de Vida",
-    "plugin.asset-catalog.screen.lifecycle.subtitle": "Historial de workflow y estado actual de los activos."
+    "plugin.asset-catalog.screen.lifecycle.subtitle": "Revisa transiciones y estado actual de los activos."
 }

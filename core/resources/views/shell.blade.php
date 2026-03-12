@@ -178,6 +178,7 @@
             padding: 24px 26px 28px;
             display: grid;
             gap: 18px;
+            align-content: start;
             background-image:
                 linear-gradient(rgba(255,255,255,0.09) 1px, transparent 1px),
                 linear-gradient(90deg, rgba(255,255,255,0.09) 1px, transparent 1px);
@@ -185,10 +186,8 @@
         }
 
         .topbar {
-            display: flex;
-            justify-content: space-between;
-            gap: 18px;
-            align-items: flex-start;
+            display: grid;
+            gap: 14px;
             padding-bottom: 14px;
             border-bottom: 1px solid rgba(31,42,34,0.1);
         }
@@ -219,7 +218,7 @@
         .utility-stack {
             display: grid;
             gap: 12px;
-            justify-items: end;
+            justify-items: stretch;
         }
 
         .utility-actions,
@@ -235,6 +234,7 @@
             flex-wrap: wrap;
             gap: 10px;
             justify-content: flex-start;
+            align-items: flex-start;
         }
 
         .context-form,
@@ -627,13 +627,8 @@
                 grid-template-columns: repeat(2, minmax(0, 1fr));
             }
 
-            .topbar,
             .screen-header {
                 flex-direction: column;
-            }
-
-            .utility-stack {
-                justify-items: stretch;
             }
 
             .context-forms {
@@ -671,9 +666,7 @@
 <div class="shell">
     <aside class="sidebar">
         <div class="brand">
-            <div class="brand-kicker">PymeSec Core</div>
-            <div class="brand-title">{{ __('core.app.name') }}</div>
-            <div class="brand-copy">{{ __('core.shell.sidebar_copy') }}</div>
+            <div class="brand-title">{{ __('core.shell.brand_title') }}</div>
         </div>
 
         <nav class="menu-stack" aria-label="{{ __('core.shell.menu_registry') }}">
@@ -683,7 +676,6 @@
                         <span class="icon-pill">{{ strtoupper(substr((string) ($menu['icon'] ?? $menu['owner']), 0, 2)) }}</span>
                         <span class="menu-meta">
                             <span class="menu-title">{{ $menu['label'] }}</span>
-                            <span class="menu-caption">{{ $menu['owner'] }}</span>
                         </span>
                     </a>
 
@@ -705,19 +697,7 @@
 
     <main class="workspace">
         <header class="topbar">
-            <div class="headline">
-                <div class="eyebrow">{{ $selectedMenu['owner'] ?? 'core' }}</div>
-                <h1>{{ $screen?->title ?? $selectedMenu['label'] ?? __('core.shell.title') }}</h1>
-                <p>{{ $screen?->subtitle ?? __('core.shell.workspace_copy') }}</p>
-            </div>
-
             <div class="utility-stack">
-                <div class="utility-actions">
-                    <button type="button" class="button button-ghost" data-debug-open>
-                        {{ __('core.shell.debug_button') }}
-                    </button>
-                </div>
-
                 <div class="context-forms">
                     <form class="context-form" method="GET" action="{{ route('core.shell.index') }}">
                         <input type="hidden" name="principal_id" value="{{ $principalId }}">
@@ -764,12 +744,24 @@
                     </form>
                 </div>
 
-                <div class="muted-note">
-                    {{ __('core.shell.context_help') }}
-                    @if ($tenancyShellUrl !== null)
-                        <a href="{{ $tenancyShellUrl }}">{{ __('core.shell.context_manage_link') }}</a>
-                    @endif
+                <div class="row-between">
+                    <div class="muted-note">
+                        {{ __('core.shell.context_help') }}
+                        @if ($tenancyShellUrl !== null)
+                            <a href="{{ $tenancyShellUrl }}">{{ __('core.shell.context_manage_link') }}</a>
+                        @endif
+                    </div>
+                    <div class="utility-actions">
+                        <button type="button" class="button button-ghost" data-debug-open>
+                            {{ __('core.shell.debug_button') }}
+                        </button>
+                    </div>
                 </div>
+            </div>
+
+            <div class="headline">
+                <h1>{{ $screen?->title ?? $selectedMenu['label'] ?? __('core.shell.title') }}</h1>
+                <p>{{ $screen?->subtitle ?? __('core.shell.workspace_copy') }}</p>
             </div>
         </header>
 
@@ -778,7 +770,6 @@
                 @if ($selectedMenu !== null)
                     <div class="screen-header">
                         <div>
-                            <div class="eyebrow">{{ $selectedMenu['owner'] }}</div>
                             <h2 class="screen-title">{{ $screen?->title ?? $selectedMenu['label'] }}</h2>
                             <p class="screen-subtitle">{{ $screen?->subtitle ?? __('core.shell.workspace_copy') }}</p>
                         </div>

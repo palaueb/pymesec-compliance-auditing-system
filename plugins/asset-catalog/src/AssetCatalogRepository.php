@@ -2,6 +2,9 @@
 
 namespace PymeSec\Plugins\AssetCatalog;
 
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+
 class AssetCatalogRepository
 {
     /**
@@ -9,89 +12,108 @@ class AssetCatalogRepository
      */
     public function all(string $organizationId, ?string $scopeId = null): array
     {
-        return array_values(array_filter($this->assets(), static function (array $asset) use ($organizationId, $scopeId): bool {
-            if ($asset['organization_id'] !== $organizationId) {
-                return false;
-            }
+        $query = DB::table('assets')
+            ->where('organization_id', $organizationId)
+            ->orderBy('criticality')
+            ->orderBy('name');
 
-            if ($scopeId === null || $scopeId === '') {
-                return true;
-            }
+        if ($scopeId !== null && $scopeId !== '') {
+            $query->where('scope_id', $scopeId);
+        }
 
-            return ($asset['scope_id'] ?? null) === $scopeId;
-        }));
+        return $query->get()
+            ->map(fn ($asset): array => $this->mapAsset($asset))
+            ->all();
     }
 
     /**
-     * @return array<string, string> | null
+     * @return array<string, string>|null
      */
     public function find(string $assetId): ?array
     {
-        foreach ($this->assets() as $asset) {
-            if ($asset['id'] === $assetId) {
-                return $asset;
-            }
-        }
+        $asset = DB::table('assets')->where('id', $assetId)->first();
 
-        return null;
+        return $asset !== null ? $this->mapAsset($asset) : null;
     }
 
     /**
-     * @return array<int, array<string, string>>
+     * @param  array<string, string|null>  $data
+     * @return array<string, string>
      */
-    private function assets(): array
+    public function create(array $data): array
+    {
+        $id = $this->nextId('asset', (string) ($data['name'] ?? 'asset'));
+
+        DB::table('assets')->insert([
+            'id' => $id,
+            'organization_id' => $data['organization_id'],
+            'scope_id' => ($data['scope_id'] ?? null) ?: null,
+            'name' => $data['name'],
+            'type' => $data['type'],
+            'criticality' => $data['criticality'],
+            'classification' => $data['classification'],
+            'owner_label' => ($data['owner_label'] ?? null) ?: null,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        /** @var array<string, string> $asset */
+        $asset = $this->find($id);
+
+        return $asset;
+    }
+
+    /**
+     * @param  array<string, string|null>  $data
+     * @return array<string, string>|null
+     */
+    public function update(string $assetId, array $data): ?array
+    {
+        $updated = DB::table('assets')
+            ->where('id', $assetId)
+            ->update([
+                'scope_id' => ($data['scope_id'] ?? null) ?: null,
+                'name' => $data['name'],
+                'type' => $data['type'],
+                'criticality' => $data['criticality'],
+                'classification' => $data['classification'],
+                'owner_label' => ($data['owner_label'] ?? null) ?: null,
+                'updated_at' => now(),
+            ]);
+
+        if ($updated === 0) {
+            return $this->find($assetId);
+        }
+
+        return $this->find($assetId);
+    }
+
+    private function nextId(string $prefix, string $value): string
+    {
+        $base = $prefix.'-'.Str::slug($value);
+        $candidate = $base !== $prefix.'-' ? $base : $prefix.'-'.Str::lower(Str::ulid());
+
+        if (! DB::table('assets')->where('id', $candidate)->exists()) {
+            return $candidate;
+        }
+
+        return $candidate.'-'.Str::lower(Str::random(4));
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function mapAsset(object $asset): array
     {
         return [
-            [
-                'id' => 'asset-erp-prod',
-                'organization_id' => 'org-a',
-                'scope_id' => 'scope-eu',
-                'name' => 'ERP Production',
-                'type' => 'application',
-                'criticality' => 'high',
-                'classification' => 'confidential',
-                'owner' => 'Finance Operations',
-            ],
-            [
-                'id' => 'asset-vault-docs',
-                'organization_id' => 'org-a',
-                'scope_id' => '',
-                'name' => 'Document Vault',
-                'type' => 'storage',
-                'criticality' => 'medium',
-                'classification' => 'restricted',
-                'owner' => 'Compliance Office',
-            ],
-            [
-                'id' => 'asset-laptop-fleet',
-                'organization_id' => 'org-a',
-                'scope_id' => 'scope-it',
-                'name' => 'Managed Laptop Fleet',
-                'type' => 'endpoint',
-                'criticality' => 'medium',
-                'classification' => 'internal',
-                'owner' => 'IT Services',
-            ],
-            [
-                'id' => 'asset-warehouse-mesh',
-                'organization_id' => 'org-b',
-                'scope_id' => 'scope-ops',
-                'name' => 'Warehouse Mesh',
-                'type' => 'network',
-                'criticality' => 'high',
-                'classification' => 'restricted',
-                'owner' => 'Operations Control',
-            ],
-            [
-                'id' => 'asset-route-planner',
-                'organization_id' => 'org-b',
-                'scope_id' => 'scope-ops',
-                'name' => 'Route Planner',
-                'type' => 'application',
-                'criticality' => 'medium',
-                'classification' => 'internal',
-                'owner' => 'Logistics Team',
-            ],
+            'id' => (string) $asset->id,
+            'organization_id' => (string) $asset->organization_id,
+            'scope_id' => is_string($asset->scope_id) ? $asset->scope_id : '',
+            'name' => (string) $asset->name,
+            'type' => (string) $asset->type,
+            'criticality' => (string) $asset->criticality,
+            'classification' => (string) $asset->classification,
+            'owner_label' => is_string($asset->owner_label) ? $asset->owner_label : '',
         ];
     }
 }

@@ -38,6 +38,30 @@ class RouteAuthorizationTest extends TestCase
             ->assertFound();
     }
 
+    public function test_the_asset_create_and_update_routes_require_manage_permission(): void
+    {
+        $payload = [
+            'principal_id' => 'principal-org-a',
+            'organization_id' => 'org-a',
+            'locale' => 'en',
+            'menu' => 'plugin.asset-catalog.root',
+            'membership_id' => 'membership-org-a-viewer',
+            'name' => 'Viewer asset',
+            'type' => 'application',
+            'criticality' => 'high',
+            'classification' => 'internal',
+        ];
+
+        $this->post('/plugins/assets', $payload)->assertForbidden();
+        $this->post('/plugins/assets/asset-erp-prod', $payload)->assertForbidden();
+
+        $payload['membership_id'] = 'membership-org-a-hello';
+        $payload['owner_label'] = 'Compliance Office';
+
+        $this->post('/plugins/assets', $payload)->assertFound();
+        $this->post('/plugins/assets/asset-erp-prod', $payload)->assertFound();
+    }
+
     public function test_the_asset_shell_screen_hides_transitions_for_view_only_access(): void
     {
         $this->get('/app?menu=plugin.asset-catalog.root&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-viewer')

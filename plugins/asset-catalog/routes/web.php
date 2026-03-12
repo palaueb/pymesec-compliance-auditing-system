@@ -2,10 +2,12 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use PymeSec\Core\FunctionalActors\Contracts\FunctionalActorServiceInterface;
 use PymeSec\Core\Principals\MembershipReference;
 use PymeSec\Core\Principals\PrincipalReference;
 use PymeSec\Core\Workflows\Contracts\WorkflowServiceInterface;
 use PymeSec\Core\Workflows\WorkflowExecutionContext;
+use PymeSec\Plugins\AssetCatalog\AssetCatalogRepository;
 
 Route::get('/plugins/assets', function (Request $request) {
     return redirect()->route('core.shell.index', [
@@ -28,6 +30,98 @@ Route::get('/plugins/assets/lifecycle', function (Request $request) {
         'scope_id' => $request->query('scope_id'),
     ]);
 })->name('plugin.asset-catalog.lifecycle');
+
+Route::post('/plugins/assets', function (
+    Request $request,
+    AssetCatalogRepository $repository,
+    FunctionalActorServiceInterface $actors
+) {
+    $validated = $request->validate([
+        'name' => ['required', 'string', 'max:160'],
+        'type' => ['required', 'string', 'max:80'],
+        'criticality' => ['required', 'string', 'max:40'],
+        'classification' => ['required', 'string', 'max:80'],
+        'organization_id' => ['required', 'string', 'max:64'],
+        'scope_id' => ['nullable', 'string', 'max:64'],
+        'owner_label' => ['nullable', 'string', 'max:160'],
+        'owner_actor_id' => ['nullable', 'string', 'max:64'],
+    ]);
+
+    $asset = $repository->create($validated);
+    $principalId = (string) $request->input('principal_id', 'principal-org-a');
+    $membershipId = $request->input('membership_id');
+
+    if (is_string($validated['owner_actor_id'] ?? null) && $validated['owner_actor_id'] !== '') {
+        $actors->syncSingleAssignment(
+            actorId: $validated['owner_actor_id'],
+            domainObjectType: 'asset',
+            domainObjectId: $asset['id'],
+            assignmentType: 'owner',
+            organizationId: $asset['organization_id'],
+            scopeId: $asset['scope_id'] !== '' ? $asset['scope_id'] : null,
+            metadata: ['source' => 'asset-catalog'],
+            assignedByPrincipalId: $principalId,
+        );
+    }
+
+    return redirect()->route('core.shell.index', array_filter([
+        'menu' => 'plugin.asset-catalog.root',
+        'principal_id' => $principalId,
+        'organization_id' => $asset['organization_id'],
+        'scope_id' => $asset['scope_id'] !== '' ? $asset['scope_id'] : null,
+        'locale' => $request->input('locale', app()->getLocale()),
+        'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
+    ]));
+})->middleware('core.permission:plugin.asset-catalog.assets.manage')->name('plugin.asset-catalog.store');
+
+Route::post('/plugins/assets/{assetId}', function (
+    Request $request,
+    string $assetId,
+    AssetCatalogRepository $repository,
+    FunctionalActorServiceInterface $actors
+) {
+    $validated = $request->validate([
+        'name' => ['required', 'string', 'max:160'],
+        'type' => ['required', 'string', 'max:80'],
+        'criticality' => ['required', 'string', 'max:40'],
+        'classification' => ['required', 'string', 'max:80'],
+        'scope_id' => ['nullable', 'string', 'max:64'],
+        'owner_label' => ['nullable', 'string', 'max:160'],
+        'owner_actor_id' => ['nullable', 'string', 'max:64'],
+    ]);
+
+    $asset = $repository->update($assetId, [
+        ...$validated,
+        'organization_id' => (string) $request->input('organization_id', 'org-a'),
+    ]);
+
+    abort_if($asset === null, 404);
+
+    $principalId = (string) $request->input('principal_id', 'principal-org-a');
+    $membershipId = $request->input('membership_id');
+
+    if (is_string($validated['owner_actor_id'] ?? null) && $validated['owner_actor_id'] !== '') {
+        $actors->syncSingleAssignment(
+            actorId: $validated['owner_actor_id'],
+            domainObjectType: 'asset',
+            domainObjectId: $asset['id'],
+            assignmentType: 'owner',
+            organizationId: $asset['organization_id'],
+            scopeId: $asset['scope_id'] !== '' ? $asset['scope_id'] : null,
+            metadata: ['source' => 'asset-catalog'],
+            assignedByPrincipalId: $principalId,
+        );
+    }
+
+    return redirect()->route('core.shell.index', array_filter([
+        'menu' => 'plugin.asset-catalog.root',
+        'principal_id' => $principalId,
+        'organization_id' => $asset['organization_id'],
+        'scope_id' => $asset['scope_id'] !== '' ? $asset['scope_id'] : null,
+        'locale' => $request->input('locale', app()->getLocale()),
+        'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
+    ]));
+})->middleware('core.permission:plugin.asset-catalog.assets.manage')->name('plugin.asset-catalog.update');
 
 Route::post('/plugins/assets/{assetId}/transitions/{transitionKey}', function (
     string $assetId,

@@ -7,6 +7,7 @@ use PymeSec\Core\Plugins\Contracts\PluginInterface;
 use PymeSec\Core\Plugins\PluginContext;
 use PymeSec\Core\Permissions\AuthorizationContext;
 use PymeSec\Core\Permissions\Contracts\AuthorizationServiceInterface;
+use PymeSec\Core\Tenancy\Contracts\TenancyServiceInterface;
 use PymeSec\Core\UI\ScreenDefinition;
 use PymeSec\Core\UI\ScreenRenderContext;
 use PymeSec\Core\UI\ToolbarAction;
@@ -118,6 +119,7 @@ class AssetCatalogPlugin implements PluginInterface
         $workflow = $context->app()->make(WorkflowServiceInterface::class);
         $actors = $context->app()->make(FunctionalActorServiceInterface::class);
         $authorization = $context->app()->make(AuthorizationServiceInterface::class);
+        $tenancy = $context->app()->make(TenancyServiceInterface::class);
         $organizationId = $screenContext->organizationId ?? 'org-a';
         $canManageAssets = $screenContext->principal !== null && $authorization->authorize(new AuthorizationContext(
             principal: $screenContext->principal,
@@ -148,10 +150,23 @@ class AssetCatalogPlugin implements PluginInterface
             ];
         }
 
+        $scopeContext = $tenancy->resolveContext(
+            principalId: $screenContext->principal?->id,
+            requestedOrganizationId: $organizationId,
+            requestedScopeId: $screenContext->scopeId,
+            requestedMembershipIds: array_map(static fn ($membership): string => $membership->id, $screenContext->memberships),
+        );
+
         return [
             'assets' => $assets,
             'can_manage_assets' => $canManageAssets,
             'query' => $this->baseQuery($screenContext),
+            'create_route' => route('plugin.asset-catalog.store'),
+            'owner_actor_options' => array_map(static fn ($actor): array => [
+                'id' => $actor->id,
+                'label' => $actor->displayName,
+            ], $actors->actors($organizationId, $screenContext->scopeId)),
+            'scope_options' => array_map(static fn ($scope): array => $scope->toArray(), $scopeContext->scopes),
         ];
     }
 

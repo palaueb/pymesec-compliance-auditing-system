@@ -34,7 +34,7 @@ class ExampleTest extends TestCase
         $this->get('/app')
             ->assertOk()
             ->assertSee('Asset Catalog')
-            ->assertSee('Functional plugin screen rendered inside the core shell.')
+            ->assertSee('Track business assets, ownership, and lifecycle status.')
             ->assertSee('ERP Production')
             ->assertDontSee('Core Shell Preview')
             ->assertDontSee('A first visual pass of the left-hand shell');

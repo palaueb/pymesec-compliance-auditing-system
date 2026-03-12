@@ -2,7 +2,7 @@
     "plugin.asset-catalog.nav.root": "Assets",
     "plugin.asset-catalog.nav.lifecycle": "Lifecycle",
     "plugin.asset-catalog.screen.catalog.title": "Asset Catalog",
-    "plugin.asset-catalog.screen.catalog.subtitle": "Functional plugin screen rendered inside the core shell.",
+    "plugin.asset-catalog.screen.catalog.subtitle": "Track business assets, ownership, and lifecycle status.",
     "plugin.asset-catalog.screen.lifecycle.title": "Lifecycle Board",
-    "plugin.asset-catalog.screen.lifecycle.subtitle": "Workflow history and current state for organization assets."
+    "plugin.asset-catalog.screen.lifecycle.subtitle": "Review lifecycle transitions and current status across assets."
 }
