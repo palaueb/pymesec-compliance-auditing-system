@@ -222,7 +222,6 @@
             justify-items: end;
         }
 
-        .theme-switcher,
         .utility-actions,
         .toolbar,
         .action-cluster {
@@ -235,7 +234,7 @@
             display: flex;
             flex-wrap: wrap;
             gap: 10px;
-            justify-content: flex-end;
+            justify-content: flex-start;
         }
 
         .context-form,
@@ -326,7 +325,6 @@
             color: #fff;
         }
 
-        .status-strip,
         .overview-grid {
             display: grid;
             grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -347,7 +345,7 @@
 
         .content-grid {
             display: grid;
-            grid-template-columns: minmax(0, 1.8fr) minmax(290px, 0.72fr);
+            grid-template-columns: minmax(0, 1fr);
             gap: 18px;
             align-items: start;
         }
@@ -385,16 +383,6 @@
 
         .screen-body > *:last-child {
             margin-bottom: 0;
-        }
-
-        .rail-stack {
-            display: grid;
-            gap: 14px;
-        }
-
-        .rail-title {
-            font-size: 24px;
-            line-height: 1;
         }
 
         .rail-list,
@@ -588,6 +576,22 @@
             font-size: 13px;
         }
 
+        .debug-tools {
+            display: grid;
+            gap: 12px;
+            padding: 0 18px 18px;
+        }
+
+        .debug-tools .table-key {
+            color: rgba(235,240,242,0.62);
+        }
+
+        .debug-theme-switcher {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
         pre {
             margin: 0;
             padding: 18px;
@@ -618,7 +622,6 @@
         }
 
         @media (max-width: 960px) {
-            .status-strip,
             .overview-grid,
             .mini-metrics {
                 grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -647,7 +650,6 @@
                 padding: 18px 16px 24px;
             }
 
-            .status-strip,
             .overview-grid,
             .mini-metrics {
                 grid-template-columns: 1fr;
@@ -695,17 +697,18 @@
         </nav>
 
         <div class="sidebar-footer">
-            <div class="rail-label">{{ __('core.shell.theme') }}</div>
-            <div class="body-copy">{{ $theme['label'] }} · {{ $principalId }}</div>
+            <div class="rail-label">{{ __('core.shell.organization') }}</div>
+            <div class="body-copy">{{ $selectedOrganization['name'] ?? 'n/a' }}</div>
+            <div class="body-copy">{{ $selectedScope['name'] ?? __('core.shell.all_scopes') }}</div>
         </div>
     </aside>
 
     <main class="workspace">
         <header class="topbar">
             <div class="headline">
-                <div class="eyebrow">{{ __('core.shell.active_menu') }}</div>
-                <h1>{{ __('core.shell.title') }}</h1>
-                <p>{{ __('core.shell.subtitle') }}</p>
+                <div class="eyebrow">{{ $selectedMenu['owner'] ?? 'core' }}</div>
+                <h1>{{ $screen?->title ?? $selectedMenu['label'] ?? __('core.shell.title') }}</h1>
+                <p>{{ $screen?->subtitle ?? __('core.shell.workspace_copy') }}</p>
             </div>
 
             <div class="utility-stack">
@@ -713,14 +716,6 @@
                     <button type="button" class="button button-ghost" data-debug-open>
                         {{ __('core.shell.debug_button') }}
                     </button>
-                </div>
-
-                <div class="theme-switcher">
-                    @foreach ($themeOptions as $option)
-                        <a href="{{ $option['url'] }}" class="theme-chip {{ $option['active'] ? 'active' : '' }}">
-                            {{ $option['label'] }}
-                        </a>
-                    @endforeach
                 </div>
 
                 <div class="context-forms">
@@ -768,31 +763,15 @@
                         <button class="button button-secondary" type="submit">{{ __('core.shell.apply_context') }}</button>
                     </form>
                 </div>
+
+                <div class="muted-note">
+                    {{ __('core.shell.context_help') }}
+                    @if ($tenancyShellUrl !== null)
+                        <a href="{{ $tenancyShellUrl }}">{{ __('core.shell.context_manage_link') }}</a>
+                    @endif
+                </div>
             </div>
         </header>
-
-        <section class="status-strip">
-            <article class="metric-card">
-                <div class="metric-label">{{ __('core.shell.principal') }}</div>
-                <div class="metric-value">{{ $principalId }}</div>
-                <div class="field-note">runtime principal</div>
-            </article>
-            <article class="metric-card">
-                <div class="metric-label">{{ __('core.shell.organization') }}</div>
-                <div class="metric-value">{{ $selectedOrganization['name'] ?? ($organizationId ?? 'n/a') }}</div>
-                <div class="field-note">{{ $organizationId ?? 'n/a' }}</div>
-            </article>
-            <article class="metric-card">
-                <div class="metric-label">{{ __('core.shell.scope') }}</div>
-                <div class="metric-value">{{ $selectedScope['name'] ?? __('core.shell.all_scopes') }}</div>
-                <div class="field-note">{{ $scopeId ?? __('core.shell.organization_wide') }}</div>
-            </article>
-            <article class="metric-card">
-                <div class="metric-label">{{ __('core.shell.active_menu') }}</div>
-                <div class="metric-value">{{ $screen?->title ?? ($selectedMenu['label'] ?? 'n/a') }}</div>
-                <div class="field-note">{{ $selectedMenu['owner'] ?? 'core' }}</div>
-            </article>
-        </section>
 
         <section class="content-grid">
             <article class="surface-card">
@@ -801,7 +780,7 @@
                         <div>
                             <div class="eyebrow">{{ $selectedMenu['owner'] }}</div>
                             <h2 class="screen-title">{{ $screen?->title ?? $selectedMenu['label'] }}</h2>
-                            <p class="screen-subtitle">{{ $screen?->subtitle ?? __('core.shell.preview') }}</p>
+                            <p class="screen-subtitle">{{ $screen?->subtitle ?? __('core.shell.workspace_copy') }}</p>
                         </div>
                         @if ($screen !== null && $screen->toolbarActions !== [])
                             <div class="toolbar">
@@ -850,48 +829,6 @@
                     <div class="muted-note">{{ __('core.shell.no_selection') }}</div>
                 @endif
             </article>
-
-            <aside class="rail-stack">
-                <article class="rail-card">
-                    <div class="rail-label">{{ __('core.shell.organization_selector') }}</div>
-                    <h3 class="rail-title">{{ $selectedOrganization['name'] ?? 'n/a' }}</h3>
-                    <div class="rail-list">
-                        <div class="rail-item">
-                            <div class="table-key">{{ __('core.shell.scope') }}</div>
-                            <div class="body-copy">{{ $selectedScope['name'] ?? __('core.shell.all_scopes') }}</div>
-                        </div>
-                        <div class="rail-item">
-                            <div class="table-key">Memberships</div>
-                            <div class="body-copy">{{ count($baseQuery['membership_ids'] ?? []) }}</div>
-                        </div>
-                    </div>
-                </article>
-
-                <article class="rail-card">
-                    <div class="rail-label">{{ __('core.shell.theme') }}</div>
-                    <h3 class="rail-title">{{ $theme['label'] }}</h3>
-                    <p class="body-copy">{{ __('core.shell.theme_copy') }}</p>
-                    <div class="rail-list">
-                        <div class="rail-item">{{ __('core.shell.theme_rule_core') }}</div>
-                        <div class="rail-item">{{ __('core.shell.theme_rule_plugins') }}</div>
-                        <div class="rail-item">{{ __('core.shell.theme_rule_tokens') }}</div>
-                    </div>
-                </article>
-
-                <article class="rail-card">
-                    <div class="rail-label">{{ __('core.shell.debug_panel') }}</div>
-                    <h3 class="rail-title">{{ __('core.shell.debug_title') }}</h3>
-                    <p class="body-copy">{{ __('core.shell.debug_copy') }}</p>
-                    <div class="action-cluster" style="margin-top:14px;">
-                        <button type="button" class="button button-secondary" data-debug-open>
-                            {{ __('core.shell.debug_button') }}
-                        </button>
-                        <a class="button button-ghost" href="{{ $menuApiUrl }}" target="_blank" rel="noreferrer">
-                            {{ __('core.shell.menu_registry') }}
-                        </a>
-                    </div>
-                </article>
-            </aside>
         </section>
     </main>
 </div>
@@ -906,6 +843,18 @@
             </div>
             <button type="button" class="button button-secondary" data-debug-close>{{ __('core.shell.close_debug') }}</button>
         </header>
+        <div class="debug-tools">
+            <div>
+                <div class="table-key">{{ __('core.shell.theme') }}</div>
+                <div class="debug-theme-switcher">
+                    @foreach ($themeOptions as $option)
+                        <a href="{{ $option['url'] }}" class="theme-chip {{ $option['active'] ? 'active' : '' }}">
+                            {{ $option['label'] }}
+                        </a>
+                    @endforeach
+                </div>
+            </div>
+        </div>
         <pre>{{ $debugPayloadJson }}</pre>
         <footer class="debug-footer">
             <div class="debug-copy">{{ __('core.shell.debug_footer') }}</div>

@@ -19,3 +19,4 @@ Current accepted ADRs:
 - `ADR-013-core-artifacts-and-attachments-storage.md`
 - `ADR-014-persistent-authorization-roles-and-grants.md`
 - `ADR-015-privacy-data-flows-and-processing-activities-plugin.md`
+- `ADR-016-continuity-and-bcm-as-a-domain-plugin.md`

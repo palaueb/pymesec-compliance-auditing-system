@@ -1,0 +1,91 @@
+{
+  "plugin": {
+    "id": "continuity-bcm",
+    "name": "Continuity & BCM",
+    "version": "0.1.0",
+    "type": "domain",
+    "description": "Functional plugin for continuity services, recovery plans, ownership, workflow, and evidence.",
+    "vendor": "pymesec",
+    "license": "AGPL-3.0-or-later"
+  },
+  "compatibility": {
+    "core": "^0.1.0",
+    "sdk": "^0.1.0"
+  },
+  "dependencies": [
+    "actor-directory",
+    "asset-catalog",
+    "risk-management",
+    "findings-remediation",
+    "policy-exceptions"
+  ],
+  "permissions": [
+    {
+      "key": "plugin.continuity-bcm.plans.view",
+      "label": "View continuity services and plans",
+      "description": "View continuity services and recovery plans.",
+      "feature_area": "continuity",
+      "operation": "view",
+      "contexts": [
+        "organization"
+      ]
+    },
+    {
+      "key": "plugin.continuity-bcm.plans.manage",
+      "label": "Manage continuity services and plans",
+      "description": "Create, edit, transition, and attach evidence to continuity services and recovery plans.",
+      "feature_area": "continuity",
+      "operation": "manage",
+      "contexts": [
+        "organization"
+      ]
+    }
+  ],
+  "routes": [
+    {
+      "id": "continuity-bcm.web",
+      "type": "web",
+      "file": "routes/web.php",
+      "middleware": [
+        "web"
+      ],
+      "permission": "plugin.continuity-bcm.plans.view"
+    }
+  ],
+  "menus": [
+    {
+      "id": "plugin.continuity-bcm.root",
+      "label_key": "plugin.continuity-bcm.nav.root",
+      "route": "plugin.continuity-bcm.index",
+      "icon": "bcm",
+      "order": 50,
+      "permission": "plugin.continuity-bcm.plans.view"
+    },
+    {
+      "id": "plugin.continuity-bcm.plans",
+      "label_key": "plugin.continuity-bcm.nav.plans",
+      "route": "plugin.continuity-bcm.plans",
+      "parent_id": "plugin.continuity-bcm.root",
+      "icon": "plan",
+      "order": 10,
+      "permission": "plugin.continuity-bcm.plans.view"
+    }
+  ],
+  "migrations": [],
+  "translations": {
+    "default_locale": "en",
+    "supported_locales": [
+      "en"
+    ],
+    "path": "resources/lang"
+  },
+  "lifecycle": {},
+  "runtime": {
+    "class": "PymeSec\\Plugins\\ContinuityBcm\\ContinuityBcmPlugin",
+    "autoload": {
+      "psr-4": {
+        "PymeSec\\Plugins\\ContinuityBcm\\": "src"
+      }
+    }
+  }
+}

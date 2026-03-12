@@ -33,8 +33,10 @@ class ExampleTest extends TestCase
     {
         $this->get('/app')
             ->assertOk()
-            ->assertSee('Core Shell Preview')
             ->assertSee('Asset Catalog')
-            ->assertSee('ERP Production');
+            ->assertSee('Functional plugin screen rendered inside the core shell.')
+            ->assertSee('ERP Production')
+            ->assertDontSee('Core Shell Preview')
+            ->assertDontSee('A first visual pass of the left-hand shell');
     }
 }

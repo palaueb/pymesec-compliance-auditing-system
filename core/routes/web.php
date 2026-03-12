@@ -206,6 +206,9 @@ Route::get('/app', function (
         'scopes' => array_map(static fn ($scope): array => $scope->toArray(), $tenancyContext->scopes),
         'selectedOrganization' => $tenancyContext->organization?->toArray(),
         'selectedScope' => $tenancyContext->scope?->toArray(),
+        'tenancyShellUrl' => isset($flatMenus['core.tenancy'])
+            ? route('core.shell.index', [...$baseQuery, 'menu' => 'core.tenancy'])
+            : null,
     ]);
 })->name('core.shell.index');
 

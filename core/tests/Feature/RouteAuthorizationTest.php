@@ -509,6 +509,135 @@ class RouteAuthorizationTest extends TestCase
         ])->assertFound();
     }
 
+    public function test_the_continuity_routes_require_manage_permission(): void
+    {
+        $payload = [
+            'principal_id' => 'principal-org-a',
+            'organization_id' => 'org-a',
+            'locale' => 'en',
+            'membership_id' => 'membership-org-a-viewer',
+        ];
+
+        $this->post('/plugins/continuity/services/continuity-service-customer-support/transitions/submit-review', [
+            ...$payload,
+            'menu' => 'plugin.continuity-bcm.root',
+        ])->assertForbidden();
+
+        $this->post('/plugins/continuity/plans/continuity-plan-support-fallback/transitions/submit-review', [
+            ...$payload,
+            'menu' => 'plugin.continuity-bcm.plans',
+        ])->assertForbidden();
+
+        $this->post('/plugins/continuity/services/continuity-service-customer-support/artifacts', [
+            ...$payload,
+            'menu' => 'plugin.continuity-bcm.root',
+            'label' => 'Viewer continuity attempt',
+            'artifact_type' => 'continuity-record',
+            'artifact' => UploadedFile::fake()->createWithContent('viewer-continuity.txt', 'viewer'),
+        ])->assertForbidden();
+
+        $this->post('/plugins/continuity/plans/continuity-plan-support-fallback/artifacts', [
+            ...$payload,
+            'menu' => 'plugin.continuity-bcm.plans',
+            'label' => 'Viewer recovery attempt',
+            'artifact_type' => 'recovery-plan',
+            'artifact' => UploadedFile::fake()->createWithContent('viewer-recovery.txt', 'viewer'),
+        ])->assertForbidden();
+
+        $this->post('/plugins/continuity/services', [
+            ...$payload,
+            'menu' => 'plugin.continuity-bcm.root',
+            'title' => 'Viewer continuity service',
+            'impact_tier' => 'high',
+            'recovery_time_objective_hours' => 12,
+            'recovery_point_objective_hours' => 4,
+        ])->assertForbidden();
+
+        $this->post('/plugins/continuity/services/continuity-service-customer-support', [
+            ...$payload,
+            'menu' => 'plugin.continuity-bcm.root',
+            'title' => 'Viewer continuity update',
+            'impact_tier' => 'high',
+            'recovery_time_objective_hours' => 12,
+            'recovery_point_objective_hours' => 4,
+        ])->assertForbidden();
+
+        $this->post('/plugins/continuity/services/continuity-service-customer-support/plans', [
+            ...$payload,
+            'menu' => 'plugin.continuity-bcm.plans',
+            'title' => 'Viewer recovery plan',
+            'strategy_summary' => 'Viewer should not create plans.',
+        ])->assertForbidden();
+
+        $this->post('/plugins/continuity/plans/continuity-plan-support-fallback', [
+            ...$payload,
+            'menu' => 'plugin.continuity-bcm.plans',
+            'title' => 'Viewer recovery update',
+            'strategy_summary' => 'Viewer should not update plans.',
+        ])->assertForbidden();
+
+        $payload['membership_id'] = 'membership-org-a-hello';
+
+        $this->post('/plugins/continuity/services/continuity-service-customer-support/transitions/submit-review', [
+            ...$payload,
+            'menu' => 'plugin.continuity-bcm.root',
+        ])->assertFound();
+
+        $this->post('/plugins/continuity/plans/continuity-plan-support-fallback/transitions/submit-review', [
+            ...$payload,
+            'menu' => 'plugin.continuity-bcm.plans',
+        ])->assertFound();
+
+        $this->post('/plugins/continuity/services/continuity-service-customer-support/artifacts', [
+            ...$payload,
+            'menu' => 'plugin.continuity-bcm.root',
+            'label' => 'Operator continuity record',
+            'artifact_type' => 'continuity-record',
+            'artifact' => UploadedFile::fake()->createWithContent('operator-continuity.txt', 'operator'),
+        ])->assertFound();
+
+        $this->post('/plugins/continuity/plans/continuity-plan-support-fallback/artifacts', [
+            ...$payload,
+            'menu' => 'plugin.continuity-bcm.plans',
+            'label' => 'Operator recovery evidence',
+            'artifact_type' => 'recovery-plan',
+            'artifact' => UploadedFile::fake()->createWithContent('operator-recovery.txt', 'operator'),
+        ])->assertFound();
+
+        $this->post('/plugins/continuity/services', [
+            ...$payload,
+            'menu' => 'plugin.continuity-bcm.root',
+            'title' => 'Operator continuity service',
+            'impact_tier' => 'critical',
+            'recovery_time_objective_hours' => 6,
+            'recovery_point_objective_hours' => 2,
+        ])->assertFound();
+
+        $this->post('/plugins/continuity/services/continuity-service-customer-support', [
+            ...$payload,
+            'menu' => 'plugin.continuity-bcm.root',
+            'title' => 'Operator continuity update',
+            'impact_tier' => 'critical',
+            'recovery_time_objective_hours' => 5,
+            'recovery_point_objective_hours' => 2,
+        ])->assertFound();
+
+        $this->post('/plugins/continuity/services/continuity-service-customer-support/plans', [
+            ...$payload,
+            'menu' => 'plugin.continuity-bcm.plans',
+            'title' => 'Operator recovery plan',
+            'strategy_summary' => 'Operator can create continuity plans.',
+            'organization_id' => 'org-a',
+        ])->assertFound();
+
+        $this->post('/plugins/continuity/plans/continuity-plan-support-fallback', [
+            ...$payload,
+            'menu' => 'plugin.continuity-bcm.plans',
+            'title' => 'Operator recovery update',
+            'strategy_summary' => 'Operator can update continuity plans.',
+        ])->assertFound();
+    }
+
     public function test_the_core_role_routes_require_platform_permission(): void
     {
         $this->get('/core/roles?principal_id=principal-org-a')

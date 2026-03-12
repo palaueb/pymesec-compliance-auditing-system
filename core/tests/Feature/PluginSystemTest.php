@@ -56,6 +56,14 @@ class PluginSystemTest extends TestCase
                 'runtime_contract_satisfied' => true,
             ])
             ->assertJsonFragment([
+                'id' => 'continuity-bcm',
+                'enabled' => true,
+                'booted' => true,
+                'route_count' => 1,
+                'menu_count' => 2,
+                'runtime_contract_satisfied' => true,
+            ])
+            ->assertJsonFragment([
                 'id' => 'identity-local',
                 'enabled' => false,
                 'booted' => false,
@@ -117,6 +125,10 @@ class PluginSystemTest extends TestCase
                 'key' => 'plugin.data-flows-privacy.records.view',
                 'origin' => 'data-flows-privacy',
             ])
+            ->assertJsonFragment([
+                'key' => 'plugin.continuity-bcm.plans.view',
+                'origin' => 'continuity-bcm',
+            ])
             ->assertJsonMissing([
                 'key' => 'plugin.identity-local.principals.view',
             ]);
@@ -130,6 +142,7 @@ class PluginSystemTest extends TestCase
                 [
                     ['actor-directory', 'domain-actor', 'yes', 'yes', '2', '1', '2', ''],
                     ['asset-catalog', 'domain', 'yes', 'yes', '2', '1', '2', ''],
+                    ['continuity-bcm', 'domain', 'yes', 'yes', '2', '1', '2', ''],
                     ['controls-catalog', 'domain', 'yes', 'yes', '2', '1', '2', ''],
                     ['data-flows-privacy', 'domain', 'yes', 'yes', '2', '1', '2', ''],
                     ['findings-remediation', 'domain', 'yes', 'yes', '2', '1', '2', ''],
@@ -171,6 +184,8 @@ class PluginSystemTest extends TestCase
                     ['plugin.actor-directory.actors.view', 'actor-directory', 'view', 'organization'],
                     ['plugin.asset-catalog.assets.manage', 'asset-catalog', 'manage', 'organization'],
                     ['plugin.asset-catalog.assets.view', 'asset-catalog', 'view', 'organization'],
+                    ['plugin.continuity-bcm.plans.manage', 'continuity-bcm', 'manage', 'organization'],
+                    ['plugin.continuity-bcm.plans.view', 'continuity-bcm', 'view', 'organization'],
                     ['plugin.controls-catalog.controls.manage', 'controls-catalog', 'manage', 'organization'],
                     ['plugin.controls-catalog.controls.view', 'controls-catalog', 'view', 'organization'],
                     ['plugin.data-flows-privacy.records.manage', 'data-flows-privacy', 'manage', 'organization'],
@@ -195,7 +210,7 @@ class PluginSystemTest extends TestCase
 
         $effective = $this->app->make(PluginStateStore::class)->effectiveEnabled(config('plugins.enabled', []));
 
-        $this->assertSame(['hello-world', 'asset-catalog', 'actor-directory', 'controls-catalog', 'risk-management', 'findings-remediation', 'policy-exceptions', 'data-flows-privacy', 'identity-local'], $effective);
+        $this->assertSame(['hello-world', 'asset-catalog', 'actor-directory', 'controls-catalog', 'risk-management', 'findings-remediation', 'policy-exceptions', 'data-flows-privacy', 'continuity-bcm', 'identity-local'], $effective);
     }
 
     public function test_the_plugins_disable_command_persists_a_local_override(): void
@@ -206,7 +221,7 @@ class PluginSystemTest extends TestCase
 
         $effective = $this->app->make(PluginStateStore::class)->effectiveEnabled(config('plugins.enabled', []));
 
-        $this->assertSame(['asset-catalog', 'actor-directory', 'controls-catalog', 'risk-management', 'findings-remediation', 'policy-exceptions', 'data-flows-privacy'], $effective);
+        $this->assertSame(['asset-catalog', 'actor-directory', 'controls-catalog', 'risk-management', 'findings-remediation', 'policy-exceptions', 'data-flows-privacy', 'continuity-bcm'], $effective);
     }
 
     public function test_the_plugins_disable_command_removes_a_previous_local_enable_override(): void
@@ -220,7 +235,7 @@ class PluginSystemTest extends TestCase
 
         $effective = $this->app->make(PluginStateStore::class)->effectiveEnabled(config('plugins.enabled', []));
 
-        $this->assertSame(['hello-world', 'asset-catalog', 'actor-directory', 'controls-catalog', 'risk-management', 'findings-remediation', 'policy-exceptions', 'data-flows-privacy'], $effective);
+        $this->assertSame(['hello-world', 'asset-catalog', 'actor-directory', 'controls-catalog', 'risk-management', 'findings-remediation', 'policy-exceptions', 'data-flows-privacy', 'continuity-bcm'], $effective);
     }
 
     public function test_the_plugins_enable_command_rejects_unknown_plugins(): void
@@ -244,6 +259,7 @@ class PluginSystemTest extends TestCase
             ->assertJsonPath('menus.6.id', 'plugin.actor-directory.root')
             ->assertJsonPath('menus.7.id', 'plugin.policy-exceptions.root')
             ->assertJsonPath('menus.8.id', 'plugin.data-flows-privacy.root')
+            ->assertJsonPath('menus.9.id', 'plugin.continuity-bcm.root')
             ->assertJsonPath('issues', []);
     }
 
@@ -291,6 +307,8 @@ class PluginSystemTest extends TestCase
                     ['plugin.policy-exceptions.exceptions', 'policy-exceptions', 'plugin.policy-exceptions.root', 'plugin.policy-exceptions.exceptions', 'plugin.policy-exceptions.policies.view', '10'],
                     ['plugin.data-flows-privacy.root', 'data-flows-privacy', '', 'plugin.data-flows-privacy.index', 'plugin.data-flows-privacy.records.view', '45'],
                     ['plugin.data-flows-privacy.activities', 'data-flows-privacy', 'plugin.data-flows-privacy.root', 'plugin.data-flows-privacy.activities', 'plugin.data-flows-privacy.records.view', '10'],
+                    ['plugin.continuity-bcm.root', 'continuity-bcm', '', 'plugin.continuity-bcm.index', 'plugin.continuity-bcm.plans.view', '50'],
+                    ['plugin.continuity-bcm.plans', 'continuity-bcm', 'plugin.continuity-bcm.root', 'plugin.continuity-bcm.plans', 'plugin.continuity-bcm.plans.view', '10'],
                 ],
             )
             ->assertExitCode(0);

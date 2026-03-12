@@ -1,0 +1,8 @@
+{
+  "plugin.continuity-bcm.nav.root": "Continuity",
+  "plugin.continuity-bcm.nav.plans": "Recovery Plans",
+  "plugin.continuity-bcm.screen.register.title": "Continuity Services",
+  "plugin.continuity-bcm.screen.register.subtitle": "Track critical services, recovery objectives, continuity owners, and evidence.",
+  "plugin.continuity-bcm.screen.plans.title": "Recovery Plans",
+  "plugin.continuity-bcm.screen.plans.subtitle": "Manage plan strategy, test cadence, linked governance items, and recovery evidence."
+}

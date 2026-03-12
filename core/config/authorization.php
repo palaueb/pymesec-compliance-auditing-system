@@ -116,6 +116,19 @@ return [
                 'plugin.data-flows-privacy.records.view',
             ],
         ],
+        'continuity-operator' => [
+            'label' => 'Continuity operator',
+            'permissions' => [
+                'plugin.continuity-bcm.plans.view',
+                'plugin.continuity-bcm.plans.manage',
+            ],
+        ],
+        'continuity-viewer' => [
+            'label' => 'Continuity viewer',
+            'permissions' => [
+                'plugin.continuity-bcm.plans.view',
+            ],
+        ],
     ],
     'grants' => [
         [
@@ -191,6 +204,14 @@ return [
         ],
         [
             'target_type' => 'membership',
+            'target_id' => 'membership-org-a-hello',
+            'grant_type' => 'role',
+            'value' => 'continuity-operator',
+            'context_type' => 'organization',
+            'organization_id' => 'org-a',
+        ],
+        [
+            'target_type' => 'membership',
             'target_id' => 'membership-org-a-viewer',
             'grant_type' => 'role',
             'value' => 'asset-viewer',
@@ -247,6 +268,14 @@ return [
         ],
         [
             'target_type' => 'membership',
+            'target_id' => 'membership-org-a-viewer',
+            'grant_type' => 'role',
+            'value' => 'continuity-viewer',
+            'context_type' => 'organization',
+            'organization_id' => 'org-a',
+        ],
+        [
+            'target_type' => 'membership',
             'target_id' => 'membership-org-b-ops',
             'grant_type' => 'role',
             'value' => 'asset-viewer',
@@ -290,6 +319,14 @@ return [
             'target_id' => 'membership-org-b-ops',
             'grant_type' => 'role',
             'value' => 'privacy-viewer',
+            'context_type' => 'organization',
+            'organization_id' => 'org-b',
+        ],
+        [
+            'target_type' => 'membership',
+            'target_id' => 'membership-org-b-ops',
+            'grant_type' => 'role',
+            'value' => 'continuity-viewer',
             'context_type' => 'organization',
             'organization_id' => 'org-b',
         ],
