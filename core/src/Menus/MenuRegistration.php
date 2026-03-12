@@ -10,6 +10,5 @@ class MenuRegistration
     public function __construct(
         public readonly MenuDefinition $definition,
         public readonly array $dependencyPluginIds = [],
-    ) {
-    }
+    ) {}
 }

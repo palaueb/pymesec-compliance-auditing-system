@@ -3,21 +3,16 @@
 namespace PymeSec\Core\Permissions;
 
 use PymeSec\Core\Permissions\Contracts\AuthorizationServiceInterface;
+use PymeSec\Core\Permissions\Contracts\AuthorizationStoreInterface;
 use PymeSec\Core\Permissions\Contracts\PermissionRegistryInterface;
 use PymeSec\Core\Principals\MembershipReference;
 
 class AuthorizationService implements AuthorizationServiceInterface
 {
-    /**
-     * @param  array<string, RoleDefinition>  $roles
-     * @param  array<int, PermissionGrant>  $grants
-     */
     public function __construct(
         private readonly PermissionRegistryInterface $permissions,
-        private readonly array $roles,
-        private readonly array $grants,
-    ) {
-    }
+        private readonly AuthorizationStoreInterface $store,
+    ) {}
 
     public function authorize(AuthorizationContext $context): AuthorizationResult
     {
@@ -46,7 +41,7 @@ class AuthorizationService implements AuthorizationServiceInterface
 
         $matched = [];
 
-        foreach ($this->grants as $grant) {
+        foreach ($this->store->grantDefinitions() as $grant) {
             if (! $this->grantAppliesToContext($grant, $context)) {
                 continue;
             }
@@ -113,7 +108,7 @@ class AuthorizationService implements AuthorizationServiceInterface
             return false;
         }
 
-        $role = $this->roles[$grant->value] ?? null;
+        $role = $this->store->roleDefinitions()[$grant->value] ?? null;
 
         return $role instanceof RoleDefinition
             && in_array($permission, $role->permissions, true);

@@ -16,8 +16,7 @@ class DatabaseNotificationService implements NotificationServiceInterface
     public function __construct(
         private readonly AuditTrailInterface $audit,
         private readonly EventBusInterface $events,
-    ) {
-    }
+    ) {}
 
     public function notify(
         string $type,

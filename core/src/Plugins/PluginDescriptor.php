@@ -7,8 +7,7 @@ class PluginDescriptor
     public function __construct(
         private readonly string $path,
         private readonly PluginManifest $manifest,
-    ) {
-    }
+    ) {}
 
     public function id(): string
     {

@@ -12,8 +12,7 @@ class PermissionGrant
         public readonly string $contextType,
         public readonly ?string $organizationId = null,
         public readonly ?string $scopeId = null,
-    ) {
-    }
+    ) {}
 
     /**
      * @return array<string, string|null>

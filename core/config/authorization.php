@@ -19,6 +19,8 @@ return [
                 'core.plugins.manage',
                 'core.permissions.view',
                 'core.permissions.manage',
+                'core.roles.view',
+                'core.roles.manage',
                 'core.tenancy.view',
                 'core.tenancy.manage',
                 'core.workflows.view',
@@ -101,6 +103,19 @@ return [
                 'plugin.policy-exceptions.policies.view',
             ],
         ],
+        'privacy-operator' => [
+            'label' => 'Privacy operator',
+            'permissions' => [
+                'plugin.data-flows-privacy.records.view',
+                'plugin.data-flows-privacy.records.manage',
+            ],
+        ],
+        'privacy-viewer' => [
+            'label' => 'Privacy viewer',
+            'permissions' => [
+                'plugin.data-flows-privacy.records.view',
+            ],
+        ],
     ],
     'grants' => [
         [
@@ -168,6 +183,14 @@ return [
         ],
         [
             'target_type' => 'membership',
+            'target_id' => 'membership-org-a-hello',
+            'grant_type' => 'role',
+            'value' => 'privacy-operator',
+            'context_type' => 'organization',
+            'organization_id' => 'org-a',
+        ],
+        [
+            'target_type' => 'membership',
             'target_id' => 'membership-org-a-viewer',
             'grant_type' => 'role',
             'value' => 'asset-viewer',
@@ -216,6 +239,14 @@ return [
         ],
         [
             'target_type' => 'membership',
+            'target_id' => 'membership-org-a-viewer',
+            'grant_type' => 'role',
+            'value' => 'privacy-viewer',
+            'context_type' => 'organization',
+            'organization_id' => 'org-a',
+        ],
+        [
+            'target_type' => 'membership',
             'target_id' => 'membership-org-b-ops',
             'grant_type' => 'role',
             'value' => 'asset-viewer',
@@ -251,6 +282,14 @@ return [
             'target_id' => 'membership-org-b-ops',
             'grant_type' => 'role',
             'value' => 'findings-viewer',
+            'context_type' => 'organization',
+            'organization_id' => 'org-b',
+        ],
+        [
+            'target_type' => 'membership',
+            'target_id' => 'membership-org-b-ops',
+            'grant_type' => 'role',
+            'value' => 'privacy-viewer',
             'context_type' => 'organization',
             'organization_id' => 'org-b',
         ],

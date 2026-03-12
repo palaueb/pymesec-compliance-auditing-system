@@ -1,0 +1,8 @@
+{
+  "plugin.data-flows-privacy.nav.root": "Privacy",
+  "plugin.data-flows-privacy.nav.activities": "Processing Activities",
+  "plugin.data-flows-privacy.screen.register.title": "Data Flows Register",
+  "plugin.data-flows-privacy.screen.register.subtitle": "Track information movement, transfer posture, review cadence, and privacy ownership.",
+  "plugin.data-flows-privacy.screen.activities.title": "Processing Activities",
+  "plugin.data-flows-privacy.screen.activities.subtitle": "Map governed processing activities to lawful basis, linked flows, risks, policies, and findings."
+}

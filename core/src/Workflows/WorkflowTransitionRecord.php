@@ -14,6 +14,5 @@ class WorkflowTransitionRecord
         public readonly ?string $principalId,
         public readonly ?string $membershipId,
         public readonly string $createdAt,
-    ) {
-    }
+    ) {}
 }

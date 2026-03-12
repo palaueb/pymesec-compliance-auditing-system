@@ -16,6 +16,5 @@ class AuthorizationContext
         public readonly array $memberships = [],
         public readonly ?string $organizationId = null,
         public readonly ?string $scopeId = null,
-    ) {
-    }
+    ) {}
 }

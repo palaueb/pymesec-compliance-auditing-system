@@ -15,8 +15,7 @@ class FunctionalActorReference
         public readonly string $organizationId,
         public readonly ?string $scopeId = null,
         public readonly array $metadata = [],
-    ) {
-    }
+    ) {}
 
     /**
      * @return array<string, mixed>

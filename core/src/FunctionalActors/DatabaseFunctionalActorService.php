@@ -15,8 +15,7 @@ class DatabaseFunctionalActorService implements FunctionalActorServiceInterface
     public function __construct(
         private readonly AuditTrailInterface $audit,
         private readonly EventBusInterface $events,
-    ) {
-    }
+    ) {}
 
     public function actors(?string $organizationId = null, ?string $scopeId = null): array
     {

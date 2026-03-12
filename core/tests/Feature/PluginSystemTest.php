@@ -48,6 +48,14 @@ class PluginSystemTest extends TestCase
                 'runtime_contract_satisfied' => true,
             ])
             ->assertJsonFragment([
+                'id' => 'data-flows-privacy',
+                'enabled' => true,
+                'booted' => true,
+                'route_count' => 1,
+                'menu_count' => 2,
+                'runtime_contract_satisfied' => true,
+            ])
+            ->assertJsonFragment([
                 'id' => 'identity-local',
                 'enabled' => false,
                 'booted' => false,
@@ -105,6 +113,10 @@ class PluginSystemTest extends TestCase
                 'key' => 'plugin.asset-catalog.assets.view',
                 'origin' => 'asset-catalog',
             ])
+            ->assertJsonFragment([
+                'key' => 'plugin.data-flows-privacy.records.view',
+                'origin' => 'data-flows-privacy',
+            ])
             ->assertJsonMissing([
                 'key' => 'plugin.identity-local.principals.view',
             ]);
@@ -119,6 +131,7 @@ class PluginSystemTest extends TestCase
                     ['actor-directory', 'domain-actor', 'yes', 'yes', '2', '1', '2', ''],
                     ['asset-catalog', 'domain', 'yes', 'yes', '2', '1', '2', ''],
                     ['controls-catalog', 'domain', 'yes', 'yes', '2', '1', '2', ''],
+                    ['data-flows-privacy', 'domain', 'yes', 'yes', '2', '1', '2', ''],
                     ['findings-remediation', 'domain', 'yes', 'yes', '2', '1', '2', ''],
                     ['hello-world', 'ui', 'yes', 'yes', '1', '1', '2', ''],
                     ['identity-local', 'identity', 'no', 'no', '1', '0', '0', 'plugin_not_enabled'],
@@ -149,6 +162,8 @@ class PluginSystemTest extends TestCase
                     ['core.permissions.view', 'core', 'view', 'platform'],
                     ['core.plugins.manage', 'core', 'manage', 'platform'],
                     ['core.plugins.view', 'core', 'view', 'platform'],
+                    ['core.roles.manage', 'core', 'manage', 'platform'],
+                    ['core.roles.view', 'core', 'view', 'platform'],
                     ['core.tenancy.manage', 'core', 'manage', 'platform'],
                     ['core.tenancy.view', 'core', 'view', 'platform'],
                     ['core.workflows.view', 'core', 'view', 'platform'],
@@ -158,6 +173,8 @@ class PluginSystemTest extends TestCase
                     ['plugin.asset-catalog.assets.view', 'asset-catalog', 'view', 'organization'],
                     ['plugin.controls-catalog.controls.manage', 'controls-catalog', 'manage', 'organization'],
                     ['plugin.controls-catalog.controls.view', 'controls-catalog', 'view', 'organization'],
+                    ['plugin.data-flows-privacy.records.manage', 'data-flows-privacy', 'manage', 'organization'],
+                    ['plugin.data-flows-privacy.records.view', 'data-flows-privacy', 'view', 'organization'],
                     ['plugin.findings-remediation.findings.manage', 'findings-remediation', 'manage', 'organization'],
                     ['plugin.findings-remediation.findings.view', 'findings-remediation', 'view', 'organization'],
                     ['plugin.hello-world.hello.view', 'hello-world', 'view', 'organization'],
@@ -178,7 +195,7 @@ class PluginSystemTest extends TestCase
 
         $effective = $this->app->make(PluginStateStore::class)->effectiveEnabled(config('plugins.enabled', []));
 
-        $this->assertSame(['hello-world', 'asset-catalog', 'actor-directory', 'controls-catalog', 'risk-management', 'findings-remediation', 'policy-exceptions', 'identity-local'], $effective);
+        $this->assertSame(['hello-world', 'asset-catalog', 'actor-directory', 'controls-catalog', 'risk-management', 'findings-remediation', 'policy-exceptions', 'data-flows-privacy', 'identity-local'], $effective);
     }
 
     public function test_the_plugins_disable_command_persists_a_local_override(): void
@@ -189,7 +206,7 @@ class PluginSystemTest extends TestCase
 
         $effective = $this->app->make(PluginStateStore::class)->effectiveEnabled(config('plugins.enabled', []));
 
-        $this->assertSame(['asset-catalog', 'actor-directory', 'controls-catalog', 'risk-management', 'findings-remediation', 'policy-exceptions'], $effective);
+        $this->assertSame(['asset-catalog', 'actor-directory', 'controls-catalog', 'risk-management', 'findings-remediation', 'policy-exceptions', 'data-flows-privacy'], $effective);
     }
 
     public function test_the_plugins_disable_command_removes_a_previous_local_enable_override(): void
@@ -203,7 +220,7 @@ class PluginSystemTest extends TestCase
 
         $effective = $this->app->make(PluginStateStore::class)->effectiveEnabled(config('plugins.enabled', []));
 
-        $this->assertSame(['hello-world', 'asset-catalog', 'actor-directory', 'controls-catalog', 'risk-management', 'findings-remediation', 'policy-exceptions'], $effective);
+        $this->assertSame(['hello-world', 'asset-catalog', 'actor-directory', 'controls-catalog', 'risk-management', 'findings-remediation', 'policy-exceptions', 'data-flows-privacy'], $effective);
     }
 
     public function test_the_plugins_enable_command_rejects_unknown_plugins(): void
@@ -226,6 +243,7 @@ class PluginSystemTest extends TestCase
             ->assertJsonPath('menus.5.id', 'plugin.findings-remediation.root')
             ->assertJsonPath('menus.6.id', 'plugin.actor-directory.root')
             ->assertJsonPath('menus.7.id', 'plugin.policy-exceptions.root')
+            ->assertJsonPath('menus.8.id', 'plugin.data-flows-privacy.root')
             ->assertJsonPath('issues', []);
     }
 
@@ -253,6 +271,7 @@ class PluginSystemTest extends TestCase
                     ['core.platform', 'core', '', '', '', '10'],
                     ['core.plugins', 'core', 'core.platform', 'core.plugins.index', 'core.plugins.view', '10'],
                     ['core.permissions', 'core', 'core.platform', 'core.permissions.index', 'core.permissions.view', '20'],
+                    ['core.roles', 'core', 'core.platform', 'core.roles.index', 'core.roles.view', '25'],
                     ['core.tenancy', 'core', 'core.platform', 'core.tenancy.index', 'core.tenancy.view', '30'],
                     ['core.audit', 'core', 'core.platform', 'core.audit.index', 'core.audit-logs.view', '40'],
                     ['core.functional-actors', 'core', 'core.platform', 'core.functional-actors.index', 'core.functional-actors.view', '50'],
@@ -270,6 +289,8 @@ class PluginSystemTest extends TestCase
                     ['plugin.actor-directory.assignments', 'actor-directory', 'plugin.actor-directory.root', 'plugin.actor-directory.assignments', 'plugin.actor-directory.actors.view', '10'],
                     ['plugin.policy-exceptions.root', 'policy-exceptions', '', 'plugin.policy-exceptions.index', 'plugin.policy-exceptions.policies.view', '42'],
                     ['plugin.policy-exceptions.exceptions', 'policy-exceptions', 'plugin.policy-exceptions.root', 'plugin.policy-exceptions.exceptions', 'plugin.policy-exceptions.policies.view', '10'],
+                    ['plugin.data-flows-privacy.root', 'data-flows-privacy', '', 'plugin.data-flows-privacy.index', 'plugin.data-flows-privacy.records.view', '45'],
+                    ['plugin.data-flows-privacy.activities', 'data-flows-privacy', 'plugin.data-flows-privacy.root', 'plugin.data-flows-privacy.activities', 'plugin.data-flows-privacy.records.view', '10'],
                 ],
             )
             ->assertExitCode(0);

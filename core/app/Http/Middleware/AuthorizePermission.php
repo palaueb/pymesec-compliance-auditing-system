@@ -15,8 +15,7 @@ class AuthorizePermission
     public function __construct(
         private readonly AuthorizationServiceInterface $authorization,
         private readonly TenancyServiceInterface $tenancy,
-    ) {
-    }
+    ) {}
 
     public function handle(Request $request, Closure $next, string $permission): Response
     {

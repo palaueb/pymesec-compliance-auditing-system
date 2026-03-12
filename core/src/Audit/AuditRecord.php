@@ -23,8 +23,7 @@ class AuditRecord
         public readonly array $correlation,
         public readonly ?string $executionOrigin,
         public readonly string $createdAt,
-    ) {
-    }
+    ) {}
 
     /**
      * @return array<string, mixed>

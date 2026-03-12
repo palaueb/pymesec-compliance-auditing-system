@@ -8,8 +8,7 @@ class AuthorizationResult
         public readonly string $status,
         public readonly ?string $reason = null,
         public readonly array $matchedGrants = [],
-    ) {
-    }
+    ) {}
 
     public static function allow(array $matchedGrants = [], ?string $reason = null): self
     {

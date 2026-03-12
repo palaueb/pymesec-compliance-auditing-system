@@ -9,6 +9,68 @@ class CoreTenancySeeder extends Seeder
 {
     public function run(): void
     {
+        $roles = [];
+        $rolePermissions = [];
+        $grants = [];
+
+        foreach (config('authorization.roles', []) as $key => $role) {
+            if (! is_string($key) || ! is_array($role)) {
+                continue;
+            }
+
+            $roles[] = [
+                'key' => $key,
+                'label' => (string) ($role['label'] ?? $key),
+                'is_system' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ];
+
+            foreach (array_values(array_filter(
+                $role['permissions'] ?? [],
+                static fn (mixed $permission): bool => is_string($permission) && $permission !== '',
+            )) as $permission) {
+                $rolePermissions[] = [
+                    'role_key' => $key,
+                    'permission_key' => $permission,
+                ];
+            }
+        }
+
+        foreach (config('authorization.grants', []) as $index => $grant) {
+            if (! is_array($grant)) {
+                continue;
+            }
+
+            $targetType = $grant['target_type'] ?? null;
+            $targetId = $grant['target_id'] ?? null;
+            $grantType = $grant['grant_type'] ?? null;
+            $value = $grant['value'] ?? null;
+            $contextType = $grant['context_type'] ?? null;
+
+            if (! is_string($targetType) || ! is_string($targetId) || ! is_string($grantType) || ! is_string($value) || ! is_string($contextType)) {
+                continue;
+            }
+
+            $grants[] = [
+                'id' => sprintf('seed-grant-%03d', $index + 1),
+                'target_type' => $targetType,
+                'target_id' => $targetId,
+                'grant_type' => $grantType,
+                'value' => $value,
+                'context_type' => $contextType,
+                'organization_id' => is_string($grant['organization_id'] ?? null) ? $grant['organization_id'] : null,
+                'scope_id' => is_string($grant['scope_id'] ?? null) ? $grant['scope_id'] : null,
+                'is_system' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ];
+        }
+
+        DB::table('authorization_roles')->insertOrIgnore($roles);
+        DB::table('authorization_role_permissions')->insertOrIgnore($rolePermissions);
+        DB::table('authorization_grants')->insertOrIgnore($grants);
+
         DB::table('organizations')->insertOrIgnore([
             [
                 'id' => 'org-a',
@@ -343,6 +405,102 @@ class CoreTenancySeeder extends Seeder
                 'compensating_control' => 'Warehouse control room performs manual escalation checks twice per shift.',
                 'linked_finding_id' => 'finding-route-monitoring-gap',
                 'expires_on' => now()->addDays(10)->toDateString(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+        ]);
+
+        DB::table('privacy_data_flows')->insertOrIgnore([
+            [
+                'id' => 'data-flow-customer-support-handoff',
+                'organization_id' => 'org-a',
+                'scope_id' => 'scope-eu',
+                'title' => 'Customer support handoff',
+                'source' => 'CRM platform',
+                'destination' => 'Support operations',
+                'data_category_summary' => 'Customer identifiers, case notes, and order references.',
+                'transfer_type' => 'internal',
+                'review_due_on' => now()->addDays(18)->toDateString(),
+                'linked_asset_id' => 'asset-erp-prod',
+                'linked_risk_id' => 'risk-access-drift',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'id' => 'data-flow-backup-vendor-transfer',
+                'organization_id' => 'org-a',
+                'scope_id' => 'scope-it',
+                'title' => 'Backup vendor transfer',
+                'source' => 'Backup orchestration',
+                'destination' => 'Restore lab vendor',
+                'data_category_summary' => 'System metadata, contact details, and recovery identifiers.',
+                'transfer_type' => 'vendor',
+                'review_due_on' => now()->addDays(24)->toDateString(),
+                'linked_asset_id' => 'asset-laptop-fleet',
+                'linked_risk_id' => 'risk-backup-assurance',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'id' => 'data-flow-route-telemetry-export',
+                'organization_id' => 'org-b',
+                'scope_id' => 'scope-ops',
+                'title' => 'Route telemetry export',
+                'source' => 'Route planner',
+                'destination' => 'Warehouse control room',
+                'data_category_summary' => 'Driver identifiers, route events, and incident escalation context.',
+                'transfer_type' => 'internal',
+                'review_due_on' => now()->addDays(12)->toDateString(),
+                'linked_asset_id' => 'asset-route-planner',
+                'linked_risk_id' => 'risk-route-blackout',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+        ]);
+
+        DB::table('privacy_processing_activities')->insertOrIgnore([
+            [
+                'id' => 'processing-activity-customer-support-operations',
+                'organization_id' => 'org-a',
+                'scope_id' => 'scope-eu',
+                'title' => 'Customer support operations',
+                'purpose' => 'Handle support requests, triage incidents, and coordinate customer case resolution.',
+                'lawful_basis' => 'contract',
+                'linked_data_flow_ids' => 'data-flow-customer-support-handoff',
+                'linked_risk_ids' => 'risk-access-drift',
+                'linked_policy_id' => 'policy-access-governance',
+                'linked_finding_id' => 'finding-access-review-gap',
+                'review_due_on' => now()->addDays(20)->toDateString(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'id' => 'processing-activity-restore-assurance',
+                'organization_id' => 'org-a',
+                'scope_id' => 'scope-it',
+                'title' => 'Restore assurance coordination',
+                'purpose' => 'Coordinate restore testing and vendor validation of continuity records.',
+                'lawful_basis' => 'legal-obligation',
+                'linked_data_flow_ids' => 'data-flow-backup-vendor-transfer',
+                'linked_risk_ids' => 'risk-backup-assurance',
+                'linked_policy_id' => 'policy-backup-assurance',
+                'linked_finding_id' => 'finding-backup-test-gap',
+                'review_due_on' => now()->addDays(28)->toDateString(),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'id' => 'processing-activity-route-monitoring',
+                'organization_id' => 'org-b',
+                'scope_id' => 'scope-ops',
+                'title' => 'Route monitoring and escalation',
+                'purpose' => 'Monitor route disruptions and coordinate escalations affecting warehouse operations.',
+                'lawful_basis' => 'legitimate-interests',
+                'linked_data_flow_ids' => 'data-flow-route-telemetry-export',
+                'linked_risk_ids' => 'risk-route-blackout',
+                'linked_policy_id' => 'policy-route-telemetry',
+                'linked_finding_id' => 'finding-route-monitoring-gap',
+                'review_due_on' => now()->addDays(16)->toDateString(),
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
@@ -778,6 +936,84 @@ class CoreTenancySeeder extends Seeder
                 'functional_actor_id' => 'actor-logistics-team',
                 'domain_object_type' => 'policy-exception',
                 'domain_object_id' => 'exception-route-alert-window',
+                'assignment_type' => 'owner',
+                'organization_id' => 'org-b',
+                'scope_id' => 'scope-ops',
+                'metadata' => json_encode(['source' => 'seed'], JSON_THROW_ON_ERROR),
+                'is_active' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'id' => 'assignment-data-flow-support-owner',
+                'functional_actor_id' => 'actor-compliance-office',
+                'domain_object_type' => 'privacy-data-flow',
+                'domain_object_id' => 'data-flow-customer-support-handoff',
+                'assignment_type' => 'owner',
+                'organization_id' => 'org-a',
+                'scope_id' => 'scope-eu',
+                'metadata' => json_encode(['source' => 'seed'], JSON_THROW_ON_ERROR),
+                'is_active' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'id' => 'assignment-data-flow-backup-owner',
+                'functional_actor_id' => 'actor-it-services',
+                'domain_object_type' => 'privacy-data-flow',
+                'domain_object_id' => 'data-flow-backup-vendor-transfer',
+                'assignment_type' => 'owner',
+                'organization_id' => 'org-a',
+                'scope_id' => 'scope-it',
+                'metadata' => json_encode(['source' => 'seed'], JSON_THROW_ON_ERROR),
+                'is_active' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'id' => 'assignment-data-flow-route-owner',
+                'functional_actor_id' => 'actor-operations-control',
+                'domain_object_type' => 'privacy-data-flow',
+                'domain_object_id' => 'data-flow-route-telemetry-export',
+                'assignment_type' => 'owner',
+                'organization_id' => 'org-b',
+                'scope_id' => 'scope-ops',
+                'metadata' => json_encode(['source' => 'seed'], JSON_THROW_ON_ERROR),
+                'is_active' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'id' => 'assignment-privacy-activity-support-owner',
+                'functional_actor_id' => 'actor-ava-mason',
+                'domain_object_type' => 'privacy-processing-activity',
+                'domain_object_id' => 'processing-activity-customer-support-operations',
+                'assignment_type' => 'owner',
+                'organization_id' => 'org-a',
+                'scope_id' => 'scope-eu',
+                'metadata' => json_encode(['source' => 'seed'], JSON_THROW_ON_ERROR),
+                'is_active' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'id' => 'assignment-privacy-activity-restore-owner',
+                'functional_actor_id' => 'actor-it-services',
+                'domain_object_type' => 'privacy-processing-activity',
+                'domain_object_id' => 'processing-activity-restore-assurance',
+                'assignment_type' => 'owner',
+                'organization_id' => 'org-a',
+                'scope_id' => 'scope-it',
+                'metadata' => json_encode(['source' => 'seed'], JSON_THROW_ON_ERROR),
+                'is_active' => true,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'id' => 'assignment-privacy-activity-route-owner',
+                'functional_actor_id' => 'actor-logistics-team',
+                'domain_object_type' => 'privacy-processing-activity',
+                'domain_object_id' => 'processing-activity-route-monitoring',
                 'assignment_type' => 'owner',
                 'organization_id' => 'org-b',
                 'scope_id' => 'scope-ops',

@@ -15,8 +15,7 @@ class WorkflowDefinition
         public readonly string $initialState,
         public readonly array $states,
         public readonly array $transitions,
-    ) {
-    }
+    ) {}
 
     public function transition(string $transitionKey): ?WorkflowTransitionDefinition
     {

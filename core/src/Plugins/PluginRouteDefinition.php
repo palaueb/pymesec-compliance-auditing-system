@@ -14,6 +14,5 @@ class PluginRouteDefinition
         public readonly array $middleware = [],
         public readonly ?string $prefix = null,
         public readonly ?string $permission = null,
-    ) {
-    }
+    ) {}
 }

@@ -12,6 +12,5 @@ class PluginMenuDefinition
         public readonly ?string $icon = null,
         public readonly int $order = 100,
         public readonly ?string $permission = null,
-    ) {
-    }
+    ) {}
 }

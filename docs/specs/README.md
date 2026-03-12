@@ -8,6 +8,7 @@ Current notable documents:
 - `audit-trail-v1.md`
 - `artifacts-and-attachments-v1.md`
 - `event-bus-and-hooks-v1.md`
+- `data-flows-privacy-plugin-v1.md`
 - `notifications-and-reminders-v1.md`
 - `menu-system-ui-shell-v1.md`
 - `plugin-ui-contract-v1.md`

@@ -32,8 +32,7 @@ class MenuRegistry implements MenuRegistryInterface
         private readonly PermissionRegistryInterface $permissions,
         private readonly AuthorizationServiceInterface $authorization,
         private readonly UrlGenerator $url,
-    ) {
-    }
+    ) {}
 
     public function registerCore(MenuDefinition $definition): void
     {

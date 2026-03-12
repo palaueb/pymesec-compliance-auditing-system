@@ -20,8 +20,7 @@ class DatabaseWorkflowService implements WorkflowServiceInterface
         private readonly AuthorizationServiceInterface $authorization,
         private readonly AuditTrailInterface $audit,
         private readonly EventBusInterface $events,
-    ) {
-    }
+    ) {}
 
     public function instanceFor(string $workflowKey, string $subjectType, string $subjectId, string $organizationId, ?string $scopeId = null): WorkflowInstance
     {

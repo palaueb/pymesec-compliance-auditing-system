@@ -21,6 +21,5 @@ class AuditRecordData
         public readonly array $summary = [],
         public readonly array $correlation = [],
         public readonly ?string $executionOrigin = null,
-    ) {
-    }
+    ) {}
 }

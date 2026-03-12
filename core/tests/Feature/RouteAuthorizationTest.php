@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Tests\TestCase;
 
 class RouteAuthorizationTest extends TestCase
@@ -64,7 +65,7 @@ class RouteAuthorizationTest extends TestCase
             'membership_id' => 'membership-org-a-viewer',
             'label' => 'Viewer attempt',
             'artifact_type' => 'evidence',
-            'artifact' => \Illuminate\Http\UploadedFile::fake()->createWithContent('viewer.txt', 'viewer'),
+            'artifact' => UploadedFile::fake()->createWithContent('viewer.txt', 'viewer'),
         ];
 
         $this->post('/plugins/controls/control-access-review/artifacts', $payload)
@@ -116,7 +117,7 @@ class RouteAuthorizationTest extends TestCase
             ...$payload,
             'label' => 'Viewer risk attempt',
             'artifact_type' => 'evidence',
-            'artifact' => \Illuminate\Http\UploadedFile::fake()->createWithContent('viewer-risk.txt', 'viewer'),
+            'artifact' => UploadedFile::fake()->createWithContent('viewer-risk.txt', 'viewer'),
         ])->assertForbidden();
 
         $this->post('/plugins/risks', [
@@ -146,7 +147,7 @@ class RouteAuthorizationTest extends TestCase
             ...$payload,
             'label' => 'Operator risk evidence',
             'artifact_type' => 'evidence',
-            'artifact' => \Illuminate\Http\UploadedFile::fake()->createWithContent('operator-risk.txt', 'operator'),
+            'artifact' => UploadedFile::fake()->createWithContent('operator-risk.txt', 'operator'),
         ])->assertFound();
 
         $this->post('/plugins/risks', [
@@ -185,7 +186,7 @@ class RouteAuthorizationTest extends TestCase
             ...$payload,
             'label' => 'Viewer finding attempt',
             'artifact_type' => 'evidence',
-            'artifact' => \Illuminate\Http\UploadedFile::fake()->createWithContent('viewer-finding.txt', 'viewer'),
+            'artifact' => UploadedFile::fake()->createWithContent('viewer-finding.txt', 'viewer'),
         ])->assertForbidden();
 
         $this->post('/plugins/findings', [
@@ -223,7 +224,7 @@ class RouteAuthorizationTest extends TestCase
             ...$payload,
             'label' => 'Operator finding evidence',
             'artifact_type' => 'evidence',
-            'artifact' => \Illuminate\Http\UploadedFile::fake()->createWithContent('operator-finding.txt', 'operator'),
+            'artifact' => UploadedFile::fake()->createWithContent('operator-finding.txt', 'operator'),
         ])->assertFound();
 
         $this->post('/plugins/findings', [
@@ -275,7 +276,7 @@ class RouteAuthorizationTest extends TestCase
             ...$payload,
             'label' => 'Viewer policy attempt',
             'artifact_type' => 'document',
-            'artifact' => \Illuminate\Http\UploadedFile::fake()->createWithContent('viewer-policy.txt', 'viewer'),
+            'artifact' => UploadedFile::fake()->createWithContent('viewer-policy.txt', 'viewer'),
         ])->assertForbidden();
 
         $this->post('/plugins/policies/exceptions/exception-break-glass-window/artifacts', [
@@ -283,7 +284,7 @@ class RouteAuthorizationTest extends TestCase
             'menu' => 'plugin.policy-exceptions.exceptions',
             'label' => 'Viewer exception attempt',
             'artifact_type' => 'evidence',
-            'artifact' => \Illuminate\Http\UploadedFile::fake()->createWithContent('viewer-exception.txt', 'viewer'),
+            'artifact' => UploadedFile::fake()->createWithContent('viewer-exception.txt', 'viewer'),
         ])->assertForbidden();
 
         $this->post('/plugins/policies', [
@@ -330,7 +331,7 @@ class RouteAuthorizationTest extends TestCase
             ...$payload,
             'label' => 'Operator policy evidence',
             'artifact_type' => 'document',
-            'artifact' => \Illuminate\Http\UploadedFile::fake()->createWithContent('operator-policy.txt', 'operator'),
+            'artifact' => UploadedFile::fake()->createWithContent('operator-policy.txt', 'operator'),
         ])->assertFound();
 
         $this->post('/plugins/policies/exceptions/exception-break-glass-window/artifacts', [
@@ -338,7 +339,7 @@ class RouteAuthorizationTest extends TestCase
             'menu' => 'plugin.policy-exceptions.exceptions',
             'label' => 'Operator exception evidence',
             'artifact_type' => 'evidence',
-            'artifact' => \Illuminate\Http\UploadedFile::fake()->createWithContent('operator-exception.txt', 'operator'),
+            'artifact' => UploadedFile::fake()->createWithContent('operator-exception.txt', 'operator'),
         ])->assertFound();
 
         $this->post('/plugins/policies', [
@@ -370,5 +371,171 @@ class RouteAuthorizationTest extends TestCase
             'title' => 'Operator updated exception',
             'rationale' => 'Operator can update exceptions.',
         ])->assertFound();
+    }
+
+    public function test_the_privacy_routes_require_manage_permission(): void
+    {
+        $payload = [
+            'principal_id' => 'principal-org-a',
+            'organization_id' => 'org-a',
+            'locale' => 'en',
+            'membership_id' => 'membership-org-a-viewer',
+        ];
+
+        $this->post('/plugins/privacy/data-flows/data-flow-customer-support-handoff/transitions/submit-review', [
+            ...$payload,
+            'menu' => 'plugin.data-flows-privacy.root',
+        ])->assertForbidden();
+
+        $this->post('/plugins/privacy/activities/processing-activity-customer-support-operations/transitions/submit-review', [
+            ...$payload,
+            'menu' => 'plugin.data-flows-privacy.activities',
+        ])->assertForbidden();
+
+        $this->post('/plugins/privacy/data-flows/data-flow-customer-support-handoff/artifacts', [
+            ...$payload,
+            'menu' => 'plugin.data-flows-privacy.root',
+            'label' => 'Viewer privacy attempt',
+            'artifact_type' => 'record',
+            'artifact' => UploadedFile::fake()->createWithContent('viewer-privacy.txt', 'viewer'),
+        ])->assertForbidden();
+
+        $this->post('/plugins/privacy/activities/processing-activity-customer-support-operations/artifacts', [
+            ...$payload,
+            'menu' => 'plugin.data-flows-privacy.activities',
+            'label' => 'Viewer privacy activity attempt',
+            'artifact_type' => 'record',
+            'artifact' => UploadedFile::fake()->createWithContent('viewer-privacy-activity.txt', 'viewer'),
+        ])->assertForbidden();
+
+        $this->post('/plugins/privacy/data-flows', [
+            ...$payload,
+            'menu' => 'plugin.data-flows-privacy.root',
+            'title' => 'Viewer flow',
+            'source' => 'A',
+            'destination' => 'B',
+            'data_category_summary' => 'Viewer should not create privacy flows.',
+            'transfer_type' => 'internal',
+        ])->assertForbidden();
+
+        $this->post('/plugins/privacy/data-flows/data-flow-customer-support-handoff', [
+            ...$payload,
+            'menu' => 'plugin.data-flows-privacy.root',
+            'title' => 'Viewer flow update',
+            'source' => 'A',
+            'destination' => 'B',
+            'data_category_summary' => 'Viewer should not update privacy flows.',
+            'transfer_type' => 'internal',
+        ])->assertForbidden();
+
+        $this->post('/plugins/privacy/activities', [
+            ...$payload,
+            'menu' => 'plugin.data-flows-privacy.activities',
+            'title' => 'Viewer activity',
+            'purpose' => 'Viewer should not create activities.',
+            'lawful_basis' => 'contract',
+        ])->assertForbidden();
+
+        $this->post('/plugins/privacy/activities/processing-activity-customer-support-operations', [
+            ...$payload,
+            'menu' => 'plugin.data-flows-privacy.activities',
+            'title' => 'Viewer activity update',
+            'purpose' => 'Viewer should not update activities.',
+            'lawful_basis' => 'contract',
+        ])->assertForbidden();
+
+        $payload['membership_id'] = 'membership-org-a-hello';
+
+        $this->post('/plugins/privacy/data-flows/data-flow-customer-support-handoff/transitions/submit-review', [
+            ...$payload,
+            'menu' => 'plugin.data-flows-privacy.root',
+        ])->assertFound();
+
+        $this->post('/plugins/privacy/activities/processing-activity-customer-support-operations/transitions/submit-review', [
+            ...$payload,
+            'menu' => 'plugin.data-flows-privacy.activities',
+        ])->assertFound();
+
+        $this->post('/plugins/privacy/data-flows/data-flow-customer-support-handoff/artifacts', [
+            ...$payload,
+            'menu' => 'plugin.data-flows-privacy.root',
+            'label' => 'Operator privacy record',
+            'artifact_type' => 'record',
+            'artifact' => UploadedFile::fake()->createWithContent('operator-privacy.txt', 'operator'),
+        ])->assertFound();
+
+        $this->post('/plugins/privacy/activities/processing-activity-customer-support-operations/artifacts', [
+            ...$payload,
+            'menu' => 'plugin.data-flows-privacy.activities',
+            'label' => 'Operator privacy activity record',
+            'artifact_type' => 'record',
+            'artifact' => UploadedFile::fake()->createWithContent('operator-privacy-activity.txt', 'operator'),
+        ])->assertFound();
+
+        $this->post('/plugins/privacy/data-flows', [
+            ...$payload,
+            'menu' => 'plugin.data-flows-privacy.root',
+            'title' => 'Operator flow',
+            'source' => 'A',
+            'destination' => 'B',
+            'data_category_summary' => 'Operator can create privacy flows.',
+            'transfer_type' => 'internal',
+        ])->assertFound();
+
+        $this->post('/plugins/privacy/data-flows/data-flow-customer-support-handoff', [
+            ...$payload,
+            'menu' => 'plugin.data-flows-privacy.root',
+            'title' => 'Operator updated flow',
+            'source' => 'A',
+            'destination' => 'B',
+            'data_category_summary' => 'Operator can update privacy flows.',
+            'transfer_type' => 'internal',
+        ])->assertFound();
+
+        $this->post('/plugins/privacy/activities', [
+            ...$payload,
+            'menu' => 'plugin.data-flows-privacy.activities',
+            'title' => 'Operator activity',
+            'purpose' => 'Operator can create activities.',
+            'lawful_basis' => 'contract',
+        ])->assertFound();
+
+        $this->post('/plugins/privacy/activities/processing-activity-customer-support-operations', [
+            ...$payload,
+            'menu' => 'plugin.data-flows-privacy.activities',
+            'title' => 'Operator updated activity',
+            'purpose' => 'Operator can update activities.',
+            'lawful_basis' => 'contract',
+        ])->assertFound();
+    }
+
+    public function test_the_core_role_routes_require_platform_permission(): void
+    {
+        $this->get('/core/roles?principal_id=principal-org-a')
+            ->assertForbidden();
+
+        $payload = [
+            'principal_id' => 'principal-org-a',
+            'locale' => 'en',
+            'menu' => 'core.roles',
+        ];
+
+        $this->post('/core/roles', [
+            ...$payload,
+            'key' => 'viewer-role',
+            'label' => 'Viewer role',
+        ])->assertForbidden();
+
+        $this->post('/core/roles/grants', [
+            ...$payload,
+            'target_type' => 'principal',
+            'target_id' => 'principal-org-a',
+            'grant_type' => 'role',
+            'value' => 'platform-admin',
+            'context_type' => 'platform',
+        ])->assertForbidden();
+
+        $this->get('/core/roles?principal_id=principal-admin')
+            ->assertOk();
     }
 }

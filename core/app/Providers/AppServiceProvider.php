@@ -2,6 +2,7 @@
 
 namespace App\Providers;
 
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\ServiceProvider;
 use PymeSec\Core\Artifacts\Contracts\ArtifactServiceInterface;
 use PymeSec\Core\Artifacts\DatabaseArtifactService;
@@ -19,15 +20,19 @@ use PymeSec\Core\Notifications\Contracts\NotificationServiceInterface;
 use PymeSec\Core\Notifications\DatabaseNotificationService;
 use PymeSec\Core\Permissions\AuthorizationService;
 use PymeSec\Core\Permissions\Contracts\AuthorizationServiceInterface;
+use PymeSec\Core\Permissions\Contracts\AuthorizationStoreInterface;
 use PymeSec\Core\Permissions\Contracts\PermissionRegistryInterface;
-use PymeSec\Core\Permissions\PermissionGrant;
+use PymeSec\Core\Permissions\DatabaseAuthorizationStore;
 use PymeSec\Core\Permissions\PermissionDefinition;
 use PymeSec\Core\Permissions\PermissionRegistry;
-use PymeSec\Core\Permissions\RoleDefinition;
+use PymeSec\Core\Plugins\Contracts\PluginManagerInterface;
 use PymeSec\Core\Tenancy\Contracts\TenancyServiceInterface;
 use PymeSec\Core\Tenancy\DatabaseTenancyService;
 use PymeSec\Core\UI\Contracts\ScreenRegistryInterface;
+use PymeSec\Core\UI\ScreenDefinition;
 use PymeSec\Core\UI\ScreenRegistry;
+use PymeSec\Core\UI\ScreenRenderContext;
+use PymeSec\Core\UI\ToolbarAction;
 use PymeSec\Core\Workflows\Contracts\WorkflowRegistryInterface;
 use PymeSec\Core\Workflows\Contracts\WorkflowServiceInterface;
 use PymeSec\Core\Workflows\DatabaseWorkflowService;
@@ -41,15 +46,15 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(PermissionRegistryInterface::class, function (): PermissionRegistryInterface {
-            return new PermissionRegistry();
+            return new PermissionRegistry;
         });
 
         $this->app->singleton(AuditTrailInterface::class, function (): AuditTrailInterface {
-            return new DatabaseAuditTrail();
+            return new DatabaseAuditTrail;
         });
 
         $this->app->singleton(EventBusInterface::class, function (): EventBusInterface {
-            return new DatabaseEventBus();
+            return new DatabaseEventBus;
         });
 
         $this->app->singleton(TenancyServiceInterface::class, function (): TenancyServiceInterface {
@@ -80,6 +85,10 @@ class AppServiceProvider extends ServiceProvider
             );
         });
 
+        $this->app->singleton(AuthorizationStoreInterface::class, function (): AuthorizationStoreInterface {
+            return new DatabaseAuthorizationStore;
+        });
+
         $this->app->singleton(MenuRegistryInterface::class, function ($app): MenuRegistryInterface {
             return new MenuRegistry(
                 permissions: $app->make(PermissionRegistryInterface::class),
@@ -90,7 +99,7 @@ class AppServiceProvider extends ServiceProvider
 
         $this->app->singleton(MenuLabelResolver::class, function ($app): MenuLabelResolver {
             return new MenuLabelResolver(
-                plugins: $app->make(\PymeSec\Core\Plugins\Contracts\PluginManagerInterface::class),
+                plugins: $app->make(PluginManagerInterface::class),
             );
         });
 
@@ -102,7 +111,7 @@ class AppServiceProvider extends ServiceProvider
         });
 
         $this->app->singleton(WorkflowRegistryInterface::class, function (): WorkflowRegistryInterface {
-            return new WorkflowRegistry();
+            return new WorkflowRegistry;
         });
 
         $this->app->singleton(WorkflowServiceInterface::class, function ($app): WorkflowServiceInterface {
@@ -115,55 +124,9 @@ class AppServiceProvider extends ServiceProvider
         });
 
         $this->app->singleton(AuthorizationServiceInterface::class, function ($app): AuthorizationServiceInterface {
-            $roles = [];
-
-            foreach (config('authorization.roles', []) as $key => $role) {
-                if (! is_string($key) || ! is_array($role)) {
-                    continue;
-                }
-
-                $roles[$key] = new RoleDefinition(
-                    key: $key,
-                    label: (string) ($role['label'] ?? $key),
-                    permissions: array_values(array_filter(
-                        $role['permissions'] ?? [],
-                        static fn (mixed $permission): bool => is_string($permission) && $permission !== '',
-                    )),
-                );
-            }
-
-            $grants = [];
-
-            foreach (config('authorization.grants', []) as $grant) {
-                if (! is_array($grant)) {
-                    continue;
-                }
-
-                $targetType = $grant['target_type'] ?? null;
-                $targetId = $grant['target_id'] ?? null;
-                $grantType = $grant['grant_type'] ?? null;
-                $value = $grant['value'] ?? null;
-                $contextType = $grant['context_type'] ?? null;
-
-                if (! is_string($targetType) || ! is_string($targetId) || ! is_string($grantType) || ! is_string($value) || ! is_string($contextType)) {
-                    continue;
-                }
-
-                $grants[] = new PermissionGrant(
-                    targetType: $targetType,
-                    targetId: $targetId,
-                    grantType: $grantType,
-                    value: $value,
-                    contextType: $contextType,
-                    organizationId: is_string($grant['organization_id'] ?? null) ? $grant['organization_id'] : null,
-                    scopeId: is_string($grant['scope_id'] ?? null) ? $grant['scope_id'] : null,
-                );
-            }
-
             return new AuthorizationService(
                 permissions: $app->make(PermissionRegistryInterface::class),
-                roles: $roles,
-                grants: $grants,
+                store: $app->make(AuthorizationStoreInterface::class),
             );
         });
     }
@@ -191,6 +154,24 @@ class AppServiceProvider extends ServiceProvider
                 description: 'Enable, disable, and upgrade platform plugins subject to policy.',
                 origin: 'core',
                 featureArea: 'plugins',
+                operation: 'manage',
+                contexts: ['platform'],
+            ),
+            new PermissionDefinition(
+                key: 'core.roles.view',
+                label: 'View roles',
+                description: 'View authorization roles and grants.',
+                origin: 'core',
+                featureArea: 'roles',
+                operation: 'view',
+                contexts: ['platform'],
+            ),
+            new PermissionDefinition(
+                key: 'core.roles.manage',
+                label: 'Manage roles',
+                description: 'Create roles, update grants, and manage authorization assignments.',
+                origin: 'core',
+                featureArea: 'roles',
                 operation: 'manage',
                 contexts: ['platform'],
             ),
@@ -366,6 +347,17 @@ class AppServiceProvider extends ServiceProvider
         ));
 
         $menus->registerCore(new MenuDefinition(
+            id: 'core.roles',
+            owner: 'core',
+            labelKey: 'core.nav.roles',
+            routeName: 'core.roles.index',
+            parentId: 'core.platform',
+            icon: 'key',
+            order: 25,
+            permission: 'core.roles.view',
+        ));
+
+        $menus->registerCore(new MenuDefinition(
             id: 'core.tenancy',
             owner: 'core',
             labelKey: 'core.nav.tenancy',
@@ -396,6 +388,79 @@ class AppServiceProvider extends ServiceProvider
             icon: 'users',
             order: 50,
             permission: 'core.functional-actors.view',
+        ));
+
+        $this->app->make(ScreenRegistryInterface::class)->register(new ScreenDefinition(
+            menuId: 'core.roles',
+            owner: 'core',
+            titleKey: 'core.roles.screen.title',
+            subtitleKey: 'core.roles.screen.subtitle',
+            viewPath: resource_path('views/roles.blade.php'),
+            dataResolver: function (ScreenRenderContext $screenContext): array {
+                $store = $this->app->make(AuthorizationStoreInterface::class);
+                $permissions = $this->app->make(PermissionRegistryInterface::class);
+
+                $query = $screenContext->query;
+                $query['principal_id'] = $screenContext->principal?->id ?? ($query['principal_id'] ?? 'principal-admin');
+                $query['locale'] = $screenContext->locale;
+
+                $principalOptions = ['principal-admin'];
+
+                foreach (DB::table('memberships')->select('principal_id')->distinct()->pluck('principal_id') as $principalId) {
+                    if (is_string($principalId) && $principalId !== '' && ! in_array($principalId, $principalOptions, true)) {
+                        $principalOptions[] = $principalId;
+                    }
+                }
+
+                return [
+                    'roles' => $store->roleRecords(),
+                    'grants' => $store->grantRecords(),
+                    'query' => $query,
+                    'role_store_route' => route('core.roles.store'),
+                    'grant_store_route' => route('core.grants.store'),
+                    'permission_options' => array_map(static fn ($permission): array => [
+                        'key' => $permission->key,
+                        'label' => $permission->label,
+                    ], $permissions->all()),
+                    'principal_options' => $principalOptions,
+                    'membership_options' => DB::table('memberships')
+                        ->orderBy('organization_id')
+                        ->orderBy('id')
+                        ->get(['id', 'principal_id', 'organization_id'])
+                        ->map(static fn ($membership): array => [
+                            'id' => (string) $membership->id,
+                            'label' => sprintf('%s [%s / %s]', (string) $membership->id, (string) $membership->principal_id, (string) $membership->organization_id),
+                        ])->all(),
+                    'organization_options' => DB::table('organizations')
+                        ->where('is_active', true)
+                        ->orderBy('name')
+                        ->get(['id', 'name'])
+                        ->map(static fn ($organization): array => [
+                            'id' => (string) $organization->id,
+                            'label' => (string) $organization->name,
+                        ])->all(),
+                    'scope_options' => DB::table('scopes')
+                        ->where('is_active', true)
+                        ->orderBy('name')
+                        ->get(['id', 'name', 'organization_id'])
+                        ->map(static fn ($scope): array => [
+                            'id' => (string) $scope->id,
+                            'label' => sprintf('%s [%s]', (string) $scope->name, (string) $scope->organization_id),
+                        ])->all(),
+                ];
+            },
+            toolbarResolver: fn (ScreenRenderContext $screenContext): array => [
+                new ToolbarAction(
+                    label: 'Add role',
+                    url: '#role-editor',
+                    variant: 'primary',
+                ),
+                new ToolbarAction(
+                    label: 'Assign grant',
+                    url: '#grant-editor',
+                    variant: 'secondary',
+                ),
+            ],
         ));
     }
 }

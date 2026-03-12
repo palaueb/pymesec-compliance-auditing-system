@@ -15,8 +15,7 @@ class PermissionDefinition
         public readonly ?string $featureArea = null,
         public readonly ?string $operation = null,
         public readonly array $contexts = [],
-    ) {
-    }
+    ) {}
 
     /**
      * @return array<string, mixed>

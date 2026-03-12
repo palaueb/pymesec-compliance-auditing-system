@@ -16,8 +16,7 @@ class ScreenRegistry implements ScreenRegistryInterface
     public function __construct(
         private readonly ViewFactory $views,
         private readonly MenuLabelResolver $labels,
-    ) {
-    }
+    ) {}
 
     public function register(ScreenDefinition $definition): void
     {

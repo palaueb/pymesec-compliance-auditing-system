@@ -9,8 +9,7 @@ class PrincipalReference
         public readonly string $provider,
         public readonly ?string $subject = null,
         public readonly ?string $displayName = null,
-    ) {
-    }
+    ) {}
 
     /**
      * @return array<string, string|null>

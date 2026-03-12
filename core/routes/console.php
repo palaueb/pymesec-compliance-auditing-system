@@ -1,14 +1,15 @@
 <?php
 
-use PymeSec\Core\Menus\Contracts\MenuRegistryInterface;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use PymeSec\Core\Artifacts\Contracts\ArtifactServiceInterface;
-use PymeSec\Core\Audit\Contracts\AuditTrailInterface;
 use PymeSec\Core\Audit\AuditRecordData;
+use PymeSec\Core\Audit\Contracts\AuditTrailInterface;
 use PymeSec\Core\Events\Contracts\EventBusInterface;
 use PymeSec\Core\FunctionalActors\Contracts\FunctionalActorServiceInterface;
+use PymeSec\Core\Menus\Contracts\MenuRegistryInterface;
 use PymeSec\Core\Notifications\Contracts\NotificationServiceInterface;
+use PymeSec\Core\Permissions\Contracts\AuthorizationStoreInterface;
 use PymeSec\Core\Permissions\Contracts\PermissionRegistryInterface;
 use PymeSec\Core\Plugins\Contracts\PluginManagerInterface;
 use PymeSec\Core\Plugins\PluginStateStore;
@@ -50,6 +51,38 @@ Artisan::command('permissions:list', function (PermissionRegistryInterface $perm
         $rows,
     );
 })->purpose('List registered core and plugin permissions');
+
+Artisan::command('roles:list', function (AuthorizationStoreInterface $store) {
+    $rows = array_map(static fn (array $role): array => [
+        $role['key'],
+        $role['label'],
+        (string) count($role['permissions']),
+        ($role['is_system'] ?? false) ? 'system' : 'custom',
+    ], $store->roleRecords());
+
+    $this->table(
+        ['Key', 'Label', 'Permissions', 'Source'],
+        $rows,
+    );
+})->purpose('List persisted authorization roles');
+
+Artisan::command('grants:list', function (AuthorizationStoreInterface $store) {
+    $rows = array_map(static fn (array $grant): array => [
+        $grant['id'],
+        $grant['target_type'],
+        $grant['target_id'],
+        $grant['grant_type'],
+        $grant['value'],
+        $grant['context_type'],
+        $grant['organization_id'] ?? '',
+        $grant['scope_id'] ?? '',
+    ], $store->grantRecords());
+
+    $this->table(
+        ['ID', 'Target Type', 'Target ID', 'Grant Type', 'Value', 'Context', 'Organization', 'Scope'],
+        $rows,
+    );
+})->purpose('List persisted authorization grants');
 
 Artisan::command('audit:list {--limit=20}', function (AuditTrailInterface $audit) {
     $rows = array_map(static fn ($record): array => [

@@ -16,8 +16,7 @@ class DatabaseArtifactService implements ArtifactServiceInterface
     public function __construct(
         private readonly AuditTrailInterface $audit,
         private readonly EventBusInterface $events,
-    ) {
-    }
+    ) {}
 
     public function store(ArtifactUploadData $artifact): ArtifactRecord
     {

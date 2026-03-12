@@ -16,6 +16,5 @@ class WorkflowExecutionContext
         public readonly string $organizationId,
         public readonly ?string $scopeId = null,
         public readonly ?string $membershipId = null,
-    ) {
-    }
+    ) {}
 }

@@ -18,6 +18,5 @@ class ScreenDefinition
         public readonly string $viewPath,
         public readonly ?Closure $dataResolver = null,
         public readonly ?Closure $toolbarResolver = null,
-    ) {
-    }
+    ) {}
 }

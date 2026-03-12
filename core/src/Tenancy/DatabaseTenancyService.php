@@ -15,8 +15,7 @@ class DatabaseTenancyService implements TenancyServiceInterface
     public function __construct(
         private readonly AuditTrailInterface $audit,
         private readonly EventBusInterface $events,
-    ) {
-    }
+    ) {}
 
     public function organizations(): array
     {

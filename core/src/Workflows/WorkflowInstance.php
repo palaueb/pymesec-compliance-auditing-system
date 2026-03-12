@@ -12,6 +12,5 @@ class WorkflowInstance
         public readonly string $organizationId,
         public readonly ?string $scopeId,
         public readonly string $currentState,
-    ) {
-    }
+    ) {}
 }

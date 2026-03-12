@@ -2,8 +2,8 @@
 
 namespace Tests;
 
-use Illuminate\Support\Facades\Schema;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
+use Illuminate\Support\Facades\Schema;
 use PymeSec\Core\Plugins\PluginStateStore;
 
 abstract class TestCase extends BaseTestCase

@@ -41,4 +41,12 @@ class AuthorizationTest extends TestCase
             ->assertJsonPath('result.status', 'unresolved')
             ->assertJsonPath('result.reason', 'no_matching_grant');
     }
+
+    public function test_platform_admin_is_allowed_to_view_roles(): void
+    {
+        $this->get('/core/authorization/check?principal_id=principal-admin&permission=core.roles.view')
+            ->assertOk()
+            ->assertJsonPath('result.status', 'allow')
+            ->assertJsonPath('result.allowed', true);
+    }
 }

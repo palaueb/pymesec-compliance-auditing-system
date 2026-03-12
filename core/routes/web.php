@@ -2,8 +2,10 @@
 
 use Illuminate\Support\Facades\Route;
 use PymeSec\Core\Artifacts\Contracts\ArtifactServiceInterface;
+use PymeSec\Core\Audit\AuditRecordData;
 use PymeSec\Core\Audit\Contracts\AuditTrailInterface;
 use PymeSec\Core\Events\Contracts\EventBusInterface;
+use PymeSec\Core\Events\PublicEvent;
 use PymeSec\Core\FunctionalActors\Contracts\FunctionalActorServiceInterface;
 use PymeSec\Core\Menus\Contracts\MenuRegistryInterface;
 use PymeSec\Core\Menus\MenuLabelResolver;
@@ -11,10 +13,12 @@ use PymeSec\Core\Menus\MenuVisibilityContext;
 use PymeSec\Core\Notifications\Contracts\NotificationServiceInterface;
 use PymeSec\Core\Permissions\AuthorizationContext;
 use PymeSec\Core\Permissions\Contracts\AuthorizationServiceInterface;
+use PymeSec\Core\Permissions\Contracts\AuthorizationStoreInterface;
 use PymeSec\Core\Permissions\Contracts\PermissionRegistryInterface;
 use PymeSec\Core\Plugins\Contracts\PluginManagerInterface;
 use PymeSec\Core\Principals\PrincipalReference;
 use PymeSec\Core\Tenancy\Contracts\TenancyServiceInterface;
+use PymeSec\Core\Tenancy\TenancyContext;
 use PymeSec\Core\UI\Contracts\ScreenRegistryInterface;
 use PymeSec\Core\UI\ScreenRenderContext;
 use PymeSec\Core\Workflows\Contracts\WorkflowRegistryInterface;
@@ -241,6 +245,220 @@ Route::get('/core/permissions', function (PermissionRegistryInterface $permissio
         ),
     ]);
 })->name('core.permissions.index');
+
+Route::get('/core/roles', function (AuthorizationStoreInterface $store) {
+    return response()->json([
+        'roles' => $store->roleRecords(),
+        'grants' => $store->grantRecords(),
+    ]);
+})->middleware('core.permission:core.roles.view')->name('core.roles.index');
+
+Route::post('/core/roles', function (
+    AuthorizationStoreInterface $store,
+    PermissionRegistryInterface $permissions,
+    AuditTrailInterface $audit,
+    EventBusInterface $events
+) {
+    $validated = request()->validate([
+        'key' => ['required', 'string', 'max:80', 'regex:/^[a-z0-9][a-z0-9\\.-]*$/'],
+        'label' => ['required', 'string', 'max:160'],
+        'permissions' => ['nullable', 'array'],
+        'permissions.*' => ['string', 'max:160'],
+        'principal_id' => ['nullable', 'string', 'max:80'],
+        'locale' => ['nullable', 'string', 'max:10'],
+        'menu' => ['nullable', 'string', 'max:80'],
+    ]);
+
+    $selectedPermissions = array_values(array_filter(
+        $validated['permissions'] ?? [],
+        static fn (mixed $permission): bool => is_string($permission) && $permission !== '' && $permissions->has($permission),
+    ));
+
+    $role = $store->upsertRole(
+        key: (string) $validated['key'],
+        label: (string) $validated['label'],
+        permissions: $selectedPermissions,
+    );
+
+    $principalId = is_string($validated['principal_id'] ?? null) ? $validated['principal_id'] : null;
+
+    $audit->record(new AuditRecordData(
+        eventType: 'core.roles.upserted',
+        outcome: 'success',
+        originComponent: 'core',
+        principalId: $principalId,
+        targetType: 'role',
+        targetId: $role->key,
+        summary: [
+            'label' => $role->label,
+            'permission_count' => count($role->permissions),
+        ],
+        executionOrigin: 'http',
+    ));
+
+    $events->publish(new PublicEvent(
+        name: 'core.roles.upserted',
+        originComponent: 'core',
+        payload: [
+            'role_key' => $role->key,
+            'label' => $role->label,
+            'permission_count' => count($role->permissions),
+        ],
+    ));
+
+    return redirect()->route('core.shell.index', array_filter([
+        'menu' => is_string($validated['menu'] ?? null) ? $validated['menu'] : 'core.roles',
+        'principal_id' => $principalId,
+        'locale' => is_string($validated['locale'] ?? null) ? $validated['locale'] : 'en',
+    ]));
+})->middleware('core.permission:core.roles.manage')->name('core.roles.store');
+
+Route::post('/core/roles/grants', function (
+    AuthorizationStoreInterface $store,
+    PermissionRegistryInterface $permissions,
+    AuditTrailInterface $audit,
+    EventBusInterface $events
+) {
+    $validated = request()->validate([
+        'target_type' => ['required', 'string', 'in:principal,membership'],
+        'target_id' => ['required', 'string', 'max:120'],
+        'grant_type' => ['required', 'string', 'in:role,permission'],
+        'value' => ['required', 'string', 'max:160'],
+        'context_type' => ['required', 'string', 'in:platform,organization,scope'],
+        'organization_id' => ['nullable', 'string', 'max:64'],
+        'scope_id' => ['nullable', 'string', 'max:64'],
+        'principal_id' => ['nullable', 'string', 'max:80'],
+        'locale' => ['nullable', 'string', 'max:10'],
+        'menu' => ['nullable', 'string', 'max:80'],
+    ]);
+
+    if ($validated['grant_type'] === 'role' && ! isset($store->roleDefinitions()[$validated['value']])) {
+        abort(422, 'Unknown role value.');
+    }
+
+    if ($validated['grant_type'] === 'permission' && ! $permissions->has($validated['value'])) {
+        abort(422, 'Unknown permission value.');
+    }
+
+    $organizationId = $validated['context_type'] !== 'platform'
+        ? (is_string($validated['organization_id'] ?? null) && $validated['organization_id'] !== '' ? $validated['organization_id'] : null)
+        : null;
+    $scopeId = $validated['context_type'] === 'scope'
+        ? (is_string($validated['scope_id'] ?? null) && $validated['scope_id'] !== '' ? $validated['scope_id'] : null)
+        : null;
+
+    $grant = $store->upsertGrant(
+        id: null,
+        targetType: $validated['target_type'],
+        targetId: $validated['target_id'],
+        grantType: $validated['grant_type'],
+        value: $validated['value'],
+        contextType: $validated['context_type'],
+        organizationId: $organizationId,
+        scopeId: $scopeId,
+    );
+
+    $principalId = is_string($validated['principal_id'] ?? null) ? $validated['principal_id'] : null;
+
+    $audit->record(new AuditRecordData(
+        eventType: 'core.role-grants.upserted',
+        outcome: 'success',
+        originComponent: 'core',
+        principalId: $principalId,
+        targetType: 'authorization_grant',
+        targetId: (string) ($grant['id'] ?? ''),
+        summary: $grant,
+        executionOrigin: 'http',
+    ));
+
+    $events->publish(new PublicEvent(
+        name: 'core.role-grants.upserted',
+        originComponent: 'core',
+        payload: $grant,
+        organizationId: $organizationId,
+        scopeId: $scopeId,
+    ));
+
+    return redirect()->route('core.shell.index', array_filter([
+        'menu' => is_string($validated['menu'] ?? null) ? $validated['menu'] : 'core.roles',
+        'principal_id' => $principalId,
+        'locale' => is_string($validated['locale'] ?? null) ? $validated['locale'] : 'en',
+    ]));
+})->middleware('core.permission:core.roles.manage')->name('core.grants.store');
+
+Route::post('/core/roles/grants/{grantId}', function (
+    string $grantId,
+    AuthorizationStoreInterface $store,
+    PermissionRegistryInterface $permissions,
+    AuditTrailInterface $audit,
+    EventBusInterface $events
+) {
+    $validated = request()->validate([
+        'target_type' => ['required', 'string', 'in:principal,membership'],
+        'target_id' => ['required', 'string', 'max:120'],
+        'grant_type' => ['required', 'string', 'in:role,permission'],
+        'value' => ['required', 'string', 'max:160'],
+        'context_type' => ['required', 'string', 'in:platform,organization,scope'],
+        'organization_id' => ['nullable', 'string', 'max:64'],
+        'scope_id' => ['nullable', 'string', 'max:64'],
+        'principal_id' => ['nullable', 'string', 'max:80'],
+        'locale' => ['nullable', 'string', 'max:10'],
+        'menu' => ['nullable', 'string', 'max:80'],
+    ]);
+
+    if ($validated['grant_type'] === 'role' && ! isset($store->roleDefinitions()[$validated['value']])) {
+        abort(422, 'Unknown role value.');
+    }
+
+    if ($validated['grant_type'] === 'permission' && ! $permissions->has($validated['value'])) {
+        abort(422, 'Unknown permission value.');
+    }
+
+    $organizationId = $validated['context_type'] !== 'platform'
+        ? (is_string($validated['organization_id'] ?? null) && $validated['organization_id'] !== '' ? $validated['organization_id'] : null)
+        : null;
+    $scopeId = $validated['context_type'] === 'scope'
+        ? (is_string($validated['scope_id'] ?? null) && $validated['scope_id'] !== '' ? $validated['scope_id'] : null)
+        : null;
+
+    $grant = $store->upsertGrant(
+        id: $grantId,
+        targetType: $validated['target_type'],
+        targetId: $validated['target_id'],
+        grantType: $validated['grant_type'],
+        value: $validated['value'],
+        contextType: $validated['context_type'],
+        organizationId: $organizationId,
+        scopeId: $scopeId,
+    );
+
+    $principalId = is_string($validated['principal_id'] ?? null) ? $validated['principal_id'] : null;
+
+    $audit->record(new AuditRecordData(
+        eventType: 'core.role-grants.upserted',
+        outcome: 'success',
+        originComponent: 'core',
+        principalId: $principalId,
+        targetType: 'authorization_grant',
+        targetId: (string) ($grant['id'] ?? ''),
+        summary: $grant,
+        executionOrigin: 'http',
+    ));
+
+    $events->publish(new PublicEvent(
+        name: 'core.role-grants.upserted',
+        originComponent: 'core',
+        payload: $grant,
+        organizationId: $organizationId,
+        scopeId: $scopeId,
+    ));
+
+    return redirect()->route('core.shell.index', array_filter([
+        'menu' => is_string($validated['menu'] ?? null) ? $validated['menu'] : 'core.roles',
+        'principal_id' => $principalId,
+        'locale' => is_string($validated['locale'] ?? null) ? $validated['locale'] : 'en',
+    ]));
+})->middleware('core.permission:core.roles.manage')->name('core.grants.update');
 
 Route::get('/core/menus', function (MenuRegistryInterface $menus, TenancyServiceInterface $tenancy) {
     $principalId = request()->query('principal_id');
@@ -538,7 +756,7 @@ Route::get('/core/authorization/check', function (AuthorizationServiceInterface 
             requestedScopeId: is_string($requestedScopeId) ? $requestedScopeId : null,
             requestedMembershipIds: $requestedMembershipIds,
         )
-        : new \PymeSec\Core\Tenancy\TenancyContext(
+        : new TenancyContext(
             principalId: is_string($principalId) ? $principalId : null,
         );
 

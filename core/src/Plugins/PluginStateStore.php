@@ -6,8 +6,7 @@ class PluginStateStore
 {
     public function __construct(
         private readonly string $path,
-    ) {
-    }
+    ) {}
 
     public function path(): string
     {

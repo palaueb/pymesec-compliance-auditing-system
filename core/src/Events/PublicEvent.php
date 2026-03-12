@@ -14,8 +14,7 @@ class PublicEvent
         public readonly ?string $organizationId = null,
         public readonly ?string $scopeId = null,
         public readonly ?string $publishedAt = null,
-    ) {
-    }
+    ) {}
 
     /**
      * @return array<string, mixed>

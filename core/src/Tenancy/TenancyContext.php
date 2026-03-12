@@ -18,8 +18,7 @@ class TenancyContext
         public readonly array $scopes = [],
         public readonly ?ScopeReference $scope = null,
         public readonly array $memberships = [],
-    ) {
-    }
+    ) {}
 
     /**
      * @return array<int, string>

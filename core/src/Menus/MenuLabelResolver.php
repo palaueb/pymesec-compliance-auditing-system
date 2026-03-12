@@ -21,8 +21,7 @@ class MenuLabelResolver
 
     public function __construct(
         private readonly PluginManagerInterface $plugins,
-    ) {
-    }
+    ) {}
 
     /**
      * @param  array<int, array<string, mixed>>  $menus

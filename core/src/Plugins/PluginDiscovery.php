@@ -11,8 +11,7 @@ class PluginDiscovery
      */
     public function __construct(
         private readonly array $paths,
-    ) {
-    }
+    ) {}
 
     /**
      * @return array<int, PluginDescriptor>

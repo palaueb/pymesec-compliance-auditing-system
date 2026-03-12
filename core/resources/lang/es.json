@@ -4,6 +4,7 @@
   "core.nav.platform": "Plataforma",
   "core.nav.plugins": "Plugins",
   "core.nav.permissions": "Permisos",
+  "core.nav.roles": "Roles",
   "core.nav.tenancy": "Tenancy",
   "core.nav.audit": "Auditoria",
   "core.nav.functional_actors": "Actores funcionales",
@@ -37,5 +38,7 @@
   "core.shell.debug_copy": "El contexto estructurado del runtime sigue disponible, pero ahora vive fuera del workspace operativo.",
   "core.shell.debug_button": "Abrir Debug",
   "core.shell.close_debug": "Cerrar",
-  "core.shell.debug_footer": "Usa este panel para inspeccionar el estado del shell, la resolucion de menus y los datos runtime sin mezclarlo con la UI principal."
+  "core.shell.debug_footer": "Usa este panel para inspeccionar el estado del shell, la resolucion de menus y los datos runtime sin mezclarlo con la UI principal.",
+  "core.roles.screen.title": "Roles y Grants",
+  "core.roles.screen.subtitle": "Roles persistentes de autorizacion y sus asignaciones, gestionados dentro del shell del core."
 }

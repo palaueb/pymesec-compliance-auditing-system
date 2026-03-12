@@ -14,8 +14,7 @@ class MembershipReference
         public readonly string $organizationId,
         public readonly array $roles = [],
         public readonly array $scopes = [],
-    ) {
-    }
+    ) {}
 
     /**
      * @return array<string, mixed>

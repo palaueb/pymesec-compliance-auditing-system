@@ -17,3 +17,5 @@ Current accepted ADRs:
 - `ADR-011-menu-system-and-ui-shell.md`
 - `ADR-012-minimal-core-workflow-engine.md`
 - `ADR-013-core-artifacts-and-attachments-storage.md`
+- `ADR-014-persistent-authorization-roles-and-grants.md`
+- `ADR-015-privacy-data-flows-and-processing-activities-plugin.md`

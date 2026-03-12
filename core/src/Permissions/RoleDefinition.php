@@ -11,6 +11,5 @@ class RoleDefinition
         public readonly string $key,
         public readonly string $label,
         public readonly array $permissions,
-    ) {
-    }
+    ) {}
 }

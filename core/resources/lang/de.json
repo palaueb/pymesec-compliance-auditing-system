@@ -4,6 +4,7 @@
   "core.nav.platform": "Plattform",
   "core.nav.plugins": "Plugins",
   "core.nav.permissions": "Berechtigungen",
+  "core.nav.roles": "Rollen",
   "core.nav.tenancy": "Tenancy",
   "core.nav.audit": "Audit",
   "core.nav.functional_actors": "Funktionale Akteure",
@@ -37,5 +38,7 @@
   "core.shell.debug_copy": "Der strukturierte Laufzeitkontext bleibt verfugbar, lebt jetzt aber ausserhalb des operativen Arbeitsbereichs.",
   "core.shell.debug_button": "Debug Offnen",
   "core.shell.close_debug": "Schliessen",
-  "core.shell.debug_footer": "Nutze dieses Panel, um Shell-Zustand, Menuresolution und Screen-Laufzeitdaten zu prufen, ohne die Hauptoberflache zu vermischen."
+  "core.shell.debug_footer": "Nutze dieses Panel, um Shell-Zustand, Menuresolution und Screen-Laufzeitdaten zu prufen, ohne die Hauptoberflache zu vermischen.",
+  "core.roles.screen.title": "Rollen und Grants",
+  "core.roles.screen.subtitle": "Persistente Autorisierungsrollen und Zuweisungen, verwaltet innerhalb der Core-Shell."
 }

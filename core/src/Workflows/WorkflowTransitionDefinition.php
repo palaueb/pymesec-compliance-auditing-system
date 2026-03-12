@@ -13,6 +13,5 @@ class WorkflowTransitionDefinition
         public readonly string $toState,
         public readonly ?string $permission = null,
         public readonly bool $auditSensitive = true,
-    ) {
-    }
+    ) {}
 }

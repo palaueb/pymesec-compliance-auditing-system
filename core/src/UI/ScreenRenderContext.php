@@ -20,6 +20,5 @@ class ScreenRenderContext
         public readonly ?string $scopeId = null,
         public readonly string $locale = 'en',
         public readonly array $query = [],
-    ) {
-    }
+    ) {}
 }

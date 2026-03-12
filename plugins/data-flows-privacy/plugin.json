@@ -1,0 +1,91 @@
+{
+  "plugin": {
+    "id": "data-flows-privacy",
+    "name": "Data Flows & Privacy",
+    "version": "0.1.0",
+    "type": "domain",
+    "description": "Functional plugin for privacy data flows, processing activities, ownership, workflow, and evidence.",
+    "vendor": "pymesec",
+    "license": "AGPL-3.0-or-later"
+  },
+  "compatibility": {
+    "core": "^0.1.0",
+    "sdk": "^0.1.0"
+  },
+  "dependencies": [
+    "actor-directory",
+    "asset-catalog",
+    "risk-management",
+    "findings-remediation",
+    "policy-exceptions"
+  ],
+  "permissions": [
+    {
+      "key": "plugin.data-flows-privacy.records.view",
+      "label": "View privacy records",
+      "description": "View privacy data flows and processing activities.",
+      "feature_area": "privacy",
+      "operation": "view",
+      "contexts": [
+        "organization"
+      ]
+    },
+    {
+      "key": "plugin.data-flows-privacy.records.manage",
+      "label": "Manage privacy records",
+      "description": "Create, edit, transition, and attach evidence to privacy data flows and processing activities.",
+      "feature_area": "privacy",
+      "operation": "manage",
+      "contexts": [
+        "organization"
+      ]
+    }
+  ],
+  "routes": [
+    {
+      "id": "data-flows-privacy.web",
+      "type": "web",
+      "file": "routes/web.php",
+      "middleware": [
+        "web"
+      ],
+      "permission": "plugin.data-flows-privacy.records.view"
+    }
+  ],
+  "menus": [
+    {
+      "id": "plugin.data-flows-privacy.root",
+      "label_key": "plugin.data-flows-privacy.nav.root",
+      "route": "plugin.data-flows-privacy.index",
+      "icon": "privacy",
+      "order": 45,
+      "permission": "plugin.data-flows-privacy.records.view"
+    },
+    {
+      "id": "plugin.data-flows-privacy.activities",
+      "label_key": "plugin.data-flows-privacy.nav.activities",
+      "route": "plugin.data-flows-privacy.activities",
+      "parent_id": "plugin.data-flows-privacy.root",
+      "icon": "flow",
+      "order": 10,
+      "permission": "plugin.data-flows-privacy.records.view"
+    }
+  ],
+  "migrations": [],
+  "translations": {
+    "default_locale": "en",
+    "supported_locales": [
+      "en"
+    ],
+    "path": "resources/lang"
+  },
+  "lifecycle": {},
+  "runtime": {
+    "class": "PymeSec\\Plugins\\DataFlowsPrivacy\\DataFlowsPrivacyPlugin",
+    "autoload": {
+      "psr-4": {
+        "PymeSec\\Plugins\\DataFlowsPrivacy\\": "src"
+      }
+    }
+  }
+}

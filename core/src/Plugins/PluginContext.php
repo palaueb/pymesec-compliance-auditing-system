@@ -15,8 +15,7 @@ class PluginContext
     public function __construct(
         private readonly Application $app,
         private readonly PluginDescriptor $descriptor,
-    ) {
-    }
+    ) {}
 
     public function app(): Application
     {

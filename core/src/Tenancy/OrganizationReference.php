@@ -10,8 +10,7 @@ class OrganizationReference
         public readonly string $slug,
         public readonly string $defaultLocale,
         public readonly string $defaultTimezone,
-    ) {
-    }
+    ) {}
 
     /**
      * @return array<string, string>

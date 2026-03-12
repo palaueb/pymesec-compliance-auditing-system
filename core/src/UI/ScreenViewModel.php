@@ -12,6 +12,5 @@ class ScreenViewModel
         public readonly ?string $subtitle,
         public readonly string $content,
         public readonly array $toolbarActions = [],
-    ) {
-    }
+    ) {}
 }

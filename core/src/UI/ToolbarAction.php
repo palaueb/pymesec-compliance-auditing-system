@@ -9,8 +9,7 @@ class ToolbarAction
         public readonly string $url,
         public readonly string $variant = 'secondary',
         public readonly string $target = '_self',
-    ) {
-    }
+    ) {}
 
     /**
      * @return array<string, string>

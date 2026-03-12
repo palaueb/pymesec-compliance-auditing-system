@@ -27,8 +27,7 @@ class ArtifactRecord
         public readonly ?string $scopeId,
         public readonly array $metadata,
         public readonly string $createdAt,
-    ) {
-    }
+    ) {}
 
     /**
      * @return array<string, mixed>

@@ -36,8 +36,7 @@ class PluginManager implements PluginManagerInterface
         private readonly MenuRegistryInterface $menus,
         private readonly array $enabledPluginIds,
         private readonly string $coreVersion,
-    ) {
-    }
+    ) {}
 
     public function boot(): void
     {
@@ -75,18 +74,21 @@ class PluginManager implements PluginManagerInterface
             if (! $enabled) {
                 $record['reason'] = 'plugin_not_enabled';
                 $this->status[] = $record;
+
                 continue;
             }
 
             if (! $compatible) {
                 $record['reason'] = 'core_version_not_compatible';
                 $this->status[] = $record;
+
                 continue;
             }
 
             if (! $hasRuntime) {
                 $record['reason'] = 'runtime_not_declared';
                 $this->status[] = $record;
+
                 continue;
             }
 
@@ -97,6 +99,7 @@ class PluginManager implements PluginManagerInterface
             if (! is_string($runtimeClass) || ! class_exists($runtimeClass)) {
                 $record['reason'] = 'runtime_class_not_found';
                 $this->status[] = $record;
+
                 continue;
             }
 
@@ -116,6 +119,7 @@ class PluginManager implements PluginManagerInterface
                 $record['reason'] = 'runtime_contract_mismatch';
                 $record['runtime_contract_satisfied'] = false;
                 $this->status[] = $record;
+
                 continue;
             }
 

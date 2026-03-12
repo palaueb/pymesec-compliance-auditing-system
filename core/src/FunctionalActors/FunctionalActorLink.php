@@ -9,8 +9,7 @@ class FunctionalActorLink
         public readonly string $principalId,
         public readonly string $functionalActorId,
         public readonly string $organizationId,
-    ) {
-    }
+    ) {}
 
     /**
      * @return array<string, string>

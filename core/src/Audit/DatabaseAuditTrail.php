@@ -2,8 +2,8 @@
 
 namespace PymeSec\Core\Audit;
 
-use Illuminate\Support\Facades\DB;
 use Carbon\CarbonImmutable;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use PymeSec\Core\Audit\Contracts\AuditTrailInterface;
 

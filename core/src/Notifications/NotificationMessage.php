@@ -21,8 +21,7 @@ class NotificationMessage
         public readonly ?string $deliverAt = null,
         public readonly ?string $dispatchedAt = null,
         public readonly array $metadata = [],
-    ) {
-    }
+    ) {}
 
     /**
      * @return array<string, mixed>
