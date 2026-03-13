@@ -171,7 +171,7 @@
             border-top: 1px solid rgba(31,42,34,0.08);
             padding-top: 12px;
             display: grid;
-            gap: 8px;
+            gap: 10px;
         }
 
         .workspace {
@@ -252,6 +252,75 @@
             display: flex;
             gap: 8px;
             align-items: end;
+        }
+
+        .sidebar-utility {
+            width: 100%;
+            justify-content: center;
+        }
+
+        .sidebar-context {
+            border: 1px solid var(--line);
+            border-radius: 6px;
+            background: rgba(255,255,255,0.32);
+            padding: 12px;
+            display: grid;
+            gap: 10px;
+        }
+
+        .sidebar-context-head {
+            display: grid;
+            gap: 4px;
+        }
+
+        .sidebar-context-copy {
+            color: var(--muted);
+            font-size: 12px;
+            line-height: 1.45;
+        }
+
+        .sidebar-context-list {
+            display: grid;
+            gap: 8px;
+        }
+
+        .sidebar-context-item {
+            display: grid;
+            gap: 3px;
+            padding: 8px 10px;
+            border: 1px solid rgba(31,42,34,0.08);
+            border-radius: 4px;
+            background: rgba(255,255,255,0.44);
+        }
+
+        .sidebar-context-value {
+            font-size: 13px;
+            font-weight: 700;
+            line-height: 1.3;
+            word-break: break-word;
+        }
+
+        .sidebar-context-form {
+            display: grid;
+            gap: 6px;
+        }
+
+        .sidebar-context-form .field {
+            min-width: 0;
+        }
+
+        .sidebar-context-form .button {
+            width: 100%;
+        }
+
+        .sidebar-auth {
+            display: grid;
+            gap: 8px;
+        }
+
+        .sidebar-auth form,
+        .sidebar-auth a {
+            width: 100%;
         }
 
         .field {
@@ -619,6 +688,10 @@
                 border-bottom: 1px solid var(--line);
                 grid-template-rows: auto auto auto;
             }
+
+            .sidebar-auth {
+                grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            }
         }
 
         @media (max-width: 960px) {
@@ -689,39 +762,50 @@
         </nav>
 
         <div class="sidebar-footer">
-            <div class="rail-label">{{ __('core.shell.principal') }}</div>
-            <div class="body-copy">{{ $sessionPrincipalId ?? $principalId }}</div>
-            <div class="rail-label">{{ __('core.shell.organization') }}</div>
-            <div class="body-copy">{{ $selectedOrganization['name'] ?? 'n/a' }}</div>
-            <div class="body-copy">{{ $selectedScope['name'] ?? __('core.shell.all_scopes') }}</div>
-        </div>
-    </aside>
+            <button type="button" class="button button-ghost sidebar-utility" data-debug-open>
+                {{ __('core.shell.debug_button') }}
+            </button>
 
-    <main class="workspace">
-        <header class="topbar">
-            <div class="utility-stack">
-                <div class="context-forms">
-                    <form class="context-form" method="GET" action="{{ route('core.shell.index') }}">
+            <div class="sidebar-context">
+                <div class="sidebar-context-head">
+                    <div class="rail-label">{{ __('core.shell.context_help') }}</div>
+                    <div class="sidebar-context-copy">
+                        {{ __('core.shell.context_help') }}
+                        @if ($tenancyShellUrl !== null)
+                            <a href="{{ $tenancyShellUrl }}">{{ __('core.shell.context_manage_link') }}</a>
+                        @endif
+                    </div>
+                </div>
+
+                <div class="sidebar-context-list">
+                    <div class="sidebar-context-item">
+                        <div class="rail-label">{{ __('core.shell.principal') }}</div>
+                        <div class="sidebar-context-value">{{ $sessionPrincipalId ?? $principalId }}</div>
+                    </div>
+
+                    <form class="sidebar-context-form" method="GET" action="{{ route('core.shell.index') }}">
                         <input type="hidden" name="principal_id" value="{{ $principalId }}">
                         <input type="hidden" name="locale" value="{{ $locale }}">
                         <input type="hidden" name="theme" value="{{ $themeKey }}">
                         @if ($selectedMenuId !== null)
                             <input type="hidden" name="menu" value="{{ $selectedMenuId }}">
                         @endif
-                        <div class="field">
+                        <div class="sidebar-context-item">
                             <label class="field-label" for="organization_id">{{ __('core.shell.organization_selector') }}</label>
-                            <select class="field-select" id="organization_id" name="organization_id">
-                                @foreach ($organizations as $organization)
-                                    <option value="{{ $organization['id'] }}" @selected($organizationId === $organization['id'])>
-                                        {{ $organization['name'] }}
-                                    </option>
-                                @endforeach
-                            </select>
+                            <div class="sidebar-context-value">{{ $selectedOrganization['name'] ?? 'n/a' }}</div>
+                            <div class="field">
+                                <select class="field-select" id="organization_id" name="organization_id" onchange="this.form.submit()">
+                                    @foreach ($organizations as $organization)
+                                        <option value="{{ $organization['id'] }}" @selected($organizationId === $organization['id'])>
+                                            {{ $organization['name'] }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
                         </div>
-                        <button class="button button-secondary" type="submit">{{ __('core.shell.apply_context') }}</button>
                     </form>
 
-                    <form class="context-form" method="GET" action="{{ route('core.shell.index') }}">
+                    <form class="sidebar-context-form" method="GET" action="{{ route('core.shell.index') }}">
                         <input type="hidden" name="principal_id" value="{{ $principalId }}">
                         <input type="hidden" name="locale" value="{{ $locale }}">
                         <input type="hidden" name="theme" value="{{ $themeKey }}">
@@ -731,44 +815,39 @@
                         @if ($organizationId !== null)
                             <input type="hidden" name="organization_id" value="{{ $organizationId }}">
                         @endif
-                        <div class="field">
+                        <div class="sidebar-context-item">
                             <label class="field-label" for="scope_id">{{ __('core.shell.scope_selector') }}</label>
-                            <select class="field-select" id="scope_id" name="scope_id">
-                                <option value="">{{ __('core.shell.all_scopes') }}</option>
-                                @foreach ($scopes as $scope)
-                                    <option value="{{ $scope['id'] }}" @selected($scopeId === $scope['id'])>
-                                        {{ $scope['name'] }}
-                                    </option>
-                                @endforeach
-                            </select>
+                            <div class="sidebar-context-value">{{ $selectedScope['name'] ?? __('core.shell.all_scopes') }}</div>
+                            <div class="field">
+                                <select class="field-select" id="scope_id" name="scope_id" onchange="this.form.submit()">
+                                    <option value="">{{ __('core.shell.all_scopes') }}</option>
+                                    @foreach ($scopes as $scope)
+                                        <option value="{{ $scope['id'] }}" @selected($scopeId === $scope['id'])>
+                                            {{ $scope['name'] }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
                         </div>
-                        <button class="button button-secondary" type="submit">{{ __('core.shell.apply_context') }}</button>
                     </form>
-                </div>
-
-                <div class="row-between">
-                    <div class="muted-note">
-                        {{ __('core.shell.context_help') }}
-                        @if ($tenancyShellUrl !== null)
-                            <a href="{{ $tenancyShellUrl }}">{{ __('core.shell.context_manage_link') }}</a>
-                        @endif
-                    </div>
-                    <div class="utility-actions">
-                        @if ($sessionPrincipalId !== null && \Illuminate\Support\Facades\Route::has('plugin.identity-local.auth.logout'))
-                            <form method="POST" action="{{ route('plugin.identity-local.auth.logout') }}" style="display:inline;">
-                                @csrf
-                                <button type="submit" class="button button-secondary">Sign out</button>
-                            </form>
-                        @elseif (\Illuminate\Support\Facades\Route::has('plugin.identity-local.auth.login'))
-                            <a class="button button-secondary" href="{{ route('plugin.identity-local.auth.login') }}">Sign in</a>
-                        @endif
-                        <button type="button" class="button button-ghost" data-debug-open>
-                            {{ __('core.shell.debug_button') }}
-                        </button>
-                    </div>
                 </div>
             </div>
 
+            <div class="sidebar-auth">
+                @if ($sessionPrincipalId !== null && \Illuminate\Support\Facades\Route::has('plugin.identity-local.auth.logout'))
+                    <form method="POST" action="{{ route('plugin.identity-local.auth.logout') }}">
+                        @csrf
+                        <button type="submit" class="button button-secondary" style="width: 100%;">Sign out</button>
+                    </form>
+                @elseif (\Illuminate\Support\Facades\Route::has('plugin.identity-local.auth.login'))
+                    <a class="button button-secondary" href="{{ route('plugin.identity-local.auth.login') }}">Sign in</a>
+                @endif
+            </div>
+        </div>
+    </aside>
+
+    <main class="workspace">
+        <header class="topbar">
             <div class="headline">
                 <h1>{{ $screen?->title ?? $selectedMenu['label'] ?? __('core.shell.title') }}</h1>
                 <p>{{ $screen?->subtitle ?? __('core.shell.workspace_copy') }}</p>
