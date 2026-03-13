@@ -1,6 +1,8 @@
 <?php
 
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Schema;
 use PymeSec\Core\Artifacts\Contracts\ArtifactServiceInterface;
 use PymeSec\Core\Audit\AuditRecordData;
 use PymeSec\Core\Audit\Contracts\AuditTrailInterface;
@@ -52,6 +54,14 @@ Route::get('/app', function (
     ScreenRegistryInterface $screens,
     TenancyServiceInterface $tenancy
 ) use ($resolvePrincipalId) {
+    if (
+        Schema::hasTable('identity_local_users')
+        && DB::table('identity_local_users')->count() === 0
+        && Route::has('plugin.identity-local.setup')
+    ) {
+        return redirect()->route('plugin.identity-local.setup');
+    }
+
     $availableThemes = config('ui.themes', []);
     $requestedTheme = request()->query('theme');
     $themeKey = is_string($requestedTheme) && isset($availableThemes[$requestedTheme])

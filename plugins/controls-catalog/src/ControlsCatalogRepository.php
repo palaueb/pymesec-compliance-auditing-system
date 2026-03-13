@@ -3,6 +3,7 @@
 namespace PymeSec\Plugins\ControlsCatalog;
 
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
@@ -31,6 +32,10 @@ class ControlsCatalogRepository
      */
     public function frameworks(string $organizationId): array
     {
+        if (! $this->hasFrameworkCatalogTables()) {
+            return [];
+        }
+
         return DB::table('control_frameworks')
             ->where('organization_id', $organizationId)
             ->orderBy('name')
@@ -44,6 +49,10 @@ class ControlsCatalogRepository
      */
     public function findFramework(string $organizationId, string $frameworkId): ?array
     {
+        if (! $this->hasFrameworkCatalogTables()) {
+            return null;
+        }
+
         $framework = DB::table('control_frameworks')
             ->where('organization_id', $organizationId)
             ->where('id', $frameworkId)
@@ -57,6 +66,10 @@ class ControlsCatalogRepository
      */
     public function requirements(string $organizationId, ?string $frameworkId = null): array
     {
+        if (! $this->hasFrameworkCatalogTables()) {
+            return [];
+        }
+
         $query = DB::table('control_requirements as requirements')
             ->join('control_frameworks as frameworks', function ($join): void {
                 $join->on('frameworks.id', '=', 'requirements.framework_id')
@@ -88,6 +101,10 @@ class ControlsCatalogRepository
      */
     public function findRequirement(string $organizationId, string $requirementId): ?array
     {
+        if (! $this->hasFrameworkCatalogTables()) {
+            return null;
+        }
+
         $requirement = DB::table('control_requirements as requirements')
             ->join('control_frameworks as frameworks', function ($join): void {
                 $join->on('frameworks.id', '=', 'requirements.framework_id')
@@ -115,7 +132,7 @@ class ControlsCatalogRepository
      */
     public function requirementsForControls(array $controlIds): array
     {
-        if ($controlIds === []) {
+        if ($controlIds === [] || ! $this->hasFrameworkCatalogTables() || ! Schema::hasTable('control_requirement_mappings')) {
             return [];
         }
 
@@ -184,18 +201,23 @@ class ControlsCatalogRepository
             $data['framework'] ?? null,
         );
 
-        DB::table('controls')->insert([
+        $payload = [
             'id' => $id,
             'organization_id' => $data['organization_id'],
             'scope_id' => ($data['scope_id'] ?? null) ?: null,
-            'framework_id' => $frameworkId,
             'name' => $data['name'],
             'framework' => $frameworkLabel,
             'domain' => $data['domain'],
             'evidence' => $data['evidence'],
             'created_at' => now(),
             'updated_at' => now(),
-        ]);
+        ];
+
+        if ($this->controlsSupportFrameworkId()) {
+            $payload['framework_id'] = $frameworkId;
+        }
+
+        DB::table('controls')->insert($payload);
 
         /** @var array<string, string> $control */
         $control = $this->find($id);
@@ -215,17 +237,22 @@ class ControlsCatalogRepository
             $data['framework'] ?? null,
         );
 
+        $payload = [
+            'scope_id' => ($data['scope_id'] ?? null) ?: null,
+            'name' => $data['name'],
+            'framework' => $frameworkLabel,
+            'domain' => $data['domain'],
+            'evidence' => $data['evidence'],
+            'updated_at' => now(),
+        ];
+
+        if ($this->controlsSupportFrameworkId()) {
+            $payload['framework_id'] = $frameworkId;
+        }
+
         $updated = DB::table('controls')
             ->where('id', $controlId)
-            ->update([
-                'scope_id' => ($data['scope_id'] ?? null) ?: null,
-                'framework_id' => $frameworkId,
-                'name' => $data['name'],
-                'framework' => $frameworkLabel,
-                'domain' => $data['domain'],
-                'evidence' => $data['evidence'],
-                'updated_at' => now(),
-            ]);
+            ->update($payload);
 
         if ($updated === 0) {
             return $this->find($controlId);
@@ -240,6 +267,8 @@ class ControlsCatalogRepository
      */
     public function createFramework(array $data): array
     {
+        $this->assertFrameworkCatalogAvailable();
+
         $id = $this->nextScopedId(
             table: 'control_frameworks',
             prefix: 'framework',
@@ -268,6 +297,8 @@ class ControlsCatalogRepository
      */
     public function createRequirement(array $data): array
     {
+        $this->assertFrameworkCatalogAvailable();
+
         $framework = $this->findFramework((string) $data['organization_id'], (string) $data['framework_id']);
 
         if ($framework === null) {
@@ -306,6 +337,8 @@ class ControlsCatalogRepository
         string $coverage = 'supports',
         ?string $notes = null,
     ): void {
+        $this->assertFrameworkCatalogAvailable();
+
         $control = $this->find($controlId);
 
         if ($control === null || $control['organization_id'] !== $organizationId) {
@@ -387,6 +420,16 @@ class ControlsCatalogRepository
      */
     private function resolveFramework(string $organizationId, ?string $frameworkId, ?string $frameworkLabel): array
     {
+        if (! $this->hasFrameworkCatalogTables()) {
+            if (is_string($frameworkLabel) && $frameworkLabel !== '') {
+                return [null, $frameworkLabel];
+            }
+
+            if (is_string($frameworkId) && $frameworkId !== '') {
+                return [null, $frameworkId];
+            }
+        }
+
         if (is_string($frameworkId) && $frameworkId !== '') {
             $framework = $this->findFramework($organizationId, $frameworkId);
 
@@ -448,11 +491,32 @@ class ControlsCatalogRepository
             'id' => (string) $control->id,
             'organization_id' => (string) $control->organization_id,
             'scope_id' => is_string($control->scope_id) ? $control->scope_id : '',
-            'framework_id' => is_string($control->framework_id) ? $control->framework_id : '',
+            'framework_id' => property_exists($control, 'framework_id') && is_string($control->framework_id) ? $control->framework_id : '',
             'name' => (string) $control->name,
             'framework' => (string) $control->framework,
             'domain' => (string) $control->domain,
             'evidence' => (string) $control->evidence,
         ];
+    }
+
+    private function hasFrameworkCatalogTables(): bool
+    {
+        return Schema::hasTable('control_frameworks') && Schema::hasTable('control_requirements');
+    }
+
+    private function controlsSupportFrameworkId(): bool
+    {
+        return Schema::hasColumn('controls', 'framework_id');
+    }
+
+    private function assertFrameworkCatalogAvailable(): void
+    {
+        if ($this->hasFrameworkCatalogTables()) {
+            return;
+        }
+
+        throw ValidationException::withMessages([
+            'framework_id' => 'Framework catalog tables are not available yet. Run the latest migrations first.',
+        ]);
     }
 }

@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
 use PymeSec\Plugins\IdentityLocal\IdentityLocalAuthService;
 use Tests\TestCase;
@@ -60,14 +61,17 @@ class IdentityLocalTest extends TestCase
             ...$payload,
             'menu' => 'plugin.identity-local.users',
             'display_name' => 'Nina Patel',
+            'username' => 'nina.patel',
             'email' => 'nina.patel@northwind.test',
             'job_title' => 'Security coordinator',
             'actor_id' => 'actor-ava-mason',
+            'magic_link_enabled' => '1',
         ])->assertFound();
 
         $this->get('/app?menu=plugin.identity-local.users&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
             ->assertOk()
             ->assertSee('Nina Patel')
+            ->assertSee('nina.patel')
             ->assertSee('Security coordinator');
 
         $userId = DB::table('identity_local_users')
@@ -112,8 +116,13 @@ class IdentityLocalTest extends TestCase
             ...$payload,
             'menu' => 'plugin.identity-local.users',
             'display_name' => 'Nina Patel',
+            'username' => 'nina.ops',
             'email' => 'nina.patel@northwind.test',
             'job_title' => 'Security operations lead',
+            'password_enabled' => '1',
+            'password' => 'secret-pass-123',
+            'password_confirmation' => 'secret-pass-123',
+            'magic_link_enabled' => '1',
             'is_active' => '1',
         ])->assertFound();
 
@@ -142,12 +151,13 @@ class IdentityLocalTest extends TestCase
         Mail::fake();
 
         $this->post('/login', [
-            'email' => 'ava.mason@northwind.test',
+            'login' => 'ava.mason',
+            'use_email_link' => '1',
         ])->assertRedirect('/login');
 
         $this->assertDatabaseCount('identity_local_login_links', 1);
 
-        $issued = $this->app->make(IdentityLocalAuthService::class)->issueMagicLink('ava.mason@northwind.test');
+        $issued = $this->app->make(IdentityLocalAuthService::class)->issueMagicLink('ava.mason');
 
         $this->assertIsArray($issued);
         $this->assertSame('principal-org-a', $issued['user']['principal_id']);
@@ -167,5 +177,72 @@ class IdentityLocalTest extends TestCase
             ->assertRedirect('/login');
 
         $this->assertNull(session('auth.principal_id'));
+    }
+
+    public function test_password_auth_requires_email_code_before_creating_the_shell_session(): void
+    {
+        Mail::fake();
+
+        DB::table('identity_local_users')
+            ->where('id', 'identity-user-ava-mason')
+            ->update([
+                'password_hash' => Hash::make('secret-pass-123'),
+                'password_enabled' => true,
+                'magic_link_enabled' => true,
+                'updated_at' => now(),
+            ]);
+
+        $this->post('/login', [
+            'login' => 'ava.mason',
+            'password' => 'secret-pass-123',
+        ])->assertRedirect('/login/verify');
+
+        $this->assertSame('principal-org-a', session('auth.pending_principal_id'));
+        $this->assertDatabaseCount('identity_local_login_codes', 1);
+
+        $challenge = $this->app->make(IdentityLocalAuthService::class)->beginPasswordLogin('ava.mason', 'secret-pass-123');
+
+        $this->assertIsArray($challenge);
+        $this->assertSame('principal-org-a', $challenge['user']['principal_id']);
+
+        $this->post('/login/verify', [
+            'code' => $challenge['code'],
+        ])->assertRedirect('/app?organization_id=org-a');
+
+        $this->assertSame('principal-org-a', session('auth.principal_id'));
+        $this->assertNull(session('auth.pending_principal_id'));
+    }
+
+    public function test_first_run_setup_wizard_creates_the_initial_platform_admin(): void
+    {
+        DB::table('identity_local_users')->delete();
+
+        $this->get('/app')->assertRedirect('/setup');
+
+        $this->get('/setup')
+            ->assertOk()
+            ->assertSee('Create the first administrator');
+
+        $this->post('/setup', [
+            'display_name' => 'Root Admin',
+            'username' => 'root.admin',
+            'email' => 'root.admin@pymesec.test',
+            'password' => 'initial-pass-123',
+            'password_confirmation' => 'initial-pass-123',
+        ])->assertRedirect('/login');
+
+        $principalId = DB::table('identity_local_users')
+            ->where('username', 'root.admin')
+            ->value('principal_id');
+
+        $this->assertIsString($principalId);
+
+        $this->assertDatabaseHas('authorization_grants', [
+            'target_type' => 'principal',
+            'target_id' => $principalId,
+            'grant_type' => 'role',
+            'value' => 'platform-admin',
+            'context_type' => 'platform',
+        ]);
     }
 }

@@ -754,12 +754,12 @@
                         @endif
                     </div>
                     <div class="utility-actions">
-                        @if ($sessionPrincipalId !== null)
+                        @if ($sessionPrincipalId !== null && \Illuminate\Support\Facades\Route::has('plugin.identity-local.auth.logout'))
                             <form method="POST" action="{{ route('plugin.identity-local.auth.logout') }}" style="display:inline;">
                                 @csrf
                                 <button type="submit" class="button button-secondary">Sign out</button>
                             </form>
-                        @else
+                        @elseif (\Illuminate\Support\Facades\Route::has('plugin.identity-local.auth.login'))
                             <a class="button button-secondary" href="{{ route('plugin.identity-local.auth.login') }}">Sign in</a>
                         @endif
                         <button type="button" class="button button-ghost" data-debug-open>

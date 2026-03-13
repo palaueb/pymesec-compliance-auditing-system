@@ -20,3 +20,4 @@ Current accepted ADRs:
 - `ADR-014-persistent-authorization-roles-and-grants.md`
 - `ADR-015-privacy-data-flows-and-processing-activities-plugin.md`
 - `ADR-016-continuity-and-bcm-as-a-domain-plugin.md`
+- `ADR-017-local-identity-bootstrap-and-authentication-modes.md`

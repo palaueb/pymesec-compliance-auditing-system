@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Sign in</title>
+    <title>Verify sign-in</title>
     <style>
         :root {
             --bg: #f4f0e8;
@@ -90,24 +90,16 @@
 <body>
     <main class="login-card">
         <div class="eyebrow">Identity</div>
-        <h1>Sign in</h1>
-        <p>Use your username or work email. Password access sends a verification code by email, and you can switch to a sign-in link when email-based access is enabled.</p>
+        <h1>Check your email</h1>
+        <p>Enter the 6-digit verification code sent to {{ $email }} to finish signing in.</p>
 
-        <form method="POST" action="{{ route('plugin.identity-local.auth.request') }}">
+        <form method="POST" action="{{ route('plugin.identity-local.auth.verify.consume') }}">
             @csrf
             <div class="field">
-                <label class="field-label" for="login-identifier">Username or email</label>
-                <input class="field-input" id="login-identifier" name="login" required autofocus>
+                <label class="field-label" for="login-code">Verification code</label>
+                <input class="field-input" id="login-code" name="code" inputmode="numeric" pattern="[0-9]*" maxlength="6" required autofocus>
             </div>
-            <div class="field">
-                <label class="field-label" for="login-password">Password</label>
-                <input class="field-input" id="login-password" name="password" type="password">
-            </div>
-            <label class="field-label" style="display:flex; gap:10px; align-items:center; margin-top:16px;">
-                <input type="checkbox" name="use_email_link" value="1">
-                Sign in with email link instead
-            </label>
-            <button class="button button-primary" type="submit">Continue</button>
+            <button class="button button-primary" type="submit">Verify code</button>
         </form>
 
         @if (session('status'))

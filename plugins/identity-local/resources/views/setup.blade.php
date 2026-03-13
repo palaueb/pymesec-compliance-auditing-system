@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Sign in</title>
+    <title>Set up your first administrator</title>
     <style>
         :root {
             --bg: #f4f0e8;
@@ -29,8 +29,8 @@
             color: var(--ink);
             font-family: var(--font-body);
         }
-        .login-card {
-            width: min(560px, 100%);
+        .setup-card {
+            width: min(680px, 100%);
             border: 1px solid var(--line);
             background: var(--panel);
             border-radius: 10px;
@@ -50,7 +50,14 @@
             line-height: 0.95;
         }
         p { color: var(--muted); line-height: 1.5; }
-        .field { display: grid; gap: 8px; margin-top: 18px; }
+        .grid {
+            display: grid;
+            grid-template-columns: repeat(2, minmax(0, 1fr));
+            gap: 16px;
+            margin-top: 20px;
+        }
+        .field { display: grid; gap: 8px; }
+        .field-wide { grid-column: 1 / -1; }
         .field-input {
             width: 100%;
             border: 1px solid var(--line);
@@ -85,38 +92,43 @@
             color: var(--muted);
             font-size: 14px;
         }
+        @media (max-width: 720px) {
+            .grid { grid-template-columns: 1fr; }
+        }
     </style>
 </head>
 <body>
-    <main class="login-card">
-        <div class="eyebrow">Identity</div>
-        <h1>Sign in</h1>
-        <p>Use your username or work email. Password access sends a verification code by email, and you can switch to a sign-in link when email-based access is enabled.</p>
+    <main class="setup-card">
+        <div class="eyebrow">First run</div>
+        <h1>Create the first administrator</h1>
+        <p>This account becomes the local administrative fallback. Use a password if you want password sign-in with an email verification step, or leave it empty and start with email sign-in only.</p>
 
-        <form method="POST" action="{{ route('plugin.identity-local.auth.request') }}">
+        <form method="POST" action="{{ route('plugin.identity-local.setup.store') }}">
             @csrf
-            <div class="field">
-                <label class="field-label" for="login-identifier">Username or email</label>
-                <input class="field-input" id="login-identifier" name="login" required autofocus>
+            <div class="grid">
+                <div class="field field-wide">
+                    <label class="field-label" for="setup-display-name">Full name</label>
+                    <input class="field-input" id="setup-display-name" name="display_name" required autofocus>
+                </div>
+                <div class="field">
+                    <label class="field-label" for="setup-username">Username</label>
+                    <input class="field-input" id="setup-username" name="username" required>
+                </div>
+                <div class="field">
+                    <label class="field-label" for="setup-email">Work email</label>
+                    <input class="field-input" id="setup-email" name="email" type="email" required>
+                </div>
+                <div class="field">
+                    <label class="field-label" for="setup-password">Password</label>
+                    <input class="field-input" id="setup-password" name="password" type="password">
+                </div>
+                <div class="field">
+                    <label class="field-label" for="setup-password-confirmation">Confirm password</label>
+                    <input class="field-input" id="setup-password-confirmation" name="password_confirmation" type="password">
+                </div>
             </div>
-            <div class="field">
-                <label class="field-label" for="login-password">Password</label>
-                <input class="field-input" id="login-password" name="password" type="password">
-            </div>
-            <label class="field-label" style="display:flex; gap:10px; align-items:center; margin-top:16px;">
-                <input type="checkbox" name="use_email_link" value="1">
-                Sign in with email link instead
-            </label>
-            <button class="button button-primary" type="submit">Continue</button>
+            <button class="button button-primary" type="submit">Create administrator</button>
         </form>
-
-        @if (session('status'))
-            <div class="note">{{ session('status') }}</div>
-        @endif
-
-        @if (session('error'))
-            <div class="note">{{ session('error') }}</div>
-        @endif
     </main>
 </body>
 </html>

@@ -2,30 +2,138 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Validation\ValidationException;
+use Illuminate\Validation\Rule;
 use PymeSec\Core\FunctionalActors\Contracts\FunctionalActorServiceInterface;
 use PymeSec\Plugins\IdentityLocal\IdentityLocalAuthService;
 use PymeSec\Plugins\IdentityLocal\IdentityLocalRepository;
 
-Route::get('/login', function () {
+Route::get('/setup', function (IdentityLocalAuthService $auth) {
+    if (! $auth->requiresBootstrap()) {
+        return redirect()->route('plugin.identity-local.auth.login');
+    }
+
+    return view()->file(base_path('../plugins/identity-local/resources/views/setup.blade.php'), [
+        'locale' => app()->getLocale(),
+    ]);
+})->name('plugin.identity-local.setup');
+
+Route::post('/setup', function (Request $request, IdentityLocalAuthService $auth) {
+    if (! $auth->requiresBootstrap()) {
+        return redirect()->route('plugin.identity-local.auth.login');
+    }
+
+    $validated = $request->validate([
+        'display_name' => ['required', 'string', 'max:120'],
+        'username' => ['required', 'string', 'max:120', 'regex:/^[A-Za-z0-9._-]+$/'],
+        'email' => ['required', 'email:rfc', 'max:190'],
+        'password' => ['nullable', 'string', 'min:8', 'confirmed'],
+    ]);
+
+    $auth->bootstrapSuperAdmin($validated);
+
+    return redirect()->route('plugin.identity-local.auth.login')
+        ->with('status', 'The first administrator account is ready. Sign in to continue.');
+})->name('plugin.identity-local.setup.store');
+
+Route::get('/login', function (IdentityLocalAuthService $auth) {
+    if ($auth->requiresBootstrap()) {
+        return redirect()->route('plugin.identity-local.setup');
+    }
+
     if (is_string(session('auth.principal_id')) && session('auth.principal_id') !== '') {
         return redirect()->route('core.shell.index');
     }
 
-    return response()->view(base_path('../plugins/identity-local/resources/views/login.blade.php'), [
+    return view()->file(base_path('../plugins/identity-local/resources/views/login.blade.php'), [
         'locale' => app()->getLocale(),
     ]);
 })->name('plugin.identity-local.auth.login');
 
 Route::post('/login', function (Request $request, IdentityLocalAuthService $auth) {
+    if ($auth->requiresBootstrap()) {
+        return redirect()->route('plugin.identity-local.setup');
+    }
+
     $validated = $request->validate([
-        'email' => ['required', 'email:rfc', 'max:190'],
+        'login' => ['nullable', 'string', 'max:190'],
+        'email' => ['nullable', 'email:rfc', 'max:190'],
+        'password' => ['nullable', 'string', 'max:190'],
     ]);
 
-    $auth->issueMagicLink((string) $validated['email'], $request);
+    $login = (string) ($validated['login'] ?? $validated['email'] ?? '');
 
-    return redirect()->route('plugin.identity-local.auth.login')
-        ->with('status', 'If the address is active, a secure sign-in link has been sent.');
+    if ($request->boolean('use_email_link')) {
+        $auth->issueMagicLink($login, $request);
+
+        return redirect()->route('plugin.identity-local.auth.login')
+            ->with('status', 'If the identity is active, a secure sign-in link has been sent.');
+    }
+
+    $challenge = $auth->beginPasswordLogin($login, (string) ($validated['password'] ?? ''), $request);
+
+    if ($challenge === null) {
+        return redirect()->route('plugin.identity-local.auth.login')
+            ->with('error', 'The sign-in details are not valid for password access.');
+    }
+
+    session()->put('auth.pending_principal_id', $challenge['user']['principal_id']);
+    session()->put('auth.pending_provider', 'identity-local');
+    session()->put('auth.pending_method', 'password-2fa');
+
+    return redirect()->route('plugin.identity-local.auth.verify')
+        ->with('status', 'We sent a verification code to your email.');
 })->name('plugin.identity-local.auth.request');
+
+Route::get('/login/verify', function (IdentityLocalAuthService $auth) {
+    if ($auth->requiresBootstrap()) {
+        return redirect()->route('plugin.identity-local.setup');
+    }
+
+    $principalId = session('auth.pending_principal_id');
+
+    if (! is_string($principalId) || $principalId === '') {
+        return redirect()->route('plugin.identity-local.auth.login');
+    }
+
+    $user = $auth->currentUser($principalId);
+
+    if ($user === null) {
+        return redirect()->route('plugin.identity-local.auth.login');
+    }
+
+    return view()->file(base_path('../plugins/identity-local/resources/views/verify.blade.php'), [
+        'locale' => app()->getLocale(),
+        'email' => $user['email'],
+    ]);
+})->name('plugin.identity-local.auth.verify');
+
+Route::post('/login/verify', function (Request $request, IdentityLocalAuthService $auth) {
+    $principalId = session('auth.pending_principal_id');
+
+    if (! is_string($principalId) || $principalId === '') {
+        return redirect()->route('plugin.identity-local.auth.login');
+    }
+
+    $validated = $request->validate([
+        'code' => ['required', 'digits:6'],
+    ]);
+
+    $user = $auth->consumeEmailCode($principalId, (string) $validated['code']);
+
+    if ($user === null) {
+        return redirect()->route('plugin.identity-local.auth.verify')
+            ->with('error', 'This verification code is no longer valid.');
+    }
+
+    session()->forget(['auth.pending_principal_id', 'auth.pending_provider', 'auth.pending_method']);
+    session()->put('auth.principal_id', $user['principal_id']);
+    session()->put('auth.provider', 'identity-local');
+
+    return redirect()->route('core.shell.index', array_filter([
+        'organization_id' => $user['organization_id'] !== '' ? $user['organization_id'] : null,
+    ]));
+})->name('plugin.identity-local.auth.verify.consume');
 
 Route::get('/login/magic/{token}', function (string $token, IdentityLocalAuthService $auth) {
     $user = $auth->consumeMagicLink($token);
@@ -35,6 +143,7 @@ Route::get('/login/magic/{token}', function (string $token, IdentityLocalAuthSer
             ->with('error', 'This sign-in link is no longer valid.');
     }
 
+    session()->forget(['auth.pending_principal_id', 'auth.pending_provider', 'auth.pending_method']);
     session()->put('auth.principal_id', $user['principal_id']);
     session()->put('auth.provider', 'identity-local');
 
@@ -44,7 +153,7 @@ Route::get('/login/magic/{token}', function (string $token, IdentityLocalAuthSer
 })->name('plugin.identity-local.auth.consume');
 
 Route::post('/logout', function () {
-    session()->forget(['auth.principal_id', 'auth.provider']);
+    session()->forget(['auth.principal_id', 'auth.provider', 'auth.pending_principal_id', 'auth.pending_provider', 'auth.pending_method']);
     session()->invalidate();
     session()->regenerateToken();
 
@@ -72,17 +181,28 @@ Route::post('/plugins/identity/users', function (
 ) {
     $validated = $request->validate([
         'display_name' => ['required', 'string', 'max:120'],
-        'email' => ['required', 'email:rfc', 'max:190'],
+        'username' => ['required', 'string', 'max:120', 'regex:/^[A-Za-z0-9._-]+$/', Rule::unique('identity_local_users', 'username')],
+        'email' => ['required', 'email:rfc', 'max:190', Rule::unique('identity_local_users', 'email')],
         'job_title' => ['nullable', 'string', 'max:120'],
         'organization_id' => ['required', 'string', 'max:64'],
         'actor_id' => ['nullable', 'string', 'max:120'],
+        'password' => ['nullable', 'string', 'min:8', 'confirmed'],
     ]);
 
     $requesterPrincipalId = (string) $request->input('principal_id', 'principal-org-a');
     $requesterMembershipId = $request->input('membership_id');
+    $passwordEnabled = $request->boolean('password_enabled');
+
+    if ($passwordEnabled && ! is_string($validated['password'] ?? null)) {
+        throw ValidationException::withMessages([
+            'password' => 'A password is required when password sign-in is enabled.',
+        ]);
+    }
 
     $user = $repository->createUser([
         ...$validated,
+        'password_enabled' => $passwordEnabled,
+        'magic_link_enabled' => $request->boolean('magic_link_enabled') || ! $passwordEnabled,
         'is_active' => true,
     ], $requesterPrincipalId);
 
@@ -110,20 +230,37 @@ Route::post('/plugins/identity/users/{userId}', function (
     IdentityLocalRepository $repository,
     FunctionalActorServiceInterface $actors
 ) {
+    $user = $repository->findUser($userId);
+
+    abort_if($user === null, 404);
+
     $validated = $request->validate([
         'display_name' => ['required', 'string', 'max:120'],
-        'email' => ['required', 'email:rfc', 'max:190'],
+        'username' => ['required', 'string', 'max:120', 'regex:/^[A-Za-z0-9._-]+$/', Rule::unique('identity_local_users', 'username')->ignore($userId, 'id')],
+        'email' => ['required', 'email:rfc', 'max:190', Rule::unique('identity_local_users', 'email')->ignore($userId, 'id')],
         'job_title' => ['nullable', 'string', 'max:120'],
         'organization_id' => ['required', 'string', 'max:64'],
         'actor_id' => ['nullable', 'string', 'max:120'],
         'is_active' => ['nullable', 'string', 'in:1'],
+        'password' => ['nullable', 'string', 'min:8', 'confirmed'],
     ]);
 
     $requesterPrincipalId = (string) $request->input('principal_id', 'principal-org-a');
     $requesterMembershipId = $request->input('membership_id');
+    $passwordEnabled = $request->boolean('password_enabled');
+
+    if ($passwordEnabled
+        && ! is_string($validated['password'] ?? null)
+        && ! is_string($user['password_hash'] ?? null)) {
+        throw ValidationException::withMessages([
+            'password' => 'A password is required before password sign-in can be enabled.',
+        ]);
+    }
 
     $user = $repository->updateUser($userId, [
         ...$validated,
+        'password_enabled' => $passwordEnabled,
+        'magic_link_enabled' => $request->boolean('magic_link_enabled') || ! $passwordEnabled,
         'is_active' => $request->boolean('is_active'),
     ], $requesterPrincipalId);
 

@@ -3,6 +3,7 @@
 namespace PymeSec\Plugins\IdentityLocal;
 
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use PymeSec\Core\Audit\AuditRecordData;
 use PymeSec\Core\Audit\Contracts\AuditTrailInterface;
@@ -39,12 +40,30 @@ class IdentityLocalRepository
                 'users.id',
                 'users.principal_id',
                 'users.organization_id',
+                'users.username',
                 'users.display_name',
                 'users.email',
+                'users.password_hash',
+                'users.password_enabled',
+                'users.magic_link_enabled',
                 'users.job_title',
                 'users.is_active',
             ])->map(fn ($user): array => $this->mapUser($user))
             ->all();
+    }
+
+    public function anyUsers(): bool
+    {
+        return DB::table('identity_local_users')->exists();
+    }
+
+    public function firstOrganizationId(): ?string
+    {
+        $organizationId = DB::table('organizations')
+            ->orderBy('id')
+            ->value('id');
+
+        return is_string($organizationId) && $organizationId !== '' ? $organizationId : null;
     }
 
     /**
@@ -81,24 +100,56 @@ class IdentityLocalRepository
     }
 
     /**
+     * @return array<string, mixed>|null
+     */
+    public function findActiveUserByLogin(string $login): ?array
+    {
+        $normalized = Str::lower(trim($login));
+
+        if ($normalized === '') {
+            return null;
+        }
+
+        $user = DB::table('identity_local_users')
+            ->where('is_active', true)
+            ->where(function ($query) use ($normalized): void {
+                $query->whereRaw('LOWER(email) = ?', [$normalized])
+                    ->orWhereRaw('LOWER(username) = ?', [$normalized]);
+            })
+            ->first();
+
+        return $user !== null ? $this->mapUser($user) : null;
+    }
+
+    /**
      * @param  array<string, mixed>  $data
      * @return array<string, mixed>
      */
     public function createUser(array $data, ?string $managedByPrincipalId = null): array
     {
         $displayName = (string) $data['display_name'];
+        $username = Str::lower(trim((string) $data['username']));
         $email = (string) $data['email'];
         $jobTitle = is_string($data['job_title'] ?? null) && $data['job_title'] !== '' ? $data['job_title'] : null;
         $organizationId = (string) $data['organization_id'];
         $id = $this->nextUserId($displayName);
-        $principalId = $this->nextPrincipalId($displayName, $email);
+        $principalId = $this->nextPrincipalId($username, $displayName, $email);
+        $password = is_string($data['password'] ?? null) && $data['password'] !== '' ? (string) $data['password'] : null;
+        $passwordEnabled = (bool) ($data['password_enabled'] ?? false);
+        $magicLinkEnabled = array_key_exists('magic_link_enabled', $data)
+            ? (bool) $data['magic_link_enabled']
+            : true;
 
         DB::table('identity_local_users')->insert([
             'id' => $id,
             'principal_id' => $principalId,
             'organization_id' => $organizationId,
+            'username' => $username,
             'display_name' => $displayName,
             'email' => $email,
+            'password_hash' => $password !== null ? Hash::make($password) : null,
+            'password_enabled' => $passwordEnabled,
+            'magic_link_enabled' => $magicLinkEnabled,
             'job_title' => $jobTitle,
             'is_active' => (bool) ($data['is_active'] ?? true),
             'created_at' => now(),
@@ -117,6 +168,7 @@ class IdentityLocalRepository
             targetId: $id,
             summary: [
                 'principal_id' => $principalId,
+                'username' => $username,
                 'display_name' => $displayName,
                 'email' => $email,
             ],
@@ -148,12 +200,22 @@ class IdentityLocalRepository
             return null;
         }
 
+        $password = is_string($data['password'] ?? null) && $data['password'] !== '' ? (string) $data['password'] : null;
+        $passwordEnabled = (bool) ($data['password_enabled'] ?? false);
+        $magicLinkEnabled = array_key_exists('magic_link_enabled', $data)
+            ? (bool) $data['magic_link_enabled']
+            : (bool) ($existing['magic_link_enabled'] ?? true);
+
         DB::table('identity_local_users')
             ->where('id', $userId)
             ->update([
                 'organization_id' => (string) $data['organization_id'],
+                'username' => Str::lower(trim((string) $data['username'])),
                 'display_name' => (string) $data['display_name'],
                 'email' => (string) $data['email'],
+                'password_hash' => $password !== null ? Hash::make($password) : ($existing['password_hash'] ?? null),
+                'password_enabled' => $passwordEnabled,
+                'magic_link_enabled' => $magicLinkEnabled,
                 'job_title' => is_string($data['job_title'] ?? null) && $data['job_title'] !== '' ? $data['job_title'] : null,
                 'is_active' => (bool) ($data['is_active'] ?? false),
                 'updated_at' => now(),
@@ -171,8 +233,11 @@ class IdentityLocalRepository
             targetId: $userId,
             summary: [
                 'principal_id' => $existing['principal_id'] ?? null,
+                'username' => $data['username'] ?? null,
                 'display_name' => $data['display_name'] ?? null,
                 'email' => $data['email'] ?? null,
+                'password_enabled' => $passwordEnabled,
+                'magic_link_enabled' => $magicLinkEnabled,
                 'is_active' => (bool) ($data['is_active'] ?? false),
             ],
             executionOrigin: 'identity-local',
@@ -408,11 +473,40 @@ class IdentityLocalRepository
             'id' => (string) $user->id,
             'principal_id' => (string) $user->principal_id,
             'organization_id' => (string) $user->organization_id,
+            'username' => is_string($user->username ?? null) ? $user->username : '',
             'display_name' => (string) $user->display_name,
             'email' => (string) $user->email,
+            'password_hash' => is_string($user->password_hash ?? null) ? $user->password_hash : null,
+            'password_enabled' => (bool) ($user->password_enabled ?? false),
+            'magic_link_enabled' => ! array_key_exists('magic_link_enabled', get_object_vars($user))
+                ? true
+                : (bool) $user->magic_link_enabled,
             'job_title' => is_string($user->job_title) ? $user->job_title : '',
             'is_active' => (bool) $user->is_active,
         ];
+    }
+
+    public function ensurePlatformAdminGrant(string $principalId): void
+    {
+        $existing = collect($this->authorizationStore->grantRecords())->first(
+            static fn (array $grant): bool => ($grant['target_type'] ?? null) === 'principal'
+                && ($grant['target_id'] ?? null) === $principalId
+                && ($grant['grant_type'] ?? null) === 'role'
+                && ($grant['value'] ?? null) === 'platform-admin'
+                && ($grant['context_type'] ?? null) === 'platform'
+        );
+
+        $this->authorizationStore->upsertGrant(
+            id: is_array($existing) ? ($existing['id'] ?? null) : null,
+            targetType: 'principal',
+            targetId: $principalId,
+            grantType: 'role',
+            value: 'platform-admin',
+            contextType: 'platform',
+            organizationId: null,
+            scopeId: null,
+            isSystem: false,
+        );
     }
 
     private function syncMembershipScopes(string $membershipId, array $scopeIds): void
@@ -485,9 +579,11 @@ class IdentityLocalRepository
         return $candidate.'-'.Str::lower(Str::random(4));
     }
 
-    private function nextPrincipalId(string $displayName, string $email): string
+    private function nextPrincipalId(string $username, string $displayName, string $email): string
     {
-        $baseValue = trim(Str::before($email, '@')) !== '' ? Str::before($email, '@') : $displayName;
+        $baseValue = $username !== ''
+            ? $username
+            : (trim(Str::before($email, '@')) !== '' ? Str::before($email, '@') : $displayName);
         $base = 'principal-'.Str::slug($baseValue);
         $candidate = $base !== 'principal-' ? $base : 'principal-'.Str::lower(Str::ulid());
 

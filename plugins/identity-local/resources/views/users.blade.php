@@ -18,6 +18,10 @@
 
                 <div class="overview-grid" style="grid-template-columns:repeat(2, minmax(0, 1fr));">
                     <div class="field">
+                        <label class="field-label" for="identity-username">Username</label>
+                        <input class="field-input" id="identity-username" name="username" required>
+                    </div>
+                    <div class="field">
                         <label class="field-label" for="identity-display-name">Full name</label>
                         <input class="field-input" id="identity-display-name" name="display_name" required>
                     </div>
@@ -30,6 +34,14 @@
                         <input class="field-input" id="identity-job-title" name="job_title">
                     </div>
                     <div class="field">
+                        <label class="field-label" for="identity-password">Password</label>
+                        <input class="field-input" id="identity-password" name="password" type="password">
+                    </div>
+                    <div class="field">
+                        <label class="field-label" for="identity-password-confirmation">Confirm password</label>
+                        <input class="field-input" id="identity-password-confirmation" name="password_confirmation" type="password">
+                    </div>
+                    <div class="field">
                         <label class="field-label" for="identity-actor">Responsible profile</label>
                         <select class="field-select" id="identity-actor" name="actor_id">
                             <option value="">No linked profile yet</option>
@@ -38,6 +50,17 @@
                             @endforeach
                         </select>
                     </div>
+                </div>
+
+                <div class="action-cluster" style="margin-top:14px;">
+                    <label class="field-label" style="display:flex; gap:8px; align-items:center;">
+                        <input type="checkbox" name="password_enabled" value="1">
+                        Allow password sign-in
+                    </label>
+                    <label class="field-label" style="display:flex; gap:8px; align-items:center;">
+                        <input type="checkbox" name="magic_link_enabled" value="1" checked>
+                        Allow email sign-in link
+                    </label>
                 </div>
 
                 <div class="action-cluster" style="margin-top:14px;">
@@ -73,8 +96,18 @@
                             <div class="table-note">{{ $row['user']['job_title'] !== '' ? $row['user']['job_title'] : 'No role defined yet' }}</div>
                         </td>
                         <td>
+                            <div>{{ $row['user']['username'] }}</div>
                             <div>{{ $row['user']['email'] }}</div>
                             <div class="entity-id">{{ $row['user']['principal_id'] }}</div>
+                            <div class="table-note">
+                                @if ($row['user']['password_enabled'])
+                                    Password + email code
+                                @elseif ($row['user']['magic_link_enabled'])
+                                    Email sign-in link
+                                @else
+                                    Access not enabled
+                                @endif
+                            </div>
                         </td>
                         <td>
                             @if ($row['memberships'] === [])
@@ -122,6 +155,10 @@
                                         <input type="hidden" name="menu" value="plugin.identity-local.users">
                                         <input type="hidden" name="membership_id" value="{{ $query['membership_ids'][0] ?? 'membership-org-a-hello' }}">
                                         <div class="field">
+                                            <label class="field-label">Username</label>
+                                            <input class="field-input" name="username" value="{{ $row['user']['username'] }}" required>
+                                        </div>
+                                        <div class="field">
                                             <label class="field-label">Full name</label>
                                             <input class="field-input" name="display_name" value="{{ $row['user']['display_name'] }}" required>
                                         </div>
@@ -134,6 +171,14 @@
                                             <input class="field-input" name="job_title" value="{{ $row['user']['job_title'] }}">
                                         </div>
                                         <div class="field">
+                                            <label class="field-label">New password</label>
+                                            <input class="field-input" name="password" type="password">
+                                        </div>
+                                        <div class="field">
+                                            <label class="field-label">Confirm password</label>
+                                            <input class="field-input" name="password_confirmation" type="password">
+                                        </div>
+                                        <div class="field">
                                             <label class="field-label">Responsible profile</label>
                                             <select class="field-select" name="actor_id">
                                                 <option value="">Keep current link</option>
@@ -142,6 +187,14 @@
                                                 @endforeach
                                             </select>
                                         </div>
+                                        <label class="field-label" style="display:flex; gap:8px; align-items:center;">
+                                            <input type="checkbox" name="password_enabled" value="1" @checked($row['user']['password_enabled'])>
+                                            Allow password sign-in
+                                        </label>
+                                        <label class="field-label" style="display:flex; gap:8px; align-items:center;">
+                                            <input type="checkbox" name="magic_link_enabled" value="1" @checked($row['user']['magic_link_enabled'])>
+                                            Allow email sign-in link
+                                        </label>
                                         <label class="field-label" style="display:flex; gap:8px; align-items:center;">
                                             <input type="checkbox" name="is_active" value="1" @checked($row['user']['is_active'])>
                                             Active workspace person
