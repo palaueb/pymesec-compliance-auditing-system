@@ -23,6 +23,6 @@ return [
     'state_path' => $statePath,
     'enabled' => array_values(array_filter(array_map(
         static fn (string $pluginId): string => trim($pluginId),
-        explode(',', (string) env('PLUGINS_ENABLED', 'hello-world,asset-catalog,actor-directory,controls-catalog,risk-management,findings-remediation,policy-exceptions,data-flows-privacy,continuity-bcm'))
+        explode(',', (string) env('PLUGINS_ENABLED', 'hello-world,asset-catalog,actor-directory,controls-catalog,risk-management,findings-remediation,policy-exceptions,data-flows-privacy,continuity-bcm,identity-local'))
     ))),
 ];

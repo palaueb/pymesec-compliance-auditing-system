@@ -1,25 +1,17 @@
 # Identity Local Plugin
 
-Skeleton for the local identity plugin.
+Local identity administration plugin for shell-native user and access management.
 
-Intended responsibilities:
+Current v1 scope:
 
-- local authentication implementation
-- local user records
-- memberships management integration
-- mapping authenticated subjects into core principal abstractions
+- local people records backed by `identity_local_users`
+- organization memberships backed by the core `memberships` table
+- role grant synchronization into `authorization_grants`
+- optional linkage from local users to functional actors
+- shell screens for people and organization access
 
-This is a structural placeholder only.
-Identity plugin skeleton aligned with ADR-003.
+Still out of scope:
 
-Current scope:
-
-- declares itself as an `identity` plugin
-- implements the core identity plugin contract
-- contributes permission metadata through `plugin.json`
-
-Still intentionally missing:
-
-- authentication flows
-- principal persistence
-- membership provisioning
+- login, password reset, and session UX
+- external identity federation
+- advanced invitation and lifecycle workflows

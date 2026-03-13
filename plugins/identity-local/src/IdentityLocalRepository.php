@@ -1,0 +1,560 @@
+<?php
+
+namespace PymeSec\Plugins\IdentityLocal;
+
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+use PymeSec\Core\Audit\AuditRecordData;
+use PymeSec\Core\Audit\Contracts\AuditTrailInterface;
+use PymeSec\Core\Events\Contracts\EventBusInterface;
+use PymeSec\Core\Events\PublicEvent;
+use PymeSec\Core\Permissions\DatabaseAuthorizationStore;
+
+class IdentityLocalRepository
+{
+    public function __construct(
+        private readonly AuditTrailInterface $audit,
+        private readonly EventBusInterface $events,
+        private readonly DatabaseAuthorizationStore $authorizationStore,
+    ) {}
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    public function usersForOrganization(string $organizationId): array
+    {
+        return DB::table('identity_local_users as users')
+            ->leftJoin('memberships as memberships', function ($join) use ($organizationId): void {
+                $join->on('memberships.principal_id', '=', 'users.principal_id')
+                    ->where('memberships.organization_id', '=', $organizationId)
+                    ->where('memberships.is_active', '=', true);
+            })
+            ->where(function ($query) use ($organizationId): void {
+                $query->where('users.organization_id', $organizationId)
+                    ->orWhereNotNull('memberships.id');
+            })
+            ->distinct()
+            ->orderBy('users.display_name')
+            ->get([
+                'users.id',
+                'users.principal_id',
+                'users.organization_id',
+                'users.display_name',
+                'users.email',
+                'users.job_title',
+                'users.is_active',
+            ])->map(fn ($user): array => $this->mapUser($user))
+            ->all();
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    public function findUser(string $userId): ?array
+    {
+        $user = DB::table('identity_local_users')->where('id', $userId)->first();
+
+        return $user !== null ? $this->mapUser($user) : null;
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    public function findUserByPrincipal(string $principalId): ?array
+    {
+        $user = DB::table('identity_local_users')->where('principal_id', $principalId)->first();
+
+        return $user !== null ? $this->mapUser($user) : null;
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    public function findActiveUserByEmail(string $email): ?array
+    {
+        $user = DB::table('identity_local_users')
+            ->whereRaw('LOWER(email) = ?', [Str::lower($email)])
+            ->where('is_active', true)
+            ->first();
+
+        return $user !== null ? $this->mapUser($user) : null;
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    public function createUser(array $data, ?string $managedByPrincipalId = null): array
+    {
+        $displayName = (string) $data['display_name'];
+        $email = (string) $data['email'];
+        $jobTitle = is_string($data['job_title'] ?? null) && $data['job_title'] !== '' ? $data['job_title'] : null;
+        $organizationId = (string) $data['organization_id'];
+        $id = $this->nextUserId($displayName);
+        $principalId = $this->nextPrincipalId($displayName, $email);
+
+        DB::table('identity_local_users')->insert([
+            'id' => $id,
+            'principal_id' => $principalId,
+            'organization_id' => $organizationId,
+            'display_name' => $displayName,
+            'email' => $email,
+            'job_title' => $jobTitle,
+            'is_active' => (bool) ($data['is_active'] ?? true),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $user = $this->findUser($id);
+
+        $this->audit->record(new AuditRecordData(
+            eventType: 'plugin.identity-local.user.created',
+            outcome: 'success',
+            originComponent: 'identity-local',
+            principalId: $managedByPrincipalId,
+            organizationId: $organizationId,
+            targetType: 'identity_local_user',
+            targetId: $id,
+            summary: [
+                'principal_id' => $principalId,
+                'display_name' => $displayName,
+                'email' => $email,
+            ],
+            executionOrigin: 'identity-local',
+        ));
+
+        $this->events->publish(new PublicEvent(
+            name: 'plugin.identity-local.user.created',
+            originComponent: 'identity-local',
+            organizationId: $organizationId,
+            payload: [
+                'user_id' => $id,
+                'principal_id' => $principalId,
+            ],
+        ));
+
+        return is_array($user) ? $user : [];
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>|null
+     */
+    public function updateUser(string $userId, array $data, ?string $managedByPrincipalId = null): ?array
+    {
+        $existing = $this->findUser($userId);
+
+        if ($existing === null) {
+            return null;
+        }
+
+        DB::table('identity_local_users')
+            ->where('id', $userId)
+            ->update([
+                'organization_id' => (string) $data['organization_id'],
+                'display_name' => (string) $data['display_name'],
+                'email' => (string) $data['email'],
+                'job_title' => is_string($data['job_title'] ?? null) && $data['job_title'] !== '' ? $data['job_title'] : null,
+                'is_active' => (bool) ($data['is_active'] ?? false),
+                'updated_at' => now(),
+            ]);
+
+        $user = $this->findUser($userId);
+
+        $this->audit->record(new AuditRecordData(
+            eventType: 'plugin.identity-local.user.updated',
+            outcome: 'success',
+            originComponent: 'identity-local',
+            principalId: $managedByPrincipalId,
+            organizationId: (string) $data['organization_id'],
+            targetType: 'identity_local_user',
+            targetId: $userId,
+            summary: [
+                'principal_id' => $existing['principal_id'] ?? null,
+                'display_name' => $data['display_name'] ?? null,
+                'email' => $data['email'] ?? null,
+                'is_active' => (bool) ($data['is_active'] ?? false),
+            ],
+            executionOrigin: 'identity-local',
+        ));
+
+        $this->events->publish(new PublicEvent(
+            name: 'plugin.identity-local.user.updated',
+            originComponent: 'identity-local',
+            organizationId: (string) $data['organization_id'],
+            payload: [
+                'user_id' => $userId,
+                'principal_id' => $existing['principal_id'] ?? null,
+            ],
+        ));
+
+        return $user;
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    public function membershipsForOrganization(string $organizationId): array
+    {
+        $records = DB::table('memberships')
+            ->where('organization_id', $organizationId)
+            ->orderBy('principal_id')
+            ->orderBy('id')
+            ->get();
+
+        $membershipIds = $records->pluck('id')->all();
+        $scopesByMembership = [];
+        $rolesByMembership = [];
+
+        if ($membershipIds !== []) {
+            foreach (DB::table('membership_scope')
+                ->whereIn('membership_id', $membershipIds)
+                ->orderBy('scope_id')
+                ->get(['membership_id', 'scope_id']) as $scope) {
+                $scopesByMembership[$scope->membership_id][] = (string) $scope->scope_id;
+            }
+
+            foreach (DB::table('authorization_grants')
+                ->where('target_type', 'membership')
+                ->where('grant_type', 'role')
+                ->where('context_type', 'organization')
+                ->where('organization_id', $organizationId)
+                ->whereIn('target_id', $membershipIds)
+                ->orderBy('value')
+                ->get(['target_id', 'value']) as $grant) {
+                $rolesByMembership[$grant->target_id][] = (string) $grant->value;
+            }
+        }
+
+        return $records->map(function ($membership) use ($rolesByMembership, $scopesByMembership): array {
+            $fallbackRoles = $this->decodeStringArray($membership->roles ?? null);
+
+            return [
+                'id' => (string) $membership->id,
+                'principal_id' => (string) $membership->principal_id,
+                'organization_id' => (string) $membership->organization_id,
+                'roles' => array_values(array_unique($rolesByMembership[$membership->id] ?? $fallbackRoles)),
+                'scope_ids' => $scopesByMembership[$membership->id] ?? [],
+                'is_active' => (bool) $membership->is_active,
+            ];
+        })->all();
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    public function findMembership(string $membershipId): ?array
+    {
+        $membership = DB::table('memberships')->where('id', $membershipId)->first();
+
+        if ($membership === null) {
+            return null;
+        }
+
+        $scopes = DB::table('membership_scope')
+            ->where('membership_id', $membershipId)
+            ->orderBy('scope_id')
+            ->pluck('scope_id')
+            ->map(static fn ($scopeId): string => (string) $scopeId)
+            ->all();
+
+        $roles = DB::table('authorization_grants')
+            ->where('target_type', 'membership')
+            ->where('target_id', $membershipId)
+            ->where('grant_type', 'role')
+            ->where('context_type', 'organization')
+            ->where('organization_id', $membership->organization_id)
+            ->orderBy('value')
+            ->pluck('value')
+            ->map(static fn ($role): string => (string) $role)
+            ->all();
+
+        return [
+            'id' => (string) $membership->id,
+            'principal_id' => (string) $membership->principal_id,
+            'organization_id' => (string) $membership->organization_id,
+            'roles' => $roles !== [] ? $roles : $this->decodeStringArray($membership->roles ?? null),
+            'scope_ids' => $scopes,
+            'is_active' => (bool) $membership->is_active,
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    public function createMembership(array $data, ?string $managedByPrincipalId = null): array
+    {
+        $principalId = (string) $data['principal_id'];
+        $organizationId = (string) $data['organization_id'];
+        $membershipId = $this->nextMembershipId($organizationId, $principalId);
+        $roles = $this->normalizeStringArray($data['role_keys'] ?? []);
+        $scopeIds = $this->normalizeStringArray($data['scope_ids'] ?? []);
+        $isActive = (bool) ($data['is_active'] ?? true);
+
+        DB::table('memberships')->insert([
+            'id' => $membershipId,
+            'principal_id' => $principalId,
+            'organization_id' => $organizationId,
+            'roles' => $this->encodeJson($roles),
+            'is_active' => $isActive,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->syncMembershipScopes($membershipId, $scopeIds);
+        $this->syncMembershipRoleGrants($membershipId, $organizationId, $roles);
+
+        $membership = $this->findMembership($membershipId);
+
+        $this->audit->record(new AuditRecordData(
+            eventType: 'plugin.identity-local.membership.created',
+            outcome: 'success',
+            originComponent: 'identity-local',
+            principalId: $managedByPrincipalId,
+            organizationId: $organizationId,
+            targetType: 'membership',
+            targetId: $membershipId,
+            summary: [
+                'principal_id' => $principalId,
+                'roles' => $roles,
+                'scope_ids' => $scopeIds,
+            ],
+            executionOrigin: 'identity-local',
+        ));
+
+        $this->events->publish(new PublicEvent(
+            name: 'plugin.identity-local.membership.created',
+            originComponent: 'identity-local',
+            organizationId: $organizationId,
+            payload: [
+                'membership_id' => $membershipId,
+                'principal_id' => $principalId,
+            ],
+        ));
+
+        return is_array($membership) ? $membership : [];
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>|null
+     */
+    public function updateMembership(string $membershipId, array $data, ?string $managedByPrincipalId = null): ?array
+    {
+        $existing = $this->findMembership($membershipId);
+
+        if ($existing === null) {
+            return null;
+        }
+
+        $principalId = (string) $data['principal_id'];
+        $organizationId = (string) $data['organization_id'];
+        $roles = $this->normalizeStringArray($data['role_keys'] ?? []);
+        $scopeIds = $this->normalizeStringArray($data['scope_ids'] ?? []);
+        $isActive = (bool) ($data['is_active'] ?? false);
+
+        DB::table('memberships')
+            ->where('id', $membershipId)
+            ->update([
+                'principal_id' => $principalId,
+                'organization_id' => $organizationId,
+                'roles' => $this->encodeJson($roles),
+                'is_active' => $isActive,
+                'updated_at' => now(),
+            ]);
+
+        $this->syncMembershipScopes($membershipId, $scopeIds);
+        $this->syncMembershipRoleGrants($membershipId, $organizationId, $roles);
+
+        $membership = $this->findMembership($membershipId);
+
+        $this->audit->record(new AuditRecordData(
+            eventType: 'plugin.identity-local.membership.updated',
+            outcome: 'success',
+            originComponent: 'identity-local',
+            principalId: $managedByPrincipalId,
+            organizationId: $organizationId,
+            targetType: 'membership',
+            targetId: $membershipId,
+            summary: [
+                'principal_id' => $principalId,
+                'roles' => $roles,
+                'scope_ids' => $scopeIds,
+                'is_active' => $isActive,
+            ],
+            executionOrigin: 'identity-local',
+        ));
+
+        $this->events->publish(new PublicEvent(
+            name: 'plugin.identity-local.membership.updated',
+            originComponent: 'identity-local',
+            organizationId: $organizationId,
+            payload: [
+                'membership_id' => $membershipId,
+                'principal_id' => $principalId,
+            ],
+        ));
+
+        return $membership;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function mapUser(object $user): array
+    {
+        return [
+            'id' => (string) $user->id,
+            'principal_id' => (string) $user->principal_id,
+            'organization_id' => (string) $user->organization_id,
+            'display_name' => (string) $user->display_name,
+            'email' => (string) $user->email,
+            'job_title' => is_string($user->job_title) ? $user->job_title : '',
+            'is_active' => (bool) $user->is_active,
+        ];
+    }
+
+    private function syncMembershipScopes(string $membershipId, array $scopeIds): void
+    {
+        DB::table('membership_scope')->where('membership_id', $membershipId)->delete();
+
+        foreach (array_values(array_unique($scopeIds)) as $scopeId) {
+            DB::table('membership_scope')->insert([
+                'membership_id' => $membershipId,
+                'scope_id' => $scopeId,
+            ]);
+        }
+    }
+
+    private function syncMembershipRoleGrants(string $membershipId, string $organizationId, array $roles): void
+    {
+        $existing = DB::table('authorization_grants')
+            ->where('target_type', 'membership')
+            ->where('target_id', $membershipId)
+            ->where('grant_type', 'role')
+            ->where('context_type', 'organization')
+            ->where('organization_id', $organizationId)
+            ->get(['id', 'value']);
+
+        $existingIdsByRole = [];
+        $obsoleteGrantIds = [];
+
+        foreach ($existing as $grant) {
+            $role = (string) $grant->value;
+
+            if (! in_array($role, $roles, true)) {
+                $obsoleteGrantIds[] = (string) $grant->id;
+
+                continue;
+            }
+
+            $existingIdsByRole[$role] = (string) $grant->id;
+        }
+
+        if ($obsoleteGrantIds !== []) {
+            DB::table('authorization_grants')->whereIn('id', $obsoleteGrantIds)->delete();
+        }
+
+        foreach ($roles as $role) {
+            $this->authorizationStore->upsertGrant(
+                id: $existingIdsByRole[$role] ?? null,
+                targetType: 'membership',
+                targetId: $membershipId,
+                grantType: 'role',
+                value: $role,
+                contextType: 'organization',
+                organizationId: $organizationId,
+                scopeId: null,
+                isSystem: false,
+            );
+        }
+
+        $this->authorizationStore->refresh();
+    }
+
+    private function nextUserId(string $displayName): string
+    {
+        $base = 'identity-user-'.Str::slug($displayName);
+        $candidate = $base !== 'identity-user-' ? $base : 'identity-user-'.Str::lower(Str::ulid());
+
+        if (! DB::table('identity_local_users')->where('id', $candidate)->exists()) {
+            return $candidate;
+        }
+
+        return $candidate.'-'.Str::lower(Str::random(4));
+    }
+
+    private function nextPrincipalId(string $displayName, string $email): string
+    {
+        $baseValue = trim(Str::before($email, '@')) !== '' ? Str::before($email, '@') : $displayName;
+        $base = 'principal-'.Str::slug($baseValue);
+        $candidate = $base !== 'principal-' ? $base : 'principal-'.Str::lower(Str::ulid());
+
+        if (! $this->principalIdExists($candidate)) {
+            return $candidate;
+        }
+
+        return $candidate.'-'.Str::lower(Str::random(4));
+    }
+
+    private function nextMembershipId(string $organizationId, string $principalId): string
+    {
+        $base = sprintf('membership-%s-%s', Str::slug($organizationId), Str::slug(Str::after($principalId, 'principal-')));
+        $candidate = $base !== 'membership--' ? $base : 'membership-'.Str::lower(Str::ulid());
+
+        if (! DB::table('memberships')->where('id', $candidate)->exists()) {
+            return $candidate;
+        }
+
+        return $candidate.'-'.Str::lower(Str::random(4));
+    }
+
+    private function principalIdExists(string $principalId): bool
+    {
+        return DB::table('identity_local_users')->where('principal_id', $principalId)->exists()
+            || DB::table('memberships')->where('principal_id', $principalId)->exists();
+    }
+
+    /**
+     * @param  array<int, mixed>|mixed  $values
+     * @return array<int, string>
+     */
+    private function normalizeStringArray(mixed $values): array
+    {
+        if (! is_array($values)) {
+            return [];
+        }
+
+        return array_values(array_unique(array_filter(
+            array_map(static fn (mixed $value): ?string => is_string($value) ? trim($value) : null, $values),
+            static fn (?string $value): bool => is_string($value) && $value !== '',
+        )));
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function decodeStringArray(mixed $value): array
+    {
+        if (! is_string($value) || $value === '') {
+            return [];
+        }
+
+        $decoded = json_decode($value, true);
+
+        if (! is_array($decoded)) {
+            return [];
+        }
+
+        return array_values(array_filter($decoded, static fn (mixed $item): bool => is_string($item) && $item !== ''));
+    }
+
+    /**
+     * @param  array<int, string>  $value
+     */
+    private function encodeJson(array $value): string
+    {
+        return json_encode(array_values($value), JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
+    }
+}

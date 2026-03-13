@@ -11,6 +11,7 @@ class DemoCompanySeeder extends Seeder
         // Canonical demo dataset used both for local preview and test bootstrap.
         $this->call([
             CoreTenancySeeder::class,
+            DemoIdentityLocalSeeder::class,
         ]);
     }
 }

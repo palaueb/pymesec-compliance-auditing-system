@@ -65,9 +65,11 @@ class PluginSystemTest extends TestCase
             ])
             ->assertJsonFragment([
                 'id' => 'identity-local',
-                'enabled' => false,
-                'booted' => false,
-                'reason' => 'plugin_not_enabled',
+                'enabled' => true,
+                'booted' => true,
+                'route_count' => 1,
+                'menu_count' => 2,
+                'runtime_contract_satisfied' => true,
             ])
             ->assertJsonFragment([
                 'id' => 'risk-management',
@@ -129,8 +131,9 @@ class PluginSystemTest extends TestCase
                 'key' => 'plugin.continuity-bcm.plans.view',
                 'origin' => 'continuity-bcm',
             ])
-            ->assertJsonMissing([
-                'key' => 'plugin.identity-local.principals.view',
+            ->assertJsonFragment([
+                'key' => 'plugin.identity-local.users.view',
+                'origin' => 'identity-local',
             ]);
     }
 
@@ -147,7 +150,7 @@ class PluginSystemTest extends TestCase
                     ['data-flows-privacy', 'domain', 'yes', 'yes', '2', '1', '2', ''],
                     ['findings-remediation', 'domain', 'yes', 'yes', '2', '1', '2', ''],
                     ['hello-world', 'ui', 'yes', 'yes', '1', '1', '2', ''],
-                    ['identity-local', 'identity', 'no', 'no', '1', '0', '0', 'plugin_not_enabled'],
+                    ['identity-local', 'identity', 'yes', 'yes', '4', '1', '2', ''],
                     ['policy-exceptions', 'domain', 'yes', 'yes', '2', '1', '2', ''],
                     ['risk-management', 'domain', 'yes', 'yes', '2', '1', '2', ''],
                 ],
@@ -193,6 +196,10 @@ class PluginSystemTest extends TestCase
                     ['plugin.findings-remediation.findings.manage', 'findings-remediation', 'manage', 'organization'],
                     ['plugin.findings-remediation.findings.view', 'findings-remediation', 'view', 'organization'],
                     ['plugin.hello-world.hello.view', 'hello-world', 'view', 'organization'],
+                    ['plugin.identity-local.memberships.manage', 'identity-local', 'manage', 'organization'],
+                    ['plugin.identity-local.memberships.view', 'identity-local', 'view', 'organization'],
+                    ['plugin.identity-local.users.manage', 'identity-local', 'manage', 'organization'],
+                    ['plugin.identity-local.users.view', 'identity-local', 'view', 'organization'],
                     ['plugin.policy-exceptions.policies.manage', 'policy-exceptions', 'manage', 'organization'],
                     ['plugin.policy-exceptions.policies.view', 'policy-exceptions', 'view', 'organization'],
                     ['plugin.risk-management.risks.manage', 'risk-management', 'manage', 'organization'],
@@ -205,7 +212,7 @@ class PluginSystemTest extends TestCase
     public function test_the_plugins_enable_command_persists_a_local_override(): void
     {
         $this->artisan('plugins:enable identity-local')
-            ->expectsOutputToContain('Plugin [identity-local] will be enabled on the next bootstrap.')
+            ->expectsOutputToContain('Plugin [identity-local] is already enabled.')
             ->assertExitCode(0);
 
         $effective = $this->app->make(PluginStateStore::class)->effectiveEnabled(config('plugins.enabled', []));
@@ -221,7 +228,7 @@ class PluginSystemTest extends TestCase
 
         $effective = $this->app->make(PluginStateStore::class)->effectiveEnabled(config('plugins.enabled', []));
 
-        $this->assertSame(['asset-catalog', 'actor-directory', 'controls-catalog', 'risk-management', 'findings-remediation', 'policy-exceptions', 'data-flows-privacy', 'continuity-bcm'], $effective);
+        $this->assertSame(['asset-catalog', 'actor-directory', 'controls-catalog', 'risk-management', 'findings-remediation', 'policy-exceptions', 'data-flows-privacy', 'continuity-bcm', 'identity-local'], $effective);
     }
 
     public function test_the_plugins_disable_command_removes_a_previous_local_enable_override(): void
@@ -259,7 +266,8 @@ class PluginSystemTest extends TestCase
             ->assertJsonPath('menus.6.id', 'plugin.actor-directory.root')
             ->assertJsonPath('menus.7.id', 'plugin.policy-exceptions.root')
             ->assertJsonPath('menus.8.id', 'plugin.data-flows-privacy.root')
-            ->assertJsonPath('menus.9.id', 'plugin.continuity-bcm.root')
+            ->assertJsonPath('menus.9.id', 'plugin.identity-local.users')
+            ->assertJsonPath('menus.10.id', 'plugin.continuity-bcm.root')
             ->assertJsonPath('issues', []);
     }
 
@@ -307,6 +315,8 @@ class PluginSystemTest extends TestCase
                     ['plugin.policy-exceptions.exceptions', 'policy-exceptions', 'plugin.policy-exceptions.root', 'plugin.policy-exceptions.exceptions', 'plugin.policy-exceptions.policies.view', '10'],
                     ['plugin.data-flows-privacy.root', 'data-flows-privacy', '', 'plugin.data-flows-privacy.index', 'plugin.data-flows-privacy.records.view', '45'],
                     ['plugin.data-flows-privacy.activities', 'data-flows-privacy', 'plugin.data-flows-privacy.root', 'plugin.data-flows-privacy.activities', 'plugin.data-flows-privacy.records.view', '10'],
+                    ['plugin.identity-local.users', 'identity-local', '', 'plugin.identity-local.users.index', 'plugin.identity-local.users.view', '47'],
+                    ['plugin.identity-local.memberships', 'identity-local', 'plugin.identity-local.users', 'plugin.identity-local.memberships.index', 'plugin.identity-local.memberships.view', '10'],
                     ['plugin.continuity-bcm.root', 'continuity-bcm', '', 'plugin.continuity-bcm.index', 'plugin.continuity-bcm.plans.view', '50'],
                     ['plugin.continuity-bcm.plans', 'continuity-bcm', 'plugin.continuity-bcm.root', 'plugin.continuity-bcm.plans', 'plugin.continuity-bcm.plans.view', '10'],
                 ],

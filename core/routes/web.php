@@ -23,6 +23,22 @@ use PymeSec\Core\UI\Contracts\ScreenRegistryInterface;
 use PymeSec\Core\UI\ScreenRenderContext;
 use PymeSec\Core\Workflows\Contracts\WorkflowRegistryInterface;
 
+$resolvePrincipalId = static function (?string $default = 'principal-org-a'): ?string {
+    $requested = request()->input('principal_id', request()->query('principal_id'));
+
+    if (is_string($requested) && $requested !== '') {
+        return $requested;
+    }
+
+    $sessionPrincipalId = session('auth.principal_id');
+
+    if (is_string($sessionPrincipalId) && $sessionPrincipalId !== '') {
+        return $sessionPrincipalId;
+    }
+
+    return $default;
+};
+
 Route::get('/', function () {
     return response()->json([
         'service' => 'pymesec-core',
@@ -35,7 +51,7 @@ Route::get('/app', function (
     MenuLabelResolver $labels,
     ScreenRegistryInterface $screens,
     TenancyServiceInterface $tenancy
-) {
+) use ($resolvePrincipalId) {
     $availableThemes = config('ui.themes', []);
     $requestedTheme = request()->query('theme');
     $themeKey = is_string($requestedTheme) && isset($availableThemes[$requestedTheme])
@@ -47,7 +63,7 @@ Route::get('/app', function (
     $locale = is_string($locale) && in_array($locale, ['en', 'es', 'fr', 'de'], true) ? $locale : 'en';
     app()->setLocale($locale);
 
-    $principalId = (string) request()->query('principal_id', 'principal-org-a');
+    $principalId = (string) $resolvePrincipalId('principal-org-a');
     $requestedMembershipIds = request()->query('membership_ids', []);
 
     if (! is_array($requestedMembershipIds)) {
@@ -200,6 +216,7 @@ Route::get('/app', function (
         'menuApiUrl' => route('core.menus.index', $baseQuery),
         'debugPayloadJson' => json_encode($debugPayload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES),
         'principalId' => $principalId,
+        'sessionPrincipalId' => is_string(session('auth.principal_id')) ? session('auth.principal_id') : null,
         'organizationId' => $organizationId,
         'scopeId' => $scopeId,
         'organizations' => array_map(static fn ($organization): array => $organization->toArray(), $tenancyContext->organizations),
@@ -464,7 +481,7 @@ Route::post('/core/roles/grants/{grantId}', function (
 })->middleware('core.permission:core.roles.manage')->name('core.grants.update');
 
 Route::get('/core/menus', function (MenuRegistryInterface $menus, TenancyServiceInterface $tenancy) {
-    $principalId = request()->query('principal_id');
+    $principalId = request()->query('principal_id', session('auth.principal_id'));
     $requestedMembershipIds = request()->query('membership_ids', []);
 
     if (! is_array($requestedMembershipIds)) {
@@ -742,7 +759,7 @@ Route::get('/core/audit-logs/export', function (AuditTrailInterface $audit) {
 })->middleware('core.permission:core.audit-logs.export')->name('core.audit.export');
 
 Route::get('/core/authorization/check', function (AuthorizationServiceInterface $authorization, TenancyServiceInterface $tenancy) {
-    $principalId = request()->query('principal_id', 'principal-admin');
+    $principalId = request()->query('principal_id', session('auth.principal_id', 'principal-admin'));
     $permission = request()->query('permission', 'core.plugins.view');
     $requestedMembershipIds = request()->query('membership_ids', []);
     $requestedOrganizationId = request()->query('organization_id');

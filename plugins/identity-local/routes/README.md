@@ -1,4 +1,3 @@
 # Plugin Routes
 
-Placeholder location for `identity-local` route registration.
-
+Web routes for the `identity-local` plugin live in `web.php`.

@@ -85,8 +85,12 @@ class AppServiceProvider extends ServiceProvider
             );
         });
 
-        $this->app->singleton(AuthorizationStoreInterface::class, function (): AuthorizationStoreInterface {
+        $this->app->singleton(DatabaseAuthorizationStore::class, function (): DatabaseAuthorizationStore {
             return new DatabaseAuthorizationStore;
+        });
+
+        $this->app->singleton(AuthorizationStoreInterface::class, function ($app): AuthorizationStoreInterface {
+            return $app->make(DatabaseAuthorizationStore::class);
         });
 
         $this->app->singleton(MenuRegistryInterface::class, function ($app): MenuRegistryInterface {

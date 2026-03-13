@@ -4,7 +4,7 @@
     "name": "Identity Local",
     "version": "0.1.0",
     "type": "identity",
-    "description": "Placeholder manifest for the local identity plugin skeleton.",
+    "description": "Local people records and organization access management.",
     "vendor": "pymesec",
     "license": "AGPL-3.0-or-later"
   },
@@ -15,18 +15,75 @@
   "dependencies": [],
   "permissions": [
     {
-      "key": "plugin.identity-local.principals.view",
-      "label": "View local identity principals",
-      "description": "View principals managed by the local identity plugin.",
-      "feature_area": "principals",
+      "key": "plugin.identity-local.users.view",
+      "label": "View people records",
+      "description": "View local people records and linked access profiles.",
+      "feature_area": "users",
       "operation": "view",
+      "contexts": [
+        "organization"
+      ]
+    },
+    {
+      "key": "plugin.identity-local.users.manage",
+      "label": "Manage people records",
+      "description": "Create and update local people records.",
+      "feature_area": "users",
+      "operation": "manage",
+      "contexts": [
+        "organization"
+      ]
+    },
+    {
+      "key": "plugin.identity-local.memberships.view",
+      "label": "View organization access",
+      "description": "View organization memberships, role sets, and scope access.",
+      "feature_area": "memberships",
+      "operation": "view",
+      "contexts": [
+        "organization"
+      ]
+    },
+    {
+      "key": "plugin.identity-local.memberships.manage",
+      "label": "Manage organization access",
+      "description": "Create and update organization memberships and role grants.",
+      "feature_area": "memberships",
+      "operation": "manage",
       "contexts": [
         "organization"
       ]
     }
   ],
-  "routes": [],
-  "menus": [],
+  "routes": [
+    {
+      "id": "identity-local.web",
+      "type": "web",
+      "file": "routes/web.php",
+      "middleware": [
+        "web"
+      ]
+    }
+  ],
+  "menus": [
+    {
+      "id": "plugin.identity-local.users",
+      "label_key": "plugin.identity-local.nav.users",
+      "route": "plugin.identity-local.users.index",
+      "icon": "badge",
+      "order": 47,
+      "permission": "plugin.identity-local.users.view"
+    },
+    {
+      "id": "plugin.identity-local.memberships",
+      "label_key": "plugin.identity-local.nav.memberships",
+      "route": "plugin.identity-local.memberships.index",
+      "parent_id": "plugin.identity-local.users",
+      "icon": "shield",
+      "order": 10,
+      "permission": "plugin.identity-local.memberships.view"
+    }
+  ],
   "migrations": [],
   "translations": {
     "default_locale": "en",

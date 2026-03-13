@@ -129,6 +129,22 @@ return [
                 'plugin.continuity-bcm.plans.view',
             ],
         ],
+        'identity-operator' => [
+            'label' => 'Identity operator',
+            'permissions' => [
+                'plugin.identity-local.users.view',
+                'plugin.identity-local.users.manage',
+                'plugin.identity-local.memberships.view',
+                'plugin.identity-local.memberships.manage',
+            ],
+        ],
+        'identity-viewer' => [
+            'label' => 'Identity viewer',
+            'permissions' => [
+                'plugin.identity-local.users.view',
+                'plugin.identity-local.memberships.view',
+            ],
+        ],
     ],
     'grants' => [
         [
@@ -212,6 +228,14 @@ return [
         ],
         [
             'target_type' => 'membership',
+            'target_id' => 'membership-org-a-hello',
+            'grant_type' => 'role',
+            'value' => 'identity-operator',
+            'context_type' => 'organization',
+            'organization_id' => 'org-a',
+        ],
+        [
+            'target_type' => 'membership',
             'target_id' => 'membership-org-a-viewer',
             'grant_type' => 'role',
             'value' => 'asset-viewer',
@@ -276,6 +300,14 @@ return [
         ],
         [
             'target_type' => 'membership',
+            'target_id' => 'membership-org-a-viewer',
+            'grant_type' => 'role',
+            'value' => 'identity-viewer',
+            'context_type' => 'organization',
+            'organization_id' => 'org-a',
+        ],
+        [
+            'target_type' => 'membership',
             'target_id' => 'membership-org-b-ops',
             'grant_type' => 'role',
             'value' => 'asset-viewer',
@@ -327,6 +359,14 @@ return [
             'target_id' => 'membership-org-b-ops',
             'grant_type' => 'role',
             'value' => 'continuity-viewer',
+            'context_type' => 'organization',
+            'organization_id' => 'org-b',
+        ],
+        [
+            'target_type' => 'membership',
+            'target_id' => 'membership-org-b-ops',
+            'grant_type' => 'role',
+            'value' => 'identity-viewer',
             'context_type' => 'organization',
             'organization_id' => 'org-b',
         ],

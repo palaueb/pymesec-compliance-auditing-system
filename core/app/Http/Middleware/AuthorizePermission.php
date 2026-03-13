@@ -81,6 +81,12 @@ class AuthorizePermission
     {
         $value = $request->input($key, $request->query($key));
 
+        if ((! is_string($value) || $value === '') && $key === 'principal_id') {
+            $sessionValue = $request->session()->get('auth.principal_id');
+
+            return is_string($sessionValue) && $sessionValue !== '' ? $sessionValue : null;
+        }
+
         return is_string($value) && $value !== '' ? $value : null;
     }
 }

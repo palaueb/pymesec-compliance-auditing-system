@@ -241,6 +241,11 @@ class DatabaseAuthorizationStore implements AuthorizationStoreInterface
         return is_array($record) ? $record : [];
     }
 
+    public function refresh(): void
+    {
+        $this->flushCaches();
+    }
+
     /**
      * @return array<int, array<string, mixed>>
      */

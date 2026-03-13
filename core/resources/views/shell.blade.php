@@ -689,6 +689,8 @@
         </nav>
 
         <div class="sidebar-footer">
+            <div class="rail-label">{{ __('core.shell.principal') }}</div>
+            <div class="body-copy">{{ $sessionPrincipalId ?? $principalId }}</div>
             <div class="rail-label">{{ __('core.shell.organization') }}</div>
             <div class="body-copy">{{ $selectedOrganization['name'] ?? 'n/a' }}</div>
             <div class="body-copy">{{ $selectedScope['name'] ?? __('core.shell.all_scopes') }}</div>
@@ -752,6 +754,14 @@
                         @endif
                     </div>
                     <div class="utility-actions">
+                        @if ($sessionPrincipalId !== null)
+                            <form method="POST" action="{{ route('plugin.identity-local.auth.logout') }}" style="display:inline;">
+                                @csrf
+                                <button type="submit" class="button button-secondary">Sign out</button>
+                            </form>
+                        @else
+                            <a class="button button-secondary" href="{{ route('plugin.identity-local.auth.login') }}">Sign in</a>
+                        @endif
                         <button type="button" class="button button-ghost" data-debug-open>
                             {{ __('core.shell.debug_button') }}
                         </button>

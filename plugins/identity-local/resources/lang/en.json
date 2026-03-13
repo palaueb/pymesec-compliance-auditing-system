@@ -1,7 +1,11 @@
 {
   "plugin.identity-local.plugin.name": "Local Identity",
-  "plugin.identity-local.nav.users": "Users",
-  "plugin.identity-local.nav.memberships": "Memberships",
+  "plugin.identity-local.nav.users": "People",
+  "plugin.identity-local.nav.memberships": "Access",
+  "plugin.identity-local.screen.users.title": "People & Access",
+  "plugin.identity-local.screen.users.subtitle": "Local people records and linked workspace access for this organization.",
+  "plugin.identity-local.screen.memberships.title": "Organization Access",
+  "plugin.identity-local.screen.memberships.subtitle": "Memberships, role sets, and scope access kept in one place.",
   "plugin.identity-local.fields.email.label": "Email",
   "plugin.identity-local.system.placeholder": "Placeholder"
 }

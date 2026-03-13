@@ -1,4 +1,3 @@
 # Plugin Source
 
-Placeholder location for `identity-local` source code.
-
+Runtime classes for the `identity-local` plugin live here.
