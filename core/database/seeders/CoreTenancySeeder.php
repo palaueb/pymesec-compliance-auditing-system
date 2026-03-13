@@ -772,6 +772,73 @@ class CoreTenancySeeder extends Seeder
             ],
         ]);
 
+        DB::table('continuity_service_dependencies')->insertOrIgnore([
+            [
+                'id' => 'continuity-dependency-support-backup',
+                'organization_id' => 'org-a',
+                'source_service_id' => 'continuity-service-customer-support',
+                'depends_on_service_id' => 'continuity-service-backup-recovery',
+                'dependency_kind' => 'critical',
+                'recovery_notes' => 'Fallback support workflows depend on restore validation and shared case data recovery.',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+        ]);
+
+        DB::table('continuity_plan_exercises')->insertOrIgnore([
+            [
+                'id' => 'continuity-exercise-support-tabletop-q1',
+                'organization_id' => 'org-a',
+                'plan_id' => 'continuity-plan-support-fallback',
+                'exercise_date' => now()->subDays(18)->toDateString(),
+                'exercise_type' => 'tabletop',
+                'scenario_summary' => 'Case intake surge during regional outage with manual escalation to fallback rota.',
+                'outcome' => 'partial',
+                'follow_up_summary' => 'Documented stronger escalation triggers for high-priority queues.',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'id' => 'continuity-exercise-restore-simulation-q1',
+                'organization_id' => 'org-a',
+                'plan_id' => 'continuity-plan-restore-bridge',
+                'exercise_date' => now()->subDays(12)->toDateString(),
+                'exercise_type' => 'simulation',
+                'scenario_summary' => 'Restore bridge activation after backup validation failure in the primary environment.',
+                'outcome' => 'pass',
+                'follow_up_summary' => 'Runbook timing met the target after one tooling adjustment.',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+        ]);
+
+        DB::table('continuity_plan_test_executions')->insertOrIgnore([
+            [
+                'id' => 'continuity-test-support-fallback-q1',
+                'organization_id' => 'org-a',
+                'plan_id' => 'continuity-plan-support-fallback',
+                'executed_on' => now()->subDays(7)->toDateString(),
+                'execution_type' => 'recovery-drill',
+                'status' => 'passed',
+                'participants' => 'Support Leads, Compliance Office',
+                'notes' => 'Fallback rota answered priority tickets inside the target window.',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'id' => 'continuity-test-restore-bridge-q1',
+                'organization_id' => 'org-a',
+                'plan_id' => 'continuity-plan-restore-bridge',
+                'executed_on' => now()->subDays(4)->toDateString(),
+                'execution_type' => 'restore-test',
+                'status' => 'passed',
+                'participants' => 'Backup Operations, Infrastructure Team',
+                'notes' => 'Restore bridge validated with one environment checklist correction.',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+        ]);
+
         DB::table('functional_actors')->insertOrIgnore([
             [
                 'id' => 'actor-finance-ops',

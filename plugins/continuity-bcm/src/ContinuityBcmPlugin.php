@@ -154,6 +154,11 @@ class ContinuityBcmPlugin implements PluginInterface
         $canManage = $this->canManage($authorization, $screenContext, $organizationId);
         $assetOptions = $this->linkedOptions('assets', 'id', 'name', $organizationId, $screenContext->scopeId);
         $assetLabels = [];
+        $serviceCatalog = $repository->allServices($organizationId, $screenContext->scopeId);
+        $dependenciesByService = $repository->dependenciesForServices(array_map(
+            static fn (array $service): string => $service['id'],
+            $serviceCatalog,
+        ));
 
         foreach ($assetOptions as $option) {
             $assetLabels[$option['id']] = $option['label'];
@@ -161,7 +166,7 @@ class ContinuityBcmPlugin implements PluginInterface
 
         $services = [];
 
-        foreach ($repository->allServices($organizationId, $screenContext->scopeId) as $service) {
+        foreach ($serviceCatalog as $service) {
             $instance = $workflow->instanceFor(
                 workflowKey: 'plugin.continuity-bcm.service-lifecycle',
                 subjectType: 'continuity-service',
@@ -185,8 +190,10 @@ class ContinuityBcmPlugin implements PluginInterface
                 'artifact_upload_route' => route('plugin.continuity-bcm.artifacts.store', ['serviceId' => $service['id']]),
                 'update_route' => route('plugin.continuity-bcm.update', ['serviceId' => $service['id']]),
                 'plan_store_route' => route('plugin.continuity-bcm.plans.store', ['serviceId' => $service['id']]),
+                'dependency_store_route' => route('plugin.continuity-bcm.dependencies.store', ['serviceId' => $service['id']]),
                 'plan_count' => count($plans),
                 'linked_asset_label' => $assetLabels[$service['linked_asset_id']] ?? null,
+                'dependencies' => $dependenciesByService[$service['id']] ?? [],
             ];
         }
 
@@ -208,6 +215,10 @@ class ContinuityBcmPlugin implements PluginInterface
             'risk_options' => $this->linkedOptions('risks', 'id', 'title', $organizationId, $screenContext->scopeId),
             'policy_options' => $this->linkedOptions('policies', 'id', 'title', $organizationId, $screenContext->scopeId),
             'finding_options' => $this->linkedOptions('findings', 'id', 'title', $organizationId, $screenContext->scopeId),
+            'service_options' => array_map(static fn (array $service): array => [
+                'id' => $service['id'],
+                'label' => sprintf('%s [%s]', $service['title'], $service['id']),
+            ], $serviceCatalog),
         ];
     }
 
@@ -224,9 +235,18 @@ class ContinuityBcmPlugin implements PluginInterface
         $tenancy = $context->app()->make(TenancyServiceInterface::class);
         $organizationId = $screenContext->organizationId ?? 'org-a';
         $canManage = $this->canManage($authorization, $screenContext, $organizationId);
+        $planCatalog = $repository->allPlans($organizationId, $screenContext->scopeId);
+        $exercisesByPlan = $repository->exercisesForPlans(array_map(
+            static fn (array $plan): string => $plan['id'],
+            $planCatalog,
+        ));
+        $executionsByPlan = $repository->testExecutionsForPlans(array_map(
+            static fn (array $plan): string => $plan['id'],
+            $planCatalog,
+        ));
         $plans = [];
 
-        foreach ($repository->allPlans($organizationId, $screenContext->scopeId) as $plan) {
+        foreach ($planCatalog as $plan) {
             $service = $repository->findService($plan['service_id']);
 
             if ($service === null) {
@@ -254,6 +274,10 @@ class ContinuityBcmPlugin implements PluginInterface
                 'transition_route' => route('plugin.continuity-bcm.plans.transition', ['planId' => $plan['id'], 'transitionKey' => '__TRANSITION__']),
                 'artifact_upload_route' => route('plugin.continuity-bcm.plans.artifacts.store', ['planId' => $plan['id']]),
                 'update_route' => route('plugin.continuity-bcm.plans.update', ['planId' => $plan['id']]),
+                'exercise_store_route' => route('plugin.continuity-bcm.plans.exercises.store', ['planId' => $plan['id']]),
+                'execution_store_route' => route('plugin.continuity-bcm.plans.executions.store', ['planId' => $plan['id']]),
+                'exercises' => $exercisesByPlan[$plan['id']] ?? [],
+                'executions' => $executionsByPlan[$plan['id']] ?? [],
             ];
         }
 

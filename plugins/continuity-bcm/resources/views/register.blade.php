@@ -3,8 +3,8 @@
         <div class="surface-card" id="continuity-service-editor">
             <div class="row-between" style="margin-bottom:14px;">
                 <div>
-                    <div class="eyebrow">Create</div>
-                    <div class="screen-title" style="font-size:26px;">New Continuity Service</div>
+                    <div class="eyebrow">Continuity</div>
+                    <div class="screen-title" style="font-size:26px;">New service</div>
                 </div>
             </div>
 
@@ -72,7 +72,7 @@
                 </div>
 
                 <div class="action-cluster" style="margin-top:14px;">
-                    <button class="button button-primary" type="submit">Create Service</button>
+                    <button class="button button-primary" type="submit">Create service</button>
                 </div>
             </form>
         </div>
@@ -83,6 +83,7 @@
         <div class="metric-card"><div class="metric-label">Active</div><div class="metric-value">{{ collect($services)->where('state', 'active')->count() }}</div></div>
         <div class="metric-card"><div class="metric-label">Under Review</div><div class="metric-value">{{ collect($services)->where('state', 'review')->count() }}</div></div>
         <div class="metric-card"><div class="metric-label">Recovery Plans</div><div class="metric-value">{{ collect($services)->sum('plan_count') }}</div></div>
+        <div class="metric-card"><div class="metric-label">Dependencies</div><div class="metric-value">{{ collect($services)->sum(fn ($service) => count($service['dependencies'])) }}</div></div>
     </div>
 
     <div class="table-card">
@@ -93,6 +94,7 @@
                     <th>Recovery Objectives</th>
                     <th>Owner</th>
                     <th>Links</th>
+                    <th>Dependencies</th>
                     <th>Documents</th>
                     <th>State</th>
                     <th>{{ $can_manage_continuity ? 'Actions' : 'Access' }}</th>
@@ -123,6 +125,47 @@
                             <div>Risk: {{ $service['linked_risk_id'] !== '' ? $service['linked_risk_id'] : 'None' }}</div>
                         </td>
                         <td>
+                            <div class="data-stack">
+                                @forelse ($service['dependencies'] as $dependency)
+                                    <div class="data-item">
+                                        <div class="entity-title">{{ $dependency['depends_on_service_title'] }}</div>
+                                        <div class="table-note">{{ ucfirst($dependency['dependency_kind']) }} dependency</div>
+                                        @if ($dependency['recovery_notes'] !== '')
+                                            <div class="table-note">{{ $dependency['recovery_notes'] }}</div>
+                                        @endif
+                                    </div>
+                                @empty
+                                    <span class="muted-note">No dependencies mapped</span>
+                                @endforelse
+                            </div>
+
+                            @if ($can_manage_continuity)
+                                <form class="upload-form" method="POST" action="{{ $service['dependency_store_route'] }}" style="margin-top:10px;">
+                                    @csrf
+                                    <input type="hidden" name="principal_id" value="{{ $query['principal_id'] }}">
+                                    <input type="hidden" name="organization_id" value="{{ $query['organization_id'] }}">
+                                    <input type="hidden" name="locale" value="{{ $query['locale'] }}">
+                                    <input type="hidden" name="menu" value="plugin.continuity-bcm.root">
+                                    <input type="hidden" name="membership_id" value="{{ $query['membership_ids'][0] ?? 'membership-org-a-hello' }}">
+                                    <select class="field-select" name="depends_on_service_id" required>
+                                        <option value="">Depends on...</option>
+                                        @foreach ($service_options as $option)
+                                            @if ($option['id'] !== $service['id'])
+                                                <option value="{{ $option['id'] }}">{{ $option['label'] }}</option>
+                                            @endif
+                                        @endforeach
+                                    </select>
+                                    <select class="field-select" name="dependency_kind">
+                                        <option value="critical">Critical</option>
+                                        <option value="supporting">Supporting</option>
+                                        <option value="external">External</option>
+                                    </select>
+                                    <input type="text" name="recovery_notes" placeholder="Recovery note">
+                                    <button class="button button-secondary" type="submit">Add dependency</button>
+                                </form>
+                            @endif
+                        </td>
+                        <td>
                             @forelse ($service['artifacts'] as $artifact)
                                 <div class="data-item" style="margin-bottom:8px;">
                                     <div class="entity-title">{{ $artifact['label'] }}</div>
@@ -142,7 +185,7 @@
                                     <input type="hidden" name="artifact_type" value="continuity-record">
                                     <input type="text" name="label" placeholder="Document label">
                                     <input type="file" name="artifact" required>
-                                    <button class="button button-secondary" type="submit">Attach Document</button>
+                                    <button class="button button-secondary" type="submit">Attach document</button>
                                 </form>
                             @endif
                         </td>
@@ -229,7 +272,7 @@
                                             </select>
                                         </div>
                                         <div class="action-cluster">
-                                            <button class="button button-secondary" type="submit">Save Changes</button>
+                                            <button class="button button-secondary" type="submit">Save changes</button>
                                         </div>
                                     </form>
                                 </details>

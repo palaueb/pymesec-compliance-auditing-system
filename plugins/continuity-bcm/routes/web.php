@@ -75,6 +75,34 @@ Route::post('/plugins/continuity/services', function (
     ]));
 })->middleware('core.permission:plugin.continuity-bcm.plans.manage')->name('plugin.continuity-bcm.store');
 
+Route::post('/plugins/continuity/services/{serviceId}/dependencies', function (
+    Request $request,
+    string $serviceId,
+    ContinuityBcmRepository $repository
+) {
+    $validated = $request->validate([
+        'organization_id' => ['required', 'string', 'max:64'],
+        'depends_on_service_id' => ['required', 'string', 'max:120'],
+        'dependency_kind' => ['required', 'string', 'max:80'],
+        'recovery_notes' => ['nullable', 'string', 'max:255'],
+    ]);
+
+    $principalId = (string) $request->input('principal_id', 'principal-org-a');
+    $membershipId = $request->input('membership_id');
+    $scopeId = $request->input('scope_id');
+
+    $repository->addServiceDependency($serviceId, $validated);
+
+    return redirect()->route('core.shell.index', array_filter([
+        'menu' => 'plugin.continuity-bcm.root',
+        'principal_id' => $principalId,
+        'organization_id' => $validated['organization_id'],
+        'scope_id' => is_string($scopeId) && $scopeId !== '' ? $scopeId : null,
+        'locale' => $request->input('locale', 'en'),
+        'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
+    ]));
+})->middleware('core.permission:plugin.continuity-bcm.plans.manage')->name('plugin.continuity-bcm.dependencies.store');
+
 Route::post('/plugins/continuity/services/{serviceId}', function (
     Request $request,
     string $serviceId,
@@ -251,6 +279,66 @@ Route::post('/plugins/continuity/services/{serviceId}/plans', function (
         'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
     ]));
 })->middleware('core.permission:plugin.continuity-bcm.plans.manage')->name('plugin.continuity-bcm.plans.store');
+
+Route::post('/plugins/continuity/plans/{planId}/exercises', function (
+    Request $request,
+    string $planId,
+    ContinuityBcmRepository $repository
+) {
+    $validated = $request->validate([
+        'organization_id' => ['required', 'string', 'max:64'],
+        'exercise_date' => ['required', 'date'],
+        'exercise_type' => ['required', 'string', 'max:80'],
+        'scenario_summary' => ['required', 'string', 'max:255'],
+        'outcome' => ['required', 'string', 'max:40'],
+        'follow_up_summary' => ['nullable', 'string', 'max:255'],
+    ]);
+
+    $principalId = (string) $request->input('principal_id', 'principal-org-a');
+    $membershipId = $request->input('membership_id');
+    $scopeId = $request->input('scope_id');
+
+    $repository->recordExercise($planId, $validated);
+
+    return redirect()->route('core.shell.index', array_filter([
+        'menu' => 'plugin.continuity-bcm.plans',
+        'principal_id' => $principalId,
+        'organization_id' => $validated['organization_id'],
+        'scope_id' => is_string($scopeId) && $scopeId !== '' ? $scopeId : null,
+        'locale' => $request->input('locale', 'en'),
+        'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
+    ]));
+})->middleware('core.permission:plugin.continuity-bcm.plans.manage')->name('plugin.continuity-bcm.plans.exercises.store');
+
+Route::post('/plugins/continuity/plans/{planId}/executions', function (
+    Request $request,
+    string $planId,
+    ContinuityBcmRepository $repository
+) {
+    $validated = $request->validate([
+        'organization_id' => ['required', 'string', 'max:64'],
+        'executed_on' => ['required', 'date'],
+        'execution_type' => ['required', 'string', 'max:80'],
+        'status' => ['required', 'string', 'max:40'],
+        'participants' => ['nullable', 'string', 'max:255'],
+        'notes' => ['nullable', 'string', 'max:255'],
+    ]);
+
+    $principalId = (string) $request->input('principal_id', 'principal-org-a');
+    $membershipId = $request->input('membership_id');
+    $scopeId = $request->input('scope_id');
+
+    $repository->recordTestExecution($planId, $validated);
+
+    return redirect()->route('core.shell.index', array_filter([
+        'menu' => 'plugin.continuity-bcm.plans',
+        'principal_id' => $principalId,
+        'organization_id' => $validated['organization_id'],
+        'scope_id' => is_string($scopeId) && $scopeId !== '' ? $scopeId : null,
+        'locale' => $request->input('locale', 'en'),
+        'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
+    ]));
+})->middleware('core.permission:plugin.continuity-bcm.plans.manage')->name('plugin.continuity-bcm.plans.executions.store');
 
 Route::post('/plugins/continuity/plans/{planId}', function (
     Request $request,

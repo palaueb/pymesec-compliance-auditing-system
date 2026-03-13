@@ -4,6 +4,8 @@
         <div class="metric-card"><div class="metric-label">Active</div><div class="metric-value">{{ collect($plans)->where('state', 'active')->count() }}</div></div>
         <div class="metric-card"><div class="metric-label">Under Review</div><div class="metric-value">{{ collect($plans)->where('state', 'review')->count() }}</div></div>
         <div class="metric-card"><div class="metric-label">Evidence</div><div class="metric-value">{{ collect($plans)->sum(fn ($plan) => count($plan['artifacts'])) }}</div></div>
+        <div class="metric-card"><div class="metric-label">Exercises</div><div class="metric-value">{{ collect($plans)->sum(fn ($plan) => count($plan['exercises'])) }}</div></div>
+        <div class="metric-card"><div class="metric-label">Test Runs</div><div class="metric-value">{{ collect($plans)->sum(fn ($plan) => count($plan['executions'])) }}</div></div>
     </div>
 
     <div class="table-card">
@@ -14,6 +16,7 @@
                     <th>Owner</th>
                     <th>Links</th>
                     <th>Test Due</th>
+                    <th>History</th>
                     <th>Evidence</th>
                     <th>State</th>
                     <th>{{ $can_manage_continuity ? 'Actions' : 'Access' }}</th>
@@ -70,7 +73,7 @@
                                             @endforeach
                                         </select>
                                     </div>
-                                    <button class="button button-ghost" type="submit">Add Plan</button>
+                                    <button class="button button-ghost" type="submit">Add plan</button>
                                 </form>
                             @endif
                         </td>
@@ -87,6 +90,86 @@
                             <div>Finding: {{ $plan['linked_finding_id'] !== '' ? $plan['linked_finding_id'] : 'None' }}</div>
                         </td>
                         <td>{{ $plan['test_due_on'] !== '' ? $plan['test_due_on'] : 'No test date' }}</td>
+                        <td>
+                            <div class="data-stack">
+                                @forelse ($plan['exercises'] as $exercise)
+                                    <div class="data-item">
+                                        <div class="entity-title">{{ ucfirst($exercise['exercise_type']) }} · {{ $exercise['exercise_date'] }}</div>
+                                        <div class="table-note">{{ ucfirst($exercise['outcome']) }} · {{ $exercise['scenario_summary'] }}</div>
+                                        @if ($exercise['follow_up_summary'] !== '')
+                                            <div class="table-note">{{ $exercise['follow_up_summary'] }}</div>
+                                        @endif
+                                    </div>
+                                @empty
+                                    <span class="muted-note">No exercises logged</span>
+                                @endforelse
+                            </div>
+
+                            <div class="data-stack" style="margin-top:10px;">
+                                @forelse ($plan['executions'] as $execution)
+                                    <div class="data-item">
+                                        <div class="entity-title">{{ ucfirst($execution['execution_type']) }} · {{ $execution['executed_on'] }}</div>
+                                        <div class="table-note">{{ ucfirst($execution['status']) }}</div>
+                                        @if ($execution['participants'] !== '')
+                                            <div class="table-note">{{ $execution['participants'] }}</div>
+                                        @endif
+                                        @if ($execution['notes'] !== '')
+                                            <div class="table-note">{{ $execution['notes'] }}</div>
+                                        @endif
+                                    </div>
+                                @empty
+                                    <span class="muted-note">No test runs logged</span>
+                                @endforelse
+                            </div>
+
+                            @if ($can_manage_continuity)
+                                <form class="upload-form" method="POST" action="{{ $plan['exercise_store_route'] }}" style="margin-top:10px;">
+                                    @csrf
+                                    <input type="hidden" name="principal_id" value="{{ $query['principal_id'] }}">
+                                    <input type="hidden" name="organization_id" value="{{ $query['organization_id'] }}">
+                                    <input type="hidden" name="locale" value="{{ $query['locale'] }}">
+                                    <input type="hidden" name="menu" value="plugin.continuity-bcm.plans">
+                                    <input type="hidden" name="membership_id" value="{{ $query['membership_ids'][0] ?? 'membership-org-a-hello' }}">
+                                    <input type="date" name="exercise_date" required>
+                                    <select class="field-select" name="exercise_type">
+                                        <option value="tabletop">Tabletop</option>
+                                        <option value="simulation">Simulation</option>
+                                        <option value="walkthrough">Walkthrough</option>
+                                    </select>
+                                    <input type="text" name="scenario_summary" placeholder="Exercise scenario" required>
+                                    <select class="field-select" name="outcome">
+                                        <option value="pass">Pass</option>
+                                        <option value="partial">Partial</option>
+                                        <option value="fail">Fail</option>
+                                    </select>
+                                    <input type="text" name="follow_up_summary" placeholder="Follow-up">
+                                    <button class="button button-secondary" type="submit">Log exercise</button>
+                                </form>
+
+                                <form class="upload-form" method="POST" action="{{ $plan['execution_store_route'] }}" style="margin-top:10px;">
+                                    @csrf
+                                    <input type="hidden" name="principal_id" value="{{ $query['principal_id'] }}">
+                                    <input type="hidden" name="organization_id" value="{{ $query['organization_id'] }}">
+                                    <input type="hidden" name="locale" value="{{ $query['locale'] }}">
+                                    <input type="hidden" name="menu" value="plugin.continuity-bcm.plans">
+                                    <input type="hidden" name="membership_id" value="{{ $query['membership_ids'][0] ?? 'membership-org-a-hello' }}">
+                                    <input type="date" name="executed_on" required>
+                                    <select class="field-select" name="execution_type">
+                                        <option value="recovery-drill">Recovery drill</option>
+                                        <option value="restore-test">Restore test</option>
+                                        <option value="failover-test">Failover test</option>
+                                    </select>
+                                    <select class="field-select" name="status">
+                                        <option value="passed">Passed</option>
+                                        <option value="partial">Partial</option>
+                                        <option value="failed">Failed</option>
+                                    </select>
+                                    <input type="text" name="participants" placeholder="Participants">
+                                    <input type="text" name="notes" placeholder="Execution note">
+                                    <button class="button button-secondary" type="submit">Log test run</button>
+                                </form>
+                            @endif
+                        </td>
                         <td>
                             @forelse ($plan['artifacts'] as $artifact)
                                 <div class="data-item" style="margin-bottom:8px;">
@@ -107,7 +190,7 @@
                                     <input type="hidden" name="artifact_type" value="recovery-plan">
                                     <input type="text" name="label" placeholder="Evidence label">
                                     <input type="file" name="artifact" required>
-                                    <button class="button button-secondary" type="submit">Attach Evidence</button>
+                                    <button class="button button-secondary" type="submit">Attach evidence</button>
                                 </form>
                             @endif
                         </td>
@@ -190,7 +273,7 @@
                                             </select>
                                         </div>
                                         <div class="action-cluster">
-                                            <button class="button button-secondary" type="submit">Save Changes</button>
+                                            <button class="button button-secondary" type="submit">Save changes</button>
                                         </div>
                                     </form>
                                 </details>

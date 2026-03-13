@@ -598,12 +598,37 @@ class RouteAuthorizationTest extends TestCase
             'artifact' => UploadedFile::fake()->createWithContent('viewer-continuity.txt', 'viewer'),
         ])->assertForbidden();
 
+        $this->post('/plugins/continuity/services/continuity-service-customer-support/dependencies', [
+            ...$payload,
+            'menu' => 'plugin.continuity-bcm.root',
+            'depends_on_service_id' => 'continuity-service-backup-recovery',
+            'dependency_kind' => 'critical',
+            'recovery_notes' => 'Viewer should not add dependencies.',
+        ])->assertForbidden();
+
         $this->post('/plugins/continuity/plans/continuity-plan-support-fallback/artifacts', [
             ...$payload,
             'menu' => 'plugin.continuity-bcm.plans',
             'label' => 'Viewer recovery attempt',
             'artifact_type' => 'recovery-plan',
             'artifact' => UploadedFile::fake()->createWithContent('viewer-recovery.txt', 'viewer'),
+        ])->assertForbidden();
+
+        $this->post('/plugins/continuity/plans/continuity-plan-support-fallback/exercises', [
+            ...$payload,
+            'menu' => 'plugin.continuity-bcm.plans',
+            'exercise_date' => now()->toDateString(),
+            'exercise_type' => 'tabletop',
+            'scenario_summary' => 'Viewer should not log exercises.',
+            'outcome' => 'partial',
+        ])->assertForbidden();
+
+        $this->post('/plugins/continuity/plans/continuity-plan-support-fallback/executions', [
+            ...$payload,
+            'menu' => 'plugin.continuity-bcm.plans',
+            'executed_on' => now()->toDateString(),
+            'execution_type' => 'recovery-drill',
+            'status' => 'passed',
         ])->assertForbidden();
 
         $this->post('/plugins/continuity/services', [
@@ -658,12 +683,37 @@ class RouteAuthorizationTest extends TestCase
             'artifact' => UploadedFile::fake()->createWithContent('operator-continuity.txt', 'operator'),
         ])->assertFound();
 
+        $this->post('/plugins/continuity/services/continuity-service-customer-support/dependencies', [
+            ...$payload,
+            'menu' => 'plugin.continuity-bcm.root',
+            'depends_on_service_id' => 'continuity-service-backup-recovery',
+            'dependency_kind' => 'critical',
+            'recovery_notes' => 'Operator can add continuity dependencies.',
+        ])->assertFound();
+
         $this->post('/plugins/continuity/plans/continuity-plan-support-fallback/artifacts', [
             ...$payload,
             'menu' => 'plugin.continuity-bcm.plans',
             'label' => 'Operator recovery evidence',
             'artifact_type' => 'recovery-plan',
             'artifact' => UploadedFile::fake()->createWithContent('operator-recovery.txt', 'operator'),
+        ])->assertFound();
+
+        $this->post('/plugins/continuity/plans/continuity-plan-support-fallback/exercises', [
+            ...$payload,
+            'menu' => 'plugin.continuity-bcm.plans',
+            'exercise_date' => now()->toDateString(),
+            'exercise_type' => 'tabletop',
+            'scenario_summary' => 'Operator can log exercises.',
+            'outcome' => 'pass',
+        ])->assertFound();
+
+        $this->post('/plugins/continuity/plans/continuity-plan-support-fallback/executions', [
+            ...$payload,
+            'menu' => 'plugin.continuity-bcm.plans',
+            'executed_on' => now()->toDateString(),
+            'execution_type' => 'recovery-drill',
+            'status' => 'passed',
         ])->assertFound();
 
         $this->post('/plugins/continuity/services', [

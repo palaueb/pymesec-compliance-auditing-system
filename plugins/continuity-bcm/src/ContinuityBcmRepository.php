@@ -4,6 +4,7 @@ namespace PymeSec\Plugins\ContinuityBcm;
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 
 class ContinuityBcmRepository
 {
@@ -24,6 +25,45 @@ class ContinuityBcmRepository
         return $query->get()
             ->map(fn ($service): array => $this->mapService($service))
             ->all();
+    }
+
+    /**
+     * @param  array<int, string>  $serviceIds
+     * @return array<string, array<int, array<string, string>>>
+     */
+    public function dependenciesForServices(array $serviceIds): array
+    {
+        if ($serviceIds === []) {
+            return [];
+        }
+
+        $grouped = [];
+
+        $rows = DB::table('continuity_service_dependencies as dependencies')
+            ->join('continuity_services as target_services', function ($join): void {
+                $join->on('target_services.id', '=', 'dependencies.depends_on_service_id')
+                    ->on('target_services.organization_id', '=', 'dependencies.organization_id');
+            })
+            ->whereIn('dependencies.source_service_id', $serviceIds)
+            ->orderBy('target_services.title')
+            ->get([
+                'dependencies.source_service_id',
+                'dependencies.depends_on_service_id',
+                'dependencies.dependency_kind',
+                'dependencies.recovery_notes',
+                'target_services.title as target_service_title',
+            ]);
+
+        foreach ($rows as $row) {
+            $grouped[(string) $row->source_service_id][] = [
+                'depends_on_service_id' => (string) $row->depends_on_service_id,
+                'depends_on_service_title' => (string) $row->target_service_title,
+                'dependency_kind' => (string) $row->dependency_kind,
+                'recovery_notes' => is_string($row->recovery_notes) ? $row->recovery_notes : '',
+            ];
+        }
+
+        return $grouped;
     }
 
     /**
@@ -62,6 +102,64 @@ class ContinuityBcmRepository
         $service = $this->findService($id);
 
         return $service;
+    }
+
+    /**
+     * @param  array<string, string|null>  $data
+     */
+    public function addServiceDependency(string $serviceId, array $data): void
+    {
+        $service = $this->findService($serviceId);
+        $dependsOnService = $this->findService((string) $data['depends_on_service_id']);
+
+        if ($service === null || $service['organization_id'] !== (string) $data['organization_id']) {
+            throw ValidationException::withMessages([
+                'service_id' => 'The selected continuity service is invalid for this organization.',
+            ]);
+        }
+
+        if ($dependsOnService === null || $dependsOnService['organization_id'] !== $service['organization_id']) {
+            throw ValidationException::withMessages([
+                'depends_on_service_id' => 'The selected dependency is invalid for this organization.',
+            ]);
+        }
+
+        if ($serviceId === (string) $data['depends_on_service_id']) {
+            throw ValidationException::withMessages([
+                'depends_on_service_id' => 'A service cannot depend on itself.',
+            ]);
+        }
+
+        $existing = DB::table('continuity_service_dependencies')
+            ->where('organization_id', $service['organization_id'])
+            ->where('source_service_id', $serviceId)
+            ->where('depends_on_service_id', (string) $data['depends_on_service_id'])
+            ->exists();
+
+        if ($existing) {
+            DB::table('continuity_service_dependencies')
+                ->where('organization_id', $service['organization_id'])
+                ->where('source_service_id', $serviceId)
+                ->where('depends_on_service_id', (string) $data['depends_on_service_id'])
+                ->update([
+                    'dependency_kind' => (string) $data['dependency_kind'],
+                    'recovery_notes' => ($data['recovery_notes'] ?? null) ?: null,
+                    'updated_at' => now(),
+                ]);
+
+            return;
+        }
+
+        DB::table('continuity_service_dependencies')->insert([
+            'id' => $this->nextId('continuity-dependency', $serviceId.'-'.(string) $data['depends_on_service_id'], 'continuity_service_dependencies'),
+            'organization_id' => $service['organization_id'],
+            'source_service_id' => $serviceId,
+            'depends_on_service_id' => (string) $data['depends_on_service_id'],
+            'dependency_kind' => (string) $data['dependency_kind'],
+            'recovery_notes' => ($data['recovery_notes'] ?? null) ?: null,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
     }
 
     /**
@@ -107,6 +205,56 @@ class ContinuityBcmRepository
         return $query->get()
             ->map(fn ($plan): array => $this->mapPlan($plan))
             ->all();
+    }
+
+    /**
+     * @param  array<int, string>  $planIds
+     * @return array<string, array<int, array<string, string>>>
+     */
+    public function exercisesForPlans(array $planIds): array
+    {
+        if ($planIds === []) {
+            return [];
+        }
+
+        $grouped = [];
+
+        $rows = DB::table('continuity_plan_exercises')
+            ->whereIn('plan_id', $planIds)
+            ->orderByDesc('exercise_date')
+            ->orderByDesc('created_at')
+            ->get();
+
+        foreach ($rows as $row) {
+            $grouped[(string) $row->plan_id][] = $this->mapExercise($row);
+        }
+
+        return $grouped;
+    }
+
+    /**
+     * @param  array<int, string>  $planIds
+     * @return array<string, array<int, array<string, string>>>
+     */
+    public function testExecutionsForPlans(array $planIds): array
+    {
+        if ($planIds === []) {
+            return [];
+        }
+
+        $grouped = [];
+
+        $rows = DB::table('continuity_plan_test_executions')
+            ->whereIn('plan_id', $planIds)
+            ->orderByDesc('executed_on')
+            ->orderByDesc('created_at')
+            ->get();
+
+        foreach ($rows as $row) {
+            $grouped[(string) $row->plan_id][] = $this->mapExecution($row);
+        }
+
+        return $grouped;
     }
 
     /**
@@ -159,6 +307,60 @@ class ContinuityBcmRepository
         $plan = $this->findPlan($id);
 
         return $plan;
+    }
+
+    /**
+     * @param  array<string, string|null>  $data
+     */
+    public function recordExercise(string $planId, array $data): void
+    {
+        $plan = $this->findPlan($planId);
+
+        if ($plan === null || $plan['organization_id'] !== (string) $data['organization_id']) {
+            throw ValidationException::withMessages([
+                'plan_id' => 'The selected recovery plan is invalid for this organization.',
+            ]);
+        }
+
+        DB::table('continuity_plan_exercises')->insert([
+            'id' => $this->nextId('continuity-exercise', $planId.'-'.(string) $data['exercise_date'].'-'.(string) $data['exercise_type'], 'continuity_plan_exercises'),
+            'organization_id' => $plan['organization_id'],
+            'plan_id' => $planId,
+            'exercise_date' => $data['exercise_date'],
+            'exercise_type' => $data['exercise_type'],
+            'scenario_summary' => $data['scenario_summary'],
+            'outcome' => $data['outcome'],
+            'follow_up_summary' => ($data['follow_up_summary'] ?? null) ?: null,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+    }
+
+    /**
+     * @param  array<string, string|null>  $data
+     */
+    public function recordTestExecution(string $planId, array $data): void
+    {
+        $plan = $this->findPlan($planId);
+
+        if ($plan === null || $plan['organization_id'] !== (string) $data['organization_id']) {
+            throw ValidationException::withMessages([
+                'plan_id' => 'The selected recovery plan is invalid for this organization.',
+            ]);
+        }
+
+        DB::table('continuity_plan_test_executions')->insert([
+            'id' => $this->nextId('continuity-test', $planId.'-'.(string) $data['executed_on'].'-'.(string) $data['execution_type'], 'continuity_plan_test_executions'),
+            'organization_id' => $plan['organization_id'],
+            'plan_id' => $planId,
+            'executed_on' => $data['executed_on'],
+            'execution_type' => $data['execution_type'],
+            'status' => $data['status'],
+            'participants' => ($data['participants'] ?? null) ?: null,
+            'notes' => ($data['notes'] ?? null) ?: null,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
     }
 
     /**
@@ -231,6 +433,40 @@ class ContinuityBcmRepository
             'test_due_on' => is_string($plan->test_due_on) ? $plan->test_due_on : '',
             'linked_policy_id' => is_string($plan->linked_policy_id) ? $plan->linked_policy_id : '',
             'linked_finding_id' => is_string($plan->linked_finding_id) ? $plan->linked_finding_id : '',
+        ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function mapExercise(object $exercise): array
+    {
+        return [
+            'id' => (string) $exercise->id,
+            'organization_id' => (string) $exercise->organization_id,
+            'plan_id' => (string) $exercise->plan_id,
+            'exercise_date' => (string) $exercise->exercise_date,
+            'exercise_type' => (string) $exercise->exercise_type,
+            'scenario_summary' => (string) $exercise->scenario_summary,
+            'outcome' => (string) $exercise->outcome,
+            'follow_up_summary' => is_string($exercise->follow_up_summary) ? $exercise->follow_up_summary : '',
+        ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function mapExecution(object $execution): array
+    {
+        return [
+            'id' => (string) $execution->id,
+            'organization_id' => (string) $execution->organization_id,
+            'plan_id' => (string) $execution->plan_id,
+            'executed_on' => (string) $execution->executed_on,
+            'execution_type' => (string) $execution->execution_type,
+            'status' => (string) $execution->status,
+            'participants' => is_string($execution->participants) ? $execution->participants : '',
+            'notes' => is_string($execution->notes) ? $execution->notes : '',
         ];
     }
 }

@@ -37,7 +37,8 @@ class ContinuityBcmTest extends TestCase
             ->assertOk()
             ->assertSee('Continuity Services')
             ->assertSee('Customer Support Operations')
-            ->assertSee('Create Service');
+            ->assertSee('Create service')
+            ->assertSee('Backup and Recovery Operations');
 
         $this->get('/app?menu=plugin.continuity-bcm.plans&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
             ->assertOk()
@@ -147,5 +148,55 @@ class ContinuityBcmTest extends TestCase
             ->assertSee('Finance approval fallback')
             ->assertSee('backup rota and validate ledgers after restore.')
             ->assertSee('Compliance Office');
+    }
+
+    public function test_continuity_dependencies_exercises_and_test_runs_can_be_logged_from_the_shell_runtime(): void
+    {
+        $payload = [
+            'principal_id' => 'principal-org-a',
+            'organization_id' => 'org-a',
+            'locale' => 'en',
+            'membership_id' => 'membership-org-a-hello',
+        ];
+
+        $this->post('/plugins/continuity/services/continuity-service-customer-support/dependencies', [
+            ...$payload,
+            'menu' => 'plugin.continuity-bcm.root',
+            'depends_on_service_id' => 'continuity-service-backup-recovery',
+            'dependency_kind' => 'critical',
+            'recovery_notes' => 'Support fallback relies on backup restore validation.',
+        ])->assertFound();
+
+        $this->post('/plugins/continuity/plans/continuity-plan-support-fallback/exercises', [
+            ...$payload,
+            'menu' => 'plugin.continuity-bcm.plans',
+            'exercise_date' => now()->toDateString(),
+            'exercise_type' => 'tabletop',
+            'scenario_summary' => 'Cross-team outage escalation using the fallback rota.',
+            'outcome' => 'partial',
+            'follow_up_summary' => 'Needs deeper vendor failover rehearsal.',
+        ])->assertFound();
+
+        $this->post('/plugins/continuity/plans/continuity-plan-support-fallback/executions', [
+            ...$payload,
+            'menu' => 'plugin.continuity-bcm.plans',
+            'executed_on' => now()->toDateString(),
+            'execution_type' => 'recovery-drill',
+            'status' => 'passed',
+            'participants' => 'Support Leads, Backup Operations',
+            'notes' => 'Fallback intake stayed within the expected recovery window.',
+        ])->assertFound();
+
+        $this->get('/app?menu=plugin.continuity-bcm.root&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
+            ->assertOk()
+            ->assertSee('Critical dependency')
+            ->assertSee('Support fallback relies on backup restore validation.');
+
+        $this->get('/app?menu=plugin.continuity-bcm.plans&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
+            ->assertOk()
+            ->assertSee('Cross-team outage escalation using the fallback rota.')
+            ->assertSee('Needs deeper vendor failover rehearsal.')
+            ->assertSee('Support Leads, Backup Operations')
+            ->assertSee('Fallback intake stayed within the expected recovery window.');
     }
 }
