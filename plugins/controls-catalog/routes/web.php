@@ -38,7 +38,8 @@ Route::post('/plugins/controls', function (
 ) {
     $validated = $request->validate([
         'name' => ['required', 'string', 'max:120'],
-        'framework' => ['required', 'string', 'max:80'],
+        'framework_id' => ['nullable', 'string', 'max:64'],
+        'framework' => ['nullable', 'string', 'max:80'],
         'domain' => ['required', 'string', 'max:80'],
         'evidence' => ['required', 'string', 'max:500'],
         'organization_id' => ['required', 'string', 'max:64'],
@@ -73,6 +74,95 @@ Route::post('/plugins/controls', function (
     ]));
 })->middleware('core.permission:plugin.controls-catalog.controls.manage')->name('plugin.controls-catalog.store');
 
+Route::post('/plugins/controls/frameworks', function (
+    Request $request,
+    ControlsCatalogRepository $repository
+) {
+    $validated = $request->validate([
+        'organization_id' => ['required', 'string', 'max:64'],
+        'code' => ['required', 'string', 'max:40'],
+        'name' => ['required', 'string', 'max:120'],
+        'description' => ['nullable', 'string', 'max:500'],
+    ]);
+
+    $principalId = (string) $request->input('principal_id', 'principal-org-a');
+    $membershipId = $request->input('membership_id');
+    $scopeId = $request->input('scope_id');
+
+    $repository->createFramework($validated);
+
+    return redirect()->route('core.shell.index', array_filter([
+        'menu' => 'plugin.controls-catalog.root',
+        'principal_id' => $principalId,
+        'organization_id' => $validated['organization_id'],
+        'scope_id' => is_string($scopeId) && $scopeId !== '' ? $scopeId : null,
+        'locale' => $request->input('locale', 'en'),
+        'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
+    ]));
+})->middleware('core.permission:plugin.controls-catalog.controls.manage')->name('plugin.controls-catalog.frameworks.store');
+
+Route::post('/plugins/controls/requirements', function (
+    Request $request,
+    ControlsCatalogRepository $repository
+) {
+    $validated = $request->validate([
+        'organization_id' => ['required', 'string', 'max:64'],
+        'framework_id' => ['required', 'string', 'max:64'],
+        'code' => ['required', 'string', 'max:60'],
+        'title' => ['required', 'string', 'max:160'],
+        'description' => ['nullable', 'string', 'max:500'],
+    ]);
+
+    $principalId = (string) $request->input('principal_id', 'principal-org-a');
+    $membershipId = $request->input('membership_id');
+    $scopeId = $request->input('scope_id');
+
+    $repository->createRequirement($validated);
+
+    return redirect()->route('core.shell.index', array_filter([
+        'menu' => 'plugin.controls-catalog.root',
+        'principal_id' => $principalId,
+        'organization_id' => $validated['organization_id'],
+        'scope_id' => is_string($scopeId) && $scopeId !== '' ? $scopeId : null,
+        'locale' => $request->input('locale', 'en'),
+        'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
+    ]));
+})->middleware('core.permission:plugin.controls-catalog.controls.manage')->name('plugin.controls-catalog.requirements.store');
+
+Route::post('/plugins/controls/{controlId}/requirements', function (
+    Request $request,
+    string $controlId,
+    ControlsCatalogRepository $repository
+) {
+    $validated = $request->validate([
+        'organization_id' => ['required', 'string', 'max:64'],
+        'requirement_id' => ['required', 'string', 'max:64'],
+        'coverage' => ['nullable', 'in:supports,partial,full'],
+        'notes' => ['nullable', 'string', 'max:500'],
+    ]);
+
+    $principalId = (string) $request->input('principal_id', 'principal-org-a');
+    $membershipId = $request->input('membership_id');
+    $scopeId = $request->input('scope_id');
+
+    $repository->attachRequirement(
+        controlId: $controlId,
+        requirementId: (string) $validated['requirement_id'],
+        organizationId: (string) $validated['organization_id'],
+        coverage: (string) ($validated['coverage'] ?? 'supports'),
+        notes: $validated['notes'] ?? null,
+    );
+
+    return redirect()->route('core.shell.index', array_filter([
+        'menu' => 'plugin.controls-catalog.root',
+        'principal_id' => $principalId,
+        'organization_id' => $validated['organization_id'],
+        'scope_id' => is_string($scopeId) && $scopeId !== '' ? $scopeId : null,
+        'locale' => $request->input('locale', 'en'),
+        'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
+    ]));
+})->middleware('core.permission:plugin.controls-catalog.controls.manage')->name('plugin.controls-catalog.requirements.attach');
+
 Route::post('/plugins/controls/{controlId}', function (
     Request $request,
     string $controlId,
@@ -81,7 +171,8 @@ Route::post('/plugins/controls/{controlId}', function (
 ) {
     $validated = $request->validate([
         'name' => ['required', 'string', 'max:120'],
-        'framework' => ['required', 'string', 'max:80'],
+        'framework_id' => ['nullable', 'string', 'max:64'],
+        'framework' => ['nullable', 'string', 'max:80'],
         'domain' => ['required', 'string', 'max:80'],
         'evidence' => ['required', 'string', 'max:500'],
         'scope_id' => ['nullable', 'string', 'max:64'],

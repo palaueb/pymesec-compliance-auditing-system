@@ -110,18 +110,56 @@ class RouteAuthorizationTest extends TestCase
             'menu' => 'plugin.controls-catalog.root',
             'membership_id' => 'membership-org-a-viewer',
             'name' => 'Viewer Control',
-            'framework' => 'ISO 27001',
+            'framework_id' => 'framework-iso-27001',
             'domain' => 'Identity',
             'evidence' => 'Viewer should not create',
         ];
 
         $this->post('/plugins/controls', $payload)->assertForbidden();
         $this->post('/plugins/controls/control-access-review', $payload)->assertForbidden();
+        $this->post('/plugins/controls/frameworks', [
+            ...$payload,
+            'code' => 'CIS-1',
+            'name' => 'CIS Safeguards',
+            'description' => 'Viewer should not add frameworks.',
+        ])->assertForbidden();
+        $this->post('/plugins/controls/requirements', [
+            ...$payload,
+            'framework_id' => 'framework-iso-27001',
+            'code' => 'A.5.18',
+            'title' => 'Access rights',
+            'description' => 'Viewer should not add requirements.',
+        ])->assertForbidden();
+        $this->post('/plugins/controls/control-access-review/requirements', [
+            ...$payload,
+            'requirement_id' => 'requirement-iso-a-5-18',
+            'coverage' => 'full',
+            'notes' => 'Viewer should not link requirements.',
+        ])->assertForbidden();
 
         $payload['membership_id'] = 'membership-org-a-hello';
 
         $this->post('/plugins/controls', $payload)->assertFound();
         $this->post('/plugins/controls/control-access-review', $payload)->assertFound();
+        $this->post('/plugins/controls/frameworks', [
+            ...$payload,
+            'code' => 'CIS-1',
+            'name' => 'CIS Safeguards',
+            'description' => 'Operator can add frameworks.',
+        ])->assertFound();
+        $this->post('/plugins/controls/requirements', [
+            ...$payload,
+            'framework_id' => 'framework-iso-27001',
+            'code' => 'A.5.19',
+            'title' => 'Information security in supplier relationships',
+            'description' => 'Operator can add requirements.',
+        ])->assertFound();
+        $this->post('/plugins/controls/control-access-review/requirements', [
+            ...$payload,
+            'requirement_id' => 'requirement-iso-a-5-18',
+            'coverage' => 'full',
+            'notes' => 'Operator can link requirements.',
+        ])->assertFound();
     }
 
     public function test_the_risk_transition_and_artifact_routes_require_manage_permission(): void

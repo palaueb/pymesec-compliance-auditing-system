@@ -115,12 +115,12 @@ class ControlsCatalogPlugin implements PluginInterface
 
                 return [
                     new ToolbarAction(
-                        label: 'Add control',
+                        label: 'New control',
                         url: '#control-editor',
                         variant: 'primary',
                     ),
                     new ToolbarAction(
-                        label: 'Review board',
+                        label: 'Review queue',
                         url: route('core.shell.index', [...$query, 'menu' => 'plugin.controls-catalog.reviews']),
                         variant: 'secondary',
                     ),
@@ -162,6 +162,13 @@ class ControlsCatalogPlugin implements PluginInterface
         $authorization = $context->app()->make(AuthorizationServiceInterface::class);
         $tenancy = $context->app()->make(TenancyServiceInterface::class);
         $organizationId = $screenContext->organizationId ?? 'org-a';
+        $frameworks = $repository->frameworks($organizationId);
+        $requirements = $repository->requirements($organizationId);
+        $catalog = $repository->all($organizationId, $screenContext->scopeId);
+        $requirementsByControl = $repository->requirementsForControls(array_map(
+            static fn (array $control): string => $control['id'],
+            $catalog,
+        ));
         $controls = [];
         $canManage = $screenContext->principal !== null && $authorization->authorize(new AuthorizationContext(
             principal: $screenContext->principal,
@@ -171,7 +178,7 @@ class ControlsCatalogPlugin implements PluginInterface
             scopeId: $screenContext->scopeId,
         ))->allowed();
 
-        foreach ($repository->all($organizationId, $screenContext->scopeId) as $control) {
+        foreach ($catalog as $control) {
             $instance = $workflow->instanceFor(
                 workflowKey: 'plugin.controls-catalog.control-lifecycle',
                 subjectType: 'control',
@@ -192,6 +199,8 @@ class ControlsCatalogPlugin implements PluginInterface
                 'transition_route' => route('plugin.controls-catalog.transition', ['controlId' => $control['id'], 'transitionKey' => '__TRANSITION__']),
                 'artifact_upload_route' => route('plugin.controls-catalog.artifacts.store', ['controlId' => $control['id']]),
                 'update_route' => route('plugin.controls-catalog.update', ['controlId' => $control['id']]),
+                'attach_requirement_route' => route('plugin.controls-catalog.requirements.attach', ['controlId' => $control['id']]),
+                'requirements' => $requirementsByControl[$control['id']] ?? [],
             ];
         }
 
@@ -204,10 +213,22 @@ class ControlsCatalogPlugin implements PluginInterface
 
         return [
             'controls' => $controls,
+            'frameworks' => $frameworks,
+            'requirements' => $requirements,
             'can_manage_controls' => $canManage,
             'query' => $this->baseQuery($screenContext),
             'create_route' => route('plugin.controls-catalog.store'),
+            'create_framework_route' => route('plugin.controls-catalog.frameworks.store'),
+            'create_requirement_route' => route('plugin.controls-catalog.requirements.store'),
             'owner_actor_options' => $this->actorOptions($actors, $organizationId, $screenContext->scopeId),
+            'framework_options' => array_map(static fn (array $framework): array => [
+                'id' => $framework['id'],
+                'label' => sprintf('%s · %s', $framework['code'], $framework['name']),
+            ], $frameworks),
+            'requirement_options' => array_map(static fn (array $requirement): array => [
+                'id' => $requirement['id'],
+                'label' => sprintf('%s · %s', $requirement['code'], $requirement['title']),
+            ], $requirements),
             'scope_options' => array_map(static fn ($scope): array => $scope->toArray(), $scopeContext->scopes),
         ];
     }

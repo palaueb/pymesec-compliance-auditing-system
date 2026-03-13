@@ -19,6 +19,7 @@ class ControlsCatalogTest extends TestCase
             ->assertJsonFragment([
                 'id' => 'control-access-review',
                 'name' => 'Quarterly Access Review',
+                'framework_id' => 'framework-iso-27001',
             ]);
 
         $this->get('/plugins/controls?principal_id=principal-admin&organization_id=org-a')
@@ -32,8 +33,9 @@ class ControlsCatalogTest extends TestCase
             ->assertSee('Controls Catalog')
             ->assertSee('Quarterly Access Review')
             ->assertSee('Backup Governance')
+            ->assertSee('A.5.18')
             ->assertSee('Ava Mason')
-            ->assertSee('Create Control');
+            ->assertSee('Create control');
     }
 
     public function test_control_review_transition_creates_due_notification_and_scheduler_dispatches_it(): void
@@ -132,7 +134,7 @@ class ControlsCatalogTest extends TestCase
         $this->post('/plugins/controls', [
             ...$payload,
             'name' => 'Supplier Access Revalidation',
-            'framework' => 'ISO 27001',
+            'framework_id' => 'framework-iso-27001',
             'domain' => 'Third Parties',
             'evidence' => 'Annual supplier entitlement review',
             'scope_id' => 'scope-eu',
@@ -147,7 +149,7 @@ class ControlsCatalogTest extends TestCase
         $this->post('/plugins/controls/control-supplier-access-revalidation', [
             ...$payload,
             'name' => 'Supplier Access Recertification',
-            'framework' => 'ISO 27001',
+            'framework_id' => 'framework-iso-27001',
             'domain' => 'Third Parties',
             'evidence' => 'Semi-annual supplier entitlement review',
             'scope_id' => 'scope-eu',
@@ -159,5 +161,44 @@ class ControlsCatalogTest extends TestCase
             ->assertSee('Supplier Access Recertification')
             ->assertSee('Semi-annual supplier entitlement review')
             ->assertSee('Compliance Office');
+    }
+
+    public function test_frameworks_requirements_and_mappings_can_be_managed_from_the_shell_runtime(): void
+    {
+        $payload = [
+            'principal_id' => 'principal-org-a',
+            'organization_id' => 'org-a',
+            'locale' => 'en',
+            'menu' => 'plugin.controls-catalog.root',
+            'membership_id' => 'membership-org-a-hello',
+        ];
+
+        $this->post('/plugins/controls/frameworks', [
+            ...$payload,
+            'code' => 'CIS-1',
+            'name' => 'CIS Safeguards v8',
+            'description' => 'Operational control baseline for endpoint and admin hygiene.',
+        ])->assertFound();
+
+        $this->post('/plugins/controls/requirements', [
+            ...$payload,
+            'framework_id' => 'framework-cis-1',
+            'code' => 'CIS-1.1',
+            'title' => 'Maintain an enterprise asset inventory',
+            'description' => 'Keep an accurate record of managed assets and owners.',
+        ])->assertFound();
+
+        $this->post('/plugins/controls/control-access-review/requirements', [
+            ...$payload,
+            'requirement_id' => 'requirement-cis-1-1',
+            'coverage' => 'partial',
+            'notes' => 'Review ownership and entitlements as part of the quarterly cycle.',
+        ])->assertFound();
+
+        $this->get('/app?menu=plugin.controls-catalog.root&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
+            ->assertOk()
+            ->assertSee('CIS Safeguards v8')
+            ->assertSee('Maintain an enterprise asset inventory')
+            ->assertSee('Partial');
     }
 }

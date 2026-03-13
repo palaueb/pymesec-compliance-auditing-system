@@ -940,6 +940,15 @@ Includes orgs, scopes, plugin manager, audit log, storage, API, UI shell, i18n/l
 
 Includes the identity contract, local users plugin, teams, memberships, and sessions.
 
+Current continuation after the first usable local identity baseline:
+
+* `identity-local` remains mandatory as the administrative fallback
+* platform authentication should use passwordless email link + token flows
+* each organization may connect `local + one external directory provider`
+* external directory support should start with a single connector path such as LDAP or AD
+* directory provisioning should be mixed: scheduled sync plus manual sync
+* externally synchronized users may remain unassigned until memberships or role grants are applied
+
 ### Epic C — Functional Actors & Ownership
 
 Includes the functional actor model, ownership, and responsibility assignments decoupled from access permissions.
@@ -1003,6 +1012,10 @@ Includes connectors and automated evidence.
 * risks
 * exceptions
 * basic reports
+* passwordless identity sessions through email link + token
+* external directory connector with `local + one provider` coexistence
+* mixed directory sync model with scheduled and manual synchronization
+* unassigned external users until memberships and grants are applied
 
 ### P2
 
@@ -1012,6 +1025,7 @@ Includes connectors and automated evidence.
 * connectors
 * rules engine
 * advanced dashboards
+* additional external identity connectors beyond the first LDAP/AD path
 
 ## 14. Global Product Acceptance Criteria
 
