@@ -486,9 +486,19 @@
             padding: 12px 14px;
         }
 
+        .surface-note.success {
+            border-left-color: var(--success);
+            background: rgba(232, 247, 236, 0.86);
+        }
+
         .surface-note.error {
             border-left-color: var(--warning);
             background: rgba(255, 244, 229, 0.82);
+        }
+
+        .flash-stack {
+            display: grid;
+            gap: 10px;
         }
 
         .entity-table {
@@ -515,6 +525,19 @@
             background: rgba(255,255,255,0.42);
         }
 
+        .table-editor-row td {
+            padding: 0;
+            background: rgba(255,255,255,0.38);
+        }
+
+        .editor-panel {
+            padding: 18px;
+            display: grid;
+            gap: 14px;
+            border-top: 1px solid rgba(31,42,34,0.08);
+            background: rgba(255,255,255,0.68);
+        }
+
         .entity-title {
             font-weight: 700;
         }
@@ -529,21 +552,24 @@
         .tag {
             display: inline-flex;
             align-items: center;
-            border: 1px solid var(--line);
-            border-radius: 4px;
-            padding: 4px 8px;
-            background: rgba(255,255,255,0.58);
-            font-size: 12px;
+            border-radius: 999px;
+            padding: 4px 10px;
+            background: rgba(31,42,34,0.08);
+            color: var(--ink);
+            font-size: 11px;
             font-weight: 700;
         }
 
         .pill {
-            text-transform: capitalize;
+            letter-spacing: 0.08em;
+            text-transform: uppercase;
         }
 
         .tag {
+            background: var(--accent-soft);
+            color: var(--accent-alt);
+            letter-spacing: 0.08em;
             text-transform: uppercase;
-            letter-spacing: 0.06em;
         }
 
         .stack,
@@ -859,6 +885,17 @@
             </div>
         </header>
 
+        @if (session('status') || session('error'))
+            <div class="flash-stack">
+                @if (session('status'))
+                    <div class="surface-note success">{{ session('status') }}</div>
+                @endif
+                @if (session('error'))
+                    <div class="surface-note error">{{ session('error') }}</div>
+                @endif
+            </div>
+        @endif
+
         <section class="content-grid">
             <article class="surface-card">
                 @if ($shellError !== null)
@@ -963,32 +1000,231 @@
 
 <script>
     (() => {
-        const modal = document.querySelector('[data-debug-modal]');
-        const openButtons = document.querySelectorAll('[data-debug-open]');
-        const closeButtons = document.querySelectorAll('[data-debug-close]');
+        const parseHtml = (html) => new DOMParser().parseFromString(html, 'text/html');
 
-        if (!modal || openButtons.length === 0) {
-            return;
-        }
+        const swapShell = (htmlDocument) => {
+            const nextShell = htmlDocument.querySelector('.shell');
+            const currentShell = document.querySelector('.shell');
 
-        const openModal = () => {
-            modal.hidden = false;
-            document.body.classList.add('debug-open');
-        };
+            if (!nextShell || !currentShell) {
+                if (htmlDocument.defaultView?.location?.href) {
+                    window.location.assign(htmlDocument.defaultView.location.href);
+                }
 
-        const closeModal = () => {
-            modal.hidden = true;
-            document.body.classList.remove('debug-open');
-        };
-
-        openButtons.forEach((button) => button.addEventListener('click', openModal));
-        closeButtons.forEach((button) => button.addEventListener('click', closeModal));
-
-        document.addEventListener('keydown', (event) => {
-            if (event.key === 'Escape' && !modal.hidden) {
-                closeModal();
+                return false;
             }
-        });
+
+            const nextDebugModal = htmlDocument.querySelector('[data-debug-modal]');
+            const currentDebugModal = document.querySelector('[data-debug-modal]');
+
+            currentShell.replaceWith(nextShell);
+
+            if (currentDebugModal && nextDebugModal) {
+                currentDebugModal.replaceWith(nextDebugModal);
+            } else if (currentDebugModal && !nextDebugModal) {
+                currentDebugModal.remove();
+            } else if (!currentDebugModal && nextDebugModal) {
+                document.body.appendChild(nextDebugModal);
+            }
+
+            document.title = htmlDocument.title || document.title;
+
+            return true;
+        };
+
+        const toggleEditor = (targetId) => {
+            const target = document.getElementById(targetId);
+
+            if (!target) {
+                return;
+            }
+
+            const nextHidden = !target.hidden;
+            target.hidden = nextHidden;
+
+            document.querySelectorAll(`[data-editor-toggle="${targetId}"]`).forEach((button) => {
+                button.setAttribute('aria-expanded', nextHidden ? 'false' : 'true');
+            });
+        };
+
+        const transformDetailsEditors = () => {
+            document.querySelectorAll('table.entity-table details').forEach((details, index) => {
+                if (details.dataset.editorTransformed === 'true') {
+                    return;
+                }
+
+                const summary = details.querySelector('summary');
+                const row = details.closest('tr');
+                const cell = details.closest('td');
+
+                if (!summary || !row || !cell || !row.parentElement) {
+                    return;
+                }
+
+                const targetId = details.id || `table-editor-${index}-${Math.random().toString(36).slice(2, 8)}`;
+                const open = details.hasAttribute('open');
+                const button = document.createElement('button');
+
+                button.type = 'button';
+                button.className = summary.className || 'button button-ghost';
+                button.textContent = summary.textContent.trim();
+                button.setAttribute('data-editor-toggle', targetId);
+                button.setAttribute('aria-expanded', open ? 'true' : 'false');
+
+                const editorRow = document.createElement('tr');
+                editorRow.id = targetId;
+                editorRow.className = 'table-editor-row';
+                editorRow.hidden = !open;
+
+                const editorCell = document.createElement('td');
+                editorCell.colSpan = row.children.length;
+
+                const editorPanel = document.createElement('div');
+                editorPanel.className = 'editor-panel';
+
+                const editorHeader = document.createElement('div');
+                editorHeader.className = 'row-between';
+                editorHeader.innerHTML = `
+                    <div>
+                        <div class="entity-title">${button.textContent}</div>
+                        <div class="table-note">Edit this record without compressing the table layout.</div>
+                    </div>
+                `;
+
+                const closeButton = document.createElement('button');
+                closeButton.type = 'button';
+                closeButton.className = 'button button-ghost';
+                closeButton.textContent = 'Close';
+                closeButton.setAttribute('data-editor-toggle', targetId);
+                closeButton.setAttribute('aria-expanded', open ? 'true' : 'false');
+                editorHeader.appendChild(closeButton);
+
+                const editorBody = document.createElement('div');
+                editorBody.className = 'stack';
+
+                Array.from(details.children).forEach((child) => {
+                    if (child.tagName === 'SUMMARY') {
+                        return;
+                    }
+
+                    editorBody.appendChild(child);
+                });
+
+                editorBody.querySelectorAll('form[method="POST"]').forEach((form) => {
+                    if (!form.querySelector('input[name="editor_target"]')) {
+                        const input = document.createElement('input');
+                        input.type = 'hidden';
+                        input.name = 'editor_target';
+                        input.value = targetId;
+                        form.appendChild(input);
+                    }
+                });
+
+                editorPanel.appendChild(editorHeader);
+                editorPanel.appendChild(editorBody);
+                editorCell.appendChild(editorPanel);
+                editorRow.appendChild(editorCell);
+
+                details.dataset.editorTransformed = 'true';
+                details.replaceWith(button);
+                row.parentElement.insertBefore(editorRow, row.nextSibling);
+            });
+        };
+
+        const setupDebugModal = () => {
+            const modal = document.querySelector('[data-debug-modal]');
+            const openButtons = document.querySelectorAll('[data-debug-open]');
+            const closeButtons = document.querySelectorAll('[data-debug-close]');
+
+            if (!modal || openButtons.length === 0) {
+                return;
+            }
+
+            const openModal = () => {
+                modal.hidden = false;
+                document.body.classList.add('debug-open');
+            };
+
+            const closeModal = () => {
+                modal.hidden = true;
+                document.body.classList.remove('debug-open');
+            };
+
+            openButtons.forEach((button) => button.addEventListener('click', openModal));
+            closeButtons.forEach((button) => button.addEventListener('click', closeModal));
+
+            document.addEventListener('keydown', (event) => {
+                if (event.key === 'Escape' && !modal.hidden) {
+                    closeModal();
+                }
+            }, { once: true });
+        };
+
+        const setupEditorToggles = () => {
+            document.querySelectorAll('[data-editor-toggle]').forEach((toggle) => {
+                toggle.addEventListener('click', () => {
+                    const targetId = toggle.getAttribute('data-editor-toggle');
+
+                    if (!targetId) {
+                        return;
+                    }
+
+                    toggleEditor(targetId);
+                });
+            });
+        };
+
+        const setupAjaxForms = () => {
+            document.querySelectorAll('.workspace form[method="POST"]').forEach((form) => {
+                if (form.dataset.ajaxBound === 'true' || form.dataset.syncForm === 'true') {
+                    return;
+                }
+
+                form.dataset.ajaxBound = 'true';
+
+                form.addEventListener('submit', async (event) => {
+                    event.preventDefault();
+
+                    const submitButtons = form.querySelectorAll('button[type="submit"]');
+                    submitButtons.forEach((button) => {
+                        button.disabled = true;
+                    });
+
+                    try {
+                        const response = await fetch(form.action, {
+                            method: 'POST',
+                            body: new FormData(form),
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest',
+                                'Accept': 'text/html,application/xhtml+xml',
+                            },
+                            credentials: 'same-origin',
+                        });
+
+                        const html = await response.text();
+                        const htmlDocument = parseHtml(html);
+
+                        if (!swapShell(htmlDocument)) {
+                            window.location.assign(response.url || form.action);
+                            return;
+                        }
+
+                        initializeShellUi();
+                    } catch (error) {
+                        window.location.assign(form.action);
+                    }
+                });
+            });
+        };
+
+        window.initializeShellUi = () => {
+            transformDetailsEditors();
+            setupDebugModal();
+            setupEditorToggles();
+            setupAjaxForms();
+        };
+
+        window.initializeShellUi();
     })();
 </script>
 </body>

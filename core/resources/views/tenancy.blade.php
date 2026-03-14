@@ -104,11 +104,13 @@
                     <th>Organization</th>
                     <th>Defaults</th>
                     <th>Status</th>
-                    <th>{{ $can_manage_tenancy ? 'Manage' : 'Notes' }}</th>
+                    <th>{{ $can_manage_tenancy ? 'Actions' : 'Notes' }}</th>
                 </tr>
             </thead>
             <tbody>
                 @foreach ($organizations as $organization)
+                    @php($organizationEditorId = 'org-editor-'.$organization['id'])
+                    @php($organizationEditorOpen = old('editor_target') === $organizationEditorId)
                     <tr>
                         <td>
                             <div class="entity-title">{{ $organization['name'] }}</div>
@@ -121,39 +123,15 @@
                         </td>
                         <td>
                             @if ($can_manage_tenancy)
-                                <form class="stack" method="POST" action="{{ $update_organization_route($organization['id']) }}">
-                                    @csrf
-                                    <input type="hidden" name="menu" value="core.tenancy">
-                                    <input type="hidden" name="principal_id" value="{{ $query['principal_id'] ?? '' }}">
-                                    <input type="hidden" name="locale" value="{{ $query['locale'] ?? 'en' }}">
-                                    <input type="hidden" name="theme" value="{{ $query['theme'] ?? '' }}">
-                                    <div class="field">
-                                        <label class="field-label">Name</label>
-                                        <input class="field-input" name="name" value="{{ $organization['name'] }}" required>
-                                    </div>
-                                    <div class="field">
-                                        <label class="field-label">Slug</label>
-                                        <input class="field-input" name="slug" value="{{ $organization['slug'] }}" required>
-                                    </div>
-                                    <div class="row-between">
-                                        <div class="field" style="flex:1;">
-                                            <label class="field-label">Locale</label>
-                                            <select class="field-select" name="default_locale">
-                                                @foreach ($locale_options as $locale)
-                                                    <option value="{{ $locale }}" @selected($organization['default_locale'] === $locale)>{{ strtoupper($locale) }}</option>
-                                                @endforeach
-                                            </select>
-                                        </div>
-                                        <div class="field" style="flex:1;">
-                                            <label class="field-label">Timezone</label>
-                                            <input class="field-input" name="default_timezone" value="{{ $organization['default_timezone'] }}" required>
-                                        </div>
-                                    </div>
-                                    <div class="action-cluster">
-                                        <button class="button button-secondary" type="submit">Save</button>
-                                    </div>
-                                </form>
-                                <div class="action-cluster" style="margin-top:8px;">
+                                <div class="action-cluster">
+                                    <button
+                                        class="button button-secondary"
+                                        type="button"
+                                        data-editor-toggle="{{ $organizationEditorId }}"
+                                        aria-expanded="{{ $organizationEditorOpen ? 'true' : 'false' }}"
+                                    >
+                                        Edit
+                                    </button>
                                     <form method="POST" action="{{ $organization['is_active'] ? $archive_organization_route($organization['id']) : $activate_organization_route($organization['id']) }}">
                                         @csrf
                                         <input type="hidden" name="menu" value="core.tenancy">
@@ -170,6 +148,64 @@
                             @endif
                         </td>
                     </tr>
+                    @if ($can_manage_tenancy)
+                        <tr id="{{ $organizationEditorId }}" class="table-editor-row" @if (! $organizationEditorOpen) hidden @endif>
+                            <td colspan="4">
+                                <div class="editor-panel">
+                                    <div class="row-between">
+                                        <div>
+                                            <div class="entity-title">Edit organization</div>
+                                            <div class="table-note">Update tenant identity and defaults without squeezing the form into the table.</div>
+                                        </div>
+                                        <button
+                                            class="button button-ghost"
+                                            type="button"
+                                            data-editor-toggle="{{ $organizationEditorId }}"
+                                            aria-expanded="{{ $organizationEditorOpen ? 'true' : 'false' }}"
+                                        >
+                                            Close
+                                        </button>
+                                    </div>
+                                    <form class="stack" method="POST" action="{{ $update_organization_route($organization['id']) }}">
+                                        @csrf
+                                        <input type="hidden" name="menu" value="core.tenancy">
+                                        <input type="hidden" name="principal_id" value="{{ $query['principal_id'] ?? '' }}">
+                                        <input type="hidden" name="locale" value="{{ $query['locale'] ?? 'en' }}">
+                                        <input type="hidden" name="theme" value="{{ $query['theme'] ?? '' }}">
+                                        <input type="hidden" name="editor_target" value="{{ $organizationEditorId }}">
+                                        <div class="row-between">
+                                            <div class="field" style="flex:1;">
+                                                <label class="field-label">Name</label>
+                                                <input class="field-input" name="name" value="{{ old('editor_target') === $organizationEditorId ? old('name', $organization['name']) : $organization['name'] }}" required>
+                                            </div>
+                                            <div class="field" style="flex:1;">
+                                                <label class="field-label">Slug</label>
+                                                <input class="field-input" name="slug" value="{{ old('editor_target') === $organizationEditorId ? old('slug', $organization['slug']) : $organization['slug'] }}" required>
+                                            </div>
+                                        </div>
+                                        <div class="row-between">
+                                            <div class="field" style="flex:1;">
+                                                <label class="field-label">Locale</label>
+                                                <select class="field-select" name="default_locale">
+                                                    @foreach ($locale_options as $locale)
+                                                        @php($localeValue = old('editor_target') === $organizationEditorId ? old('default_locale', $organization['default_locale']) : $organization['default_locale'])
+                                                        <option value="{{ $locale }}" @selected($localeValue === $locale)>{{ strtoupper($locale) }}</option>
+                                                    @endforeach
+                                                </select>
+                                            </div>
+                                            <div class="field" style="flex:1;">
+                                                <label class="field-label">Timezone</label>
+                                                <input class="field-input" name="default_timezone" value="{{ old('editor_target') === $organizationEditorId ? old('default_timezone', $organization['default_timezone']) : $organization['default_timezone'] }}" required>
+                                            </div>
+                                        </div>
+                                        <div class="action-cluster">
+                                            <button class="button button-primary" type="submit">Save organization</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    @endif
                 @endforeach
             </tbody>
         </table>
@@ -188,11 +224,13 @@
                     <th>Scope</th>
                     <th>Organization</th>
                     <th>Status</th>
-                    <th>{{ $can_manage_tenancy ? 'Manage' : 'Notes' }}</th>
+                    <th>{{ $can_manage_tenancy ? 'Actions' : 'Notes' }}</th>
                 </tr>
             </thead>
             <tbody>
                 @foreach ($scopes as $scope)
+                    @php($scopeEditorId = 'scope-editor-'.$scope['id'])
+                    @php($scopeEditorOpen = old('editor_target') === $scopeEditorId)
                     <tr>
                         <td>
                             <div class="entity-title">{{ $scope['name'] }}</div>
@@ -203,30 +241,15 @@
                         <td><span class="pill">{{ $scope['is_active'] ? 'active' : 'archived' }}</span></td>
                         <td>
                             @if ($can_manage_tenancy)
-                                <form class="stack" method="POST" action="{{ $update_scope_route($scope['id']) }}">
-                                    @csrf
-                                    <input type="hidden" name="menu" value="core.tenancy">
-                                    <input type="hidden" name="principal_id" value="{{ $query['principal_id'] ?? '' }}">
-                                    <input type="hidden" name="locale" value="{{ $query['locale'] ?? 'en' }}">
-                                    <input type="hidden" name="theme" value="{{ $query['theme'] ?? '' }}">
-                                    <input type="hidden" name="organization_id" value="{{ $scope['organization_id'] }}">
-                                    <div class="field">
-                                        <label class="field-label">Name</label>
-                                        <input class="field-input" name="name" value="{{ $scope['name'] }}" required>
-                                    </div>
-                                    <div class="field">
-                                        <label class="field-label">Slug</label>
-                                        <input class="field-input" name="slug" value="{{ $scope['slug'] }}" required>
-                                    </div>
-                                    <div class="field">
-                                        <label class="field-label">Description</label>
-                                        <input class="field-input" name="description" value="{{ $scope['description'] }}">
-                                    </div>
-                                    <div class="action-cluster">
-                                        <button class="button button-secondary" type="submit">Save</button>
-                                    </div>
-                                </form>
-                                <div class="action-cluster" style="margin-top:8px;">
+                                <div class="action-cluster">
+                                    <button
+                                        class="button button-secondary"
+                                        type="button"
+                                        data-editor-toggle="{{ $scopeEditorId }}"
+                                        aria-expanded="{{ $scopeEditorOpen ? 'true' : 'false' }}"
+                                    >
+                                        Edit
+                                    </button>
                                     <form method="POST" action="{{ $scope['is_active'] ? $archive_scope_route($scope['id']) : $activate_scope_route($scope['id']) }}">
                                         @csrf
                                         <input type="hidden" name="menu" value="core.tenancy">
@@ -244,6 +267,54 @@
                             @endif
                         </td>
                     </tr>
+                    @if ($can_manage_tenancy)
+                        <tr id="{{ $scopeEditorId }}" class="table-editor-row" @if (! $scopeEditorOpen) hidden @endif>
+                            <td colspan="4">
+                                <div class="editor-panel">
+                                    <div class="row-between">
+                                        <div>
+                                            <div class="entity-title">Edit scope</div>
+                                            <div class="table-note">Keep the table readable and open the editor only when you need it.</div>
+                                        </div>
+                                        <button
+                                            class="button button-ghost"
+                                            type="button"
+                                            data-editor-toggle="{{ $scopeEditorId }}"
+                                            aria-expanded="{{ $scopeEditorOpen ? 'true' : 'false' }}"
+                                        >
+                                            Close
+                                        </button>
+                                    </div>
+                                    <form class="stack" method="POST" action="{{ $update_scope_route($scope['id']) }}">
+                                        @csrf
+                                        <input type="hidden" name="menu" value="core.tenancy">
+                                        <input type="hidden" name="principal_id" value="{{ $query['principal_id'] ?? '' }}">
+                                        <input type="hidden" name="locale" value="{{ $query['locale'] ?? 'en' }}">
+                                        <input type="hidden" name="theme" value="{{ $query['theme'] ?? '' }}">
+                                        <input type="hidden" name="organization_id" value="{{ $scope['organization_id'] }}">
+                                        <input type="hidden" name="editor_target" value="{{ $scopeEditorId }}">
+                                        <div class="row-between">
+                                            <div class="field" style="flex:1;">
+                                                <label class="field-label">Name</label>
+                                                <input class="field-input" name="name" value="{{ old('editor_target') === $scopeEditorId ? old('name', $scope['name']) : $scope['name'] }}" required>
+                                            </div>
+                                            <div class="field" style="flex:1;">
+                                                <label class="field-label">Slug</label>
+                                                <input class="field-input" name="slug" value="{{ old('editor_target') === $scopeEditorId ? old('slug', $scope['slug']) : $scope['slug'] }}" required>
+                                            </div>
+                                        </div>
+                                        <div class="field">
+                                            <label class="field-label">Description</label>
+                                            <input class="field-input" name="description" value="{{ old('editor_target') === $scopeEditorId ? old('description', $scope['description']) : $scope['description'] }}">
+                                        </div>
+                                        <div class="action-cluster">
+                                            <button class="button button-primary" type="submit">Save scope</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </td>
+                        </tr>
+                    @endif
                 @endforeach
             </tbody>
         </table>
