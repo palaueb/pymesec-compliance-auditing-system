@@ -1,0 +1,62 @@
+dn: ou=People,dc=northwind,dc=test
+objectClass: organizationalUnit
+ou: People
+
+dn: ou=Groups,dc=northwind,dc=test
+objectClass: organizationalUnit
+ou: Groups
+
+dn: uid=lars.heidt,ou=People,dc=northwind,dc=test
+objectClass: inetOrgPerson
+objectClass: organizationalPerson
+objectClass: person
+objectClass: top
+cn: Lars Heidt
+sn: Heidt
+givenName: Lars
+displayName: Lars Heidt
+mail: lars.heidt@northwind.test
+uid: lars.heidt
+title: Infrastructure lead
+userPassword: demo-pass-123
+
+dn: uid=marta.soler,ou=People,dc=northwind,dc=test
+objectClass: inetOrgPerson
+objectClass: organizationalPerson
+objectClass: person
+objectClass: top
+cn: Marta Soler
+sn: Soler
+givenName: Marta
+displayName: Marta Soler
+mail: marta.soler@northwind.test
+uid: marta.soler
+title: Vendor manager
+userPassword: demo-pass-123
+
+dn: uid=dirk.koch,ou=People,dc=northwind,dc=test
+objectClass: inetOrgPerson
+objectClass: organizationalPerson
+objectClass: person
+objectClass: top
+cn: Dirk Koch
+sn: Koch
+givenName: Dirk
+displayName: Dirk Koch
+mail: dirk.koch@northwind.test
+uid: dirk.koch
+title: Field service lead
+userPassword: demo-pass-123
+
+dn: cn=it-services,ou=Groups,dc=northwind,dc=test
+objectClass: groupOfNames
+objectClass: top
+cn: it-services
+member: uid=lars.heidt,ou=People,dc=northwind,dc=test
+member: uid=dirk.koch,ou=People,dc=northwind,dc=test
+
+dn: cn=eu-operations,ou=Groups,dc=northwind,dc=test
+objectClass: groupOfNames
+objectClass: top
+cn: eu-operations
+member: uid=lars.heidt,ou=People,dc=northwind,dc=test

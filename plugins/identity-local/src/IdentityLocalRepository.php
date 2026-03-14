@@ -39,6 +39,11 @@ class IdentityLocalRepository
             ->get([
                 'users.id',
                 'users.principal_id',
+                'users.auth_provider',
+                'users.external_subject',
+                'users.directory_source',
+                'users.directory_groups',
+                'users.directory_synced_at',
                 'users.organization_id',
                 'users.username',
                 'users.display_name',
@@ -89,6 +94,19 @@ class IdentityLocalRepository
     /**
      * @return array<string, mixed>|null
      */
+    public function findUserByExternalIdentity(string $authProvider, string $externalSubject): ?array
+    {
+        $user = DB::table('identity_local_users')
+            ->where('auth_provider', $authProvider)
+            ->where('external_subject', $externalSubject)
+            ->first();
+
+        return $user !== null ? $this->mapUser($user) : null;
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
     public function findActiveUserByEmail(string $email): ?array
     {
         $user = DB::table('identity_local_users')
@@ -119,6 +137,86 @@ class IdentityLocalRepository
             ->first();
 
         return $user !== null ? $this->mapUser($user) : null;
+    }
+
+    /**
+     * @return array{user:array<string, mixed>, created:bool}
+     */
+    public function syncDirectoryUser(array $data): array
+    {
+        $authProvider = (string) ($data['auth_provider'] ?? 'ldap');
+        $externalSubject = (string) ($data['external_subject'] ?? '');
+        $existing = $externalSubject !== '' ? $this->findUserByExternalIdentity($authProvider, $externalSubject) : null;
+
+        if ($existing === null) {
+            $conflict = DB::table('identity_local_users')
+                ->where(function ($query) use ($data): void {
+                    $query->whereRaw('LOWER(email) = ?', [Str::lower((string) $data['email'])])
+                        ->orWhereRaw('LOWER(username) = ?', [Str::lower((string) $data['username'])]);
+                })
+                ->first();
+
+            if ($conflict !== null) {
+                throw new \RuntimeException(sprintf(
+                    'LDAP sync conflict for [%s]. A local account already uses this username or email.',
+                    (string) $data['email']
+                ));
+            }
+
+            $user = $this->createUser([
+                'organization_id' => (string) $data['organization_id'],
+                'display_name' => (string) $data['display_name'],
+                'username' => (string) $data['username'],
+                'email' => (string) $data['email'],
+                'job_title' => $data['job_title'] ?? null,
+                'password_enabled' => false,
+                'magic_link_enabled' => (bool) ($data['magic_link_enabled'] ?? true),
+                'is_active' => (bool) ($data['is_active'] ?? true),
+            ]);
+
+            DB::table('identity_local_users')
+                ->where('id', $user['id'])
+                ->update([
+                    'auth_provider' => $authProvider,
+                    'external_subject' => $externalSubject !== '' ? $externalSubject : null,
+                    'directory_source' => is_string($data['directory_source'] ?? null) ? $data['directory_source'] : null,
+                    'directory_groups' => $this->encodeJson($this->normalizeStringArray($data['directory_groups'] ?? [])),
+                    'directory_synced_at' => now(),
+                    'updated_at' => now(),
+                ]);
+
+            return [
+                'user' => $this->findUser((string) $user['id']) ?? $user,
+                'created' => true,
+            ];
+        }
+
+        $user = $this->updateUser((string) $existing['id'], [
+            'organization_id' => (string) $data['organization_id'],
+            'display_name' => (string) $data['display_name'],
+            'username' => (string) $data['username'],
+            'email' => (string) $data['email'],
+            'job_title' => $data['job_title'] ?? null,
+            'password_enabled' => false,
+            'magic_link_enabled' => (bool) ($data['magic_link_enabled'] ?? true),
+            'is_active' => (bool) ($data['is_active'] ?? true),
+        ]);
+
+        DB::table('identity_local_users')
+            ->where('id', $existing['id'])
+            ->update([
+                'auth_provider' => $authProvider,
+                'external_subject' => $externalSubject !== '' ? $externalSubject : null,
+                'directory_source' => is_string($data['directory_source'] ?? null) ? $data['directory_source'] : null,
+                'directory_groups' => $this->encodeJson($this->normalizeStringArray($data['directory_groups'] ?? [])),
+                'directory_synced_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+        return [
+            'user' => $this->findUser((string) $existing['id']) ?? ($user ?? $existing),
+            'created' => false,
+        ];
     }
 
     /**
@@ -465,13 +563,91 @@ class IdentityLocalRepository
     }
 
     /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, mixed>
+     */
+    public function upsertManagedMembership(string $membershipId, array $data, ?string $managedByPrincipalId = null): array
+    {
+        $existing = $this->findMembership($membershipId);
+
+        if ($existing === null) {
+            $principalId = (string) $data['principal_id'];
+            $organizationId = (string) $data['organization_id'];
+            $roles = $this->normalizeStringArray($data['role_keys'] ?? []);
+            $scopeIds = $this->normalizeStringArray($data['scope_ids'] ?? []);
+            $isActive = (bool) ($data['is_active'] ?? true);
+
+            DB::table('memberships')->insert([
+                'id' => $membershipId,
+                'principal_id' => $principalId,
+                'organization_id' => $organizationId,
+                'roles' => $this->encodeJson($roles),
+                'is_active' => $isActive,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+            $this->syncMembershipScopes($membershipId, $scopeIds);
+            $this->syncMembershipRoleGrants($membershipId, $organizationId, $roles);
+
+            return $this->findMembership($membershipId) ?? [];
+        }
+
+        return $this->updateMembership($membershipId, $data, $managedByPrincipalId) ?? [];
+    }
+
+    /**
+     * @param  array<int, string>  $activeExternalSubjects
+     * @return array<int, string>
+     */
+    public function deactivateDirectoryUsersMissingFromSync(
+        string $organizationId,
+        string $authProvider,
+        string $directorySource,
+        array $activeExternalSubjects,
+    ): array {
+        $query = DB::table('identity_local_users')
+            ->where('organization_id', $organizationId)
+            ->where('auth_provider', $authProvider)
+            ->where('directory_source', $directorySource);
+
+        if ($activeExternalSubjects !== []) {
+            $query->whereNotIn('external_subject', $activeExternalSubjects);
+        }
+
+        $users = $query->get(['id', 'principal_id']);
+        $principals = $users->pluck('principal_id')->map(static fn ($principalId): string => (string) $principalId)->all();
+
+        if ($users->isEmpty()) {
+            return [];
+        }
+
+        DB::table('identity_local_users')
+            ->whereIn('id', $users->pluck('id')->all())
+            ->update([
+                'is_active' => false,
+                'directory_synced_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+        return $principals;
+    }
+
+    /**
      * @return array<string, mixed>
      */
     private function mapUser(object $user): array
     {
+        $vars = get_object_vars($user);
+
         return [
             'id' => (string) $user->id,
             'principal_id' => (string) $user->principal_id,
+            'auth_provider' => is_string($user->auth_provider ?? null) ? $user->auth_provider : 'local',
+            'external_subject' => is_string($user->external_subject ?? null) ? $user->external_subject : null,
+            'directory_source' => is_string($user->directory_source ?? null) ? $user->directory_source : null,
+            'directory_groups' => $this->decodeStringArray($vars['directory_groups'] ?? null),
+            'directory_synced_at' => is_string($user->directory_synced_at ?? null) ? $user->directory_synced_at : null,
             'organization_id' => (string) $user->organization_id,
             'username' => is_string($user->username ?? null) ? $user->username : '',
             'display_name' => (string) $user->display_name,

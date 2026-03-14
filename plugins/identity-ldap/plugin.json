@@ -1,0 +1,81 @@
+{
+  "plugin": {
+    "id": "identity-ldap",
+    "name": "Identity LDAP",
+    "version": "0.1.0",
+    "type": "identity",
+    "description": "External directory sync and cached access brokerage for LDAP-backed organizations.",
+    "vendor": "pymesec",
+    "license": "AGPL-3.0-or-later"
+  },
+  "compatibility": {
+    "core": "^0.1.0",
+    "sdk": "^0.1.0"
+  },
+  "dependencies": [
+    {
+      "target": "identity-local",
+      "type": "required"
+    }
+  ],
+  "permissions": [
+    {
+      "key": "plugin.identity-ldap.directory.view",
+      "label": "View directory sync",
+      "description": "View LDAP connection status, cached people, and group mappings.",
+      "feature_area": "directory",
+      "operation": "view",
+      "contexts": [
+        "organization"
+      ]
+    },
+    {
+      "key": "plugin.identity-ldap.directory.manage",
+      "label": "Manage directory sync",
+      "description": "Configure LDAP connection settings, mappings, and trigger directory synchronization.",
+      "feature_area": "directory",
+      "operation": "manage",
+      "contexts": [
+        "organization"
+      ]
+    }
+  ],
+  "routes": [
+    {
+      "id": "identity-ldap.web",
+      "type": "web",
+      "file": "routes/web.php",
+      "middleware": [
+        "web"
+      ]
+    }
+  ],
+  "menus": [
+    {
+      "id": "plugin.identity-ldap.directory",
+      "label_key": "plugin.identity-ldap.nav.directory",
+      "route": "plugin.identity-ldap.directory.index",
+      "parent_id": "plugin.identity-local.users",
+      "icon": "network",
+      "order": 20,
+      "permission": "plugin.identity-ldap.directory.view"
+    }
+  ],
+  "migrations": [],
+  "translations": {
+    "default_locale": "en",
+    "supported_locales": [
+      "en"
+    ],
+    "path": "resources/lang"
+  },
+  "lifecycle": {},
+  "runtime": {
+    "class": "PymeSec\\Plugins\\IdentityLdap\\IdentityLdapPlugin",
+    "autoload": {
+      "psr-4": {
+        "PymeSec\\Plugins\\IdentityLdap\\": "src"
+      }
+    }
+  }
+}

@@ -1,6 +1,6 @@
 DOCKER_COMPOSE ?= docker compose
 
-.PHONY: up down shell test lint migrate ci logs
+.PHONY: up down shell test lint migrate ci logs ldap-logs
 
 up:
 	$(DOCKER_COMPOSE) up -d --build
@@ -25,4 +25,7 @@ ci:
 	$(DOCKER_COMPOSE) exec app php artisan test
 
 logs:
-	$(DOCKER_COMPOSE) logs -f app mysql
+	$(DOCKER_COMPOSE) logs -f app mysql ldap ldap-admin
+
+ldap-logs:
+	$(DOCKER_COMPOSE) logs -f ldap ldap-admin

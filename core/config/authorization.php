@@ -145,6 +145,19 @@ return [
                 'plugin.identity-local.memberships.view',
             ],
         ],
+        'identity-ldap-operator' => [
+            'label' => 'Directory sync operator',
+            'permissions' => [
+                'plugin.identity-ldap.directory.view',
+                'plugin.identity-ldap.directory.manage',
+            ],
+        ],
+        'identity-ldap-viewer' => [
+            'label' => 'Directory sync viewer',
+            'permissions' => [
+                'plugin.identity-ldap.directory.view',
+            ],
+        ],
     ],
     'grants' => [
         [
@@ -236,11 +249,27 @@ return [
         ],
         [
             'target_type' => 'membership',
+            'target_id' => 'membership-org-a-hello',
+            'grant_type' => 'role',
+            'value' => 'identity-ldap-operator',
+            'context_type' => 'organization',
+            'organization_id' => 'org-a',
+        ],
+        [
+            'target_type' => 'membership',
             'target_id' => 'membership-org-a-viewer',
             'grant_type' => 'role',
             'value' => 'asset-viewer',
             'context_type' => 'organization',
             'organization_id' => 'org-a',
+        ],
+        [
+            'target_type' => 'membership',
+            'target_id' => 'membership-org-b-ops',
+            'grant_type' => 'role',
+            'value' => 'identity-ldap-viewer',
+            'context_type' => 'organization',
+            'organization_id' => 'org-b',
         ],
         [
             'target_type' => 'membership',

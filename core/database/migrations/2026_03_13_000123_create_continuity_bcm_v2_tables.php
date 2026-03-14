@@ -17,7 +17,7 @@ return new class extends Migration
             $table->string('recovery_notes', 255)->nullable();
             $table->timestamps();
 
-            $table->index(['organization_id', 'source_service_id']);
+            $table->index(['organization_id', 'source_service_id'], 'cont_svc_dep_org_src_idx');
             $table->unique(['organization_id', 'source_service_id', 'depends_on_service_id'], 'continuity_service_dependency_unique');
         });
 
@@ -32,8 +32,8 @@ return new class extends Migration
             $table->string('follow_up_summary', 255)->nullable();
             $table->timestamps();
 
-            $table->index(['organization_id', 'plan_id']);
-            $table->index(['plan_id', 'exercise_date']);
+            $table->index(['organization_id', 'plan_id'], 'cont_plan_ex_org_plan_idx');
+            $table->index(['plan_id', 'exercise_date'], 'cont_plan_ex_plan_date_idx');
         });
 
         Schema::create('continuity_plan_test_executions', function (Blueprint $table): void {
@@ -47,8 +47,8 @@ return new class extends Migration
             $table->string('notes', 255)->nullable();
             $table->timestamps();
 
-            $table->index(['organization_id', 'plan_id']);
-            $table->index(['plan_id', 'executed_on']);
+            $table->index(['organization_id', 'plan_id'], 'cont_plan_test_org_plan_idx');
+            $table->index(['plan_id', 'executed_on'], 'cont_plan_test_plan_date_idx');
         });
     }
 

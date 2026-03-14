@@ -12,6 +12,7 @@ class DemoCompanySeeder extends Seeder
         $this->call([
             CoreTenancySeeder::class,
             DemoIdentityLocalSeeder::class,
+            DemoIdentityLdapSeeder::class,
         ]);
     }
 }

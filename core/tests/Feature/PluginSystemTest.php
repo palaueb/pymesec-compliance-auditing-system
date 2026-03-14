@@ -72,6 +72,14 @@ class PluginSystemTest extends TestCase
                 'runtime_contract_satisfied' => true,
             ])
             ->assertJsonFragment([
+                'id' => 'identity-ldap',
+                'enabled' => true,
+                'booted' => true,
+                'route_count' => 1,
+                'menu_count' => 1,
+                'runtime_contract_satisfied' => true,
+            ])
+            ->assertJsonFragment([
                 'id' => 'risk-management',
                 'enabled' => true,
                 'booted' => true,
@@ -134,6 +142,10 @@ class PluginSystemTest extends TestCase
             ->assertJsonFragment([
                 'key' => 'plugin.identity-local.users.view',
                 'origin' => 'identity-local',
+            ])
+            ->assertJsonFragment([
+                'key' => 'plugin.identity-ldap.directory.view',
+                'origin' => 'identity-ldap',
             ]);
     }
 
@@ -150,6 +162,7 @@ class PluginSystemTest extends TestCase
                     ['data-flows-privacy', 'domain', 'yes', 'yes', '2', '1', '2', ''],
                     ['findings-remediation', 'domain', 'yes', 'yes', '2', '1', '2', ''],
                     ['hello-world', 'ui', 'yes', 'yes', '1', '1', '2', ''],
+                    ['identity-ldap', 'identity', 'yes', 'yes', '2', '1', '1', ''],
                     ['identity-local', 'identity', 'yes', 'yes', '4', '1', '2', ''],
                     ['policy-exceptions', 'domain', 'yes', 'yes', '2', '1', '2', ''],
                     ['risk-management', 'domain', 'yes', 'yes', '2', '1', '2', ''],
@@ -196,6 +209,8 @@ class PluginSystemTest extends TestCase
                     ['plugin.findings-remediation.findings.manage', 'findings-remediation', 'manage', 'organization'],
                     ['plugin.findings-remediation.findings.view', 'findings-remediation', 'view', 'organization'],
                     ['plugin.hello-world.hello.view', 'hello-world', 'view', 'organization'],
+                    ['plugin.identity-ldap.directory.manage', 'identity-ldap', 'manage', 'organization'],
+                    ['plugin.identity-ldap.directory.view', 'identity-ldap', 'view', 'organization'],
                     ['plugin.identity-local.memberships.manage', 'identity-local', 'manage', 'organization'],
                     ['plugin.identity-local.memberships.view', 'identity-local', 'view', 'organization'],
                     ['plugin.identity-local.users.manage', 'identity-local', 'manage', 'organization'],
@@ -217,7 +232,7 @@ class PluginSystemTest extends TestCase
 
         $effective = $this->app->make(PluginStateStore::class)->effectiveEnabled(config('plugins.enabled', []));
 
-        $this->assertSame(['hello-world', 'asset-catalog', 'actor-directory', 'controls-catalog', 'risk-management', 'findings-remediation', 'policy-exceptions', 'data-flows-privacy', 'continuity-bcm', 'identity-local'], $effective);
+        $this->assertSame(['hello-world', 'asset-catalog', 'actor-directory', 'controls-catalog', 'risk-management', 'findings-remediation', 'policy-exceptions', 'data-flows-privacy', 'continuity-bcm', 'identity-local', 'identity-ldap'], $effective);
     }
 
     public function test_the_plugins_disable_command_persists_a_local_override(): void
@@ -228,7 +243,7 @@ class PluginSystemTest extends TestCase
 
         $effective = $this->app->make(PluginStateStore::class)->effectiveEnabled(config('plugins.enabled', []));
 
-        $this->assertSame(['asset-catalog', 'actor-directory', 'controls-catalog', 'risk-management', 'findings-remediation', 'policy-exceptions', 'data-flows-privacy', 'continuity-bcm', 'identity-local'], $effective);
+        $this->assertSame(['asset-catalog', 'actor-directory', 'controls-catalog', 'risk-management', 'findings-remediation', 'policy-exceptions', 'data-flows-privacy', 'continuity-bcm', 'identity-local', 'identity-ldap'], $effective);
     }
 
     public function test_the_plugins_disable_command_removes_a_previous_local_enable_override(): void
@@ -242,7 +257,7 @@ class PluginSystemTest extends TestCase
 
         $effective = $this->app->make(PluginStateStore::class)->effectiveEnabled(config('plugins.enabled', []));
 
-        $this->assertSame(['hello-world', 'asset-catalog', 'actor-directory', 'controls-catalog', 'risk-management', 'findings-remediation', 'policy-exceptions', 'data-flows-privacy', 'continuity-bcm'], $effective);
+        $this->assertSame(['hello-world', 'asset-catalog', 'actor-directory', 'controls-catalog', 'risk-management', 'findings-remediation', 'policy-exceptions', 'data-flows-privacy', 'continuity-bcm', 'identity-ldap'], $effective);
     }
 
     public function test_the_plugins_enable_command_rejects_unknown_plugins(): void
@@ -317,6 +332,7 @@ class PluginSystemTest extends TestCase
                     ['plugin.data-flows-privacy.activities', 'data-flows-privacy', 'plugin.data-flows-privacy.root', 'plugin.data-flows-privacy.activities', 'plugin.data-flows-privacy.records.view', '10'],
                     ['plugin.identity-local.users', 'identity-local', '', 'plugin.identity-local.users.index', 'plugin.identity-local.users.view', '47'],
                     ['plugin.identity-local.memberships', 'identity-local', 'plugin.identity-local.users', 'plugin.identity-local.memberships.index', 'plugin.identity-local.memberships.view', '10'],
+                    ['plugin.identity-ldap.directory', 'identity-ldap', 'plugin.identity-local.users', 'plugin.identity-ldap.directory.index', 'plugin.identity-ldap.directory.view', '20'],
                     ['plugin.continuity-bcm.root', 'continuity-bcm', '', 'plugin.continuity-bcm.index', 'plugin.continuity-bcm.plans.view', '50'],
                     ['plugin.continuity-bcm.plans', 'continuity-bcm', 'plugin.continuity-bcm.root', 'plugin.continuity-bcm.plans', 'plugin.continuity-bcm.plans.view', '10'],
                 ],

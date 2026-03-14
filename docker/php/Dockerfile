@@ -7,14 +7,17 @@ RUN apt-get update \
         bash \
         git \
         libicu-dev \
+        libldap2-dev \
         libonig-dev \
         libsqlite3-dev \
         libzip-dev \
         unzip \
         zip \
+    && docker-php-ext-configure ldap \
     && docker-php-ext-install \
         bcmath \
         intl \
+        ldap \
         pcntl \
         pdo_mysql \
         pdo_sqlite \

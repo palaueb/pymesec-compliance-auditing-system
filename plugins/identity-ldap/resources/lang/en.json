@@ -1,0 +1,6 @@
+{
+  "plugin.identity-ldap.plugin.name": "Directory Sync",
+  "plugin.identity-ldap.nav.directory": "Directory Sync",
+  "plugin.identity-ldap.screen.directory.title": "Directory Sync",
+  "plugin.identity-ldap.screen.directory.subtitle": "Keep one LDAP connector per organization, map external groups, and cache people for local fallback."
+}

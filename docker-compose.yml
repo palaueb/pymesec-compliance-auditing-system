@@ -11,6 +11,8 @@ services:
       - app_storage:/var/www/html/storage
       - app_bootstrap_cache:/var/www/html/bootstrap/cache
     depends_on:
+      ldap:
+        condition: service_started
       mysql:
         condition: service_healthy
     ports:
@@ -38,9 +40,44 @@ services:
     networks:
       - pymesec
 
+  ldap:
+    build:
+      context: .
+      dockerfile: docker/ldap/Dockerfile
+    container_name: ${COMPOSE_PROJECT_NAME:-pymesec}-ldap
+    environment:
+      LDAP_ORGANISATION: ${LDAP_ORGANISATION:-Northwind Demo}
+      LDAP_DOMAIN: ${LDAP_DOMAIN:-northwind.test}
+      LDAP_ADMIN_PASSWORD: ${LDAP_ADMIN_PASSWORD:-admin}
+      LDAP_CONFIG_PASSWORD: ${LDAP_CONFIG_PASSWORD:-config}
+      LDAP_TLS: "false"
+    ports:
+      - "${LDAP_PORT:-3389}:389"
+    volumes:
+      - ldap_data:/var/lib/ldap
+      - ldap_config:/etc/ldap/slapd.d
+    networks:
+      - pymesec
+
+  ldap-admin:
+    image: osixia/phpldapadmin:0.9.0
+    container_name: ${COMPOSE_PROJECT_NAME:-pymesec}-ldap-admin
+    depends_on:
+      ldap:
+        condition: service_started
+    environment:
+      PHPLDAPADMIN_LDAP_HOSTS: ldap
+      PHPLDAPADMIN_HTTPS: "false"
+    ports:
+      - "${LDAP_ADMIN_PORT:-8081}:80"
+    networks:
+      - pymesec
+
 volumes:
   app_bootstrap_cache:
   app_storage:
+  ldap_config:
+  ldap_data:
   mysql_data:
 
 networks:

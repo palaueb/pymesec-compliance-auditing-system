@@ -23,6 +23,7 @@ The current state sets up:
 - `plugins/` for independently developable official plugin packages
 - local development with Docker
 - minimal local services: `apache`, `php`, `mysql`
+- optional LDAP demo stack with seeded users and groups
 - working scripts via `Makefile`
 - minimal CI to validate installation, linting, and tests
 
@@ -85,8 +86,42 @@ docker compose exec app php artisan plugins:list
 docker compose exec app php artisan menus:list
 docker compose exec app php artisan workflows:list
 docker compose exec app php artisan plugins:enable identity-local
+docker compose exec app php artisan plugins:enable identity-ldap
 docker compose exec app php artisan plugins:disable hello-world
 ```
+
+## LDAP Demo
+
+The repository includes a disposable LDAP directory for testing `identity-ldap`.
+
+Start it with the normal stack:
+
+```bash
+make up
+```
+
+Available endpoints:
+
+- LDAP server: `localhost:3389`
+- phpLDAPadmin: `http://localhost:8081`
+- admin bind DN: `cn=admin,dc=northwind,dc=test`
+- admin password: `admin`
+
+Seeded demo entries:
+
+- `uid=lars.heidt,ou=People,dc=northwind,dc=test`
+- `uid=marta.soler,ou=People,dc=northwind,dc=test`
+- groups `cn=it-services,...` and `cn=eu-operations,...`
+
+Connector values:
+
+- if the app runs inside Docker, use host `ldap` and port `389`
+- if the app runs outside Docker, use host `127.0.0.1` and port `3389`
+- base DN: `ou=People,dc=northwind,dc=test`
+- bind DN: `cn=admin,dc=northwind,dc=test`
+- login attribute: `uid`
+- mail attribute: `mail`
+- group attribute: `memberOf`
 
 ## Environment Notes
 
