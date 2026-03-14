@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use PymeSec\Core\Plugins\Contracts\PluginManagerInterface;
 use PymeSec\Core\Plugins\PluginStateStore;
 use Tests\TestCase;
 
@@ -107,6 +108,8 @@ class PluginSystemTest extends TestCase
 
     public function test_the_example_plugin_route_is_loaded(): void
     {
+        $this->app->make(PluginManagerInterface::class)->boot();
+
         $this->get('/plugins/hello-world?principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
             ->assertOk()
             ->assertJson([
@@ -246,18 +249,32 @@ class PluginSystemTest extends TestCase
         $this->assertSame(['asset-catalog', 'actor-directory', 'controls-catalog', 'risk-management', 'findings-remediation', 'policy-exceptions', 'data-flows-privacy', 'continuity-bcm', 'identity-local', 'identity-ldap'], $effective);
     }
 
-    public function test_the_plugins_disable_command_removes_a_previous_local_enable_override(): void
+    public function test_the_plugins_disable_command_rejects_disabling_a_required_dependency(): void
     {
-        $this->artisan('plugins:enable identity-local')
-            ->assertExitCode(0);
-
         $this->artisan('plugins:disable identity-local')
-            ->expectsOutputToContain('Plugin [identity-local] will be disabled on the next bootstrap.')
-            ->assertExitCode(0);
+            ->expectsOutputToContain('Plugin [identity-local] is still required by enabled plugins: identity-ldap.')
+            ->assertExitCode(1);
 
         $effective = $this->app->make(PluginStateStore::class)->effectiveEnabled(config('plugins.enabled', []));
 
-        $this->assertSame(['hello-world', 'asset-catalog', 'actor-directory', 'controls-catalog', 'risk-management', 'findings-remediation', 'policy-exceptions', 'data-flows-privacy', 'continuity-bcm', 'identity-ldap'], $effective);
+        $this->assertSame(['hello-world', 'asset-catalog', 'actor-directory', 'controls-catalog', 'risk-management', 'findings-remediation', 'policy-exceptions', 'data-flows-privacy', 'continuity-bcm', 'identity-local', 'identity-ldap'], $effective);
+    }
+
+    public function test_the_plugins_enable_command_rejects_when_required_dependencies_are_disabled(): void
+    {
+        $this->artisan('plugins:disable identity-ldap')
+            ->assertExitCode(0);
+
+        $this->artisan('plugins:disable identity-local')
+            ->assertExitCode(0);
+
+        $this->artisan('plugins:enable identity-ldap')
+            ->expectsOutputToContain('Plugin [identity-ldap] requires enabled dependencies: identity-local.')
+            ->assertExitCode(1);
+
+        $effective = $this->app->make(PluginStateStore::class)->effectiveEnabled(config('plugins.enabled', []));
+
+        $this->assertSame(['hello-world', 'asset-catalog', 'actor-directory', 'controls-catalog', 'risk-management', 'findings-remediation', 'policy-exceptions', 'data-flows-privacy', 'continuity-bcm'], $effective);
     }
 
     public function test_the_plugins_enable_command_rejects_unknown_plugins(): void

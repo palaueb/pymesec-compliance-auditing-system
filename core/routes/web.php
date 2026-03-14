@@ -18,6 +18,7 @@ use PymeSec\Core\Permissions\AuthorizationContext;
 use PymeSec\Core\Permissions\Contracts\AuthorizationServiceInterface;
 use PymeSec\Core\Permissions\Contracts\AuthorizationStoreInterface;
 use PymeSec\Core\Permissions\Contracts\PermissionRegistryInterface;
+use PymeSec\Core\Plugins\PluginLifecycleManager;
 use PymeSec\Core\Plugins\Contracts\PluginManagerInterface;
 use PymeSec\Core\Principals\PrincipalReference;
 use PymeSec\Core\Tenancy\Contracts\TenancyServiceInterface;
@@ -267,6 +268,112 @@ Route::get('/core/plugins', function (PluginManagerInterface $plugins) {
         'plugins' => $plugins->status(),
     ]);
 })->name('core.plugins.index');
+
+Route::post('/core/plugins/{pluginId}/enable', function (
+    string $pluginId,
+    PluginLifecycleManager $lifecycle,
+    AuditTrailInterface $audit
+) {
+    $validated = request()->validate([
+        'principal_id' => ['nullable', 'string', 'max:80'],
+        'locale' => ['nullable', 'string', 'max:10'],
+        'theme' => ['nullable', 'string', 'max:40'],
+        'menu' => ['nullable', 'string', 'max:80'],
+        'organization_id' => ['nullable', 'string', 'max:80'],
+        'scope_id' => ['nullable', 'string', 'max:80'],
+        'membership_ids' => ['nullable', 'array'],
+        'membership_ids.*' => ['string', 'max:80'],
+    ]);
+
+    $result = $lifecycle->enable($pluginId);
+    $principalId = is_string($validated['principal_id'] ?? null) ? $validated['principal_id'] : null;
+
+    $audit->record(new AuditRecordData(
+        eventType: 'core.plugins.enable',
+        outcome: $result->ok ? 'success' : 'failure',
+        originComponent: 'core',
+        principalId: $principalId,
+        targetType: 'plugin',
+        targetId: $pluginId,
+        summary: [
+            'reason' => $result->reason,
+            'effective_before' => $result->effectiveBefore,
+            'effective_after' => $result->effectiveAfter,
+            ...$result->details,
+        ],
+        executionOrigin: 'http',
+    ));
+
+    $query = array_filter([
+        'principal_id' => $principalId,
+        'locale' => is_string($validated['locale'] ?? null) ? $validated['locale'] : null,
+        'theme' => is_string($validated['theme'] ?? null) ? $validated['theme'] : null,
+        'menu' => is_string($validated['menu'] ?? null) ? $validated['menu'] : 'core.plugins',
+        'organization_id' => is_string($validated['organization_id'] ?? null) ? $validated['organization_id'] : null,
+        'scope_id' => is_string($validated['scope_id'] ?? null) ? $validated['scope_id'] : null,
+    ], static fn (mixed $value): bool => is_string($value) && $value !== '');
+
+    foreach ($validated['membership_ids'] ?? [] as $membershipId) {
+        $query['membership_ids'][] = $membershipId;
+    }
+
+    return redirect()
+        ->route('core.shell.index', $query)
+        ->with($result->ok ? 'status' : 'error', $result->message);
+})->middleware('core.permission:core.plugins.manage')->name('core.plugins.enable');
+
+Route::post('/core/plugins/{pluginId}/disable', function (
+    string $pluginId,
+    PluginLifecycleManager $lifecycle,
+    AuditTrailInterface $audit
+) {
+    $validated = request()->validate([
+        'principal_id' => ['nullable', 'string', 'max:80'],
+        'locale' => ['nullable', 'string', 'max:10'],
+        'theme' => ['nullable', 'string', 'max:40'],
+        'menu' => ['nullable', 'string', 'max:80'],
+        'organization_id' => ['nullable', 'string', 'max:80'],
+        'scope_id' => ['nullable', 'string', 'max:80'],
+        'membership_ids' => ['nullable', 'array'],
+        'membership_ids.*' => ['string', 'max:80'],
+    ]);
+
+    $result = $lifecycle->disable($pluginId);
+    $principalId = is_string($validated['principal_id'] ?? null) ? $validated['principal_id'] : null;
+
+    $audit->record(new AuditRecordData(
+        eventType: 'core.plugins.disable',
+        outcome: $result->ok ? 'success' : 'failure',
+        originComponent: 'core',
+        principalId: $principalId,
+        targetType: 'plugin',
+        targetId: $pluginId,
+        summary: [
+            'reason' => $result->reason,
+            'effective_before' => $result->effectiveBefore,
+            'effective_after' => $result->effectiveAfter,
+            ...$result->details,
+        ],
+        executionOrigin: 'http',
+    ));
+
+    $query = array_filter([
+        'principal_id' => $principalId,
+        'locale' => is_string($validated['locale'] ?? null) ? $validated['locale'] : null,
+        'theme' => is_string($validated['theme'] ?? null) ? $validated['theme'] : null,
+        'menu' => is_string($validated['menu'] ?? null) ? $validated['menu'] : 'core.plugins',
+        'organization_id' => is_string($validated['organization_id'] ?? null) ? $validated['organization_id'] : null,
+        'scope_id' => is_string($validated['scope_id'] ?? null) ? $validated['scope_id'] : null,
+    ], static fn (mixed $value): bool => is_string($value) && $value !== '');
+
+    foreach ($validated['membership_ids'] ?? [] as $membershipId) {
+        $query['membership_ids'][] = $membershipId;
+    }
+
+    return redirect()
+        ->route('core.shell.index', $query)
+        ->with($result->ok ? 'status' : 'error', $result->message);
+})->middleware('core.permission:core.plugins.manage')->name('core.plugins.disable');
 
 Route::get('/core/artifacts', function (ArtifactServiceInterface $artifacts) {
     $limit = (int) request()->query('limit', 50);

@@ -21,3 +21,4 @@ Current notable documents:
 - `plugin-development-flow-v1.md`
 - `plugin-release-pipeline-v1.md`
 - `installation-bootstrap-and-seeding-profiles-v1.md`
+- `plugin-lifecycle-and-settings-ui-v1.md`

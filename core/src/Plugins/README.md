@@ -20,3 +20,5 @@ Current local lifecycle support:
 - discovery from `plugins/<plugin-id>/plugin.json`
 - enable/disable overrides persisted in `storage/app/private/plugin-state.json`
 - route and permission registration driven by the manifest
+- dependency-aware enable/disable safeguards in the lifecycle manager
+- optional plugin settings entrypoints declared by `admin.settings_menu_id`

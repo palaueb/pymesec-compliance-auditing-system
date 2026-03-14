@@ -7,6 +7,7 @@ use PymeSec\Core\Menus\Contracts\MenuRegistryInterface;
 use PymeSec\Core\Permissions\Contracts\PermissionRegistryInterface;
 use PymeSec\Core\Plugins\Contracts\PluginManagerInterface;
 use PymeSec\Core\Plugins\PluginDiscovery;
+use PymeSec\Core\Plugins\PluginLifecycleManager;
 use PymeSec\Core\Plugins\PluginManager;
 use PymeSec\Core\Plugins\PluginStateStore;
 
@@ -20,6 +21,14 @@ class PluginServiceProvider extends ServiceProvider
 
         $this->app->singleton(PluginStateStore::class, function ($app): PluginStateStore {
             return new PluginStateStore((string) config('plugins.state_path'));
+        });
+
+        $this->app->singleton(PluginLifecycleManager::class, function ($app): PluginLifecycleManager {
+            return new PluginLifecycleManager(
+                discovery: $app->make(PluginDiscovery::class),
+                state: $app->make(PluginStateStore::class),
+                baseEnabled: config('plugins.enabled', []),
+            );
         });
 
         $this->app->singleton(PluginManagerInterface::class, function ($app): PluginManagerInterface {

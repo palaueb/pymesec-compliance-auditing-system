@@ -51,10 +51,16 @@ class PluginManager implements PluginManagerInterface
             $enabled = in_array($descriptor->id(), $this->enabledPluginIds, true);
             $compatible = VersionConstraint::matches($this->coreVersion, $manifest->coreConstraint());
             $hasRuntime = $manifest->runtimeClass() !== null;
+            $requiredDependencies = $manifest->requiredDependencyPluginIds();
+            $missingRequiredDependencies = array_values(array_filter(
+                $requiredDependencies,
+                fn (string $dependencyId): bool => ! in_array($dependencyId, $this->enabledPluginIds, true),
+            ));
 
             $record = [
                 'id' => $manifest->id(),
                 'name' => $manifest->name(),
+                'description' => $manifest->description(),
                 'version' => $manifest->version(),
                 'type' => $manifest->type(),
                 'path' => $descriptor->path(),
@@ -65,6 +71,9 @@ class PluginManager implements PluginManagerInterface
                 'permission_count' => count($manifest->permissions()),
                 'route_count' => count($manifest->routes()),
                 'menu_count' => count($manifest->menus()),
+                'dependencies' => $manifest->dependentPluginIds(),
+                'required_dependencies' => $requiredDependencies,
+                'missing_dependencies' => $missingRequiredDependencies,
                 'expected_runtime_contract' => $this->expectedRuntimeContract($manifest->type()),
                 'runtime_contract_satisfied' => null,
                 'booted' => false,
@@ -80,6 +89,13 @@ class PluginManager implements PluginManagerInterface
 
             if (! $compatible) {
                 $record['reason'] = 'core_version_not_compatible';
+                $this->status[] = $record;
+
+                continue;
+            }
+
+            if ($missingRequiredDependencies !== []) {
+                $record['reason'] = 'required_dependency_not_enabled';
                 $this->status[] = $record;
 
                 continue;
@@ -142,6 +158,20 @@ class PluginManager implements PluginManagerInterface
             $pluginId = $record['id'];
 
             if (! isset($this->activePlugins[$pluginId], $contexts[$pluginId])) {
+                continue;
+            }
+
+            $missingActiveDependencies = array_values(array_filter(
+                $contexts[$pluginId]->manifest()->requiredDependencyPluginIds(),
+                fn (string $dependencyId): bool => ! isset($this->activePlugins[$dependencyId]),
+            ));
+
+            if ($missingActiveDependencies !== []) {
+                unset($this->activePlugins[$pluginId], $contexts[$pluginId]);
+                $record['booted'] = false;
+                $record['reason'] = 'required_dependency_not_booted';
+                $record['missing_dependencies'] = $missingActiveDependencies;
+
                 continue;
             }
 

@@ -163,6 +163,7 @@ Connector values:
 - `DemoCompanySeeder` is opt-in and intended for local exploration.
 - automated tests seed `TestDatabaseSeeder` explicitly and do not depend on the runtime default profile.
 - The application discovers plugins from `plugins/` and computes the effective enabled set from `PLUGINS_ENABLED` plus local overrides stored in `storage/app/private/plugin-state.json`.
+- `Administration > Plugins` can now apply audited enable or disable overrides from the shell, while plugin-specific settings stay owned by each plugin workspace screen.
 - Shell menus are core-governed; plugins may contribute top-level items and one child level through the manifest, subject to route, permission, and dependency validation.
 - Local cache defaults to `file` and the queue defaults to `sync`, so Redis is not required in development.
 - The base tests run on in-memory SQLite to keep them fast and isolated.

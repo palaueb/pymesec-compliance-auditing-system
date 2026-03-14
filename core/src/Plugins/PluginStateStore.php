@@ -14,6 +14,14 @@ class PluginStateStore
     }
 
     /**
+     * @return array{enabled: array<int, string>, disabled: array<int, string>}
+     */
+    public function overrides(): array
+    {
+        return $this->load();
+    }
+
+    /**
      * @param  array<int, string>  $baseEnabled
      * @return array<int, string>
      */

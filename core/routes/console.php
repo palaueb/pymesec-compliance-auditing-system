@@ -12,6 +12,7 @@ use PymeSec\Core\Notifications\Contracts\NotificationServiceInterface;
 use PymeSec\Core\Permissions\Contracts\AuthorizationStoreInterface;
 use PymeSec\Core\Permissions\Contracts\PermissionRegistryInterface;
 use PymeSec\Core\Plugins\Contracts\PluginManagerInterface;
+use PymeSec\Core\Plugins\PluginLifecycleManager;
 use PymeSec\Core\Plugins\PluginStateStore;
 use PymeSec\Core\Tenancy\Contracts\TenancyServiceInterface;
 use PymeSec\Core\Workflows\Contracts\WorkflowRegistryInterface;
@@ -537,6 +538,7 @@ Artisan::command('tenancy:activate-scope {scopeId}', function (
 Artisan::command('plugins:enable {pluginId}', function (
     string $pluginId,
     PluginManagerInterface $plugins,
+    PluginLifecycleManager $lifecycle,
     PluginStateStore $state,
     AuditTrailInterface $audit
 ) {
@@ -561,26 +563,26 @@ Artisan::command('plugins:enable {pluginId}', function (
         return 1;
     }
 
-    $effectiveBefore = $state->effectiveEnabled(config('plugins.enabled', []));
-    $state->enable($pluginId, config('plugins.enabled', []));
-    $effectiveAfter = $state->effectiveEnabled(config('plugins.enabled', []));
+    $result = $lifecycle->enable($pluginId);
 
-    if ($effectiveBefore === $effectiveAfter) {
-        $this->info(sprintf('Plugin [%s] is already enabled.', $pluginId));
+    if ($result->ok) {
+        $this->info($result->message);
     } else {
-        $this->info(sprintf('Plugin [%s] will be enabled on the next bootstrap.', $pluginId));
+        $this->error($result->message);
     }
 
     $audit->record(new AuditRecordData(
         eventType: 'core.plugins.enable',
-        outcome: 'success',
+        outcome: $result->ok ? 'success' : 'failure',
         originComponent: 'core',
         targetType: 'plugin',
         targetId: $pluginId,
         summary: [
             'command' => 'plugins:enable',
-            'effective_before' => $effectiveBefore,
-            'effective_after' => $effectiveAfter,
+            'reason' => $result->reason,
+            'effective_before' => $result->effectiveBefore,
+            'effective_after' => $result->effectiveAfter,
+            ...$result->details,
         ],
         executionOrigin: 'artisan',
     ));
@@ -588,15 +590,16 @@ Artisan::command('plugins:enable {pluginId}', function (
     $this->line(sprintf('State file: %s', $state->path()));
     $this->line(sprintf(
         'Effective enabled plugins: %s',
-        $effectiveAfter === [] ? '(none)' : implode(', ', $effectiveAfter),
+        $result->effectiveAfter === [] ? '(none)' : implode(', ', $result->effectiveAfter),
     ));
 
-    return 0;
+    return $result->ok ? 0 : 1;
 })->purpose('Persist a local override to enable a discovered plugin');
 
 Artisan::command('plugins:disable {pluginId}', function (
     string $pluginId,
     PluginManagerInterface $plugins,
+    PluginLifecycleManager $lifecycle,
     PluginStateStore $state,
     AuditTrailInterface $audit
 ) {
@@ -621,26 +624,26 @@ Artisan::command('plugins:disable {pluginId}', function (
         return 1;
     }
 
-    $effectiveBefore = $state->effectiveEnabled(config('plugins.enabled', []));
-    $state->disable($pluginId, config('plugins.enabled', []));
-    $effectiveAfter = $state->effectiveEnabled(config('plugins.enabled', []));
+    $result = $lifecycle->disable($pluginId);
 
-    if ($effectiveBefore === $effectiveAfter) {
-        $this->info(sprintf('Plugin [%s] is already disabled.', $pluginId));
+    if ($result->ok) {
+        $this->info($result->message);
     } else {
-        $this->info(sprintf('Plugin [%s] will be disabled on the next bootstrap.', $pluginId));
+        $this->error($result->message);
     }
 
     $audit->record(new AuditRecordData(
         eventType: 'core.plugins.disable',
-        outcome: 'success',
+        outcome: $result->ok ? 'success' : 'failure',
         originComponent: 'core',
         targetType: 'plugin',
         targetId: $pluginId,
         summary: [
             'command' => 'plugins:disable',
-            'effective_before' => $effectiveBefore,
-            'effective_after' => $effectiveAfter,
+            'reason' => $result->reason,
+            'effective_before' => $result->effectiveBefore,
+            'effective_after' => $result->effectiveAfter,
+            ...$result->details,
         ],
         executionOrigin: 'artisan',
     ));
@@ -648,8 +651,8 @@ Artisan::command('plugins:disable {pluginId}', function (
     $this->line(sprintf('State file: %s', $state->path()));
     $this->line(sprintf(
         'Effective enabled plugins: %s',
-        $effectiveAfter === [] ? '(none)' : implode(', ', $effectiveAfter),
+        $result->effectiveAfter === [] ? '(none)' : implode(', ', $result->effectiveAfter),
     ));
 
-    return 0;
+    return $result->ok ? 0 : 1;
 })->purpose('Persist a local override to disable a discovered plugin');

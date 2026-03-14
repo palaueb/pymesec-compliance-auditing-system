@@ -22,3 +22,4 @@ Current accepted ADRs:
 - `ADR-016-continuity-and-bcm-as-a-domain-plugin.md`
 - `ADR-017-local-identity-bootstrap-and-authentication-modes.md`
 - `ADR-018-installation-profiles-and-seeding-strategy.md`
+- `ADR-019-plugin-admin-lifecycle-and-settings-entrypoints.md`

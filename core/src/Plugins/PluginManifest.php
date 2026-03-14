@@ -43,6 +43,13 @@ class PluginManifest
         return (string) $this->pluginValue('name');
     }
 
+    public function description(): ?string
+    {
+        $description = data_get($this->data, 'plugin.description');
+
+        return is_string($description) && trim($description) !== '' ? trim($description) : null;
+    }
+
     public function version(): string
     {
         return (string) $this->pluginValue('version');
@@ -212,9 +219,9 @@ class PluginManifest
     }
 
     /**
-     * @return array<int, string>
+     * @return array<int, array{target: string, type: string}>
      */
-    public function dependentPluginIds(): array
+    public function dependencies(): array
     {
         $dependencies = data_get($this->data, 'dependencies', []);
 
@@ -222,9 +229,18 @@ class PluginManifest
             return [];
         }
 
-        $pluginIds = [];
+        $normalized = [];
 
         foreach ($dependencies as $dependency) {
+            if (is_string($dependency) && trim($dependency) !== '') {
+                $normalized[trim($dependency)] = [
+                    'target' => trim($dependency),
+                    'type' => 'required',
+                ];
+
+                continue;
+            }
+
             if (! is_array($dependency)) {
                 continue;
             }
@@ -232,18 +248,52 @@ class PluginManifest
             $target = $dependency['target'] ?? null;
             $type = $dependency['type'] ?? 'required';
 
-            if (! is_string($target) || $target === '' || ! is_string($type)) {
+            if (! is_string($target) || trim($target) === '' || ! is_string($type)) {
                 continue;
             }
+
+            $type = trim($type);
 
             if (! in_array($type, ['required', 'optional'], true)) {
                 continue;
             }
 
-            $pluginIds[$target] = true;
+            $normalized[trim($target)] = [
+                'target' => trim($target),
+                'type' => $type,
+            ];
         }
 
-        return array_keys($pluginIds);
+        return array_values($normalized);
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public function dependentPluginIds(): array
+    {
+        return array_values(array_map(
+            static fn (array $dependency): string => $dependency['target'],
+            $this->dependencies(),
+        ));
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public function requiredDependencyPluginIds(): array
+    {
+        return array_values(array_map(
+            static fn (array $dependency): string => $dependency['target'],
+            array_filter($this->dependencies(), static fn (array $dependency): bool => $dependency['type'] === 'required'),
+        ));
+    }
+
+    public function settingsMenuId(): ?string
+    {
+        $menuId = data_get($this->data, 'admin.settings_menu_id');
+
+        return is_string($menuId) && trim($menuId) !== '' ? trim($menuId) : null;
     }
 
     private function assertRequiredPluginFields(): void

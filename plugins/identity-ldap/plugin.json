@@ -61,6 +61,9 @@
       "permission": "plugin.identity-ldap.directory.view"
     }
   ],
+  "admin": {
+    "settings_menu_id": "plugin.identity-ldap.directory"
+  },
   "migrations": [],
   "translations": {
     "default_locale": "en",

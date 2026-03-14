@@ -49,6 +49,7 @@ The manifest must support the following top-level sections in v1:
 - `permissions`
 - `routes`
 - `menus`
+- `admin`
 - `migrations`
 - `translations`
 - `lifecycle`
@@ -194,6 +195,21 @@ Constraints:
 - top-level items are allowed
 - child items may target the core or another plugin only when platform policy and declared dependencies allow it
 - v1 menu hierarchy is limited to one child level below top-level navigation
+
+## 9.1 `admin` Section
+
+This optional section declares core-admin entrypoints related to the plugin.
+
+Initial v1 support:
+
+- `settings_menu_id`: shell menu id that opens the plugin-owned configuration screen
+
+Constraints:
+
+- the referenced menu id must belong to the same plugin
+- the core may expose this as a convenience link in `Administration > Plugins`
+- the core must not treat this field as a generic plugin settings schema
+- if the current context cannot access the referenced menu, the shell should show that additional workspace context is required
 
 ## 10. `migrations` Section
 

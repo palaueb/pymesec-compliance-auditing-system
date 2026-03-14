@@ -26,6 +26,7 @@ use PymeSec\Core\Permissions\Contracts\PermissionRegistryInterface;
 use PymeSec\Core\Permissions\DatabaseAuthorizationStore;
 use PymeSec\Core\Permissions\PermissionDefinition;
 use PymeSec\Core\Permissions\PermissionRegistry;
+use PymeSec\Core\Plugins\PluginLifecycleManager;
 use PymeSec\Core\Plugins\Contracts\PluginManagerInterface;
 use PymeSec\Core\Tenancy\Contracts\TenancyServiceInterface;
 use PymeSec\Core\Tenancy\DatabaseTenancyService;
@@ -601,16 +602,71 @@ class AppServiceProvider extends ServiceProvider
      */
     private function pluginsScreenData(ScreenRenderContext $screenContext): array
     {
-        $plugins = $this->app->make(PluginManagerInterface::class)->status();
+        $runtimePlugins = $this->app->make(PluginManagerInterface::class)->status();
+        $authorization = $this->app->make(AuthorizationServiceInterface::class);
+        $visibleMenus = $this->app->make(MenuRegistryInterface::class)->visible(new \PymeSec\Core\Menus\MenuVisibilityContext(
+            principal: $screenContext->principal,
+            memberships: $screenContext->memberships,
+            organizationId: $screenContext->organizationId,
+            scopeId: $screenContext->scopeId,
+        ));
+        $visibleMenuMap = [];
+        $flattenMenus = function (array $items) use (&$flattenMenus, &$visibleMenuMap): void {
+            foreach ($items as $item) {
+                if (! is_array($item) || ! is_string($item['id'] ?? null)) {
+                    continue;
+                }
+
+                $visibleMenuMap[$item['id']] = $item;
+                $flattenMenus($item['children'] ?? []);
+            }
+        };
+        $flattenMenus($visibleMenus);
+        $query = $this->coreScreenQuery($screenContext);
+        $plugins = array_map(function (array $plugin) use ($query, $visibleMenuMap): array {
+            $visibleWorkspaceMenus = array_values(array_filter(
+                $visibleMenuMap,
+                static fn (array $menu): bool => ($menu['owner'] ?? null) === ($plugin['id'] ?? null) && is_string($menu['route'] ?? null),
+            ));
+            usort($visibleWorkspaceMenus, static function (array $left, array $right): int {
+                return ((int) ($left['order'] ?? 100)) <=> ((int) ($right['order'] ?? 100));
+            });
+
+            $settingsMenuId = is_string($plugin['settings_menu_id'] ?? null) ? $plugin['settings_menu_id'] : null;
+            $workspaceMenu = $visibleWorkspaceMenus[0] ?? null;
+            $settingsMenu = $settingsMenuId !== null ? ($visibleMenuMap[$settingsMenuId] ?? null) : null;
+
+            return [
+                ...$plugin,
+                'workspace_url' => is_array($workspaceMenu)
+                    ? route('core.shell.index', [...$query, 'menu' => $workspaceMenu['id']])
+                    : null,
+                'settings_url' => is_array($settingsMenu)
+                    ? route('core.shell.index', [...$query, 'menu' => $settingsMenu['id']])
+                    : null,
+                'settings_requires_context' => $settingsMenuId !== null && ! is_array($settingsMenu),
+            ];
+        }, $this->app->make(PluginLifecycleManager::class)->enrichStatus($runtimePlugins));
 
         return [
-            'query' => $this->coreScreenQuery($screenContext),
+            'query' => $query,
             'plugins' => $plugins,
             'metrics' => [
-                'enabled' => collect($plugins)->where('enabled', true)->count(),
+                'enabled' => collect($plugins)->where('effective_enabled', true)->count(),
                 'booted' => collect($plugins)->where('booted', true)->count(),
                 'attention' => collect($plugins)->whereNotNull('reason')->count(),
+                'overrides' => collect($plugins)->whereNotNull('override_state')->count(),
             ],
+            'can_manage_plugins' => $screenContext->principal !== null && $authorization->authorize(new AuthorizationContext(
+                principal: $screenContext->principal,
+                permission: 'core.plugins.manage',
+                memberships: $screenContext->memberships,
+                organizationId: $screenContext->organizationId,
+                scopeId: $screenContext->scopeId,
+            ))->allowed(),
+            'enable_plugin_route' => static fn (string $pluginId): string => route('core.plugins.enable', ['pluginId' => $pluginId]),
+            'disable_plugin_route' => static fn (string $pluginId): string => route('core.plugins.disable', ['pluginId' => $pluginId]),
+            'state_path' => $this->app->make(\PymeSec\Core\Plugins\PluginStateStore::class)->path(),
         ];
     }
 
