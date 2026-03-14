@@ -106,6 +106,29 @@
         <form method="POST" action="{{ route('plugin.identity-local.setup.store') }}">
             @csrf
             <div class="grid">
+                @if ($requiresOrganizationSetup)
+                    <div class="field field-wide">
+                        <label class="field-label" for="setup-organization-name">Organization name</label>
+                        <input class="field-input" id="setup-organization-name" name="organization_name" required>
+                    </div>
+                    <div class="field">
+                        <label class="field-label" for="setup-organization-slug">Organization slug</label>
+                        <input class="field-input" id="setup-organization-slug" name="organization_slug" placeholder="optional-auto-slug">
+                    </div>
+                    <div class="field">
+                        <label class="field-label" for="setup-default-locale">Default locale</label>
+                        <select class="field-input" id="setup-default-locale" name="default_locale">
+                            <option value="en">EN</option>
+                            <option value="es">ES</option>
+                            <option value="fr">FR</option>
+                            <option value="de">DE</option>
+                        </select>
+                    </div>
+                    <div class="field field-wide">
+                        <label class="field-label" for="setup-default-timezone">Default timezone</label>
+                        <input class="field-input" id="setup-default-timezone" name="default_timezone" value="UTC" required>
+                    </div>
+                @endif
                 <div class="field field-wide">
                     <label class="field-label" for="setup-display-name">Full name</label>
                     <input class="field-input" id="setup-display-name" name="display_name" required autofocus>

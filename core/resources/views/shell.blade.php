@@ -486,6 +486,11 @@
             padding: 12px 14px;
         }
 
+        .surface-note.error {
+            border-left-color: var(--warning);
+            background: rgba(255, 244, 229, 0.82);
+        }
+
         .entity-table {
             width: 100%;
             border-collapse: collapse;
@@ -849,14 +854,25 @@
     <main class="workspace">
         <header class="topbar">
             <div class="headline">
-                <h1>{{ $screen?->title ?? $selectedMenu['label'] ?? __('core.shell.title') }}</h1>
-                <p>{{ $screen?->subtitle ?? __('core.shell.workspace_copy') }}</p>
+                <h1>{{ $shellError['title'] ?? $screen?->title ?? $selectedMenu['label'] ?? __('core.shell.title') }}</h1>
+                <p>{{ $shellError['subtitle'] ?? $screen?->subtitle ?? __('core.shell.workspace_copy') }}</p>
             </div>
         </header>
 
         <section class="content-grid">
             <article class="surface-card">
-                @if ($selectedMenu !== null)
+                @if ($shellError !== null)
+                    <div class="screen-header">
+                        <div>
+                            <h2 class="screen-title">{{ $shellError['title'] }}</h2>
+                            <p class="screen-subtitle">{{ $shellError['subtitle'] }}</p>
+                        </div>
+                    </div>
+
+                    <div class="surface-note error">
+                        {{ $shellError['message'] }}
+                    </div>
+                @elseif ($selectedMenu !== null)
                     <div class="screen-header">
                         <div>
                             <h2 class="screen-title">{{ $screen?->title ?? $selectedMenu['label'] }}</h2>

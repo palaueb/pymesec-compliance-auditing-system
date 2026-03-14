@@ -12,6 +12,7 @@ use PymeSec\Core\Audit\AuditRecordData;
 use PymeSec\Core\Audit\Contracts\AuditTrailInterface;
 use PymeSec\Core\Events\Contracts\EventBusInterface;
 use PymeSec\Core\Events\PublicEvent;
+use PymeSec\Core\Tenancy\Contracts\TenancyServiceInterface;
 
 class IdentityLocalAuthService
 {
@@ -22,6 +23,7 @@ class IdentityLocalAuthService
         private readonly AuditTrailInterface $audit,
         private readonly EventBusInterface $events,
         private readonly IdentityLocalRepository $users,
+        private readonly TenancyServiceInterface $tenancy,
     ) {}
 
     public function requiresBootstrap(): bool
@@ -44,9 +46,20 @@ class IdentityLocalAuthService
         $organizationId = $this->users->firstOrganizationId();
 
         if (! is_string($organizationId) || $organizationId === '') {
-            throw ValidationException::withMessages([
-                'email' => 'No organization is available yet for the first administrator.',
-            ]);
+            $organizationName = trim((string) ($data['organization_name'] ?? ''));
+
+            if ($organizationName === '') {
+                throw ValidationException::withMessages([
+                    'organization_name' => 'An organization name is required for the first installation.',
+                ]);
+            }
+
+            $organizationId = $this->tenancy->createOrganization([
+                'name' => $organizationName,
+                'slug' => (string) ($data['organization_slug'] ?? ''),
+                'default_locale' => (string) ($data['default_locale'] ?? 'en'),
+                'default_timezone' => (string) ($data['default_timezone'] ?? 'UTC'),
+            ])->id;
         }
 
         $password = is_string($data['password'] ?? null) && $data['password'] !== '' ? (string) $data['password'] : null;
@@ -64,6 +77,7 @@ class IdentityLocalAuthService
         ]);
 
         $this->users->ensurePlatformAdminGrant((string) $user['principal_id']);
+        $this->users->ensureBootstrapOrganizationAccess((string) $user['principal_id'], $organizationId);
 
         return $user;
     }

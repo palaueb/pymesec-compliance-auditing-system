@@ -3,6 +3,7 @@
 namespace PymeSec\Core\Tenancy;
 
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use PymeSec\Core\Audit\AuditRecordData;
 use PymeSec\Core\Audit\Contracts\AuditTrailInterface;
 use PymeSec\Core\Events\Contracts\EventBusInterface;
@@ -155,6 +156,109 @@ class DatabaseTenancyService implements TenancyServiceInterface
         );
     }
 
+    public function createOrganization(array $data): OrganizationReference
+    {
+        $name = trim((string) ($data['name'] ?? ''));
+        $slug = $this->normalizeSlug($data['slug'] ?? null, $name, 'organization');
+        $organizationId = $this->nextOrganizationId($slug);
+
+        DB::table('organizations')->insert([
+            'id' => $organizationId,
+            'name' => $name,
+            'slug' => $slug,
+            'default_locale' => (string) ($data['default_locale'] ?? 'en'),
+            'default_timezone' => (string) ($data['default_timezone'] ?? 'UTC'),
+            'is_active' => true,
+            'archived_at' => null,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $organization = $this->findOrganization($organizationId);
+
+        $this->audit->record(new AuditRecordData(
+            eventType: 'core.tenancy.organization.created',
+            outcome: 'success',
+            originComponent: 'core',
+            targetType: 'organization',
+            targetId: $organizationId,
+            organizationId: $organizationId,
+            summary: [
+                'name' => $name,
+                'slug' => $slug,
+            ],
+            executionOrigin: 'tenancy',
+        ));
+
+        $this->events->publish(new PublicEvent(
+            name: 'core.tenancy.organization.created',
+            originComponent: 'core',
+            organizationId: $organizationId,
+            payload: [
+                'name' => $name,
+                'slug' => $slug,
+            ],
+        ));
+
+        return $organization ?? new OrganizationReference(
+            id: $organizationId,
+            name: $name,
+            slug: $slug,
+            defaultLocale: (string) ($data['default_locale'] ?? 'en'),
+            defaultTimezone: (string) ($data['default_timezone'] ?? 'UTC'),
+        );
+    }
+
+    public function updateOrganization(string $organizationId, array $data): ?OrganizationReference
+    {
+        $existing = DB::table('organizations')->where('id', $organizationId)->first();
+
+        if ($existing === null) {
+            return null;
+        }
+
+        $name = trim((string) ($data['name'] ?? $existing->name));
+        $slug = $this->normalizeSlug($data['slug'] ?? $existing->slug, $name, 'organization');
+
+        DB::table('organizations')
+            ->where('id', $organizationId)
+            ->update([
+                'name' => $name,
+                'slug' => $slug,
+                'default_locale' => (string) ($data['default_locale'] ?? $existing->default_locale),
+                'default_timezone' => (string) ($data['default_timezone'] ?? $existing->default_timezone),
+                'updated_at' => now(),
+            ]);
+
+        $organization = $this->findOrganization($organizationId);
+
+        $this->audit->record(new AuditRecordData(
+            eventType: 'core.tenancy.organization.updated',
+            outcome: 'success',
+            originComponent: 'core',
+            targetType: 'organization',
+            targetId: $organizationId,
+            organizationId: $organizationId,
+            summary: [
+                'name' => $name,
+                'slug' => $slug,
+            ],
+            executionOrigin: 'tenancy',
+        ));
+
+        $this->events->publish(new PublicEvent(
+            name: 'core.tenancy.organization.updated',
+            originComponent: 'core',
+            organizationId: $organizationId,
+            payload: [
+                'name' => $name,
+                'slug' => $slug,
+            ],
+        ));
+
+        return $organization;
+    }
+
     public function archiveOrganization(string $organizationId): bool
     {
         $updated = DB::table('organizations')
@@ -229,6 +333,115 @@ class DatabaseTenancyService implements TenancyServiceInterface
         }
 
         return $updated > 0;
+    }
+
+    public function createScope(array $data): ScopeReference
+    {
+        $organizationId = (string) ($data['organization_id'] ?? '');
+        $name = trim((string) ($data['name'] ?? ''));
+        $slug = $this->normalizeSlug($data['slug'] ?? null, $name, 'scope');
+        $scopeId = $this->nextScopeId($slug);
+        $description = trim((string) ($data['description'] ?? ''));
+
+        DB::table('scopes')->insert([
+            'id' => $scopeId,
+            'organization_id' => $organizationId,
+            'name' => $name,
+            'slug' => $slug,
+            'description' => $description !== '' ? $description : null,
+            'is_active' => true,
+            'archived_at' => null,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $scope = $this->findScope($scopeId);
+
+        $this->audit->record(new AuditRecordData(
+            eventType: 'core.tenancy.scope.created',
+            outcome: 'success',
+            originComponent: 'core',
+            targetType: 'scope',
+            targetId: $scopeId,
+            organizationId: $organizationId,
+            scopeId: $scopeId,
+            summary: [
+                'name' => $name,
+                'slug' => $slug,
+            ],
+            executionOrigin: 'tenancy',
+        ));
+
+        $this->events->publish(new PublicEvent(
+            name: 'core.tenancy.scope.created',
+            originComponent: 'core',
+            organizationId: $organizationId,
+            scopeId: $scopeId,
+            payload: [
+                'name' => $name,
+                'slug' => $slug,
+            ],
+        ));
+
+        return $scope ?? new ScopeReference(
+            id: $scopeId,
+            organizationId: $organizationId,
+            name: $name,
+            slug: $slug,
+            description: $description !== '' ? $description : null,
+        );
+    }
+
+    public function updateScope(string $scopeId, array $data): ?ScopeReference
+    {
+        $existing = DB::table('scopes')->where('id', $scopeId)->first();
+
+        if ($existing === null) {
+            return null;
+        }
+
+        $name = trim((string) ($data['name'] ?? $existing->name));
+        $slug = $this->normalizeSlug($data['slug'] ?? $existing->slug, $name, 'scope');
+        $description = trim((string) ($data['description'] ?? ($existing->description ?? '')));
+
+        DB::table('scopes')
+            ->where('id', $scopeId)
+            ->update([
+                'name' => $name,
+                'slug' => $slug,
+                'description' => $description !== '' ? $description : null,
+                'updated_at' => now(),
+            ]);
+
+        $scope = $this->findScope($scopeId);
+
+        $this->audit->record(new AuditRecordData(
+            eventType: 'core.tenancy.scope.updated',
+            outcome: 'success',
+            originComponent: 'core',
+            targetType: 'scope',
+            targetId: $scopeId,
+            organizationId: (string) $existing->organization_id,
+            scopeId: $scopeId,
+            summary: [
+                'name' => $name,
+                'slug' => $slug,
+            ],
+            executionOrigin: 'tenancy',
+        ));
+
+        $this->events->publish(new PublicEvent(
+            name: 'core.tenancy.scope.updated',
+            originComponent: 'core',
+            organizationId: (string) $existing->organization_id,
+            scopeId: $scopeId,
+            payload: [
+                'name' => $name,
+                'slug' => $slug,
+            ],
+        ));
+
+        return $scope;
     }
 
     public function archiveScope(string $scopeId): bool
@@ -408,5 +621,52 @@ class DatabaseTenancyService implements TenancyServiceInterface
         }
 
         return array_values(array_filter($decoded, static fn (mixed $item): bool => is_string($item) && $item !== ''));
+    }
+
+    private function findOrganization(string $organizationId): ?OrganizationReference
+    {
+        $record = DB::table('organizations')->where('id', $organizationId)->first();
+
+        return $record !== null ? $this->mapOrganization($record) : null;
+    }
+
+    private function findScope(string $scopeId): ?ScopeReference
+    {
+        $record = DB::table('scopes')->where('id', $scopeId)->first();
+
+        return $record !== null ? $this->mapScope($record) : null;
+    }
+
+    private function normalizeSlug(mixed $slug, string $fallback, string $context): string
+    {
+        $candidate = Str::slug(is_string($slug) && $slug !== '' ? $slug : $fallback);
+
+        if ($candidate !== '') {
+            return $candidate;
+        }
+
+        return sprintf('%s-%s', $context, Str::lower(Str::random(6)));
+    }
+
+    private function nextOrganizationId(string $slug): string
+    {
+        $candidate = 'org-'.$slug;
+
+        if (! DB::table('organizations')->where('id', $candidate)->exists()) {
+            return $candidate;
+        }
+
+        return $candidate.'-'.Str::lower(Str::random(4));
+    }
+
+    private function nextScopeId(string $slug): string
+    {
+        $candidate = 'scope-'.$slug;
+
+        if (! DB::table('scopes')->where('id', $candidate)->exists()) {
+            return $candidate;
+        }
+
+        return $candidate.'-'.Str::lower(Str::random(4));
     }
 }

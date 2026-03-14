@@ -244,5 +244,30 @@ class IdentityLocalTest extends TestCase
             'value' => 'platform-admin',
             'context_type' => 'platform',
         ]);
+
+        $membershipId = DB::table('memberships')
+            ->where('principal_id', $principalId)
+            ->where('organization_id', 'org-a')
+            ->value('id');
+
+        $this->assertIsString($membershipId);
+
+        $this->assertDatabaseHas('authorization_grants', [
+            'target_type' => 'membership',
+            'target_id' => $membershipId,
+            'grant_type' => 'role',
+            'value' => 'identity-operator',
+            'context_type' => 'organization',
+            'organization_id' => 'org-a',
+        ]);
+
+        $this->assertDatabaseHas('authorization_grants', [
+            'target_type' => 'membership',
+            'target_id' => $membershipId,
+            'grant_type' => 'role',
+            'value' => 'identity-ldap-operator',
+            'context_type' => 'organization',
+            'organization_id' => 'org-a',
+        ]);
     }
 }

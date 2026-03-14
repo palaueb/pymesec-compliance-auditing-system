@@ -14,8 +14,14 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        $this->call([
-            DemoCompanySeeder::class,
-        ]);
+        $profile = (string) env('APP_INSTALL_PROFILE', 'system');
+
+        $seeder = match ($profile) {
+            'demo' => DemoCompanySeeder::class,
+            'test' => TestDatabaseSeeder::class,
+            default => SystemBootstrapSeeder::class,
+        };
+
+        $this->call([$seeder]);
     }
 }

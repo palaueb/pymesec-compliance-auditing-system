@@ -1,5 +1,6 @@
 <?php
 
+use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
@@ -115,9 +116,28 @@ Route::get('/app', function (
     };
 
     $flatMenus = $flatten($visibleMenus);
-    $selectedMenuId = request()->query('menu');
+    $requestedMenuId = request()->query('menu');
+    $selectedMenuId = $requestedMenuId;
+    $shellError = null;
 
-    if (! is_string($selectedMenuId) || ! isset($flatMenus[$selectedMenuId])) {
+    if (is_string($requestedMenuId) && $requestedMenuId !== '') {
+        if (! isset($flatMenus[$requestedMenuId])) {
+            $selectedMenuId = null;
+            $shellError = [
+                'title' => __('core.shell.error.title'),
+                'subtitle' => __('core.shell.error.unavailable_subtitle'),
+                'message' => __('core.shell.error.unavailable_message', ['menu' => $requestedMenuId]),
+            ];
+        } elseif (! $screens->has($requestedMenuId)) {
+            $shellError = [
+                'title' => __('core.shell.error.title'),
+                'subtitle' => __('core.shell.error.unimplemented_subtitle'),
+                'message' => __('core.shell.error.unimplemented_message', ['menu' => $requestedMenuId]),
+            ];
+        }
+    }
+
+    if ($shellError === null && (! is_string($selectedMenuId) || ! isset($flatMenus[$selectedMenuId]))) {
         $defaultMenu = collect($flatMenus)->first(fn (array $menu): bool => ($menu['route'] ?? null) !== null);
         $selectedMenuId = is_array($defaultMenu) ? ($defaultMenu['id'] ?? null) : null;
     }
@@ -157,7 +177,7 @@ Route::get('/app', function (
 
     $screen = null;
 
-    if (is_string($selectedMenuId) && $screens->has($selectedMenuId)) {
+    if ($shellError === null && is_string($selectedMenuId) && $screens->has($selectedMenuId)) {
         $screen = $screens->render($selectedMenuId, new ScreenRenderContext(
             app: app(),
             principal: new PrincipalReference(
@@ -210,6 +230,7 @@ Route::get('/app', function (
                 ),
             ]
             : null,
+        'shell_error' => $shellError,
         'menus' => $visibleMenus,
         'query' => $baseQuery,
     ];
@@ -223,6 +244,7 @@ Route::get('/app', function (
         'selectedMenuId' => $selectedMenuId,
         'selectedMenu' => $selectedMenu,
         'screen' => $screen,
+        'shellError' => $shellError,
         'menuApiUrl' => route('core.menus.index', $baseQuery),
         'debugPayloadJson' => json_encode($debugPayload, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES),
         'principalId' => $principalId,
@@ -548,6 +570,162 @@ Route::get('/core/tenancy', function (TenancyServiceInterface $tenancy) {
         'memberships' => array_map(static fn ($membership): array => $membership->toArray(), $context->memberships),
     ]);
 })->middleware('core.permission:core.tenancy.view')->name('core.tenancy.index');
+
+Route::post('/core/tenancy/organizations', function (TenancyServiceInterface $tenancy) {
+    $validated = request()->validate([
+        'name' => ['required', 'string', 'max:160'],
+        'slug' => ['nullable', 'string', 'max:160', 'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/', Rule::unique('organizations', 'slug')],
+        'default_locale' => ['required', 'string', 'in:en,es,fr,de'],
+        'default_timezone' => ['required', 'string', 'max:64'],
+        'principal_id' => ['nullable', 'string', 'max:80'],
+        'locale' => ['nullable', 'string', 'max:10'],
+        'theme' => ['nullable', 'string', 'max:40'],
+        'menu' => ['nullable', 'string', 'max:80'],
+    ]);
+
+    $organization = $tenancy->createOrganization($validated);
+
+    return redirect()->route('core.shell.index', array_filter([
+        'menu' => is_string($validated['menu'] ?? null) ? $validated['menu'] : 'core.tenancy',
+        'principal_id' => is_string($validated['principal_id'] ?? null) ? $validated['principal_id'] : null,
+        'organization_id' => $organization->id,
+        'locale' => is_string($validated['locale'] ?? null) ? $validated['locale'] : 'en',
+        'theme' => is_string($validated['theme'] ?? null) ? $validated['theme'] : null,
+    ]))->with('status', 'Organization created.');
+})->middleware('core.permission:core.tenancy.manage')->name('core.tenancy.organizations.store');
+
+Route::post('/core/tenancy/organizations/{organizationId}', function (TenancyServiceInterface $tenancy, string $organizationId) {
+    $validated = request()->validate([
+        'name' => ['required', 'string', 'max:160'],
+        'slug' => ['required', 'string', 'max:160', 'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/', Rule::unique('organizations', 'slug')->ignore($organizationId, 'id')],
+        'default_locale' => ['required', 'string', 'in:en,es,fr,de'],
+        'default_timezone' => ['required', 'string', 'max:64'],
+        'principal_id' => ['nullable', 'string', 'max:80'],
+        'locale' => ['nullable', 'string', 'max:10'],
+        'theme' => ['nullable', 'string', 'max:40'],
+        'menu' => ['nullable', 'string', 'max:80'],
+    ]);
+
+    abort_if($tenancy->updateOrganization($organizationId, $validated) === null, 404);
+
+    return redirect()->route('core.shell.index', array_filter([
+        'menu' => is_string($validated['menu'] ?? null) ? $validated['menu'] : 'core.tenancy',
+        'principal_id' => is_string($validated['principal_id'] ?? null) ? $validated['principal_id'] : null,
+        'organization_id' => $organizationId,
+        'locale' => is_string($validated['locale'] ?? null) ? $validated['locale'] : 'en',
+        'theme' => is_string($validated['theme'] ?? null) ? $validated['theme'] : null,
+    ]))->with('status', 'Organization updated.');
+})->middleware('core.permission:core.tenancy.manage')->name('core.tenancy.organizations.update');
+
+Route::post('/core/tenancy/organizations/{organizationId}/archive', function (TenancyServiceInterface $tenancy, string $organizationId) {
+    abort_unless($tenancy->archiveOrganization($organizationId), 404);
+
+    return redirect()->route('core.shell.index', array_filter([
+        'menu' => request()->input('menu', 'core.tenancy'),
+        'principal_id' => request()->input('principal_id'),
+        'locale' => request()->input('locale', 'en'),
+        'theme' => request()->input('theme'),
+    ]))->with('status', 'Organization archived.');
+})->middleware('core.permission:core.tenancy.manage')->name('core.tenancy.organizations.archive');
+
+Route::post('/core/tenancy/organizations/{organizationId}/activate', function (TenancyServiceInterface $tenancy, string $organizationId) {
+    abort_unless($tenancy->activateOrganization($organizationId), 404);
+
+    return redirect()->route('core.shell.index', array_filter([
+        'menu' => request()->input('menu', 'core.tenancy'),
+        'principal_id' => request()->input('principal_id'),
+        'organization_id' => $organizationId,
+        'locale' => request()->input('locale', 'en'),
+        'theme' => request()->input('theme'),
+    ]))->with('status', 'Organization activated.');
+})->middleware('core.permission:core.tenancy.manage')->name('core.tenancy.organizations.activate');
+
+Route::post('/core/tenancy/scopes', function (TenancyServiceInterface $tenancy) {
+    $validated = request()->validate([
+        'organization_id' => ['required', 'string', 'max:64', 'exists:organizations,id'],
+        'name' => ['required', 'string', 'max:160'],
+        'slug' => [
+            'nullable',
+            'string',
+            'max:160',
+            'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/',
+            Rule::unique('scopes', 'slug')->where(fn ($query) => $query->where('organization_id', request()->input('organization_id'))),
+        ],
+        'description' => ['nullable', 'string', 'max:1000'],
+        'principal_id' => ['nullable', 'string', 'max:80'],
+        'locale' => ['nullable', 'string', 'max:10'],
+        'theme' => ['nullable', 'string', 'max:40'],
+        'menu' => ['nullable', 'string', 'max:80'],
+    ]);
+
+    $scope = $tenancy->createScope($validated);
+
+    return redirect()->route('core.shell.index', array_filter([
+        'menu' => is_string($validated['menu'] ?? null) ? $validated['menu'] : 'core.tenancy',
+        'principal_id' => is_string($validated['principal_id'] ?? null) ? $validated['principal_id'] : null,
+        'organization_id' => $scope->organizationId,
+        'locale' => is_string($validated['locale'] ?? null) ? $validated['locale'] : 'en',
+        'theme' => is_string($validated['theme'] ?? null) ? $validated['theme'] : null,
+    ]))->with('status', 'Scope created.');
+})->middleware('core.permission:core.tenancy.manage')->name('core.tenancy.scopes.store');
+
+Route::post('/core/tenancy/scopes/{scopeId}', function (TenancyServiceInterface $tenancy, string $scopeId) {
+    $existingScope = DB::table('scopes')->where('id', $scopeId)->first(['organization_id']);
+    abort_if($existingScope === null, 404);
+
+    $validated = request()->validate([
+        'organization_id' => ['required', 'string', 'max:64', 'exists:organizations,id'],
+        'name' => ['required', 'string', 'max:160'],
+        'slug' => [
+            'required',
+            'string',
+            'max:160',
+            'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/',
+            Rule::unique('scopes', 'slug')
+                ->ignore($scopeId, 'id')
+                ->where(fn ($query) => $query->where('organization_id', request()->input('organization_id'))),
+        ],
+        'description' => ['nullable', 'string', 'max:1000'],
+        'principal_id' => ['nullable', 'string', 'max:80'],
+        'locale' => ['nullable', 'string', 'max:10'],
+        'theme' => ['nullable', 'string', 'max:40'],
+        'menu' => ['nullable', 'string', 'max:80'],
+    ]);
+
+    abort_if($tenancy->updateScope($scopeId, $validated) === null, 404);
+
+    return redirect()->route('core.shell.index', array_filter([
+        'menu' => is_string($validated['menu'] ?? null) ? $validated['menu'] : 'core.tenancy',
+        'principal_id' => is_string($validated['principal_id'] ?? null) ? $validated['principal_id'] : null,
+        'organization_id' => is_string($validated['organization_id'] ?? null) ? $validated['organization_id'] : (string) $existingScope->organization_id,
+        'locale' => is_string($validated['locale'] ?? null) ? $validated['locale'] : 'en',
+        'theme' => is_string($validated['theme'] ?? null) ? $validated['theme'] : null,
+    ]))->with('status', 'Scope updated.');
+})->middleware('core.permission:core.tenancy.manage')->name('core.tenancy.scopes.update');
+
+Route::post('/core/tenancy/scopes/{scopeId}/archive', function (TenancyServiceInterface $tenancy, string $scopeId) {
+    abort_unless($tenancy->archiveScope($scopeId), 404);
+
+    return redirect()->route('core.shell.index', array_filter([
+        'menu' => request()->input('menu', 'core.tenancy'),
+        'principal_id' => request()->input('principal_id'),
+        'organization_id' => request()->input('organization_id'),
+        'locale' => request()->input('locale', 'en'),
+        'theme' => request()->input('theme'),
+    ]))->with('status', 'Scope archived.');
+})->middleware('core.permission:core.tenancy.manage')->name('core.tenancy.scopes.archive');
+
+Route::post('/core/tenancy/scopes/{scopeId}/activate', function (TenancyServiceInterface $tenancy, string $scopeId) {
+    abort_unless($tenancy->activateScope($scopeId), 404);
+
+    return redirect()->route('core.shell.index', array_filter([
+        'menu' => request()->input('menu', 'core.tenancy'),
+        'principal_id' => request()->input('principal_id'),
+        'organization_id' => request()->input('organization_id'),
+        'locale' => request()->input('locale', 'en'),
+        'theme' => request()->input('theme'),
+    ]))->with('status', 'Scope activated.');
+})->middleware('core.permission:core.tenancy.manage')->name('core.tenancy.scopes.activate');
 
 Route::get('/core/functional-actors', function (FunctionalActorServiceInterface $actors, TenancyServiceInterface $tenancy) {
     $principalId = request()->query('subject_principal_id', request()->query('principal_id'));

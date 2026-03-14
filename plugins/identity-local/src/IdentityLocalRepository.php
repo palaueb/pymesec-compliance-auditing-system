@@ -685,6 +685,37 @@ class IdentityLocalRepository
         );
     }
 
+    public function ensureBootstrapOrganizationAccess(string $principalId, string $organizationId): array
+    {
+        $existingMembershipId = DB::table('memberships')
+            ->where('principal_id', $principalId)
+            ->where('organization_id', $organizationId)
+            ->value('id');
+
+        $roles = [
+            'identity-operator',
+            'identity-ldap-operator',
+        ];
+
+        if (is_string($existingMembershipId) && $existingMembershipId !== '') {
+            return $this->upsertManagedMembership($existingMembershipId, [
+                'principal_id' => $principalId,
+                'organization_id' => $organizationId,
+                'role_keys' => $roles,
+                'scope_ids' => [],
+                'is_active' => true,
+            ], $principalId);
+        }
+
+        return $this->createMembership([
+            'principal_id' => $principalId,
+            'organization_id' => $organizationId,
+            'role_keys' => $roles,
+            'scope_ids' => [],
+            'is_active' => true,
+        ], $principalId);
+    }
+
     private function syncMembershipScopes(string $membershipId, array $scopeIds): void
     {
         DB::table('membership_scope')->where('membership_id', $membershipId)->delete();

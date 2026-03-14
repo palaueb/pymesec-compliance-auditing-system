@@ -15,6 +15,7 @@ Route::get('/setup', function (IdentityLocalAuthService $auth) {
 
     return view()->file(base_path('../plugins/identity-local/resources/views/setup.blade.php'), [
         'locale' => app()->getLocale(),
+        'requiresOrganizationSetup' => ! app(\PymeSec\Plugins\IdentityLocal\IdentityLocalRepository::class)->firstOrganizationId(),
     ]);
 })->name('plugin.identity-local.setup');
 
@@ -23,12 +24,18 @@ Route::post('/setup', function (Request $request, IdentityLocalAuthService $auth
         return redirect()->route('plugin.identity-local.auth.login');
     }
 
-    $validated = $request->validate([
+    $requiresOrganizationSetup = ! app(\PymeSec\Plugins\IdentityLocal\IdentityLocalRepository::class)->firstOrganizationId();
+
+    $validated = $request->validate(array_filter([
         'display_name' => ['required', 'string', 'max:120'],
         'username' => ['required', 'string', 'max:120', 'regex:/^[A-Za-z0-9._-]+$/'],
         'email' => ['required', 'email:rfc', 'max:190'],
         'password' => ['nullable', 'string', 'min:8', 'confirmed'],
-    ]);
+        'organization_name' => $requiresOrganizationSetup ? ['required', 'string', 'max:160'] : null,
+        'organization_slug' => $requiresOrganizationSetup ? ['nullable', 'string', 'max:160', 'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/'] : null,
+        'default_locale' => $requiresOrganizationSetup ? ['required', 'string', 'in:en,es,fr,de'] : null,
+        'default_timezone' => $requiresOrganizationSetup ? ['required', 'string', 'max:64'] : null,
+    ]));
 
     $auth->bootstrapSuperAdmin($validated);
 

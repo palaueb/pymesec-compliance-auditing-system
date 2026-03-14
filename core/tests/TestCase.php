@@ -4,6 +4,7 @@ namespace Tests;
 
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 use Illuminate\Support\Facades\Schema;
+use Database\Seeders\TestDatabaseSeeder;
 use PymeSec\Core\Plugins\PluginStateStore;
 
 abstract class TestCase extends BaseTestCase
@@ -13,7 +14,7 @@ abstract class TestCase extends BaseTestCase
         parent::setUp();
 
         if (Schema::hasTable('organizations')) {
-            $this->seed();
+            $this->seed(TestDatabaseSeeder::class);
         }
     }
 

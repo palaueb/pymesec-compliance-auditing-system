@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class TenancyTest extends TestCase
@@ -41,6 +42,115 @@ class TenancyTest extends TestCase
             ->assertSee('Warehouse Mesh')
             ->assertSee('Route Planner')
             ->assertDontSee('ERP Production');
+    }
+
+    public function test_the_tenancy_screen_supports_web_management_for_organizations_and_scopes(): void
+    {
+        $payload = [
+            'principal_id' => 'principal-admin',
+            'locale' => 'en',
+            'theme' => 'atlas',
+            'menu' => 'core.tenancy',
+        ];
+
+        $this->get('/app?menu=core.tenancy&principal_id=principal-admin')
+            ->assertOk()
+            ->assertSee('Create organization')
+            ->assertSee('Create scope');
+
+        $this->post('/core/tenancy/organizations', [
+            ...$payload,
+            'name' => 'Atlas Pharma',
+            'slug' => 'atlas-pharma',
+            'default_locale' => 'es',
+            'default_timezone' => 'Europe/Madrid',
+        ])->assertFound();
+
+        $this->assertDatabaseHas('organizations', [
+            'id' => 'org-atlas-pharma',
+            'name' => 'Atlas Pharma',
+            'slug' => 'atlas-pharma',
+            'default_locale' => 'es',
+        ]);
+
+        $this->post('/core/tenancy/organizations/org-atlas-pharma', [
+            ...$payload,
+            'name' => 'Atlas Pharma Group',
+            'slug' => 'atlas-pharma-group',
+            'default_locale' => 'fr',
+            'default_timezone' => 'Europe/Paris',
+        ])->assertFound();
+
+        $this->assertDatabaseHas('organizations', [
+            'id' => 'org-atlas-pharma',
+            'name' => 'Atlas Pharma Group',
+            'slug' => 'atlas-pharma-group',
+            'default_locale' => 'fr',
+            'default_timezone' => 'Europe/Paris',
+            'is_active' => true,
+        ]);
+
+        $this->post('/core/tenancy/organizations/org-atlas-pharma/archive', $payload)->assertFound();
+        $this->assertDatabaseHas('organizations', [
+            'id' => 'org-atlas-pharma',
+            'is_active' => false,
+        ]);
+
+        $this->post('/core/tenancy/organizations/org-atlas-pharma/activate', $payload)->assertFound();
+        $this->assertDatabaseHas('organizations', [
+            'id' => 'org-atlas-pharma',
+            'is_active' => true,
+        ]);
+
+        $this->post('/core/tenancy/scopes', [
+            ...$payload,
+            'organization_id' => 'org-atlas-pharma',
+            'name' => 'Clinical Operations',
+            'slug' => 'clinical-operations',
+            'description' => 'Clinical delivery perimeter',
+        ])->assertFound();
+
+        $scopeId = DB::table('scopes')
+            ->where('organization_id', 'org-atlas-pharma')
+            ->where('slug', 'clinical-operations')
+            ->value('id');
+
+        $this->assertSame('scope-clinical-operations', $scopeId);
+
+        $this->post(sprintf('/core/tenancy/scopes/%s', $scopeId), [
+            ...$payload,
+            'organization_id' => 'org-atlas-pharma',
+            'name' => 'Clinical Delivery',
+            'slug' => 'clinical-delivery',
+            'description' => 'Updated perimeter',
+        ])->assertFound();
+
+        $this->assertDatabaseHas('scopes', [
+            'id' => $scopeId,
+            'name' => 'Clinical Delivery',
+            'slug' => 'clinical-delivery',
+            'is_active' => true,
+        ]);
+
+        $this->post(sprintf('/core/tenancy/scopes/%s/archive', $scopeId), [
+            ...$payload,
+            'organization_id' => 'org-atlas-pharma',
+        ])->assertFound();
+
+        $this->assertDatabaseHas('scopes', [
+            'id' => $scopeId,
+            'is_active' => false,
+        ]);
+
+        $this->post(sprintf('/core/tenancy/scopes/%s/activate', $scopeId), [
+            ...$payload,
+            'organization_id' => 'org-atlas-pharma',
+        ])->assertFound();
+
+        $this->assertDatabaseHas('scopes', [
+            'id' => $scopeId,
+            'is_active' => true,
+        ]);
     }
 
     public function test_archiving_an_organization_removes_it_from_resolved_tenancy_and_writes_audit(): void

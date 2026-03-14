@@ -1,6 +1,6 @@
 DOCKER_COMPOSE ?= docker compose
 
-.PHONY: up down shell test lint migrate ci logs ldap-logs
+.PHONY: up down shell test lint migrate ci logs ldap-logs seed-system seed-demo reset-demo
 
 up:
 	$(DOCKER_COMPOSE) up -d --build
@@ -19,6 +19,15 @@ lint:
 
 migrate:
 	$(DOCKER_COMPOSE) exec app php artisan migrate --force
+
+seed-system:
+	$(DOCKER_COMPOSE) exec app php artisan db:seed --class=Database\\\\Seeders\\\\SystemBootstrapSeeder --force
+
+seed-demo:
+	$(DOCKER_COMPOSE) exec app php artisan db:seed --class=Database\\\\Seeders\\\\DemoCompanySeeder --force
+
+reset-demo:
+	$(DOCKER_COMPOSE) exec app php artisan migrate:fresh --seed --seeder=Database\\\\Seeders\\\\DemoCompanySeeder --force
 
 ci:
 	$(DOCKER_COMPOSE) exec app composer lint

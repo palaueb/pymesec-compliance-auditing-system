@@ -34,6 +34,7 @@ class IdentityLocalPlugin implements IdentityPluginInterface
             audit: $app->make(AuditTrailInterface::class),
             events: $app->make(EventBusInterface::class),
             users: $app->make(IdentityLocalRepository::class),
+            tenancy: $app->make(TenancyServiceInterface::class),
         ));
 
         $context->registerScreen(new ScreenDefinition(

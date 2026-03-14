@@ -1,6 +1,6 @@
 # PymeSec
 
-Initial technical bootstrap of the main repository based on the PRD and ADRs.
+Laravel monorepo for PymeSec: a core-plus-plugins compliance platform with shell UI, tenancy, permissions, audit trail, workflow runtime, local identity, and LDAP sync.
 
 ## License
 
@@ -17,7 +17,7 @@ The practical policy in this repository is simple:
 
 This repository does not define any plugin linking exception.
 
-The current state sets up:
+The current state includes:
 
 - `core/` as the Laravel application for the platform core
 - `plugins/` for independently developable official plugin packages
@@ -26,12 +26,24 @@ The current state sets up:
 - optional LDAP demo stack with seeded users and groups
 - working scripts via `Makefile`
 - minimal CI to validate installation, linting, and tests
+- usable shell screens for core administration and current domain plugins
 
-Still out of scope:
+## Documentation Index
 
-- compliance business logic
-- implementation of functional plugins beyond their skeletons
-- functional product UI
+Primary documentation hubs:
+
+- [docs/README.md](/media/marc/4T_EXFAT/web/pymesec.com/pymesec/docs/README.md)
+- [docs/prd/README.md](/media/marc/4T_EXFAT/web/pymesec.com/pymesec/docs/prd/README.md)
+- [docs/adr/README.md](/media/marc/4T_EXFAT/web/pymesec.com/pymesec/docs/adr/README.md)
+- [docs/specs/README.md](/media/marc/4T_EXFAT/web/pymesec.com/pymesec/docs/specs/README.md)
+
+Operational READMEs:
+
+- [core/README.md](/media/marc/4T_EXFAT/web/pymesec.com/pymesec/core/README.md)
+- [core/database/README.md](/media/marc/4T_EXFAT/web/pymesec.com/pymesec/core/database/README.md)
+- [core/tests/README.md](/media/marc/4T_EXFAT/web/pymesec.com/pymesec/core/tests/README.md)
+- [plugins/README.md](/media/marc/4T_EXFAT/web/pymesec.com/pymesec/plugins/README.md)
+- [packages/README.md](/media/marc/4T_EXFAT/web/pymesec.com/pymesec/packages/README.md)
 
 ## Prerequisites
 
@@ -65,12 +77,30 @@ make up
 make migrate
 ```
 
-5. Verify that Laravel responds:
+5. Choose the data profile you want:
+
+```bash
+make seed-system
+```
+
+For a developer sandbox with demo data:
+
+```bash
+make seed-demo
+```
+
+6. Verify that Laravel responds:
 
 ```bash
 curl http://localhost:8080/up
 curl http://localhost:8080/
 ```
+
+Fresh install behavior:
+
+- `system` is the default install profile
+- the app starts with no demo tenants or users
+- the first visit to `/app` opens the setup wizard and can create the first organization plus superadmin
 
 ## Common Commands
 
@@ -79,6 +109,9 @@ make up
 make down
 make shell
 make migrate
+make seed-system
+make seed-demo
+make reset-demo
 make test
 make lint
 make logs
@@ -126,11 +159,14 @@ Connector values:
 ## Environment Notes
 
 - The `core` uses MySQL locally.
+- `APP_INSTALL_PROFILE=system` is the safe default for new installations.
+- `DemoCompanySeeder` is opt-in and intended for local exploration.
+- automated tests seed `TestDatabaseSeeder` explicitly and do not depend on the runtime default profile.
 - The application discovers plugins from `plugins/` and computes the effective enabled set from `PLUGINS_ENABLED` plus local overrides stored in `storage/app/private/plugin-state.json`.
 - Shell menus are core-governed; plugins may contribute top-level items and one child level through the manifest, subject to route, permission, and dependency validation.
 - Local cache defaults to `file` and the queue defaults to `sync`, so Redis is not required in development.
 - The base tests run on in-memory SQLite to keep them fast and isolated.
-- The `core` does not yet implement any functional identity model; Laravel's default `User` has been removed to respect the ADRs.
+- The repository now includes local identity bootstrap plus optional LDAP sync as plugins, while the core remains provider-agnostic.
 
 ## Documented Temporary Assumptions
 

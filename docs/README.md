@@ -8,3 +8,8 @@ Architecture and product documentation lives under:
 
 This repository skeleton is derived from these documents and should remain aligned with them.
 
+Entry points:
+
+- `docs/prd/README.md`
+- `docs/adr/README.md`
+- `docs/specs/README.md`

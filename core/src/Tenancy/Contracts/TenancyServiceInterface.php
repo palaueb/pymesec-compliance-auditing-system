@@ -41,9 +41,29 @@ interface TenancyServiceInterface
         array $requestedMembershipIds = [],
     ): TenancyContext;
 
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    public function createOrganization(array $data): OrganizationReference;
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    public function updateOrganization(string $organizationId, array $data): ?OrganizationReference;
+
     public function archiveOrganization(string $organizationId): bool;
 
     public function activateOrganization(string $organizationId): bool;
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    public function createScope(array $data): ScopeReference;
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    public function updateScope(string $scopeId, array $data): ?ScopeReference;
 
     public function archiveScope(string $scopeId): bool;
 

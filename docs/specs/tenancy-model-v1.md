@@ -186,6 +186,8 @@ Minimum lifecycle operations:
 - update scope metadata
 - enable or archive scope
 
+The v1 implementation must expose these operations through the core shell for authorized platform administrators. CLI support may remain available for automation and recovery, but web administration is the primary operational path.
+
 Deletion policy in v1:
 
 - hard deletion of organizations or scopes is not the default lifecycle path

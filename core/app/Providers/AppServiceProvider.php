@@ -18,6 +18,7 @@ use PymeSec\Core\Menus\MenuLabelResolver;
 use PymeSec\Core\Menus\MenuRegistry;
 use PymeSec\Core\Notifications\Contracts\NotificationServiceInterface;
 use PymeSec\Core\Notifications\DatabaseNotificationService;
+use PymeSec\Core\Permissions\AuthorizationContext;
 use PymeSec\Core\Permissions\AuthorizationService;
 use PymeSec\Core\Permissions\Contracts\AuthorizationServiceInterface;
 use PymeSec\Core\Permissions\Contracts\AuthorizationStoreInterface;
@@ -394,7 +395,48 @@ class AppServiceProvider extends ServiceProvider
             permission: 'core.functional-actors.view',
         ));
 
-        $this->app->make(ScreenRegistryInterface::class)->register(new ScreenDefinition(
+        $screens = $this->app->make(ScreenRegistryInterface::class);
+
+        $screens->register(new ScreenDefinition(
+            menuId: 'core.platform',
+            owner: 'core',
+            titleKey: 'core.platform.screen.title',
+            subtitleKey: 'core.platform.screen.subtitle',
+            viewPath: resource_path('views/platform-overview.blade.php'),
+            dataResolver: fn (ScreenRenderContext $screenContext): array => $this->platformOverviewData($screenContext),
+            toolbarResolver: fn (ScreenRenderContext $screenContext): array => [
+                new ToolbarAction(
+                    label: 'Roles',
+                    url: route('core.shell.index', [...$this->coreScreenQuery($screenContext), 'menu' => 'core.roles']),
+                    variant: 'primary',
+                ),
+                new ToolbarAction(
+                    label: 'Plugins',
+                    url: route('core.shell.index', [...$this->coreScreenQuery($screenContext), 'menu' => 'core.plugins']),
+                    variant: 'secondary',
+                ),
+            ],
+        ));
+
+        $screens->register(new ScreenDefinition(
+            menuId: 'core.plugins',
+            owner: 'core',
+            titleKey: 'core.plugins.screen.title',
+            subtitleKey: 'core.plugins.screen.subtitle',
+            viewPath: resource_path('views/plugins.blade.php'),
+            dataResolver: fn (ScreenRenderContext $screenContext): array => $this->pluginsScreenData($screenContext),
+        ));
+
+        $screens->register(new ScreenDefinition(
+            menuId: 'core.permissions',
+            owner: 'core',
+            titleKey: 'core.permissions.screen.title',
+            subtitleKey: 'core.permissions.screen.subtitle',
+            viewPath: resource_path('views/permissions.blade.php'),
+            dataResolver: fn (ScreenRenderContext $screenContext): array => $this->permissionsScreenData($screenContext),
+        ));
+
+        $screens->register(new ScreenDefinition(
             menuId: 'core.roles',
             owner: 'core',
             titleKey: 'core.roles.screen.title',
@@ -466,5 +508,313 @@ class AppServiceProvider extends ServiceProvider
                 ),
             ],
         ));
+
+        $screens->register(new ScreenDefinition(
+            menuId: 'core.tenancy',
+            owner: 'core',
+            titleKey: 'core.tenancy.screen.title',
+            subtitleKey: 'core.tenancy.screen.subtitle',
+            viewPath: resource_path('views/tenancy.blade.php'),
+            dataResolver: fn (ScreenRenderContext $screenContext): array => $this->tenancyScreenData($screenContext),
+        ));
+
+        $screens->register(new ScreenDefinition(
+            menuId: 'core.audit',
+            owner: 'core',
+            titleKey: 'core.audit.screen.title',
+            subtitleKey: 'core.audit.screen.subtitle',
+            viewPath: resource_path('views/audit.blade.php'),
+            dataResolver: fn (ScreenRenderContext $screenContext): array => $this->auditScreenData($screenContext),
+            toolbarResolver: fn (ScreenRenderContext $screenContext): array => [
+                new ToolbarAction(
+                    label: 'Export JSONL',
+                    url: route('core.audit.export', [...$this->coreScreenQuery($screenContext), 'format' => 'jsonl']),
+                    variant: 'secondary',
+                    target: '_blank',
+                ),
+                new ToolbarAction(
+                    label: 'Export CSV',
+                    url: route('core.audit.export', [...$this->coreScreenQuery($screenContext), 'format' => 'csv']),
+                    variant: 'secondary',
+                    target: '_blank',
+                ),
+            ],
+        ));
+
+        $screens->register(new ScreenDefinition(
+            menuId: 'core.functional-actors',
+            owner: 'core',
+            titleKey: 'core.functional-actors.screen.title',
+            subtitleKey: 'core.functional-actors.screen.subtitle',
+            viewPath: resource_path('views/functional-actors.blade.php'),
+            dataResolver: fn (ScreenRenderContext $screenContext): array => $this->functionalActorsScreenData($screenContext),
+        ));
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function platformOverviewData(ScreenRenderContext $screenContext): array
+    {
+        $plugins = $this->app->make(PluginManagerInterface::class)->status();
+        $permissions = $this->app->make(PermissionRegistryInterface::class)->all();
+        $roles = $this->app->make(AuthorizationStoreInterface::class)->roleRecords();
+        $audit = $this->app->make(AuditTrailInterface::class)->latest(8);
+        $query = $this->coreScreenQuery($screenContext);
+
+        return [
+            'query' => $query,
+            'metrics' => [
+                'plugins' => count($plugins),
+                'permissions' => count($permissions),
+                'roles' => count($roles),
+                'organizations' => DB::table('organizations')->where('is_active', true)->count(),
+            ],
+            'quick_links' => [
+                [
+                    'label' => 'Plugins',
+                    'copy' => 'Discovery status, compatibility, and activation state.',
+                    'url' => route('core.shell.index', [...$query, 'menu' => 'core.plugins']),
+                ],
+                [
+                    'label' => 'Permissions',
+                    'copy' => 'Registered capabilities across core and plugins.',
+                    'url' => route('core.shell.index', [...$query, 'menu' => 'core.permissions']),
+                ],
+                [
+                    'label' => 'Tenancy',
+                    'copy' => 'Organizations, scopes, and access boundaries.',
+                    'url' => route('core.shell.index', [...$query, 'menu' => 'core.tenancy']),
+                ],
+                [
+                    'label' => 'Audit',
+                    'copy' => 'Recent sensitive operations and evidence trail.',
+                    'url' => route('core.shell.index', [...$query, 'menu' => 'core.audit']),
+                ],
+            ],
+            'recent_audit' => array_map(static fn ($record): array => $record->toArray(), $audit),
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function pluginsScreenData(ScreenRenderContext $screenContext): array
+    {
+        $plugins = $this->app->make(PluginManagerInterface::class)->status();
+
+        return [
+            'query' => $this->coreScreenQuery($screenContext),
+            'plugins' => $plugins,
+            'metrics' => [
+                'enabled' => collect($plugins)->where('enabled', true)->count(),
+                'booted' => collect($plugins)->where('booted', true)->count(),
+                'attention' => collect($plugins)->whereNotNull('reason')->count(),
+            ],
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function permissionsScreenData(ScreenRenderContext $screenContext): array
+    {
+        $permissions = array_map(
+            static fn ($definition): array => $definition->toArray(),
+            $this->app->make(PermissionRegistryInterface::class)->all(),
+        );
+
+        $origins = collect($permissions)
+            ->groupBy('origin')
+            ->map(static fn ($items, $origin): array => [
+                'origin' => (string) $origin,
+                'count' => count($items),
+            ])
+            ->sortBy('origin')
+            ->values()
+            ->all();
+
+        return [
+            'query' => $this->coreScreenQuery($screenContext),
+            'permissions' => $permissions,
+            'origins' => $origins,
+            'metrics' => [
+                'total' => count($permissions),
+                'platform' => collect($permissions)->filter(static fn (array $permission): bool => in_array('platform', $permission['contexts'] ?? [], true))->count(),
+                'organization' => collect($permissions)->filter(static fn (array $permission): bool => in_array('organization', $permission['contexts'] ?? [], true))->count(),
+            ],
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function tenancyScreenData(ScreenRenderContext $screenContext): array
+    {
+        $authorization = $this->app->make(AuthorizationServiceInterface::class);
+        $organizations = DB::table('organizations')
+            ->leftJoin('scopes', 'scopes.organization_id', '=', 'organizations.id')
+            ->leftJoin('memberships', 'memberships.organization_id', '=', 'organizations.id')
+            ->select(
+                'organizations.id',
+                'organizations.name',
+                'organizations.slug',
+                'organizations.default_locale',
+                'organizations.default_timezone',
+                'organizations.is_active',
+                DB::raw('COUNT(DISTINCT scopes.id) as scope_count'),
+                DB::raw('COUNT(DISTINCT memberships.id) as membership_count'),
+            )
+            ->groupBy('organizations.id', 'organizations.name', 'organizations.slug', 'organizations.default_locale', 'organizations.default_timezone', 'organizations.is_active')
+            ->orderBy('organizations.name')
+            ->get()
+            ->map(static fn ($organization): array => [
+                'id' => (string) $organization->id,
+                'name' => (string) $organization->name,
+                'slug' => (string) $organization->slug,
+                'default_locale' => (string) $organization->default_locale,
+                'default_timezone' => (string) $organization->default_timezone,
+                'is_active' => (bool) $organization->is_active,
+                'scope_count' => (int) $organization->scope_count,
+                'membership_count' => (int) $organization->membership_count,
+            ])
+            ->all();
+
+        $scopes = DB::table('scopes')
+            ->orderBy('organization_id')
+            ->orderBy('name')
+            ->get(['id', 'organization_id', 'name', 'slug', 'description', 'is_active'])
+            ->map(static fn ($scope): array => [
+                'id' => (string) $scope->id,
+                'organization_id' => (string) $scope->organization_id,
+                'name' => (string) $scope->name,
+                'slug' => (string) $scope->slug,
+                'description' => is_string($scope->description ?? null) ? $scope->description : '',
+                'is_active' => (bool) $scope->is_active,
+            ])
+            ->all();
+
+        $memberships = DB::table('memberships')
+            ->orderBy('organization_id')
+            ->orderBy('principal_id')
+            ->limit(20)
+            ->get(['id', 'principal_id', 'organization_id', 'is_active'])
+            ->map(static fn ($membership): array => [
+                'id' => (string) $membership->id,
+                'principal_id' => (string) $membership->principal_id,
+                'organization_id' => (string) $membership->organization_id,
+                'is_active' => (bool) $membership->is_active,
+            ])
+            ->all();
+
+        return [
+            'query' => $this->coreScreenQuery($screenContext),
+            'organizations' => $organizations,
+            'scopes' => $scopes,
+            'memberships' => $memberships,
+            'locale_options' => ['en', 'es', 'fr', 'de'],
+            'create_organization_route' => route('core.tenancy.organizations.store'),
+            'create_scope_route' => route('core.tenancy.scopes.store'),
+            'update_organization_route' => static fn (string $organizationId): string => route('core.tenancy.organizations.update', ['organizationId' => $organizationId]),
+            'archive_organization_route' => static fn (string $organizationId): string => route('core.tenancy.organizations.archive', ['organizationId' => $organizationId]),
+            'activate_organization_route' => static fn (string $organizationId): string => route('core.tenancy.organizations.activate', ['organizationId' => $organizationId]),
+            'update_scope_route' => static fn (string $scopeId): string => route('core.tenancy.scopes.update', ['scopeId' => $scopeId]),
+            'archive_scope_route' => static fn (string $scopeId): string => route('core.tenancy.scopes.archive', ['scopeId' => $scopeId]),
+            'activate_scope_route' => static fn (string $scopeId): string => route('core.tenancy.scopes.activate', ['scopeId' => $scopeId]),
+            'can_manage_tenancy' => $screenContext->principal !== null && $authorization->authorize(new AuthorizationContext(
+                principal: $screenContext->principal,
+                permission: 'core.tenancy.manage',
+                memberships: $screenContext->memberships,
+                organizationId: $screenContext->organizationId,
+                scopeId: $screenContext->scopeId,
+            ))->allowed(),
+            'metrics' => [
+                'organizations' => count($organizations),
+                'active_scopes' => collect($scopes)->where('is_active', true)->count(),
+                'memberships' => DB::table('memberships')->count(),
+            ],
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function auditScreenData(ScreenRenderContext $screenContext): array
+    {
+        $query = $this->coreScreenQuery($screenContext);
+        $records = array_map(
+            static fn ($record): array => $record->toArray(),
+            $this->app->make(AuditTrailInterface::class)->latest(40),
+        );
+
+        return [
+            'query' => $query,
+            'records' => $records,
+            'metrics' => [
+                'events' => count($records),
+                'failures' => collect($records)->where('outcome', 'failure')->count(),
+                'components' => collect($records)->pluck('origin_component')->filter()->unique()->count(),
+            ],
+            'export_jsonl_url' => route('core.audit.export', [...$query, 'format' => 'jsonl']),
+            'export_csv_url' => route('core.audit.export', [...$query, 'format' => 'csv']),
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function functionalActorsScreenData(ScreenRenderContext $screenContext): array
+    {
+        $actors = $this->app->make(FunctionalActorServiceInterface::class)->actors();
+        $assignments = $this->app->make(FunctionalActorServiceInterface::class)->assignments();
+
+        $links = DB::table('principal_functional_actor_links')
+            ->orderByDesc('created_at')
+            ->limit(20)
+            ->get(['principal_id', 'functional_actor_id', 'organization_id', 'created_at'])
+            ->map(static fn ($link): array => [
+                'principal_id' => (string) $link->principal_id,
+                'functional_actor_id' => (string) $link->functional_actor_id,
+                'organization_id' => (string) $link->organization_id,
+                'created_at' => (string) $link->created_at,
+            ])
+            ->all();
+
+        return [
+            'query' => $this->coreScreenQuery($screenContext),
+            'actors' => array_map(static fn ($actor): array => $actor->toArray(), $actors),
+            'assignments' => array_map(static fn ($assignment): array => $assignment->toArray(), $assignments),
+            'links' => $links,
+            'metrics' => [
+                'actors' => count($actors),
+                'links' => count($links),
+                'assignments' => count($assignments),
+                'organizations' => collect($actors)->pluck('organization_id')->filter()->unique()->count(),
+            ],
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function coreScreenQuery(ScreenRenderContext $screenContext): array
+    {
+        $query = $screenContext->query;
+        $query['principal_id'] = $screenContext->principal?->id ?? ($query['principal_id'] ?? 'principal-admin');
+        $query['locale'] = $screenContext->locale;
+
+        if ($screenContext->organizationId !== null) {
+            $query['organization_id'] = $screenContext->organizationId;
+        }
+
+        if ($screenContext->scopeId !== null) {
+            $query['scope_id'] = $screenContext->scopeId;
+        }
+
+        foreach ($screenContext->memberships as $membership) {
+            $query['membership_ids'][] = $membership->id;
+        }
+
+        return $query;
     }
 }
