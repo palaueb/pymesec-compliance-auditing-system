@@ -1,0 +1,35 @@
+{
+  "concepts": [
+    {
+      "id": "continuity-service",
+      "label": "Continuity Service",
+      "category": "continuity",
+      "summary": "A business or technical service that the organization needs to keep running or recover quickly.",
+      "why_it_exists": "Continuity work is easier to plan around services than around abstract obligations.",
+      "how_to_use": [
+        "Register each important service and describe what it depends on.",
+        "Use recovery plans, exercises, and test runs to keep preparedness current."
+      ],
+      "relations": [
+        { "type": "may-depend-on", "target": "asset", "summary": "Services often depend on specific assets." },
+        { "type": "may-have", "target": "recovery-plan", "summary": "A continuity service can have one or more recovery plans." }
+      ],
+      "order": 270
+    },
+    {
+      "id": "recovery-plan",
+      "label": "Recovery Plan",
+      "category": "continuity",
+      "summary": "A documented plan describing how to restore or maintain a service after disruption.",
+      "why_it_exists": "A recovery plan turns continuity intent into actionable steps that can be reviewed and tested.",
+      "how_to_use": [
+        "Write one plan per important recovery approach or fallback pattern.",
+        "Run exercises and record test executions to prove that the plan is still usable."
+      ],
+      "relations": [
+        { "type": "belongs-to", "target": "continuity-service", "summary": "Plans are created to support one service." }
+      ],
+      "order": 271
+    }
+  ]
+}

@@ -43,6 +43,7 @@ The platform must allow users to:
 * **Identity as a plugin capability**
 * **Core agnostic to business domains**
 * **Strict separation between access identity and functional domain roles**
+* **Domain-first user language**
 
 ## 3. Objectives
 
@@ -289,6 +290,17 @@ The following must be defined:
 ## 6. Functional Requirements by Block
 
 ## 6.1 CORE Block
+
+### User-Facing Language and Terminology
+
+The application UI must speak in domain and operational terms, not in internal architecture terms.
+
+Rules:
+
+* user-facing copy, titles, menus, empty states, help text, and workflows must describe compliance work, governance, risks, evidence, access, organizations, scopes, and related business concepts
+* the application must not speak to end users about the `core`, `plugins`, internal runtime architecture, or other self-referential implementation details
+* technical architecture vocabulary is allowed in developer-facing documentation such as READMEs, ADRs, specs, contribution guides, and similar internal or developer materials
+* when a technical capability must be exposed to the user, it should be translated into an operational concept that makes sense in the compliance product domain
 
 ### Deliverables
 
@@ -1035,6 +1047,7 @@ Includes connectors and automated evidence.
 * compliance data has complete traceability
 * the system allows data and report export
 * there is sufficient documentation for third-party developers
+* user-facing UI language is domain-first and avoids self-referential technical architecture terms such as `core` or `plugin`
 
 ## 15. Project Risks
 

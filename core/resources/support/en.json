@@ -1,0 +1,169 @@
+{
+  "guide": [
+    {
+      "id": "start-with-organization",
+      "title": "Start with the organization",
+      "summary": "An organization is the main working boundary of the application.",
+      "body": [
+        "Create or choose the organization first. Almost every operational record in the platform belongs to one organization.",
+        "If your company needs separate workspaces for subsidiaries, legal entities, or independent business units, model those boundaries as separate organizations."
+      ],
+      "concept_ids": ["organization", "scope"],
+      "order": 10
+    },
+    {
+      "id": "understand-access",
+      "title": "Then define who can work there",
+      "summary": "Access is based on principals, memberships, roles, and scopes.",
+      "body": [
+        "A person signs in as a principal. That principal receives one or more memberships in one organization.",
+        "Roles describe what the person can do. Scopes narrow where that person can do it."
+      ],
+      "concept_ids": ["principal", "membership", "role", "scope"],
+      "order": 20
+    },
+    {
+      "id": "work-with-records",
+      "title": "Operational work happens in records",
+      "summary": "Assets, controls, risks, findings, privacy records, and continuity plans are the day-to-day records of the workspace.",
+      "body": [
+        "Use the operational plugins to keep the current state of the organization visible and auditable.",
+        "Attach evidence when you need proof, and rely on the audit trail when you need traceability."
+      ],
+      "concept_ids": ["asset", "control", "risk", "finding", "artifact", "audit-trail"],
+      "order": 30
+    }
+  ],
+  "concepts": [
+    {
+      "id": "organization",
+      "label": "Organization",
+      "category": "foundation",
+      "summary": "The main workspace boundary for records, access, and operational context.",
+      "why_it_exists": "Organizations separate data, permissions, and context so different companies or major business boundaries do not mix their records by accident.",
+      "how_to_use": [
+        "Create one organization for each business boundary that should be managed separately.",
+        "Choose the organization before creating or reviewing operational records."
+      ],
+      "relations": [
+        { "type": "contains", "target": "scope", "summary": "Scopes live inside one organization." },
+        { "type": "contains", "target": "membership", "summary": "Memberships place people inside one organization." },
+        { "type": "contains", "target": "asset", "summary": "Operational records normally belong to one organization." }
+      ],
+      "order": 10
+    },
+    {
+      "id": "scope",
+      "label": "Scope",
+      "category": "foundation",
+      "summary": "A narrower working area inside one organization, such as a department, domain, or regional boundary.",
+      "why_it_exists": "Scopes let you limit access and focus work without creating a completely separate organization.",
+      "how_to_use": [
+        "Create scopes when one organization needs several bounded work areas.",
+        "Assign scope access only to the memberships that should see that subset of records."
+      ],
+      "relations": [
+        { "type": "belongs-to", "target": "organization", "summary": "A scope only exists inside one organization." },
+        { "type": "limits", "target": "membership", "summary": "Memberships can be restricted to one or more scopes." }
+      ],
+      "order": 20
+    },
+    {
+      "id": "principal",
+      "label": "Principal",
+      "category": "access",
+      "summary": "The access identity that signs in and receives permissions.",
+      "why_it_exists": "The platform needs one consistent access identity model regardless of whether the person comes from a local account or an external directory.",
+      "how_to_use": [
+        "Think of the principal as the signed-in identity, not as a business responsibility.",
+        "Grant organization access through memberships, not by attaching everything directly to the principal."
+      ],
+      "relations": [
+        { "type": "receives", "target": "membership", "summary": "Memberships connect a principal to an organization." },
+        { "type": "may-link-to", "target": "functional-actor", "summary": "A principal can be linked to a functional actor, but they are not the same thing." }
+      ],
+      "order": 30
+    },
+    {
+      "id": "membership",
+      "label": "Membership",
+      "category": "access",
+      "summary": "The placement of one principal inside one organization, with roles and optional scopes.",
+      "why_it_exists": "Membership is what makes access operational. It answers where a principal belongs and what workspace responsibilities are active there.",
+      "how_to_use": [
+        "Create a membership when a person needs access to one organization.",
+        "Attach operational roles and scope restrictions to the membership."
+      ],
+      "relations": [
+        { "type": "belongs-to", "target": "organization", "summary": "Every membership belongs to one organization." },
+        { "type": "assigned-to", "target": "principal", "summary": "A membership is always for one principal." },
+        { "type": "carries", "target": "role", "summary": "Roles are usually granted through memberships." }
+      ],
+      "order": 40
+    },
+    {
+      "id": "role",
+      "label": "Role",
+      "category": "access",
+      "summary": "A named bundle of permissions used to simplify access management.",
+      "why_it_exists": "Roles let administrators assign access in understandable packages instead of individual permissions one by one.",
+      "how_to_use": [
+        "Use platform roles for administration and operational roles for day-to-day work.",
+        "Assign operational roles through memberships so access stays tied to the organization."
+      ],
+      "relations": [
+        { "type": "granted-through", "target": "membership", "summary": "Operational roles are normally granted through memberships." }
+      ],
+      "order": 50
+    },
+    {
+      "id": "functional-actor",
+      "label": "Functional Actor",
+      "category": "governance",
+      "summary": "A business or governance identity such as CISO, DPO, service owner, or team.",
+      "why_it_exists": "Business accountability is not the same as sign-in access. Functional actors describe responsibility, ownership, and governance roles.",
+      "how_to_use": [
+        "Use functional actors to express ownership or responsibility in the domain model.",
+        "Link them to principals only when you need to connect business responsibility with real access identities."
+      ],
+      "relations": [
+        { "type": "may-link-to", "target": "principal", "summary": "A functional actor can be linked to one or more principals by policy." }
+      ],
+      "order": 60
+    },
+    {
+      "id": "artifact",
+      "label": "Artifact",
+      "category": "evidence",
+      "summary": "A stored evidence file or attachment linked to an operational record.",
+      "why_it_exists": "Compliance work often needs proof. Artifacts hold documents, exports, screenshots, or other evidence linked to a business record.",
+      "how_to_use": [
+        "Attach artifacts to the relevant record when you need traceable evidence.",
+        "Use consistent labels so reviewers understand why each attachment exists."
+      ],
+      "relations": [
+        { "type": "supports", "target": "control", "summary": "Controls often need evidence." },
+        { "type": "supports", "target": "risk", "summary": "Risks may include supporting analysis or proofs." },
+        { "type": "supports", "target": "finding", "summary": "Findings often require evidence of the issue or of remediation." }
+      ],
+      "order": 70
+    },
+    {
+      "id": "audit-trail",
+      "label": "Audit Trail",
+      "category": "governance",
+      "summary": "The recorded history of sensitive actions and changes across the platform.",
+      "why_it_exists": "The audit trail provides accountability, investigation support, and evidence of who changed what and when.",
+      "how_to_use": [
+        "Use the audit screen when you need to review important changes or investigate activity.",
+        "Treat the audit trail as traceability, not as a substitute for good process documentation."
+      ],
+      "relations": [
+        { "type": "records-changes-to", "target": "membership", "summary": "Access changes should be traceable." },
+        { "type": "records-changes-to", "target": "asset", "summary": "Operational changes should be observable." },
+        { "type": "records-changes-to", "target": "risk", "summary": "Risk decisions and transitions should be auditable." }
+      ],
+      "order": 80
+    }
+  ]
+}

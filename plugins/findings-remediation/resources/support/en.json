@@ -1,0 +1,21 @@
+{
+  "concepts": [
+    {
+      "id": "finding",
+      "label": "Finding",
+      "category": "operations",
+      "summary": "A detected issue, gap, or nonconformity that needs follow-up and closure.",
+      "why_it_exists": "Findings turn an observation into accountable work. They keep issues visible until action is taken and closure is justified.",
+      "how_to_use": [
+        "Create a finding when you identify a real issue, not just a possible risk.",
+        "Track remediation status until the issue is closed or formally accepted."
+      ],
+      "relations": [
+        { "type": "may-reference", "target": "asset", "summary": "A finding can point to the affected asset." },
+        { "type": "may-reference", "target": "control", "summary": "A finding can describe a control gap or control failure." },
+        { "type": "may-reference", "target": "risk", "summary": "A finding can support or refine the risk picture." }
+      ],
+      "order": 240
+    }
+  ]
+}

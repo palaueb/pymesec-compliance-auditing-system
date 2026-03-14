@@ -1,0 +1,34 @@
+{
+  "guide": [
+    {
+      "id": "start-with-assets",
+      "title": "Start your operational model with assets",
+      "summary": "Assets describe what the organization needs to protect, operate, or recover.",
+      "body": [
+        "List important systems, datasets, services, and business resources as assets.",
+        "Later records such as risks and continuity plans can point back to these assets."
+      ],
+      "concept_ids": ["asset"],
+      "order": 60
+    }
+  ],
+  "concepts": [
+    {
+      "id": "asset",
+      "label": "Asset",
+      "category": "operations",
+      "summary": "A business, technical, or information item that the organization needs to manage and protect.",
+      "why_it_exists": "Assets give the rest of the compliance model a concrete subject. Risks, controls, and recovery work are easier to understand when they point to the thing that matters.",
+      "how_to_use": [
+        "Create assets for important systems, data sets, services, suppliers, or critical business resources.",
+        "Keep ownership, lifecycle state, and descriptive fields current."
+      ],
+      "relations": [
+        { "type": "may-have", "target": "risk", "summary": "Risks can describe threats or weaknesses affecting one asset." },
+        { "type": "may-be-covered-by", "target": "control", "summary": "Controls can support how an asset is protected or governed." },
+        { "type": "may-be-needed-by", "target": "continuity-service", "summary": "Services and plans may depend on the asset." }
+      ],
+      "order": 210
+    }
+  ]
+}

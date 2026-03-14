@@ -1,0 +1,32 @@
+{
+  "guide": [
+    {
+      "id": "manage-people-and-access",
+      "title": "Manage people and organization access separately",
+      "summary": "Creating a person is not the same as granting access to an organization.",
+      "body": [
+        "Create or sync the person first, then grant organization access through memberships.",
+        "This keeps identity administration separate from operational access governance."
+      ],
+      "concept_ids": ["local-person", "membership"],
+      "order": 40
+    }
+  ],
+  "concepts": [
+    {
+      "id": "local-person",
+      "label": "Local Person",
+      "category": "identity",
+      "summary": "A locally managed person record with username, email, and optional login methods.",
+      "why_it_exists": "The platform needs a built-in way to create administrators, local users, temporary users, or external collaborators even when no external directory is available.",
+      "how_to_use": [
+        "Create local people in administration when they need a platform identity.",
+        "Grant organization access separately through memberships."
+      ],
+      "relations": [
+        { "type": "becomes", "target": "principal", "summary": "A local person is represented by a principal for access checks." }
+      ],
+      "order": 110
+    }
+  ]
+}

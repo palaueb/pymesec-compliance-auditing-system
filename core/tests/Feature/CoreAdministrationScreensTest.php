@@ -13,7 +13,7 @@ class CoreAdministrationScreensTest extends TestCase
     {
         $screens = [
             'core.platform' => 'Platform Overview',
-            'core.plugins' => 'Plugin Runtime',
+            'core.plugins' => 'Installed Modules',
             'core.permissions' => 'Permission Catalog',
             'core.tenancy' => 'Tenant Structure',
             'core.audit' => 'Audit Trail',

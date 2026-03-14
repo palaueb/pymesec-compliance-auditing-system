@@ -78,4 +78,38 @@ class ShellNavigationTest extends TestCase
             'organization_id' => 'org-a',
         ]);
     }
+
+    public function test_platform_admin_without_requested_organization_still_gets_workspace_bootstrap(): void
+    {
+        DB::table('identity_local_users')->insert([
+            'id' => 'identity-user-platform-bootstrap-2',
+            'principal_id' => 'principal-platform-bootstrap-2',
+            'organization_id' => 'org-a',
+            'username' => 'platform.bootstrap.2',
+            'display_name' => 'Platform Bootstrap Two',
+            'email' => 'platform.bootstrap.2@northwind.test',
+            'password_hash' => null,
+            'password_enabled' => false,
+            'magic_link_enabled' => true,
+            'job_title' => 'Platform administrator',
+            'is_active' => true,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->app->make(IdentityLocalRepository::class)
+            ->ensurePlatformAdminGrant('principal-platform-bootstrap-2');
+
+        $this->get('/app?principal_id=principal-platform-bootstrap-2')
+            ->assertOk()
+            ->assertSee('Workspace Dashboard')
+            ->assertSee('Assets');
+
+        $membershipId = DB::table('memberships')
+            ->where('principal_id', 'principal-platform-bootstrap-2')
+            ->where('organization_id', 'org-a')
+            ->value('id');
+
+        $this->assertIsString($membershipId);
+    }
 }

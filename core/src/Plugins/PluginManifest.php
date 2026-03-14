@@ -299,6 +299,27 @@ class PluginManifest
         return is_string($menuId) && trim($menuId) !== '' ? trim($menuId) : null;
     }
 
+    public function supportPath(): ?string
+    {
+        $path = data_get($this->data, 'support.path');
+
+        return is_string($path) && trim($path) !== '' ? trim($path) : null;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public function supportLocales(): array
+    {
+        $locales = data_get($this->data, 'support.supported_locales', []);
+
+        if (! is_array($locales)) {
+            return [];
+        }
+
+        return array_values(array_filter($locales, static fn (mixed $value): bool => is_string($value) && $value !== ''));
+    }
+
     private function assertRequiredPluginFields(): void
     {
         foreach (['id', 'name', 'version', 'type'] as $field) {

@@ -7,14 +7,14 @@
     </div>
 
     <div class="surface-note">
-        Lifecycle changes are persisted as local overrides in <code>{{ $state_path }}</code>. Plugin-owned settings stay inside each plugin workspace screen.
+        Module activation changes are stored in <code>{{ $state_path }}</code>. Each module keeps its own configuration in its corresponding settings area.
     </div>
 
     <div class="table-card">
         <table class="entity-table">
             <thead>
                 <tr>
-                    <th>Plugin</th>
+                    <th>Module</th>
                     <th>State</th>
                     <th>Dependencies</th>
                     <th>Access</th>
@@ -68,7 +68,7 @@
                                 @if (is_string($plugin['settings_url'] ?? null))
                                     <a class="button button-ghost" href="{{ $plugin['settings_url'] }}">Settings</a>
                                 @elseif (($plugin['settings_requires_context'] ?? false) === true)
-                                    <span class="table-note">Select an organization to configure</span>
+                                    <span class="table-note">Select an organization to configure this module</span>
                                 @endif
                             </div>
                         </td>
@@ -114,7 +114,7 @@
                             <div class="editor-panel">
                                 <div class="overview-grid" style="grid-template-columns:repeat(2, minmax(0, 1fr));">
                                     <div class="surface-card" style="padding:16px;">
-                                        <div class="field-label">Runtime</div>
+                                        <div class="field-label">Summary</div>
                                         <div class="body-copy" style="margin-top:8px;">
                                             {{ $plugin['description'] ?? 'No description provided.' }}
                                         </div>
@@ -126,16 +126,16 @@
                                         @endif
                                     </div>
                                     <div class="surface-card" style="padding:16px;">
-                                        <div class="field-label">Lifecycle</div>
+                                        <div class="field-label">Availability</div>
                                         <div class="body-copy" style="margin-top:8px;">
                                             @if (($plugin['lifecycle']['blocked'] ?? false) === true)
                                                 {{ ($plugin['lifecycle']['operation'] ?? 'change') === 'disable'
-                                                    ? 'Disable is blocked until dependent plugins are disabled first.'
+                                                    ? 'Disable is blocked until dependent modules are disabled first.'
                                                     : 'Enable is blocked until required dependencies are enabled.' }}
                                             @else
                                                 {{ ($plugin['lifecycle']['operation'] ?? 'change') === 'disable'
-                                                    ? 'This plugin can be disabled now.'
-                                                    : 'This plugin can be enabled now.' }}
+                                                    ? 'This module can be disabled now.'
+                                                    : 'This module can be enabled now.' }}
                                             @endif
                                         </div>
                                         @if (($plugin['lifecycle']['dependencies'] ?? []) !== [])

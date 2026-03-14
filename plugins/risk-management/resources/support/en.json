@@ -1,0 +1,21 @@
+{
+  "concepts": [
+    {
+      "id": "risk",
+      "label": "Risk",
+      "category": "operations",
+      "summary": "A record of uncertainty, threat, weakness, or potential loss that matters to the organization.",
+      "why_it_exists": "Risks let the organization identify what could go wrong, assess severity, and decide how to respond.",
+      "how_to_use": [
+        "Register risks with a clear description, context, and affected assets when possible.",
+        "Update status and treatment decisions as the assessment evolves."
+      ],
+      "relations": [
+        { "type": "may-affect", "target": "asset", "summary": "Risks often point to the assets they threaten." },
+        { "type": "may-be-reduced-by", "target": "control", "summary": "Controls are common responses to risk." },
+        { "type": "may-lead-to", "target": "finding", "summary": "A risk review may reveal a concrete issue that becomes a finding." }
+      ],
+      "order": 230
+    }
+  ]
+}

@@ -50,6 +50,7 @@ The manifest must support the following top-level sections in v1:
 - `routes`
 - `menus`
 - `admin`
+- `support`
 - `migrations`
 - `translations`
 - `lifecycle`
@@ -214,6 +215,21 @@ Constraints:
 - the core may expose this as a convenience link in `Administration > Plugins`
 - the core must not treat this field as a generic plugin settings schema
 - if the current context cannot access the referenced menu, the shell should show that additional workspace context is required
+
+## 9.2 `support` Section
+
+This optional section declares plugin-owned support content contributed to the aggregated help experience.
+
+Initial v1 support:
+
+- `path`: relative path to support JSON files
+- `supported_locales`: locales available in that support path
+
+Constraints:
+
+- support content must be contributed in JSON documents
+- support content must be removable when the plugin is disabled
+- the core may fall back to English if the requested locale is not available
 
 ## 10. `migrations` Section
 

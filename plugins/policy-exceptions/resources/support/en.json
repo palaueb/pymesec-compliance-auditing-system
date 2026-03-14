@@ -1,0 +1,20 @@
+{
+  "concepts": [
+    {
+      "id": "policy-exception",
+      "label": "Policy Exception",
+      "category": "governance",
+      "summary": "A formally recorded decision to allow deviation from an expected policy or rule.",
+      "why_it_exists": "Organizations sometimes accept limited deviations. A policy exception keeps that decision visible, reviewed, and time-bound.",
+      "how_to_use": [
+        "Use an exception when a rule cannot be followed and the deviation is being accepted deliberately.",
+        "Record the reason, owner, approval state, and review date."
+      ],
+      "relations": [
+        { "type": "may-relate-to", "target": "control", "summary": "Exceptions often relate to controls or expected practices." },
+        { "type": "may-increase", "target": "risk", "summary": "An exception may leave risk partially untreated." }
+      ],
+      "order": 250
+    }
+  ]
+}

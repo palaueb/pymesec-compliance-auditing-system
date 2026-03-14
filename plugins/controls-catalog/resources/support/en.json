@@ -1,0 +1,52 @@
+{
+  "concepts": [
+    {
+      "id": "control",
+      "label": "Control",
+      "category": "operations",
+      "summary": "A safeguard, requirement, or expected practice that should exist and be reviewed.",
+      "why_it_exists": "Controls express what good governance or protection should look like. They become a central checkpoint for evidence and review.",
+      "how_to_use": [
+        "Create controls for the safeguards your organization wants to track.",
+        "Review them regularly and attach evidence when needed."
+      ],
+      "relations": [
+        { "type": "may-support", "target": "asset", "summary": "Controls help protect or govern assets." },
+        { "type": "may-reduce", "target": "risk", "summary": "Controls are one of the main ways to reduce risk." },
+        { "type": "may-map-to", "target": "control-framework", "summary": "Controls can be aligned with frameworks and requirements." }
+      ],
+      "order": 220
+    },
+    {
+      "id": "control-framework",
+      "label": "Control Framework",
+      "category": "catalogue",
+      "summary": "A named framework or standard that groups one set of control requirements.",
+      "why_it_exists": "Frameworks help the organization explain where a control expectation comes from.",
+      "how_to_use": [
+        "Register the framework first, then add requirements under it.",
+        "Map your internal controls to those requirements when you need traceability."
+      ],
+      "relations": [
+        { "type": "contains", "target": "control-requirement", "summary": "Requirements live inside one framework." }
+      ],
+      "order": 225
+    },
+    {
+      "id": "control-requirement",
+      "label": "Control Requirement",
+      "category": "catalogue",
+      "summary": "One requirement or clause inside a framework.",
+      "why_it_exists": "Requirements create the traceable link between internal controls and external obligations or standards.",
+      "how_to_use": [
+        "Add requirements under the framework they belong to.",
+        "Map internal controls when you need to show coverage."
+      ],
+      "relations": [
+        { "type": "belongs-to", "target": "control-framework", "summary": "A requirement is part of one framework." },
+        { "type": "may-be-covered-by", "target": "control", "summary": "Internal controls can cover one or more requirements." }
+      ],
+      "order": 226
+    }
+  ]
+}

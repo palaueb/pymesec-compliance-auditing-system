@@ -62,8 +62,13 @@
             border-left: 5px solid var(--accent);
             background: rgba(255,255,255,0.34);
             border-radius: 6px;
+        }
+
+        .brand-link {
             display: grid;
             gap: 6px;
+            color: inherit;
+            text-decoration: none;
         }
 
         .brand-kicker,
@@ -170,8 +175,8 @@
         .sidebar-footer {
             border-top: 1px solid rgba(31,42,34,0.08);
             padding-top: 12px;
-            display: grid;
-            gap: 10px;
+            display: flex;
+            justify-content: flex-start;
         }
 
         .workspace {
@@ -186,8 +191,10 @@
         }
 
         .topbar {
-            display: grid;
-            gap: 14px;
+            display: flex;
+            justify-content: space-between;
+            gap: 18px;
+            align-items: flex-start;
             padding-bottom: 14px;
             border-bottom: 1px solid rgba(31,42,34,0.1);
         }
@@ -195,6 +202,7 @@
         .headline {
             display: grid;
             gap: 6px;
+            min-width: 0;
         }
 
         .headline h1,
@@ -215,26 +223,28 @@
             color: var(--muted);
         }
 
-        .utility-stack {
-            display: grid;
-            gap: 12px;
-            justify-items: stretch;
+        .topbar-utility {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: flex-end;
+            gap: 10px;
+            align-items: flex-start;
+            min-width: min(520px, 100%);
         }
 
         .utility-actions,
         .toolbar,
-        .action-cluster {
+        .action-cluster,
+        .context-strip,
+        .user-actions {
             display: flex;
             flex-wrap: wrap;
             gap: 8px;
         }
 
-        .context-forms {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 10px;
-            justify-content: flex-start;
-            align-items: flex-start;
+        .context-strip {
+            justify-content: flex-end;
+            align-items: center;
         }
 
         .context-form,
@@ -245,6 +255,155 @@
             border: 1px solid var(--line);
             background: rgba(255,255,255,0.72);
             border-radius: 6px;
+        }
+
+        .context-inline-form {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .context-chip {
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            background: rgba(255,255,255,0.58);
+            padding: 6px 8px 6px 12px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .context-chip .field-label {
+            color: var(--muted);
+            letter-spacing: 0.08em;
+        }
+
+        .context-value {
+            font-size: 12px;
+            font-weight: 700;
+            color: var(--ink);
+            max-width: 180px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .context-select {
+            min-height: 34px;
+            padding: 6px 28px 6px 8px;
+            border-radius: 999px;
+            border: 1px solid rgba(31,42,34,0.1);
+            background: rgba(255,255,255,0.92);
+            color: var(--ink);
+            font: inherit;
+            font-size: 13px;
+            max-width: 180px;
+        }
+
+        .user-panel {
+            position: relative;
+        }
+
+        .user-summary {
+            list-style: none;
+            border: 1px solid var(--line);
+            border-radius: 999px;
+            background: rgba(255,255,255,0.58);
+            padding: 8px 12px;
+            display: inline-flex;
+            align-items: center;
+            gap: 10px;
+            cursor: pointer;
+            min-height: 42px;
+        }
+
+        .user-summary::-webkit-details-marker {
+            display: none;
+        }
+
+        .user-summary-label {
+            display: grid;
+            gap: 2px;
+            text-align: left;
+        }
+
+        .user-name {
+            font-size: 13px;
+            font-weight: 700;
+            line-height: 1.2;
+        }
+
+        .user-copy {
+            color: var(--muted);
+            font-size: 11px;
+            line-height: 1.2;
+        }
+
+        .user-menu {
+            position: absolute;
+            right: 0;
+            top: calc(100% + 8px);
+            z-index: 20;
+            width: min(360px, calc(100vw - 48px));
+            border: 1px solid var(--line);
+            border-radius: 8px;
+            background: rgba(255,255,255,0.96);
+            box-shadow: 0 18px 40px rgba(10, 18, 22, 0.14);
+            padding: 14px;
+            display: grid;
+            gap: 14px;
+        }
+
+        .user-section {
+            display: grid;
+            gap: 8px;
+        }
+
+        .user-profile {
+            display: grid;
+            gap: 8px;
+            padding: 10px 12px;
+            border: 1px solid rgba(31,42,34,0.08);
+            border-radius: 6px;
+            background: rgba(255,255,255,0.72);
+        }
+
+        .user-profile-row {
+            display: grid;
+            gap: 2px;
+        }
+
+        .user-profile-value {
+            font-size: 13px;
+            font-weight: 700;
+            line-height: 1.35;
+            word-break: break-word;
+        }
+
+        .user-actions {
+            align-items: stretch;
+        }
+
+        .user-actions .button,
+        .user-actions form {
+            flex: 1 1 calc(50% - 8px);
+        }
+
+        .user-actions form {
+            margin: 0;
+        }
+
+        .user-actions .button {
+            width: 100%;
+            min-height: 36px;
+            padding: 8px 12px;
+            font-size: 13px;
+        }
+
+        .user-section .theme-chip {
+            min-height: 34px;
+            padding: 7px 10px;
+            font-size: 12px;
         }
 
         .context-form {
@@ -723,6 +882,15 @@
             .sidebar-auth {
                 grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
             }
+
+            .topbar {
+                flex-direction: column;
+            }
+
+            .topbar-utility {
+                min-width: 0;
+                justify-content: flex-start;
+            }
         }
 
         @media (max-width: 960px) {
@@ -735,11 +903,13 @@
                 flex-direction: column;
             }
 
-            .context-forms {
-                justify-content: stretch;
+            .context-strip {
+                width: 100%;
+                justify-content: flex-start;
             }
 
-            .context-form {
+            .context-inline-form,
+            .context-chip {
                 width: 100%;
             }
         }
@@ -767,14 +937,17 @@
     </style>
 </head>
 <body>
-<div class="shell">
+<div class="shell" id="top">
     <aside class="sidebar">
         <div class="brand">
-            <div class="brand-title">{{ __('core.shell.brand_title') }}</div>
+            <a class="brand-link" href="{{ $dashboardUrl }}">
+                <div class="brand-title">{{ __('core.shell.brand_title') }}</div>
+            </a>
         </div>
 
         <nav class="menu-stack" aria-label="{{ __('core.shell.menu_registry') }}">
             @foreach ($menus as $menu)
+                @continue(in_array($menu['id'], ['core.dashboard', 'core.support'], true))
                 <section class="menu-card">
                     <a class="menu-link {{ $selectedMenuId === $menu['id'] ? 'active' : '' }}" href="{{ $menu['shell_url'] }}">
                         <span class="icon-pill">{{ strtoupper(substr((string) ($menu['icon'] ?? $menu['owner']), 0, 2)) }}</span>
@@ -784,6 +957,7 @@
                     </a>
 
                     @foreach ($menu['children'] as $child)
+                        @continue(in_array($child['id'], ['core.dashboard', 'core.support'], true))
                         <a class="menu-child {{ $selectedMenuId === $child['id'] ? 'active' : '' }}" href="{{ $child['shell_url'] }}">
                             {{ $child['label'] }}
                         </a>
@@ -793,58 +967,41 @@
         </nav>
 
         <div class="sidebar-footer">
-            <div class="sidebar-auth">
-                @if ($shellArea === 'app' && $adminAreaUrl !== null)
-                    <a class="button button-secondary" href="{{ $adminAreaUrl }}">Administration</a>
-                @elseif ($shellArea === 'admin' && $appAreaUrl !== null)
-                    <a class="button button-secondary" href="{{ $appAreaUrl }}">Back to app</a>
-                @endif
-            </div>
-
             <button type="button" class="button button-ghost sidebar-utility" data-debug-open>
                 {{ __('core.shell.debug_button') }}
             </button>
+        </div>
+    </aside>
 
-            <div class="sidebar-context">
-                <div class="sidebar-context-head">
-                    <div class="rail-label">{{ __('core.shell.context_help') }}</div>
-                    <div class="sidebar-context-copy">
-                        {{ __('core.shell.context_help') }}
-                        @if ($tenancyShellUrl !== null)
-                            <a href="{{ $tenancyShellUrl }}">{{ __('core.shell.context_manage_link') }}</a>
-                        @endif
-                    </div>
-                </div>
-
-                <div class="sidebar-context-list">
-                    <div class="sidebar-context-item">
-                        <div class="rail-label">{{ __('core.shell.principal') }}</div>
-                        <div class="sidebar-context-value">{{ $sessionPrincipalId ?? $principalId }}</div>
-                    </div>
-
-                    <form class="sidebar-context-form" method="GET" action="{{ route($currentShellRoute) }}">
+    <main class="workspace">
+        <header class="topbar">
+            <div class="headline">
+                <h1>{{ $shellError['title'] ?? $screen?->title ?? $selectedMenu['label'] ?? __('core.shell.title') }}</h1>
+                <p>{{ $shellError['subtitle'] ?? $screen?->subtitle ?? __('core.shell.workspace_copy') }}</p>
+            </div>
+            <div class="topbar-utility">
+                <div class="context-strip">
+                    <form class="context-inline-form" method="GET" action="{{ route($currentShellRoute) }}">
                         <input type="hidden" name="principal_id" value="{{ $principalId }}">
                         <input type="hidden" name="locale" value="{{ $locale }}">
                         <input type="hidden" name="theme" value="{{ $themeKey }}">
                         @if ($selectedMenuId !== null)
                             <input type="hidden" name="menu" value="{{ $selectedMenuId }}">
                         @endif
-                        <div class="sidebar-context-item">
+                        <div class="context-chip">
                             <label class="field-label" for="organization_id">{{ __('core.shell.organization_selector') }}</label>
-                            <div class="sidebar-context-value">{{ $selectedOrganization['name'] ?? 'n/a' }}</div>
-                            <div class="field">
-                                <select class="field-select" id="organization_id" name="organization_id" onchange="this.form.submit()">
-                                    @foreach ($organizations as $organization)
-                                        <option value="{{ $organization['id'] }}" @selected($organizationId === $organization['id'])>
-                                            {{ $organization['name'] }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                            </div>
+                            <div class="context-value">{{ $selectedOrganization['name'] ?? 'n/a' }}</div>
+                            <select class="context-select" id="organization_id" name="organization_id" onchange="this.form.submit()">
+                                @foreach ($organizations as $organization)
+                                    <option value="{{ $organization['id'] }}" @selected($organizationId === $organization['id'])>
+                                        {{ $organization['name'] }}
+                                    </option>
+                                @endforeach
+                            </select>
                         </div>
                     </form>
 
-                    <form class="sidebar-context-form" method="GET" action="{{ route($currentShellRoute) }}">
+                    <form class="context-inline-form" method="GET" action="{{ route($currentShellRoute) }}">
                         <input type="hidden" name="principal_id" value="{{ $principalId }}">
                         <input type="hidden" name="locale" value="{{ $locale }}">
                         <input type="hidden" name="theme" value="{{ $themeKey }}">
@@ -854,42 +1011,121 @@
                         @if ($organizationId !== null)
                             <input type="hidden" name="organization_id" value="{{ $organizationId }}">
                         @endif
-                        <div class="sidebar-context-item">
+                        <div class="context-chip">
                             <label class="field-label" for="scope_id">{{ __('core.shell.scope_selector') }}</label>
-                            <div class="sidebar-context-value">{{ $selectedScope['name'] ?? __('core.shell.all_scopes') }}</div>
-                            <div class="field">
-                                <select class="field-select" id="scope_id" name="scope_id" onchange="this.form.submit()">
-                                    <option value="">{{ __('core.shell.all_scopes') }}</option>
-                                    @foreach ($scopes as $scope)
-                                        <option value="{{ $scope['id'] }}" @selected($scopeId === $scope['id'])>
-                                            {{ $scope['name'] }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                            </div>
+                            <div class="context-value">{{ $selectedScope['name'] ?? __('core.shell.all_scopes') }}</div>
+                            <select class="context-select" id="scope_id" name="scope_id" onchange="this.form.submit()">
+                                <option value="">{{ __('core.shell.all_scopes') }}</option>
+                                @foreach ($scopes as $scope)
+                                    <option value="{{ $scope['id'] }}" @selected($scopeId === $scope['id'])>
+                                        {{ $scope['name'] }}
+                                    </option>
+                                @endforeach
+                            </select>
                         </div>
                     </form>
+
+                    <details class="user-panel">
+                        <summary class="user-summary">
+                            <span class="user-summary-label">
+                                <span class="user-name">{{ $userProfile['display_name'] ?? $sessionPrincipalId ?? $principalId }}</span>
+                                <span class="user-copy">{{ $localeOptions[$locale] ?? strtoupper($locale) }} · {{ $theme['label'] ?? $themeKey }}</span>
+                            </span>
+                        </summary>
+                        <div class="user-menu">
+                            <section class="user-section">
+                                <div class="rail-label">{{ __('core.shell.user_panel') }}</div>
+                                <div class="user-profile">
+                                    <div class="user-profile-row">
+                                        <div class="field-label">{{ __('core.shell.personal_name') }}</div>
+                                        <div class="user-profile-value">{{ $userProfile['display_name'] ?? $sessionPrincipalId ?? $principalId }}</div>
+                                    </div>
+                                    @if (! empty($userProfile['username']))
+                                        <div class="user-profile-row">
+                                            <div class="field-label">{{ __('core.shell.personal_username') }}</div>
+                                            <div class="meta-copy">{{ $userProfile['username'] }}</div>
+                                        </div>
+                                    @endif
+                                    @if (! empty($userProfile['email']))
+                                        <div class="user-profile-row">
+                                            <div class="field-label">{{ __('core.shell.personal_email') }}</div>
+                                            <div class="meta-copy">{{ $userProfile['email'] }}</div>
+                                        </div>
+                                    @endif
+                                    @if (! empty($userProfile['job_title']))
+                                        <div class="user-profile-row">
+                                            <div class="field-label">{{ __('core.shell.personal_job_title') }}</div>
+                                            <div class="meta-copy">{{ $userProfile['job_title'] }}</div>
+                                        </div>
+                                    @endif
+                                    <div class="user-profile-row">
+                                        <div class="field-label">{{ __('core.shell.principal') }}</div>
+                                        <div class="meta-copy">{{ $sessionPrincipalId ?? $principalId }}</div>
+                                    </div>
+                                </div>
+                            </section>
+
+                            <section class="user-section">
+                                <div class="rail-label">{{ __('core.shell.language_selector') }}</div>
+                                <form method="GET" action="{{ route($currentShellRoute) }}">
+                                    <input type="hidden" name="principal_id" value="{{ $principalId }}">
+                                    <input type="hidden" name="theme" value="{{ $themeKey }}">
+                                    @if ($selectedMenuId !== null)
+                                        <input type="hidden" name="menu" value="{{ $selectedMenuId }}">
+                                    @endif
+                                    @if ($organizationId !== null)
+                                        <input type="hidden" name="organization_id" value="{{ $organizationId }}">
+                                    @endif
+                                    @if ($scopeId !== null)
+                                        <input type="hidden" name="scope_id" value="{{ $scopeId }}">
+                                    @endif
+                                    @foreach ($memberships ?? [] as $membership)
+                                        <input type="hidden" name="membership_ids[]" value="{{ is_array($membership) ? ($membership['id'] ?? '') : $membership->id }}">
+                                    @endforeach
+                                    <select class="field-select" name="locale" onchange="this.form.submit()">
+                                        @foreach ($localeOptions as $localeCode => $localeLabel)
+                                            <option value="{{ $localeCode }}" @selected($locale === $localeCode)>{{ $localeLabel }}</option>
+                                        @endforeach
+                                    </select>
+                                </form>
+                            </section>
+
+                            <section class="user-section">
+                                <div class="rail-label">{{ __('core.shell.theme') }}</div>
+                                <div class="action-cluster">
+                                    @foreach ($themeOptions as $option)
+                                        <a href="{{ $option['url'] }}" class="theme-chip {{ $option['active'] ? 'active' : '' }}">
+                                            {{ $option['label'] }}
+                                        </a>
+                                    @endforeach
+                                </div>
+                            </section>
+
+                            <section class="user-section">
+                                <div class="rail-label">{{ __('core.shell.quick_links') }}</div>
+                                <div class="user-actions">
+                                    <a class="button button-secondary" href="{{ $supportUrl }}">{{ __('core.shell.help_link') }}</a>
+                                    @if ($tenancyShellUrl !== null)
+                                        <a class="button button-secondary" href="{{ $tenancyShellUrl }}">{{ __('core.shell.context_manage_link') }}</a>
+                                    @endif
+                                    @if ($shellArea === 'app' && $adminAreaUrl !== null)
+                                        <a class="button button-secondary" href="{{ $adminAreaUrl }}">{{ __('core.shell.admin_link') }}</a>
+                                    @elseif ($shellArea === 'admin' && $appAreaUrl !== null)
+                                        <a class="button button-secondary" href="{{ $appAreaUrl }}">{{ __('core.shell.back_to_app') }}</a>
+                                    @endif
+                                    @if ($sessionPrincipalId !== null && \Illuminate\Support\Facades\Route::has('plugin.identity-local.auth.logout'))
+                                        <form method="POST" action="{{ route('plugin.identity-local.auth.logout') }}">
+                                            @csrf
+                                            <button type="submit" class="button button-secondary">{{ __('core.shell.sign_out') }}</button>
+                                        </form>
+                                    @elseif (\Illuminate\Support\Facades\Route::has('plugin.identity-local.auth.login'))
+                                        <a class="button button-secondary" href="{{ route('plugin.identity-local.auth.login') }}">{{ __('core.shell.sign_in') }}</a>
+                                    @endif
+                                </div>
+                            </section>
+                        </div>
+                    </details>
                 </div>
-            </div>
-
-            <div class="sidebar-auth">
-                @if ($sessionPrincipalId !== null && \Illuminate\Support\Facades\Route::has('plugin.identity-local.auth.logout'))
-                    <form method="POST" action="{{ route('plugin.identity-local.auth.logout') }}">
-                        @csrf
-                        <button type="submit" class="button button-secondary" style="width: 100%;">Sign out</button>
-                    </form>
-                @elseif (\Illuminate\Support\Facades\Route::has('plugin.identity-local.auth.login'))
-                    <a class="button button-secondary" href="{{ route('plugin.identity-local.auth.login') }}">Sign in</a>
-                @endif
-            </div>
-        </div>
-    </aside>
-
-    <main class="workspace">
-        <header class="topbar">
-            <div class="headline">
-                <h1>{{ $shellError['title'] ?? $screen?->title ?? $selectedMenu['label'] ?? __('core.shell.title') }}</h1>
-                <p>{{ $shellError['subtitle'] ?? $screen?->subtitle ?? __('core.shell.workspace_copy') }}</p>
             </div>
         </header>
 

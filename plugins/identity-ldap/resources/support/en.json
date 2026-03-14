@@ -1,0 +1,33 @@
+{
+  "guide": [
+    {
+      "id": "configure-directory-sync",
+      "title": "Use LDAP to synchronize people, not to replace the access model",
+      "summary": "LDAP fills the local cache of people and groups, but the platform still works with principals and memberships.",
+      "body": [
+        "Configure one directory connection per organization when that organization manages people in LDAP.",
+        "After synchronization, review how LDAP groups map to organization roles and scopes."
+      ],
+      "concept_ids": ["ldap-directory-sync", "principal", "membership"],
+      "order": 50
+    }
+  ],
+  "concepts": [
+    {
+      "id": "ldap-directory-sync",
+      "label": "LDAP Directory Sync",
+      "category": "identity",
+      "summary": "The connector that imports users and groups from LDAP into the local identity runtime.",
+      "why_it_exists": "The platform needs one maintained path for external directory integration while keeping access decisions consistent inside the application.",
+      "how_to_use": [
+        "Configure the connection, base DN, bind account, and attribute mappings.",
+        "Run synchronization and review group mappings to roles and scopes."
+      ],
+      "relations": [
+        { "type": "creates-or-updates", "target": "principal", "summary": "Directory entries become local cached access identities." },
+        { "type": "maps-to", "target": "membership", "summary": "Groups can result in organization access through memberships." }
+      ],
+      "order": 120
+    }
+  ]
+}

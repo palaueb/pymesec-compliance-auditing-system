@@ -1,0 +1,34 @@
+{
+  "concepts": [
+    {
+      "id": "data-flow",
+      "label": "Data Flow",
+      "category": "privacy",
+      "summary": "A description of how data moves between people, systems, or external parties.",
+      "why_it_exists": "Data flows make privacy work concrete. They show where personal or sensitive data comes from, where it goes, and who touches it.",
+      "how_to_use": [
+        "Register the main flow, source, destination, and purpose of the movement.",
+        "Keep the flow linked to the relevant processing activity when possible."
+      ],
+      "relations": [
+        { "type": "supports", "target": "processing-activity", "summary": "A data flow often explains one part of a processing activity." }
+      ],
+      "order": 260
+    },
+    {
+      "id": "processing-activity",
+      "label": "Processing Activity",
+      "category": "privacy",
+      "summary": "A record of one business activity that processes data for a defined purpose.",
+      "why_it_exists": "Processing activities help the organization explain why data is processed, by whom, and with what safeguards.",
+      "how_to_use": [
+        "Register the purpose, context, and key handling details of the activity.",
+        "Use related data flows to make the activity understandable in practice."
+      ],
+      "relations": [
+        { "type": "may-be-described-by", "target": "data-flow", "summary": "Data flows can explain how the activity works in practice." }
+      ],
+      "order": 261
+    }
+  ]
+}

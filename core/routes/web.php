@@ -130,6 +130,10 @@ $renderShell = function (
         ? $organizationId
         : (is_string($requestedOrganizationId) && $requestedOrganizationId !== '' ? $requestedOrganizationId : null);
 
+    if ($bootstrapOrganizationId === null && class_exists(IdentityLocalRepository::class)) {
+        $bootstrapOrganizationId = app(IdentityLocalRepository::class)->firstOrganizationId();
+    }
+
     if (
         $area === 'app'
         && is_string($bootstrapOrganizationId)
@@ -320,6 +324,32 @@ $renderShell = function (
         ];
     }
 
+    $localeOptions = [
+        'en' => 'English',
+        'es' => 'Español',
+        'fr' => 'Français',
+        'de' => 'Deutsch',
+    ];
+
+    $userProfile = null;
+
+    if (Schema::hasTable('identity_local_users')) {
+        $profile = DB::table('identity_local_users')
+            ->where('principal_id', $principalId)
+            ->first([
+                'principal_id',
+                'display_name',
+                'username',
+                'email',
+                'job_title',
+                'auth_provider',
+            ]);
+
+        if ($profile !== null) {
+            $userProfile = (array) $profile;
+        }
+    }
+
     $appMenuMap = $flatten($appMenus);
     $adminMenuMap = $flatten($adminMenus);
     $defaultAreaMenu = static function (array $flatMenus): ?string {
@@ -329,6 +359,8 @@ $renderShell = function (
     };
     $appHomeMenuId = $defaultAreaMenu($appMenuMap);
     $adminHomeMenuId = $defaultAreaMenu($adminMenuMap);
+    $dashboardUrl = route('core.shell.index', [...$baseQuery, 'menu' => 'core.dashboard']);
+    $supportUrl = route('core.shell.index', [...$baseQuery, 'menu' => 'core.support']);
 
     $debugPayload = [
         'area' => $area,
@@ -376,12 +408,17 @@ $renderShell = function (
         'currentShellRoute' => $currentShellRoute,
         'principalId' => $principalId,
         'sessionPrincipalId' => is_string(session('auth.principal_id')) ? session('auth.principal_id') : null,
+        'memberships' => $memberships,
         'organizationId' => $organizationId,
         'scopeId' => $scopeId,
+        'localeOptions' => $localeOptions,
         'organizations' => array_map(static fn ($organization): array => $organization->toArray(), $tenancyContext->organizations),
         'scopes' => array_map(static fn ($scope): array => $scope->toArray(), $tenancyContext->scopes),
         'selectedOrganization' => $tenancyContext->organization?->toArray(),
         'selectedScope' => $tenancyContext->scope?->toArray(),
+        'dashboardUrl' => $dashboardUrl,
+        'supportUrl' => $supportUrl,
+        'userProfile' => $userProfile,
         'adminAreaUrl' => $adminHomeMenuId !== null
             ? route('core.admin.index', [...$baseQuery, 'menu' => $adminHomeMenuId])
             : null,

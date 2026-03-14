@@ -1,13 +1,13 @@
 <section class="module-screen compact">
     <div class="overview-grid">
-        <div class="metric-card"><div class="metric-label">Plugins</div><div class="metric-value">{{ $metrics['plugins'] }}</div></div>
+        <div class="metric-card"><div class="metric-label">Modules</div><div class="metric-value">{{ $metrics['plugins'] }}</div></div>
         <div class="metric-card"><div class="metric-label">Permissions</div><div class="metric-value">{{ $metrics['permissions'] }}</div></div>
         <div class="metric-card"><div class="metric-label">Roles</div><div class="metric-value">{{ $metrics['roles'] }}</div></div>
         <div class="metric-card"><div class="metric-label">Organizations</div><div class="metric-value">{{ $metrics['organizations'] }}</div></div>
     </div>
 
     <div class="surface-note">
-        Platform administration stays separate from organization workspaces. Use these areas to inspect system state, not to manage day-to-day records.
+        Administration stays separate from day-to-day workspaces. Use these areas to configure and supervise the application.
     </div>
 
     <div class="overview-grid" style="grid-template-columns:repeat(2, minmax(0, 1fr));">
@@ -23,7 +23,7 @@
         <div class="screen-header">
             <div>
                 <h2 class="screen-title" style="font-size:26px;">Recent audit activity</h2>
-                <p class="screen-subtitle">The latest sensitive changes across core and plugins.</p>
+                <p class="screen-subtitle">The latest sensitive changes across administration and work areas.</p>
             </div>
         </div>
         <table class="entity-table">

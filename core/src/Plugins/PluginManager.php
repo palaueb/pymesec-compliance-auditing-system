@@ -74,6 +74,8 @@ class PluginManager implements PluginManagerInterface
                 'dependencies' => $manifest->dependentPluginIds(),
                 'required_dependencies' => $requiredDependencies,
                 'missing_dependencies' => $missingRequiredDependencies,
+                'support_path' => $manifest->supportPath(),
+                'support_locales' => $manifest->supportLocales(),
                 'expected_runtime_contract' => $this->expectedRuntimeContract($manifest->type()),
                 'runtime_contract_satisfied' => null,
                 'booted' => false,

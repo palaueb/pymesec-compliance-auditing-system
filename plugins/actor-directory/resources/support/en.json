@@ -1,0 +1,20 @@
+{
+  "concepts": [
+    {
+      "id": "ownership-assignment",
+      "label": "Ownership Assignment",
+      "category": "governance",
+      "summary": "A link between a functional actor and a business record to express accountability or ownership.",
+      "why_it_exists": "The platform needs a way to show who is responsible for something without confusing that responsibility with sign-in access.",
+      "how_to_use": [
+        "Assign the right functional actor to the records that need a visible owner or accountable role.",
+        "Do not treat ownership assignments as implicit permission grants."
+      ],
+      "relations": [
+        { "type": "uses", "target": "functional-actor", "summary": "Assignments point to functional actors." },
+        { "type": "may-reference", "target": "asset", "summary": "Assets can have ownership assignments." }
+      ],
+      "order": 280
+    }
+  ]
+}

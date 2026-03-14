@@ -73,6 +73,12 @@
     ],
     "path": "resources/lang"
   },
+  "support": {
+    "path": "resources/support",
+    "supported_locales": [
+      "en"
+    ]
+  },
   "lifecycle": {},
   "runtime": {
     "class": "PymeSec\\Plugins\\IdentityLdap\\IdentityLdapPlugin",

@@ -32,6 +32,8 @@ use PymeSec\Core\Permissions\PermissionRegistry;
 use PymeSec\Core\Plugins\Contracts\PluginManagerInterface;
 use PymeSec\Core\Plugins\PluginLifecycleManager;
 use PymeSec\Core\Plugins\PluginStateStore;
+use PymeSec\Core\Support\Contracts\SupportRegistryInterface;
+use PymeSec\Core\Support\JsonSupportRegistry;
 use PymeSec\Core\Tenancy\Contracts\TenancyServiceInterface;
 use PymeSec\Core\Tenancy\DatabaseTenancyService;
 use PymeSec\Core\UI\Contracts\ScreenRegistryInterface;
@@ -122,6 +124,12 @@ class AppServiceProvider extends ServiceProvider
 
         $this->app->singleton(WorkflowRegistryInterface::class, function (): WorkflowRegistryInterface {
             return new WorkflowRegistry;
+        });
+
+        $this->app->singleton(SupportRegistryInterface::class, function ($app): SupportRegistryInterface {
+            return new JsonSupportRegistry(
+                plugins: $app->make(PluginManagerInterface::class),
+            );
         });
 
         $this->app->singleton(WorkflowServiceInterface::class, function ($app): WorkflowServiceInterface {
@@ -337,6 +345,16 @@ class AppServiceProvider extends ServiceProvider
         ));
 
         $menus->registerCore(new MenuDefinition(
+            id: 'core.support',
+            owner: 'core',
+            labelKey: 'core.nav.support',
+            routeName: 'core.shell.index',
+            icon: 'book',
+            order: 8,
+            area: 'app',
+        ));
+
+        $menus->registerCore(new MenuDefinition(
             id: 'core.platform',
             owner: 'core',
             labelKey: 'core.nav.platform',
@@ -426,6 +444,15 @@ class AppServiceProvider extends ServiceProvider
             subtitleKey: 'core.dashboard.screen.subtitle',
             viewPath: resource_path('views/dashboard.blade.php'),
             dataResolver: fn (ScreenRenderContext $screenContext): array => $this->workspaceDashboardData($screenContext),
+        ));
+
+        $screens->register(new ScreenDefinition(
+            menuId: 'core.support',
+            owner: 'core',
+            titleKey: 'core.support.screen.title',
+            subtitleKey: 'core.support.screen.subtitle',
+            viewPath: resource_path('views/support.blade.php'),
+            dataResolver: fn (ScreenRenderContext $screenContext): array => $this->supportScreenData($screenContext),
         ));
 
         $screens->register(new ScreenDefinition(
@@ -820,6 +847,23 @@ class AppServiceProvider extends ServiceProvider
                 'platform' => collect($permissions)->filter(static fn (array $permission): bool => in_array('platform', $permission['contexts'] ?? [], true))->count(),
                 'organization' => collect($permissions)->filter(static fn (array $permission): bool => in_array('organization', $permission['contexts'] ?? [], true))->count(),
             ],
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function supportScreenData(ScreenRenderContext $screenContext): array
+    {
+        $catalogue = $this->app->make(SupportRegistryInterface::class)->catalogue($screenContext->locale);
+
+        return [
+            'query' => $this->coreScreenQuery($screenContext),
+            'guide' => $catalogue['guide'] ?? [],
+            'concepts' => $catalogue['concepts'] ?? [],
+            'concept_index' => $catalogue['concept_index'] ?? [],
+            'relationships' => $catalogue['relationships'] ?? [],
+            'issues' => $catalogue['issues'] ?? [],
         ];
     }
 
