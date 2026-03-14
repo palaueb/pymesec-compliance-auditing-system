@@ -324,9 +324,9 @@ $renderShell = function (
         'adminAreaUrl' => $adminHomeMenuId !== null
             ? route('core.admin.index', [...$baseQuery, 'menu' => $adminHomeMenuId])
             : null,
-        'appAreaUrl' => $appHomeMenuId !== null
-            ? route('core.shell.index', [...$baseQuery, 'menu' => $appHomeMenuId])
-            : null,
+        'appAreaUrl' => route('core.shell.index', $appHomeMenuId !== null
+            ? [...$baseQuery, 'menu' => $appHomeMenuId]
+            : $baseQuery),
         'tenancyShellUrl' => isset($adminMenuMap['core.tenancy'])
             ? route('core.admin.index', [...$baseQuery, 'menu' => 'core.tenancy'])
             : null,

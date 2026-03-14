@@ -1,32 +1,15 @@
 # PymeSec
 
-Laravel monorepo for PymeSec: a core-plus-plugins compliance platform with shell UI, tenancy, permissions, audit trail, workflow runtime, local identity, and LDAP sync.
+Compliance auditing system for small and medium-sized enterprises (SMEs). Automates security controls, GDPR, ISO 27001, and local compliance.
 
-## License
+[![PHP](https://img.shields.io/badge/PHP-^8.1-blue)](https://www.php.net/)
+[![Laravel](https://img.shields.io/badge/Laravel-^10-orange)](https://laravel.com/)
+[![License](https://img.shields.io/github/license/palaueb/pymesec-compliance-auditing-system)](https://github.com/palaueb/pymesec-compliance-auditing-system/blob/main/LICENSE)
+[![Lines of code](https://tokei.kojix2.net/badge/github/palaueb/pymesec-compliance-auditing-system/lines)](https://github.com/palaueb/pymesec-compliance-auditing-system)
+[![Top language](https://tokei.kojix2.net/badge/github/palaueb/pymesec-compliance-auditing-system/language)](https://github.com/palaueb/pymesec-compliance-auditing-system)
+[![Issues](https://img.shields.io/github/issues/palaueb/pymesec-compliance-auditing-system)](https://github.com/palaueb/pymesec-compliance-auditing-system/issues)
+[![Stars](https://img.shields.io/github/stars/palaueb/pymesec-compliance-auditing-system)](https://github.com/palaueb/pymesec-compliance-auditing-system/stargazers)
 
-This repository is licensed under `GNU Affero General Public License v3.0 or later`.
-
-- The monorepo root is covered by [LICENSE](/media/marc/4T_EXFAT/web/pymesec.com/pymesec/LICENSE).
-- The `core` declares `AGPL-3.0-or-later` in [core/composer.json](/media/marc/4T_EXFAT/web/pymesec.com/pymesec/core/composer.json).
-- The official plugins currently shipped in `plugins/` also declare `AGPL-3.0-or-later` in their manifests.
-
-The practical policy in this repository is simple:
-
-- bundled official plugins are licensed under the same AGPL terms as the core
-- external plugins may declare their own license, but compatibility and redistribution obligations depend on how tightly they are combined with the core runtime
-
-This repository does not define any plugin linking exception.
-
-The current state includes:
-
-- `core/` as the Laravel application for the platform core
-- `plugins/` for independently developable official plugin packages
-- local development with Docker
-- minimal local services: `apache`, `php`, `mysql`
-- optional LDAP demo stack with seeded users and groups
-- working scripts via `Makefile`
-- minimal CI to validate installation, linting, and tests
-- usable shell screens for core administration and current domain plugins
 
 ## Documentation Index
 
@@ -177,3 +160,30 @@ Connector values:
 - The plugin manifest temporarily remains in `plugin.json` until that decision is finalized.
 - Local development is handled with `apache + php + mysql`.
 - The minimal CI validates installation, migrations, linting, and tests, but not yet plugin compatibility matrices.
+
+
+## License
+
+This repository is licensed under `GNU Affero General Public License v3.0 or later`.
+
+- The monorepo root is covered by [LICENSE](/media/marc/4T_EXFAT/web/pymesec.com/pymesec/LICENSE).
+- The `core` declares `AGPL-3.0-or-later` in [core/composer.json](/media/marc/4T_EXFAT/web/pymesec.com/pymesec/core/composer.json).
+- The official plugins currently shipped in `plugins/` also declare `AGPL-3.0-or-later` in their manifests.
+
+The practical policy in this repository is simple:
+
+- bundled official plugins are licensed under the same AGPL terms as the core
+- external plugins may declare their own license, but compatibility and redistribution obligations depend on how tightly they are combined with the core runtime
+
+This repository does not define any plugin linking exception.
+
+The current state includes:
+
+- `core/` as the Laravel application for the platform core
+- `plugins/` for independently developable official plugin packages
+- local development with Docker
+- minimal local services: `apache`, `php`, `mysql`
+- optional LDAP demo stack with seeded users and groups
+- working scripts via `Makefile`
+- minimal CI to validate installation, linting, and tests
+- usable shell screens for core administration and current domain plugins
