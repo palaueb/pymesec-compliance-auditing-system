@@ -5,15 +5,10 @@
     @endphp
 
     @if ($can_manage_controls)
-        <div class="surface-card" id="control-editor">
-            <div class="row-between" style="margin-bottom:14px;">
-                <div>
-                    <div class="eyebrow">Controls</div>
-                    <div class="screen-title" style="font-size:26px;">New control</div>
-                </div>
-            </div>
+        <details class="surface-card" id="control-editor">
+            <summary class="button button-primary" style="display:inline-flex;">New control</summary>
 
-            <form class="upload-form" method="POST" action="{{ $create_route }}">
+            <form class="upload-form" method="POST" action="{{ $create_route }}" style="margin-top:14px;">
                 @csrf
                 <input type="hidden" name="principal_id" value="{{ $query['principal_id'] }}">
                 <input type="hidden" name="organization_id" value="{{ $query['organization_id'] }}">
@@ -70,7 +65,7 @@
                     @endif
                 </div>
             </form>
-        </div>
+        </details>
     @endif
 
     <div class="overview-grid">
@@ -105,31 +100,34 @@
             </div>
 
             @if ($can_manage_controls)
-                <form class="upload-form" method="POST" action="{{ $create_framework_route }}">
-                    @csrf
-                    <input type="hidden" name="principal_id" value="{{ $query['principal_id'] }}">
-                    <input type="hidden" name="organization_id" value="{{ $query['organization_id'] }}">
-                    <input type="hidden" name="locale" value="{{ $query['locale'] }}">
-                    <input type="hidden" name="menu" value="plugin.controls-catalog.root">
-                    <input type="hidden" name="membership_id" value="{{ $query['membership_ids'][0] ?? 'membership-org-a-hello' }}">
+                <details>
+                    <summary class="button button-secondary" style="display:inline-flex;">Add framework</summary>
+                    <form class="upload-form" method="POST" action="{{ $create_framework_route }}" style="margin-top:12px;">
+                        @csrf
+                        <input type="hidden" name="principal_id" value="{{ $query['principal_id'] }}">
+                        <input type="hidden" name="organization_id" value="{{ $query['organization_id'] }}">
+                        <input type="hidden" name="locale" value="{{ $query['locale'] }}">
+                        <input type="hidden" name="menu" value="plugin.controls-catalog.root">
+                        <input type="hidden" name="membership_id" value="{{ $query['membership_ids'][0] ?? 'membership-org-a-hello' }}">
 
-                    <div class="field">
-                        <label class="field-label" for="framework-code">Code</label>
-                        <input class="field-input" id="framework-code" name="code" placeholder="ISO 27001" required>
-                    </div>
-                    <div class="field">
-                        <label class="field-label" for="framework-name">Name</label>
-                        <input class="field-input" id="framework-name" name="name" placeholder="ISO 27001:2022" required>
-                    </div>
-                    <div class="field">
-                        <label class="field-label" for="framework-description">What it covers</label>
-                        <input class="field-input" id="framework-description" name="description" placeholder="Security management baseline">
-                    </div>
+                        <div class="field">
+                            <label class="field-label" for="framework-code">Code</label>
+                            <input class="field-input" id="framework-code" name="code" placeholder="ISO 27001" required>
+                        </div>
+                        <div class="field">
+                            <label class="field-label" for="framework-name">Name</label>
+                            <input class="field-input" id="framework-name" name="name" placeholder="ISO 27001:2022" required>
+                        </div>
+                        <div class="field">
+                            <label class="field-label" for="framework-description">What it covers</label>
+                            <input class="field-input" id="framework-description" name="description" placeholder="Security management baseline">
+                        </div>
 
-                    <div class="action-cluster" style="margin-top:12px;">
-                        <button class="button button-secondary" type="submit">Add framework</button>
-                    </div>
-                </form>
+                        <div class="action-cluster" style="margin-top:12px;">
+                            <button class="button button-secondary" type="submit">Add framework</button>
+                        </div>
+                    </form>
+                </details>
             @endif
         </div>
 
@@ -156,40 +154,43 @@
             </div>
 
             @if ($can_manage_controls)
-                <form class="upload-form" method="POST" action="{{ $create_requirement_route }}">
-                    @csrf
-                    <input type="hidden" name="principal_id" value="{{ $query['principal_id'] }}">
-                    <input type="hidden" name="organization_id" value="{{ $query['organization_id'] }}">
-                    <input type="hidden" name="locale" value="{{ $query['locale'] }}">
-                    <input type="hidden" name="menu" value="plugin.controls-catalog.root">
-                    <input type="hidden" name="membership_id" value="{{ $query['membership_ids'][0] ?? 'membership-org-a-hello' }}">
+                <details>
+                    <summary class="button button-secondary" style="display:inline-flex;">Add requirement</summary>
+                    <form class="upload-form" method="POST" action="{{ $create_requirement_route }}" style="margin-top:12px;">
+                        @csrf
+                        <input type="hidden" name="principal_id" value="{{ $query['principal_id'] }}">
+                        <input type="hidden" name="organization_id" value="{{ $query['organization_id'] }}">
+                        <input type="hidden" name="locale" value="{{ $query['locale'] }}">
+                        <input type="hidden" name="menu" value="plugin.controls-catalog.root">
+                        <input type="hidden" name="membership_id" value="{{ $query['membership_ids'][0] ?? 'membership-org-a-hello' }}">
 
-                    <div class="field">
-                        <label class="field-label" for="requirement-framework">Framework</label>
-                        <select class="field-select" id="requirement-framework" name="framework_id" @if ($hasFrameworks) required @endif>
-                            <option value="">{{ $hasFrameworks ? 'Select a framework' : 'Create a framework first' }}</option>
-                            @foreach ($framework_options as $framework)
-                                <option value="{{ $framework['id'] }}">{{ $framework['label'] }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div class="field">
-                        <label class="field-label" for="requirement-code">Requirement code</label>
-                        <input class="field-input" id="requirement-code" name="code" placeholder="A.5.18" required>
-                    </div>
-                    <div class="field">
-                        <label class="field-label" for="requirement-title">Title</label>
-                        <input class="field-input" id="requirement-title" name="title" placeholder="Access rights" required>
-                    </div>
-                    <div class="field">
-                        <label class="field-label" for="requirement-description">What to verify</label>
-                        <input class="field-input" id="requirement-description" name="description" placeholder="Review who gets access and why">
-                    </div>
+                        <div class="field">
+                            <label class="field-label" for="requirement-framework">Framework</label>
+                            <select class="field-select" id="requirement-framework" name="framework_id" @if ($hasFrameworks) required @endif>
+                                <option value="">{{ $hasFrameworks ? 'Select a framework' : 'Create a framework first' }}</option>
+                                @foreach ($framework_options as $framework)
+                                    <option value="{{ $framework['id'] }}">{{ $framework['label'] }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="field">
+                            <label class="field-label" for="requirement-code">Requirement code</label>
+                            <input class="field-input" id="requirement-code" name="code" placeholder="A.5.18" required>
+                        </div>
+                        <div class="field">
+                            <label class="field-label" for="requirement-title">Title</label>
+                            <input class="field-input" id="requirement-title" name="title" placeholder="Access rights" required>
+                        </div>
+                        <div class="field">
+                            <label class="field-label" for="requirement-description">What to verify</label>
+                            <input class="field-input" id="requirement-description" name="description" placeholder="Review who gets access and why">
+                        </div>
 
-                    <div class="action-cluster" style="margin-top:12px;">
-                        <button class="button button-secondary" type="submit" @disabled(! $hasFrameworks)>Add requirement</button>
-                    </div>
-                </form>
+                        <div class="action-cluster" style="margin-top:12px;">
+                            <button class="button button-secondary" type="submit" @disabled(! $hasFrameworks)>Add requirement</button>
+                        </div>
+                    </form>
+                </details>
             @endif
         </div>
     </div>

@@ -990,7 +990,6 @@
                         @endif
                         <div class="context-chip">
                             <label class="field-label" for="organization_id">{{ __('core.shell.organization_selector') }}</label>
-                            <div class="context-value">{{ $selectedOrganization['name'] ?? 'n/a' }}</div>
                             <select class="context-select" id="organization_id" name="organization_id" onchange="this.form.submit()">
                                 @foreach ($organizations as $organization)
                                     <option value="{{ $organization['id'] }}" @selected($organizationId === $organization['id'])>
@@ -1013,7 +1012,6 @@
                         @endif
                         <div class="context-chip">
                             <label class="field-label" for="scope_id">{{ __('core.shell.scope_selector') }}</label>
-                            <div class="context-value">{{ $selectedScope['name'] ?? __('core.shell.all_scopes') }}</div>
                             <select class="context-select" id="scope_id" name="scope_id" onchange="this.form.submit()">
                                 <option value="">{{ __('core.shell.all_scopes') }}</option>
                                 @foreach ($scopes as $scope)

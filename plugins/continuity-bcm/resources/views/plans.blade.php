@@ -31,50 +31,53 @@
                             <div class="table-note">{{ $plan['service']['title'] }}</div>
                             <div class="table-note">{{ $plan['strategy_summary'] }}</div>
                             @if ($can_manage_continuity)
-                                <form class="upload-form" method="POST" action="{{ route('plugin.continuity-bcm.plans.store', ['serviceId' => $plan['service']['id']]) }}" style="margin-top:10px;">
-                                    @csrf
-                                    <input type="hidden" name="principal_id" value="{{ $query['principal_id'] }}">
-                                    <input type="hidden" name="organization_id" value="{{ $query['organization_id'] }}">
-                                    <input type="hidden" name="locale" value="{{ $query['locale'] }}">
-                                    <input type="hidden" name="menu" value="plugin.continuity-bcm.plans">
-                                    <input type="hidden" name="membership_id" value="{{ $query['membership_ids'][0] ?? 'membership-org-a-hello' }}">
-                                    <input type="hidden" name="scope_id" value="{{ $plan['scope_id'] }}">
-                                    <div class="field">
-                                        <label class="field-label">Add plan to this service</label>
-                                        <input class="field-input" name="title" placeholder="Plan title" required>
-                                    </div>
-                                    <div class="field">
-                                        <input class="field-input" name="strategy_summary" placeholder="Strategy summary" required>
-                                    </div>
-                                    <div class="field">
-                                        <input class="field-input" name="test_due_on" type="date">
-                                    </div>
-                                    <div class="field">
-                                        <select class="field-select" name="linked_policy_id">
-                                            <option value="">No linked policy</option>
-                                            @foreach ($policy_options as $policy)
-                                                <option value="{{ $policy['id'] }}">{{ $policy['label'] }}</option>
-                                            @endforeach
-                                        </select>
-                                    </div>
-                                    <div class="field">
-                                        <select class="field-select" name="linked_finding_id">
-                                            <option value="">No linked finding</option>
-                                            @foreach ($finding_options as $finding)
-                                                <option value="{{ $finding['id'] }}">{{ $finding['label'] }}</option>
-                                            @endforeach
-                                        </select>
-                                    </div>
-                                    <div class="field">
-                                        <select class="field-select" name="owner_actor_id">
-                                            <option value="">No owner</option>
-                                            @foreach ($owner_actor_options as $actor)
-                                                <option value="{{ $actor['id'] }}">{{ $actor['label'] }}</option>
-                                            @endforeach
-                                        </select>
-                                    </div>
-                                    <button class="button button-ghost" type="submit">Add plan</button>
-                                </form>
+                                <details style="margin-top:10px;">
+                                    <summary class="button button-ghost" style="display:inline-flex;">Add plan</summary>
+                                    <form class="upload-form" method="POST" action="{{ route('plugin.continuity-bcm.plans.store', ['serviceId' => $plan['service']['id']]) }}" style="margin-top:10px;">
+                                        @csrf
+                                        <input type="hidden" name="principal_id" value="{{ $query['principal_id'] }}">
+                                        <input type="hidden" name="organization_id" value="{{ $query['organization_id'] }}">
+                                        <input type="hidden" name="locale" value="{{ $query['locale'] }}">
+                                        <input type="hidden" name="menu" value="plugin.continuity-bcm.plans">
+                                        <input type="hidden" name="membership_id" value="{{ $query['membership_ids'][0] ?? 'membership-org-a-hello' }}">
+                                        <input type="hidden" name="scope_id" value="{{ $plan['scope_id'] }}">
+                                        <div class="field">
+                                            <label class="field-label">Add plan to this service</label>
+                                            <input class="field-input" name="title" placeholder="Plan title" required>
+                                        </div>
+                                        <div class="field">
+                                            <input class="field-input" name="strategy_summary" placeholder="Strategy summary" required>
+                                        </div>
+                                        <div class="field">
+                                            <input class="field-input" name="test_due_on" type="date">
+                                        </div>
+                                        <div class="field">
+                                            <select class="field-select" name="linked_policy_id">
+                                                <option value="">No linked policy</option>
+                                                @foreach ($policy_options as $policy)
+                                                    <option value="{{ $policy['id'] }}">{{ $policy['label'] }}</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+                                        <div class="field">
+                                            <select class="field-select" name="linked_finding_id">
+                                                <option value="">No linked finding</option>
+                                                @foreach ($finding_options as $finding)
+                                                    <option value="{{ $finding['id'] }}">{{ $finding['label'] }}</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+                                        <div class="field">
+                                            <select class="field-select" name="owner_actor_id">
+                                                <option value="">No owner</option>
+                                                @foreach ($owner_actor_options as $actor)
+                                                    <option value="{{ $actor['id'] }}">{{ $actor['label'] }}</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+                                        <button class="button button-ghost" type="submit">Add plan</button>
+                                    </form>
+                                </details>
                             @endif
                         </td>
                         <td>
@@ -123,51 +126,57 @@
                             </div>
 
                             @if ($can_manage_continuity)
-                                <form class="upload-form" method="POST" action="{{ $plan['exercise_store_route'] }}" style="margin-top:10px;">
-                                    @csrf
-                                    <input type="hidden" name="principal_id" value="{{ $query['principal_id'] }}">
-                                    <input type="hidden" name="organization_id" value="{{ $query['organization_id'] }}">
-                                    <input type="hidden" name="locale" value="{{ $query['locale'] }}">
-                                    <input type="hidden" name="menu" value="plugin.continuity-bcm.plans">
-                                    <input type="hidden" name="membership_id" value="{{ $query['membership_ids'][0] ?? 'membership-org-a-hello' }}">
-                                    <input type="date" name="exercise_date" required>
-                                    <select class="field-select" name="exercise_type">
-                                        <option value="tabletop">Tabletop</option>
-                                        <option value="simulation">Simulation</option>
-                                        <option value="walkthrough">Walkthrough</option>
-                                    </select>
-                                    <input type="text" name="scenario_summary" placeholder="Exercise scenario" required>
-                                    <select class="field-select" name="outcome">
-                                        <option value="pass">Pass</option>
-                                        <option value="partial">Partial</option>
-                                        <option value="fail">Fail</option>
-                                    </select>
-                                    <input type="text" name="follow_up_summary" placeholder="Follow-up">
-                                    <button class="button button-secondary" type="submit">Log exercise</button>
-                                </form>
+                                <details style="margin-top:10px;">
+                                    <summary class="button button-ghost" style="display:inline-flex;">Log exercise</summary>
+                                    <form class="upload-form" method="POST" action="{{ $plan['exercise_store_route'] }}" style="margin-top:10px;">
+                                        @csrf
+                                        <input type="hidden" name="principal_id" value="{{ $query['principal_id'] }}">
+                                        <input type="hidden" name="organization_id" value="{{ $query['organization_id'] }}">
+                                        <input type="hidden" name="locale" value="{{ $query['locale'] }}">
+                                        <input type="hidden" name="menu" value="plugin.continuity-bcm.plans">
+                                        <input type="hidden" name="membership_id" value="{{ $query['membership_ids'][0] ?? 'membership-org-a-hello' }}">
+                                        <input type="date" name="exercise_date" required>
+                                        <select class="field-select" name="exercise_type">
+                                            <option value="tabletop">Tabletop</option>
+                                            <option value="simulation">Simulation</option>
+                                            <option value="walkthrough">Walkthrough</option>
+                                        </select>
+                                        <input type="text" name="scenario_summary" placeholder="Exercise scenario" required>
+                                        <select class="field-select" name="outcome">
+                                            <option value="pass">Pass</option>
+                                            <option value="partial">Partial</option>
+                                            <option value="fail">Fail</option>
+                                        </select>
+                                        <input type="text" name="follow_up_summary" placeholder="Follow-up">
+                                        <button class="button button-secondary" type="submit">Log exercise</button>
+                                    </form>
+                                </details>
 
-                                <form class="upload-form" method="POST" action="{{ $plan['execution_store_route'] }}" style="margin-top:10px;">
-                                    @csrf
-                                    <input type="hidden" name="principal_id" value="{{ $query['principal_id'] }}">
-                                    <input type="hidden" name="organization_id" value="{{ $query['organization_id'] }}">
-                                    <input type="hidden" name="locale" value="{{ $query['locale'] }}">
-                                    <input type="hidden" name="menu" value="plugin.continuity-bcm.plans">
-                                    <input type="hidden" name="membership_id" value="{{ $query['membership_ids'][0] ?? 'membership-org-a-hello' }}">
-                                    <input type="date" name="executed_on" required>
-                                    <select class="field-select" name="execution_type">
-                                        <option value="recovery-drill">Recovery drill</option>
-                                        <option value="restore-test">Restore test</option>
-                                        <option value="failover-test">Failover test</option>
-                                    </select>
-                                    <select class="field-select" name="status">
-                                        <option value="passed">Passed</option>
-                                        <option value="partial">Partial</option>
-                                        <option value="failed">Failed</option>
-                                    </select>
-                                    <input type="text" name="participants" placeholder="Participants">
-                                    <input type="text" name="notes" placeholder="Execution note">
-                                    <button class="button button-secondary" type="submit">Log test run</button>
-                                </form>
+                                <details style="margin-top:10px;">
+                                    <summary class="button button-ghost" style="display:inline-flex;">Log test run</summary>
+                                    <form class="upload-form" method="POST" action="{{ $plan['execution_store_route'] }}" style="margin-top:10px;">
+                                        @csrf
+                                        <input type="hidden" name="principal_id" value="{{ $query['principal_id'] }}">
+                                        <input type="hidden" name="organization_id" value="{{ $query['organization_id'] }}">
+                                        <input type="hidden" name="locale" value="{{ $query['locale'] }}">
+                                        <input type="hidden" name="menu" value="plugin.continuity-bcm.plans">
+                                        <input type="hidden" name="membership_id" value="{{ $query['membership_ids'][0] ?? 'membership-org-a-hello' }}">
+                                        <input type="date" name="executed_on" required>
+                                        <select class="field-select" name="execution_type">
+                                            <option value="recovery-drill">Recovery drill</option>
+                                            <option value="restore-test">Restore test</option>
+                                            <option value="failover-test">Failover test</option>
+                                        </select>
+                                        <select class="field-select" name="status">
+                                            <option value="passed">Passed</option>
+                                            <option value="partial">Partial</option>
+                                            <option value="failed">Failed</option>
+                                        </select>
+                                        <input type="text" name="participants" placeholder="Participants">
+                                        <input type="text" name="notes" placeholder="Execution note">
+                                        <button class="button button-secondary" type="submit">Log test run</button>
+                                    </form>
+                                </details>
                             @endif
                         </td>
                         <td>
@@ -180,18 +189,21 @@
                                 <span class="muted-note">No evidence yet</span>
                             @endforelse
                             @if ($can_manage_continuity)
-                                <form class="upload-form" method="POST" action="{{ $plan['artifact_upload_route'] }}" enctype="multipart/form-data" style="margin-top:10px;">
-                                    @csrf
-                                    <input type="hidden" name="principal_id" value="{{ $query['principal_id'] }}">
-                                    <input type="hidden" name="organization_id" value="{{ $query['organization_id'] }}">
-                                    <input type="hidden" name="locale" value="{{ $query['locale'] }}">
-                                    <input type="hidden" name="menu" value="plugin.continuity-bcm.plans">
-                                    <input type="hidden" name="membership_id" value="{{ $query['membership_ids'][0] ?? 'membership-org-a-hello' }}">
-                                    <input type="hidden" name="artifact_type" value="recovery-plan">
-                                    <input type="text" name="label" placeholder="Evidence label">
-                                    <input type="file" name="artifact" required>
-                                    <button class="button button-secondary" type="submit">Attach evidence</button>
-                                </form>
+                                <details style="margin-top:10px;">
+                                    <summary class="button button-ghost" style="display:inline-flex;">Attach evidence</summary>
+                                    <form class="upload-form" method="POST" action="{{ $plan['artifact_upload_route'] }}" enctype="multipart/form-data" style="margin-top:10px;">
+                                        @csrf
+                                        <input type="hidden" name="principal_id" value="{{ $query['principal_id'] }}">
+                                        <input type="hidden" name="organization_id" value="{{ $query['organization_id'] }}">
+                                        <input type="hidden" name="locale" value="{{ $query['locale'] }}">
+                                        <input type="hidden" name="menu" value="plugin.continuity-bcm.plans">
+                                        <input type="hidden" name="membership_id" value="{{ $query['membership_ids'][0] ?? 'membership-org-a-hello' }}">
+                                        <input type="hidden" name="artifact_type" value="recovery-plan">
+                                        <input type="text" name="label" placeholder="Evidence label">
+                                        <input type="file" name="artifact" required>
+                                        <button class="button button-secondary" type="submit">Attach evidence</button>
+                                    </form>
+                                </details>
                             @endif
                         </td>
                         <td><span class="pill">{{ $plan['state'] }}</span></td>
