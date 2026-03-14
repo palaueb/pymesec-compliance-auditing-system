@@ -55,6 +55,13 @@ Rules:
 - a role may aggregate permissions from the core and from plugins
 - role names may vary by organization, but permission keys remain stable
 
+Presentation guidance:
+
+- platform roles should be presented as `/admin` capabilities
+- access roles should be presented as identity and membership governance capabilities
+- operational roles should be presented as workspace responsibilities such as assets, controls, risks, findings, privacy, or continuity
+- UI role pickers for organization memberships should prioritize operational roles and keep platform roles out of ordinary workspace assignment flows
+
 ### Policy
 
 A `policy` is a runtime rule that evaluates authorization for a specific action, resource, or context beyond simple permission presence.
@@ -258,6 +265,8 @@ Examples of core-defined permissions:
   Meaning: manage roles, grants, and permission assignments
 
 These permissions belong to the core because they govern platform infrastructure rather than domain-specific capabilities.
+
+In the UI, they should therefore appear under platform administration rather than alongside ordinary organization work responsibilities.
 
 ## 8. Plugin Permission Examples
 

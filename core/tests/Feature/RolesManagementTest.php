@@ -12,10 +12,12 @@ class RolesManagementTest extends TestCase
 
     public function test_the_roles_screen_renders_inside_the_shell(): void
     {
-        $this->get('/app?menu=core.roles&principal_id=principal-admin')
+        $this->get('/admin?menu=core.roles&principal_id=principal-admin')
             ->assertOk()
             ->assertSee('Roles & Grants')
             ->assertSee('platform-admin')
+            ->assertSee('Platform administration')
+            ->assertSee('Operational workspaces')
             ->assertSee('New Role')
             ->assertSee('New Grant');
     }
@@ -65,7 +67,7 @@ class RolesManagementTest extends TestCase
             ->assertOk()
             ->assertJsonPath('result.status', 'allow');
 
-        $this->get('/app?menu=core.roles&principal_id=principal-admin')
+        $this->get('/admin?menu=core.roles&principal_id=principal-admin')
             ->assertOk()
             ->assertSee('privacy-auditor')
             ->assertSee('Privacy and policy auditor');

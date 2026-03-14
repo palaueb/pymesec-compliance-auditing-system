@@ -5,6 +5,7 @@ namespace PymeSec\Plugins\IdentityLocal;
 use PymeSec\Core\Contracts\IdentityPluginInterface;
 use PymeSec\Core\FunctionalActors\Contracts\FunctionalActorServiceInterface;
 use PymeSec\Core\Permissions\AuthorizationContext;
+use PymeSec\Core\Permissions\AuthorizationPresentation;
 use PymeSec\Core\Permissions\Contracts\AuthorizationServiceInterface;
 use PymeSec\Core\Plugins\PluginContext;
 use PymeSec\Core\Tenancy\Contracts\TenancyServiceInterface;
@@ -172,7 +173,7 @@ class IdentityLocalPlugin implements IdentityPluginInterface
                 'principal_id' => $user['principal_id'],
                 'label' => sprintf('%s (%s)', $user['display_name'], $user['email']),
             ], array_values($usersByPrincipal)),
-            'role_options' => $this->roleOptions($store),
+            'role_option_groups' => $this->roleOptions($store),
             'scope_options' => array_map(static fn ($scope): array => $scope->toArray(), $scopeContext->scopes),
             'can_manage_memberships' => $this->can($authorization, $screenContext, 'plugin.identity-local.memberships.manage', $organizationId),
         ];
@@ -214,11 +215,11 @@ class IdentityLocalPlugin implements IdentityPluginInterface
     }
 
     /**
-     * @return array<int, array<string, string>>
+     * @return array<int, array<string, mixed>>
      */
     private function roleOptions(DatabaseAuthorizationStore $store): array
     {
-        $options = [];
+        $groups = [];
 
         foreach ($store->roleDefinitions() as $role) {
             if ($role->permissions === []) {
@@ -229,15 +230,26 @@ class IdentityLocalPlugin implements IdentityPluginInterface
                 continue;
             }
 
-            $options[] = [
+            $category = AuthorizationPresentation::roleCategory($role->permissions);
+
+            $groups[$category]['roles'][] = [
                 'key' => $role->key,
                 'label' => $role->label,
             ];
+
+            $groups[$category]['key'] = $category;
+            $groups[$category]['label'] = AuthorizationPresentation::categoryLabel($category);
+            $groups[$category]['description'] = AuthorizationPresentation::categoryDescription($category);
         }
 
-        usort($options, static fn (array $left, array $right): int => strcmp($left['label'], $right['label']));
+        foreach ($groups as &$group) {
+            usort($group['roles'], static fn (array $left, array $right): int => strcmp($left['label'], $right['label']));
+        }
+        unset($group);
 
-        return $options;
+        uasort($groups, static fn (array $left, array $right): int => strcmp($left['label'], $right['label']));
+
+        return array_values($groups);
     }
 
     private function can(

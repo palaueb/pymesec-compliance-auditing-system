@@ -53,7 +53,7 @@ class TenancyTest extends TestCase
             'menu' => 'core.tenancy',
         ];
 
-        $this->get('/app?menu=core.tenancy&principal_id=principal-admin')
+        $this->get('/admin?menu=core.tenancy&principal_id=principal-admin')
             ->assertOk()
             ->assertSee('Create organization')
             ->assertSee('Create scope');

@@ -21,7 +21,7 @@ class CoreAdministrationScreensTest extends TestCase
         ];
 
         foreach ($screens as $menu => $title) {
-            $this->get(sprintf('/app?menu=%s&principal_id=principal-admin', $menu))
+            $this->get(sprintf('/admin?menu=%s&principal_id=principal-admin', $menu))
                 ->assertOk()
                 ->assertSee($title)
                 ->assertDontSee('Route n/a');

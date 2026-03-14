@@ -49,14 +49,25 @@ In v1, the shell is responsible for:
 - plugin-aware route entry points
 - permission-aware visibility handling for shared navigation
 
+The v1 runtime exposes two separate shell entrypoints:
+
+- `/app` for functional product workspaces contributed mainly by plugins
+- `/admin` for core administration and platform operations
+
+Core administration must not be mixed into the default product landing experience.
+
+The `/app` shell should open on a lightweight workspace dashboard before sending the user into one specific module. That landing view may be core-owned, but it must summarize operational work and route the user into plugin workspaces rather than platform administration.
+
 The core UI shell is not responsible for:
 
 - domain-specific forms
-- plugin-specific dashboards
+- plugin-specific dashboards as a mandatory requirement for every plugin
 - framework-specific navigation logic
 - domain-specific page composition beyond shell integration
 
 Those concerns belong to plugins.
+
+The core may still provide a minimal cross-workspace dashboard for `/app` that highlights the current organization context, recent audit activity, and quick links into visible work areas.
 
 ## 3. Menu System Model
 

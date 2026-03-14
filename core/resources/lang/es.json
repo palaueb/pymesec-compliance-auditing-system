@@ -1,6 +1,8 @@
 {
   "core.app.name": "PymeSec",
   "core.nav.dashboard": "Panel",
+  "core.dashboard.screen.title": "Panel de trabajo",
+  "core.dashboard.screen.subtitle": "Una vista rapida orientada a auditoria para el contexto activo y sus colas de trabajo.",
   "core.nav.platform": "Administracion",
   "core.nav.plugins": "Plugins",
   "core.nav.permissions": "Permisos",

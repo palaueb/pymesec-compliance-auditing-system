@@ -45,7 +45,9 @@ class IdentityLocalTest extends TestCase
             ->assertOk()
             ->assertSee('Organization Access')
             ->assertSee('membership-org-a-hello')
-            ->assertSee('Grant access');
+            ->assertSee('Grant access')
+            ->assertSee('Operational workspaces')
+            ->assertSee('Access administration');
     }
 
     public function test_users_and_memberships_can_be_created_and_updated_from_the_shell_runtime(): void

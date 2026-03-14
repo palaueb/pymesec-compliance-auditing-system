@@ -10,3 +10,4 @@ Current scope:
 - manifest-based registration during plugin bootstrapping
 - in-memory roles and grants for authorization evaluation
 - authorization result model with `allow`, `deny`, and `unresolved`
+- presentation taxonomy used by the shell to distinguish platform, access, and operational workspace roles

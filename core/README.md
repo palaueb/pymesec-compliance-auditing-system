@@ -13,6 +13,8 @@ The `core` contains only platform infrastructure and no functional compliance lo
 
 Runtime notes:
 
+- `/app` is the functional compliance workspace
+- `/admin` is the platform administration shell
 - `Tenancy` is now manageable from the shell for authorized platform admins
 - `Plugins` now supports lifecycle overrides from the shell for authorized platform admins
 - first install bootstrap is expected to start from the `system` seed profile

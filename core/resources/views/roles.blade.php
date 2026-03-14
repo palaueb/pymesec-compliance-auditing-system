@@ -6,6 +6,10 @@
         <div class="metric-card"><div class="metric-label">Organization Grants</div><div class="metric-value">{{ collect($grants)->where('context_type', 'organization')->count() }}</div></div>
     </div>
 
+    <div class="surface-note">
+        Platform permissions belong to <strong>/admin</strong>. Day-to-day organization responsibilities should usually be granted through operational workspace role sets, with identity roles reserved for access governance.
+    </div>
+
     <div class="surface-card" id="role-editor">
         <div class="row-between" style="margin-bottom:14px;">
             <div>
@@ -31,12 +35,20 @@
                 </div>
                 <div class="field" style="grid-column:1 / -1;">
                     <label class="field-label">Permissions</label>
-                    <div class="overview-grid" style="grid-template-columns:repeat(3, minmax(0, 1fr)); gap:8px;">
-                        @foreach ($permission_options as $permission)
-                            <label class="context-form" style="align-items:center;">
-                                <input type="checkbox" name="permissions[]" value="{{ $permission['key'] }}">
-                                <span class="meta-copy">{{ $permission['label'] }}</span>
-                            </label>
+                    <div class="overview-grid" style="grid-template-columns:repeat({{ max(1, count($permission_groups)) }}, minmax(0, 1fr)); gap:12px;">
+                        @foreach ($permission_groups as $group)
+                            <div class="surface-card" style="padding:12px;">
+                                <div class="entity-title">{{ $group['label'] }}</div>
+                                <div class="table-note" style="margin:4px 0 10px;">{{ $group['description'] }}</div>
+                                <div class="overview-grid" style="grid-template-columns:minmax(0, 1fr); gap:8px;">
+                                    @foreach ($group['permissions'] as $permission)
+                                        <label class="context-form" style="align-items:center;">
+                                            <input type="checkbox" name="permissions[]" value="{{ $permission['key'] }}">
+                                            <span class="meta-copy">{{ $permission['label'] }}</span>
+                                        </label>
+                                    @endforeach
+                                </div>
+                            </div>
                         @endforeach
                     </div>
                 </div>
@@ -142,6 +154,7 @@
             <thead>
                 <tr>
                     <th>Role</th>
+                    <th>Category</th>
                     <th>Permissions</th>
                     <th>Source</th>
                     <th>Update</th>
@@ -153,6 +166,10 @@
                         <td>
                             <div class="entity-title">{{ $role['label'] }}</div>
                             <div class="entity-id">{{ $role['key'] }}</div>
+                        </td>
+                        <td>
+                            <div>{{ $role['category_label'] }}</div>
+                            <div class="table-note">{{ $role['category_description'] }}</div>
                         </td>
                         <td>
                             <div class="table-note">{{ implode(', ', $role['permissions']) }}</div>
@@ -177,12 +194,20 @@
                                         <label class="field-label">Label</label>
                                         <input class="field-input" name="label" value="{{ $role['label'] }}" required>
                                     </div>
-                                    <div class="overview-grid" style="grid-template-columns:repeat(3, minmax(0, 1fr)); gap:8px;">
-                                        @foreach ($permission_options as $permission)
-                                            <label class="context-form" style="align-items:center;">
-                                                <input type="checkbox" name="permissions[]" value="{{ $permission['key'] }}" @checked(in_array($permission['key'], $role['permissions'], true))>
-                                                <span class="meta-copy">{{ $permission['label'] }}</span>
-                                            </label>
+                                    <div class="overview-grid" style="grid-template-columns:repeat({{ max(1, count($permission_groups)) }}, minmax(0, 1fr)); gap:12px;">
+                                        @foreach ($permission_groups as $group)
+                                            <div class="surface-card" style="padding:12px;">
+                                                <div class="entity-title">{{ $group['label'] }}</div>
+                                                <div class="table-note" style="margin:4px 0 10px;">{{ $group['description'] }}</div>
+                                                <div class="overview-grid" style="grid-template-columns:minmax(0, 1fr); gap:8px;">
+                                                    @foreach ($group['permissions'] as $permission)
+                                                        <label class="context-form" style="align-items:center;">
+                                                            <input type="checkbox" name="permissions[]" value="{{ $permission['key'] }}" @checked(in_array($permission['key'], $role['permissions'], true))>
+                                                            <span class="meta-copy">{{ $permission['label'] }}</span>
+                                                        </label>
+                                                    @endforeach
+                                                </div>
+                                            </div>
                                         @endforeach
                                     </div>
                                     <div class="action-cluster">

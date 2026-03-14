@@ -1,6 +1,8 @@
 {
   "core.app.name": "PymeSec",
   "core.nav.dashboard": "Tableau de bord",
+  "core.dashboard.screen.title": "Tableau de bord de travail",
+  "core.dashboard.screen.subtitle": "Une vue rapide orientee audit du contexte actif et des files de travail a traiter.",
   "core.nav.platform": "Administration",
   "core.nav.plugins": "Plugins",
   "core.nav.permissions": "Permissions",

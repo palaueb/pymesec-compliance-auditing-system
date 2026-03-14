@@ -12,16 +12,10 @@ class ExampleTest extends TestCase
     /**
      * A basic test example.
      */
-    public function test_the_core_root_endpoint_returns_a_successful_response(): void
+    public function test_the_root_redirects_to_login_when_no_session_is_present(): void
     {
-        $response = $this->get('/');
-
-        $response
-            ->assertOk()
-            ->assertJson([
-                'service' => 'pymesec-core',
-                'status' => 'ok',
-            ]);
+        $this->get('/')
+            ->assertRedirect(route('plugin.identity-local.auth.login'));
     }
 
     public function test_the_health_endpoint_returns_a_successful_response(): void
@@ -29,13 +23,13 @@ class ExampleTest extends TestCase
         $this->get('/up')->assertOk();
     }
 
-    public function test_the_shell_preview_renders_successfully(): void
+    public function test_the_app_shell_preview_renders_successfully_with_explicit_context(): void
     {
-        $this->get('/app')
+        $this->get('/app?principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
             ->assertOk()
-            ->assertSee('Asset Catalog')
-            ->assertSee('Track business assets, ownership, and lifecycle status.')
-            ->assertSee('ERP Production')
+            ->assertSee('Workspace Dashboard')
+            ->assertSee('Today in your workspace')
+            ->assertSee('Assets')
             ->assertDontSee('Core Shell Preview')
             ->assertDontSee('A first visual pass of the left-hand shell');
     }

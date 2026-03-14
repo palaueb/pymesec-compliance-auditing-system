@@ -1,6 +1,8 @@
 {
   "core.app.name": "PymeSec",
   "core.nav.dashboard": "Dashboard",
+  "core.dashboard.screen.title": "Workspace Dashboard",
+  "core.dashboard.screen.subtitle": "A quick audit-oriented view of the current organization context and work queues.",
   "core.nav.platform": "Administration",
   "core.nav.plugins": "Plugins",
   "core.nav.permissions": "Permissions",

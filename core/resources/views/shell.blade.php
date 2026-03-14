@@ -793,6 +793,14 @@
         </nav>
 
         <div class="sidebar-footer">
+            <div class="sidebar-auth">
+                @if ($shellArea === 'app' && $adminAreaUrl !== null)
+                    <a class="button button-secondary" href="{{ $adminAreaUrl }}">Administration</a>
+                @elseif ($shellArea === 'admin' && $appAreaUrl !== null)
+                    <a class="button button-secondary" href="{{ $appAreaUrl }}">Back to app</a>
+                @endif
+            </div>
+
             <button type="button" class="button button-ghost sidebar-utility" data-debug-open>
                 {{ __('core.shell.debug_button') }}
             </button>
@@ -814,7 +822,7 @@
                         <div class="sidebar-context-value">{{ $sessionPrincipalId ?? $principalId }}</div>
                     </div>
 
-                    <form class="sidebar-context-form" method="GET" action="{{ route('core.shell.index') }}">
+                    <form class="sidebar-context-form" method="GET" action="{{ route($currentShellRoute) }}">
                         <input type="hidden" name="principal_id" value="{{ $principalId }}">
                         <input type="hidden" name="locale" value="{{ $locale }}">
                         <input type="hidden" name="theme" value="{{ $themeKey }}">
@@ -836,7 +844,7 @@
                         </div>
                     </form>
 
-                    <form class="sidebar-context-form" method="GET" action="{{ route('core.shell.index') }}">
+                    <form class="sidebar-context-form" method="GET" action="{{ route($currentShellRoute) }}">
                         <input type="hidden" name="principal_id" value="{{ $principalId }}">
                         <input type="hidden" name="locale" value="{{ $locale }}">
                         <input type="hidden" name="theme" value="{{ $themeKey }}">

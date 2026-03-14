@@ -93,7 +93,7 @@ make seed-demo
 
 ```bash
 curl http://localhost:8080/up
-curl http://localhost:8080/
+curl -I http://localhost:8080/
 ```
 
 Fresh install behavior:
@@ -101,6 +101,8 @@ Fresh install behavior:
 - `system` is the default install profile
 - the app starts with no demo tenants or users
 - the first visit to `/app` opens the setup wizard and can create the first organization plus superadmin
+- `/` is the product entrypoint: if no session exists it redirects to login, and after sign-in it lands in the application workspace
+- `/admin` is a separate administration shell for platform settings and core operations
 
 ## Common Commands
 

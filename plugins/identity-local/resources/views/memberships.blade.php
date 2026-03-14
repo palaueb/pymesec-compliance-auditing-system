@@ -35,12 +35,20 @@
                         </select>
                     </div>
                     <div class="field" style="grid-column:1 / -1;">
-                        <label class="field-label" for="identity-membership-roles">Role sets</label>
-                        <select class="field-select" id="identity-membership-roles" name="role_keys[]" multiple size="{{ max(4, count($role_options)) }}">
-                            @foreach ($role_options as $role)
-                                <option value="{{ $role['key'] }}">{{ $role['label'] }}</option>
+                        <label class="field-label">Role sets</label>
+                        <div class="overview-grid" style="grid-template-columns:repeat({{ max(1, count($role_option_groups)) }}, minmax(0, 1fr)); gap:12px;">
+                            @foreach ($role_option_groups as $group)
+                                <div class="surface-card" style="padding:12px;">
+                                    <div class="entity-title">{{ $group['label'] }}</div>
+                                    <div class="table-note" style="margin:4px 0 10px;">{{ $group['description'] }}</div>
+                                    <select class="field-select" name="role_keys[]" multiple size="{{ max(3, count($group['roles'])) }}">
+                                        @foreach ($group['roles'] as $role)
+                                            <option value="{{ $role['key'] }}">{{ $role['label'] }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
                             @endforeach
-                        </select>
+                        </div>
                     </div>
                 </div>
 
@@ -85,11 +93,17 @@
                             @if ($row['membership']['roles'] === [])
                                 <span class="muted-note">No role sets yet</span>
                             @else
-                                <div class="data-stack">
-                                    @foreach ($row['membership']['roles'] as $role)
-                                        <div class="data-item">{{ $role }}</div>
-                                    @endforeach
-                                </div>
+                                @foreach ($role_option_groups as $group)
+                                    @php($groupRoles = array_values(array_filter($row['membership']['roles'], static fn (string $roleKey): bool => in_array($roleKey, array_column($group['roles'], 'key'), true))))
+                                    @if ($groupRoles !== [])
+                                        <div class="table-key" style="margin-bottom:4px;">{{ $group['label'] }}</div>
+                                        <div class="data-stack" style="margin-bottom:8px;">
+                                            @foreach ($groupRoles as $role)
+                                                <div class="data-item">{{ $role }}</div>
+                                            @endforeach
+                                        </div>
+                                    @endif
+                                @endforeach
                             @endif
                         </td>
                         <td>
@@ -127,11 +141,19 @@
                                         </div>
                                         <div class="field">
                                             <label class="field-label">Role sets</label>
-                                            <select class="field-select" name="role_keys[]" multiple size="{{ max(4, count($role_options)) }}">
-                                                @foreach ($role_options as $role)
-                                                    <option value="{{ $role['key'] }}" @selected(in_array($role['key'], $row['membership']['roles'], true))>{{ $role['label'] }}</option>
+                                            <div class="overview-grid" style="grid-template-columns:repeat({{ max(1, count($role_option_groups)) }}, minmax(0, 1fr)); gap:12px;">
+                                                @foreach ($role_option_groups as $group)
+                                                    <div class="surface-card" style="padding:12px;">
+                                                        <div class="entity-title">{{ $group['label'] }}</div>
+                                                        <div class="table-note" style="margin:4px 0 10px;">{{ $group['description'] }}</div>
+                                                        <select class="field-select" name="role_keys[]" multiple size="{{ max(3, count($group['roles'])) }}">
+                                                            @foreach ($group['roles'] as $role)
+                                                                <option value="{{ $role['key'] }}" @selected(in_array($role['key'], $row['membership']['roles'], true))>{{ $role['label'] }}</option>
+                                                            @endforeach
+                                                        </select>
+                                                    </div>
                                                 @endforeach
-                                            </select>
+                                            </div>
                                         </div>
                                         <div class="field">
                                             <label class="field-label">Scope access</label>

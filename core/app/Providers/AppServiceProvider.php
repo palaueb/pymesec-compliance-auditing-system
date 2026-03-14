@@ -3,6 +3,7 @@
 namespace App\Providers;
 
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
 use PymeSec\Core\Artifacts\Contracts\ArtifactServiceInterface;
 use PymeSec\Core\Artifacts\DatabaseArtifactService;
@@ -16,9 +17,11 @@ use PymeSec\Core\Menus\Contracts\MenuRegistryInterface;
 use PymeSec\Core\Menus\MenuDefinition;
 use PymeSec\Core\Menus\MenuLabelResolver;
 use PymeSec\Core\Menus\MenuRegistry;
+use PymeSec\Core\Menus\MenuVisibilityContext;
 use PymeSec\Core\Notifications\Contracts\NotificationServiceInterface;
 use PymeSec\Core\Notifications\DatabaseNotificationService;
 use PymeSec\Core\Permissions\AuthorizationContext;
+use PymeSec\Core\Permissions\AuthorizationPresentation;
 use PymeSec\Core\Permissions\AuthorizationService;
 use PymeSec\Core\Permissions\Contracts\AuthorizationServiceInterface;
 use PymeSec\Core\Permissions\Contracts\AuthorizationStoreInterface;
@@ -26,8 +29,9 @@ use PymeSec\Core\Permissions\Contracts\PermissionRegistryInterface;
 use PymeSec\Core\Permissions\DatabaseAuthorizationStore;
 use PymeSec\Core\Permissions\PermissionDefinition;
 use PymeSec\Core\Permissions\PermissionRegistry;
-use PymeSec\Core\Plugins\PluginLifecycleManager;
 use PymeSec\Core\Plugins\Contracts\PluginManagerInterface;
+use PymeSec\Core\Plugins\PluginLifecycleManager;
+use PymeSec\Core\Plugins\PluginStateStore;
 use PymeSec\Core\Tenancy\Contracts\TenancyServiceInterface;
 use PymeSec\Core\Tenancy\DatabaseTenancyService;
 use PymeSec\Core\UI\Contracts\ScreenRegistryInterface;
@@ -323,6 +327,15 @@ class AppServiceProvider extends ServiceProvider
         $menus = $this->app->make(MenuRegistryInterface::class);
 
         $menus->registerCore(new MenuDefinition(
+            id: 'core.dashboard',
+            owner: 'core',
+            labelKey: 'core.nav.dashboard',
+            routeName: 'core.shell.index',
+            icon: 'pulse',
+            order: 5,
+        ));
+
+        $menus->registerCore(new MenuDefinition(
             id: 'core.platform',
             owner: 'core',
             labelKey: 'core.nav.platform',
@@ -399,6 +412,15 @@ class AppServiceProvider extends ServiceProvider
         $screens = $this->app->make(ScreenRegistryInterface::class);
 
         $screens->register(new ScreenDefinition(
+            menuId: 'core.dashboard',
+            owner: 'core',
+            titleKey: 'core.dashboard.screen.title',
+            subtitleKey: 'core.dashboard.screen.subtitle',
+            viewPath: resource_path('views/dashboard.blade.php'),
+            dataResolver: fn (ScreenRenderContext $screenContext): array => $this->workspaceDashboardData($screenContext),
+        ));
+
+        $screens->register(new ScreenDefinition(
             menuId: 'core.platform',
             owner: 'core',
             titleKey: 'core.platform.screen.title',
@@ -408,12 +430,12 @@ class AppServiceProvider extends ServiceProvider
             toolbarResolver: fn (ScreenRenderContext $screenContext): array => [
                 new ToolbarAction(
                     label: 'Roles',
-                    url: route('core.shell.index', [...$this->coreScreenQuery($screenContext), 'menu' => 'core.roles']),
+                    url: route('core.admin.index', [...$this->coreScreenQuery($screenContext), 'menu' => 'core.roles']),
                     variant: 'primary',
                 ),
                 new ToolbarAction(
                     label: 'Plugins',
-                    url: route('core.shell.index', [...$this->coreScreenQuery($screenContext), 'menu' => 'core.plugins']),
+                    url: route('core.admin.index', [...$this->coreScreenQuery($screenContext), 'menu' => 'core.plugins']),
                     variant: 'secondary',
                 ),
             ],
@@ -459,16 +481,53 @@ class AppServiceProvider extends ServiceProvider
                     }
                 }
 
+                $roleRecords = array_map(function (array $role): array {
+                    $category = AuthorizationPresentation::roleCategory($role['permissions'] ?? []);
+
+                    return [
+                        ...$role,
+                        'category' => $category,
+                        'category_label' => AuthorizationPresentation::categoryLabel($category),
+                        'category_description' => AuthorizationPresentation::categoryDescription($category),
+                    ];
+                }, $store->roleRecords());
+
+                usort($roleRecords, static function (array $left, array $right): int {
+                    return [$left['category'], $left['label']] <=> [$right['category'], $right['label']];
+                });
+
+                $permissionOptions = array_map(static function ($permission): array {
+                    $category = AuthorizationPresentation::permissionCategory($permission->key);
+
+                    return [
+                        'key' => $permission->key,
+                        'label' => $permission->label,
+                        'category' => $category,
+                    ];
+                }, $permissions->all());
+
+                $permissionGroups = collect($permissionOptions)
+                    ->groupBy('category')
+                    ->map(static function ($items, $category): array {
+                        return [
+                            'key' => (string) $category,
+                            'label' => AuthorizationPresentation::categoryLabel((string) $category),
+                            'description' => AuthorizationPresentation::categoryDescription((string) $category),
+                            'permissions' => collect($items)->sortBy('label')->values()->all(),
+                        ];
+                    })
+                    ->sortBy('label')
+                    ->values()
+                    ->all();
+
                 return [
-                    'roles' => $store->roleRecords(),
+                    'roles' => $roleRecords,
                     'grants' => $store->grantRecords(),
                     'query' => $query,
                     'role_store_route' => route('core.roles.store'),
                     'grant_store_route' => route('core.grants.store'),
-                    'permission_options' => array_map(static fn ($permission): array => [
-                        'key' => $permission->key,
-                        'label' => $permission->label,
-                    ], $permissions->all()),
+                    'permission_options' => $permissionOptions,
+                    'permission_groups' => $permissionGroups,
                     'principal_options' => $principalOptions,
                     'membership_options' => DB::table('memberships')
                         ->orderBy('organization_id')
@@ -575,25 +634,79 @@ class AppServiceProvider extends ServiceProvider
                 [
                     'label' => 'Plugins',
                     'copy' => 'Discovery status, compatibility, and activation state.',
-                    'url' => route('core.shell.index', [...$query, 'menu' => 'core.plugins']),
+                    'url' => route('core.admin.index', [...$query, 'menu' => 'core.plugins']),
                 ],
                 [
                     'label' => 'Permissions',
                     'copy' => 'Registered capabilities across core and plugins.',
-                    'url' => route('core.shell.index', [...$query, 'menu' => 'core.permissions']),
+                    'url' => route('core.admin.index', [...$query, 'menu' => 'core.permissions']),
                 ],
                 [
                     'label' => 'Tenancy',
                     'copy' => 'Organizations, scopes, and access boundaries.',
-                    'url' => route('core.shell.index', [...$query, 'menu' => 'core.tenancy']),
+                    'url' => route('core.admin.index', [...$query, 'menu' => 'core.tenancy']),
                 ],
                 [
                     'label' => 'Audit',
                     'copy' => 'Recent sensitive operations and evidence trail.',
-                    'url' => route('core.shell.index', [...$query, 'menu' => 'core.audit']),
+                    'url' => route('core.admin.index', [...$query, 'menu' => 'core.audit']),
                 ],
             ],
             'recent_audit' => array_map(static fn ($record): array => $record->toArray(), $audit),
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function workspaceDashboardData(ScreenRenderContext $screenContext): array
+    {
+        $query = $this->coreScreenQuery($screenContext);
+        $organizationId = $screenContext->organizationId;
+        $scopeId = $screenContext->scopeId;
+        $metrics = [
+            'assets' => $this->scopedCount('assets', $organizationId, $scopeId),
+            'risks_assessing' => $this->scopedStateCount('risks', $organizationId, $scopeId, 'state', ['assessing']),
+            'controls_review' => $this->scopedStateCount('controls', $organizationId, $scopeId, 'state', ['review']),
+            'findings_open' => $this->scopedStateCount('findings', $organizationId, $scopeId, 'state', ['open', 'remediating']),
+            'exceptions_requested' => $this->scopedStateCount('policy_exceptions', $organizationId, $scopeId, 'state', ['requested']),
+        ];
+
+        $recentAudit = array_map(
+            static fn ($record): array => $record->toArray(),
+            $this->app->make(AuditTrailInterface::class)->latest(8),
+        );
+
+        $visibleMenus = $this->resolvedVisibleMenus($screenContext);
+        $appMenus = $this->filterMenusByArea($visibleMenus, 'app');
+        $quickLinks = collect($this->flattenMenus($appMenus))
+            ->reject(static fn (array $menu, string $id): bool => $id === 'core.dashboard')
+            ->filter(static fn (array $menu): bool => is_string($menu['shell_url'] ?? null))
+            ->take(6)
+            ->map(static fn (array $menu): array => [
+                'id' => $menu['id'],
+                'label' => $menu['label'] ?? $menu['id'],
+                'copy' => $menu['caption'] ?? 'Open this workspace.',
+                'url' => $menu['shell_url'],
+            ])
+            ->values()
+            ->all();
+
+        $membershipRoles = collect($screenContext->memberships)
+            ->flatMap(static fn ($membership): array => $membership->roles)
+            ->unique()
+            ->sort()
+            ->values()
+            ->all();
+
+        return [
+            'query' => $query,
+            'organization' => $organizationId,
+            'scope' => $scopeId,
+            'metrics' => $metrics,
+            'recent_audit' => $recentAudit,
+            'quick_links' => $quickLinks,
+            'role_sets' => $membershipRoles,
         ];
     }
 
@@ -604,7 +717,7 @@ class AppServiceProvider extends ServiceProvider
     {
         $runtimePlugins = $this->app->make(PluginManagerInterface::class)->status();
         $authorization = $this->app->make(AuthorizationServiceInterface::class);
-        $visibleMenus = $this->app->make(MenuRegistryInterface::class)->visible(new \PymeSec\Core\Menus\MenuVisibilityContext(
+        $visibleMenus = $this->app->make(MenuRegistryInterface::class)->visible(new MenuVisibilityContext(
             principal: $screenContext->principal,
             memberships: $screenContext->memberships,
             organizationId: $screenContext->organizationId,
@@ -666,7 +779,7 @@ class AppServiceProvider extends ServiceProvider
             ))->allowed(),
             'enable_plugin_route' => static fn (string $pluginId): string => route('core.plugins.enable', ['pluginId' => $pluginId]),
             'disable_plugin_route' => static fn (string $pluginId): string => route('core.plugins.disable', ['pluginId' => $pluginId]),
-            'state_path' => $this->app->make(\PymeSec\Core\Plugins\PluginStateStore::class)->path(),
+            'state_path' => $this->app->make(PluginStateStore::class)->path(),
         ];
     }
 
@@ -872,5 +985,139 @@ class AppServiceProvider extends ServiceProvider
         }
 
         return $query;
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    private function resolvedVisibleMenus(ScreenRenderContext $screenContext): array
+    {
+        $menus = $this->app->make(MenuRegistryInterface::class);
+        $labels = $this->app->make(MenuLabelResolver::class);
+        $resolved = $labels->resolveTree($menus->visible(new MenuVisibilityContext(
+            principal: $screenContext->principal,
+            memberships: $screenContext->memberships,
+            organizationId: $screenContext->organizationId,
+            scopeId: $screenContext->scopeId,
+        )), $screenContext->locale);
+        $query = $this->coreScreenQuery($screenContext);
+
+        return $this->decorateMenusWithShellUrls($resolved, $query);
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $items
+     * @return array<int, array<string, mixed>>
+     */
+    private function filterMenusByArea(array $items, string $targetArea): array
+    {
+        $filtered = [];
+
+        foreach ($items as $item) {
+            if (! is_array($item) || ! is_string($item['id'] ?? null)) {
+                continue;
+            }
+
+            $isCoreMenu = ($item['owner'] ?? 'core') === 'core';
+            $include = $targetArea === 'admin'
+                ? $isCoreMenu && ($item['id'] ?? null) !== 'core.dashboard'
+                : ! $isCoreMenu || ($item['id'] ?? null) === 'core.dashboard';
+
+            if (! $include) {
+                continue;
+            }
+
+            $filtered[] = [
+                ...$item,
+                'children' => $this->filterMenusByArea($item['children'] ?? [], $targetArea),
+            ];
+        }
+
+        return $filtered;
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $items
+     * @return array<string, array<string, mixed>>
+     */
+    private function flattenMenus(array $items): array
+    {
+        $map = [];
+
+        foreach ($items as $item) {
+            if (! is_array($item) || ! is_string($item['id'] ?? null)) {
+                continue;
+            }
+
+            $map[$item['id']] = $item;
+
+            foreach ($this->flattenMenus($item['children'] ?? []) as $id => $child) {
+                $map[$id] = $child;
+            }
+        }
+
+        return $map;
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $items
+     * @param  array<string, mixed>  $query
+     * @return array<int, array<string, mixed>>
+     */
+    private function decorateMenusWithShellUrls(array $items, array $query): array
+    {
+        return array_map(function (array $item) use ($query): array {
+            return [
+                ...$item,
+                'shell_url' => route('core.shell.index', [...$query, 'menu' => $item['id']]),
+                'children' => $this->decorateMenusWithShellUrls($item['children'] ?? [], $query),
+            ];
+        }, $items);
+    }
+
+    private function scopedCount(string $table, ?string $organizationId, ?string $scopeId = null): int
+    {
+        if (! Schema::hasTable($table)) {
+            return 0;
+        }
+
+        $query = DB::table($table);
+
+        if (is_string($organizationId) && $organizationId !== '' && Schema::hasColumn($table, 'organization_id')) {
+            $query->where('organization_id', $organizationId);
+        }
+
+        if (is_string($scopeId) && $scopeId !== '' && Schema::hasColumn($table, 'scope_id')) {
+            $query->where('scope_id', $scopeId);
+        }
+
+        return $query->count();
+    }
+
+    /**
+     * @param  array<int, string>  $states
+     */
+    private function scopedStateCount(
+        string $table,
+        ?string $organizationId,
+        ?string $scopeId,
+        string $stateColumn,
+        array $states,
+    ): int {
+        if (! Schema::hasTable($table) || ! Schema::hasColumn($table, $stateColumn)) {
+            return 0;
+        }
+
+        $query = DB::table($table);
+
+        if (is_string($organizationId) && $organizationId !== '' && Schema::hasColumn($table, 'organization_id')) {
+            $query->where('organization_id', $organizationId);
+        }
+
+        if (is_string($scopeId) && $scopeId !== '' && Schema::hasColumn($table, 'scope_id')) {
+            $query->where('scope_id', $scopeId);
+        }
+
+        return $query->whereIn($stateColumn, $states)->count();
     }
 }

@@ -2,9 +2,9 @@
 
 namespace Tests;
 
+use Database\Seeders\TestDatabaseSeeder;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 use Illuminate\Support\Facades\Schema;
-use Database\Seeders\TestDatabaseSeeder;
 use PymeSec\Core\Plugins\PluginStateStore;
 
 abstract class TestCase extends BaseTestCase

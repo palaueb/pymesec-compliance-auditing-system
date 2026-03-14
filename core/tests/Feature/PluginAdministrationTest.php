@@ -15,7 +15,7 @@ class PluginAdministrationTest extends TestCase
         $this->post('/core/plugins/hello-world/disable', [
             'principal_id' => 'principal-admin',
             'menu' => 'core.plugins',
-        ])->assertRedirect(route('core.shell.index', ['principal_id' => 'principal-admin', 'menu' => 'core.plugins']))
+        ])->assertRedirect(route('core.admin.index', ['principal_id' => 'principal-admin', 'menu' => 'core.plugins']))
             ->assertSessionHas('status');
 
         $effective = $this->app->make(PluginStateStore::class)->effectiveEnabled(config('plugins.enabled', []));
@@ -28,7 +28,7 @@ class PluginAdministrationTest extends TestCase
         $this->post('/core/plugins/actor-directory/disable', [
             'principal_id' => 'principal-admin',
             'menu' => 'core.plugins',
-        ])->assertRedirect(route('core.shell.index', ['principal_id' => 'principal-admin', 'menu' => 'core.plugins']))
+        ])->assertRedirect(route('core.admin.index', ['principal_id' => 'principal-admin', 'menu' => 'core.plugins']))
             ->assertSessionHas('error');
 
         $effective = $this->app->make(PluginStateStore::class)->effectiveEnabled(config('plugins.enabled', []));
