@@ -190,6 +190,7 @@ class PluginManager implements PluginManagerInterface
                         icon: $menu->icon,
                         order: $menu->order,
                         permission: $menu->permission,
+                        area: $menu->area,
                     ),
                     $contexts[$pluginId]->manifest()->dependentPluginIds(),
                 );

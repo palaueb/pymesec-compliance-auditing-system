@@ -261,6 +261,7 @@ Artisan::command('menus:list', function (MenuRegistryInterface $menus) {
             $menu['parent_id'] ?? '',
             $menu['route'] ?? '',
             $menu['permission'] ?? '',
+            $menu['area'] ?? 'app',
             (string) $menu['order'],
         ];
 
@@ -271,13 +272,14 @@ Artisan::command('menus:list', function (MenuRegistryInterface $menus) {
                 $child['parent_id'] ?? '',
                 $child['route'] ?? '',
                 $child['permission'] ?? '',
+                $child['area'] ?? 'app',
                 (string) $child['order'],
             ];
         }
     }
 
     $this->table(
-        ['ID', 'Owner', 'Parent', 'Route', 'Permission', 'Order'],
+        ['ID', 'Owner', 'Parent', 'Route', 'Permission', 'Area', 'Order'],
         $rows,
     );
 })->purpose('List finalized shell menu entries');

@@ -212,6 +212,9 @@ class PluginManifest
                 icon: is_string($menu['icon'] ?? null) && $menu['icon'] !== '' ? $menu['icon'] : null,
                 order: is_int($menu['order'] ?? null) ? $menu['order'] : (is_numeric($menu['order'] ?? null) ? (int) $menu['order'] : 100),
                 permission: is_string($menu['permission'] ?? null) && $menu['permission'] !== '' ? $menu['permission'] : null,
+                area: is_string($menu['area'] ?? null) && in_array($menu['area'], ['app', 'admin'], true)
+                    ? $menu['area']
+                    : 'app',
             );
         }
 

@@ -58,7 +58,8 @@
       "parent_id": "plugin.identity-local.users",
       "icon": "network",
       "order": 20,
-      "permission": "plugin.identity-ldap.directory.view"
+      "permission": "plugin.identity-ldap.directory.view",
+      "area": "admin"
     }
   ],
   "admin": {

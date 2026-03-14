@@ -290,17 +290,18 @@ class PluginSystemTest extends TestCase
             ->assertOk()
             ->assertJsonPath('menus.0.id', 'core.dashboard')
             ->assertJsonPath('menus.1.id', 'core.platform')
-            ->assertJsonPath('menus.2.id', 'plugin.asset-catalog.root')
-            ->assertJsonPath('menus.2.children.0.id', 'plugin.asset-catalog.lifecycle')
-            ->assertJsonPath('menus.3.id', 'plugin.controls-catalog.root')
-            ->assertJsonPath('menus.4.id', 'plugin.hello-world.root')
-            ->assertJsonPath('menus.5.id', 'plugin.risk-management.root')
-            ->assertJsonPath('menus.6.id', 'plugin.findings-remediation.root')
-            ->assertJsonPath('menus.7.id', 'plugin.actor-directory.root')
-            ->assertJsonPath('menus.8.id', 'plugin.policy-exceptions.root')
-            ->assertJsonPath('menus.9.id', 'plugin.data-flows-privacy.root')
-            ->assertJsonPath('menus.10.id', 'plugin.identity-local.users')
-            ->assertJsonPath('menus.11.id', 'plugin.continuity-bcm.root')
+            ->assertJsonPath('menus.2.id', 'plugin.identity-local.memberships')
+            ->assertJsonPath('menus.3.id', 'plugin.asset-catalog.root')
+            ->assertJsonPath('menus.3.children.0.id', 'plugin.asset-catalog.lifecycle')
+            ->assertJsonPath('menus.4.id', 'plugin.controls-catalog.root')
+            ->assertJsonPath('menus.5.id', 'plugin.hello-world.root')
+            ->assertJsonPath('menus.6.id', 'plugin.risk-management.root')
+            ->assertJsonPath('menus.7.id', 'plugin.findings-remediation.root')
+            ->assertJsonPath('menus.8.id', 'plugin.actor-directory.root')
+            ->assertJsonPath('menus.9.id', 'plugin.policy-exceptions.root')
+            ->assertJsonPath('menus.10.id', 'plugin.data-flows-privacy.root')
+            ->assertJsonPath('menus.11.id', 'plugin.identity-local.users')
+            ->assertJsonPath('menus.12.id', 'plugin.continuity-bcm.root')
             ->assertJsonPath('issues', []);
     }
 
@@ -324,37 +325,37 @@ class PluginSystemTest extends TestCase
     {
         $this->artisan('menus:list')
             ->expectsTable(
-                ['ID', 'Owner', 'Parent', 'Route', 'Permission', 'Order'],
+                ['ID', 'Owner', 'Parent', 'Route', 'Permission', 'Area', 'Order'],
                 [
-                    ['core.dashboard', 'core', '', 'core.shell.index', '', '5'],
-                    ['core.platform', 'core', '', '', '', '10'],
-                    ['core.plugins', 'core', 'core.platform', 'core.plugins.index', 'core.plugins.view', '10'],
-                    ['core.permissions', 'core', 'core.platform', 'core.permissions.index', 'core.permissions.view', '20'],
-                    ['core.roles', 'core', 'core.platform', 'core.roles.index', 'core.roles.view', '25'],
-                    ['core.tenancy', 'core', 'core.platform', 'core.tenancy.index', 'core.tenancy.view', '30'],
-                    ['core.audit', 'core', 'core.platform', 'core.audit.index', 'core.audit-logs.view', '40'],
-                    ['core.functional-actors', 'core', 'core.platform', 'core.functional-actors.index', 'core.functional-actors.view', '50'],
-                    ['plugin.asset-catalog.root', 'asset-catalog', '', 'plugin.asset-catalog.index', 'plugin.asset-catalog.assets.view', '20'],
-                    ['plugin.asset-catalog.lifecycle', 'asset-catalog', 'plugin.asset-catalog.root', 'plugin.asset-catalog.lifecycle', 'plugin.asset-catalog.assets.view', '10'],
-                    ['plugin.controls-catalog.root', 'controls-catalog', '', 'plugin.controls-catalog.index', 'plugin.controls-catalog.controls.view', '25'],
-                    ['plugin.controls-catalog.reviews', 'controls-catalog', 'plugin.controls-catalog.root', 'plugin.controls-catalog.reviews', 'plugin.controls-catalog.controls.view', '10'],
-                    ['plugin.hello-world.root', 'hello-world', '', 'plugin.hello-world.index', 'plugin.hello-world.hello.view', '30'],
-                    ['plugin.hello-world.examples', 'hello-world', 'plugin.hello-world.root', 'plugin.hello-world.index', 'plugin.hello-world.hello.view', '10'],
-                    ['plugin.risk-management.root', 'risk-management', '', 'plugin.risk-management.index', 'plugin.risk-management.risks.view', '35'],
-                    ['plugin.risk-management.board', 'risk-management', 'plugin.risk-management.root', 'plugin.risk-management.board', 'plugin.risk-management.risks.view', '10'],
-                    ['plugin.findings-remediation.root', 'findings-remediation', '', 'plugin.findings-remediation.index', 'plugin.findings-remediation.findings.view', '38'],
-                    ['plugin.findings-remediation.board', 'findings-remediation', 'plugin.findings-remediation.root', 'plugin.findings-remediation.board', 'plugin.findings-remediation.findings.view', '10'],
-                    ['plugin.actor-directory.root', 'actor-directory', '', 'plugin.actor-directory.index', 'plugin.actor-directory.actors.view', '40'],
-                    ['plugin.actor-directory.assignments', 'actor-directory', 'plugin.actor-directory.root', 'plugin.actor-directory.assignments', 'plugin.actor-directory.actors.view', '10'],
-                    ['plugin.policy-exceptions.root', 'policy-exceptions', '', 'plugin.policy-exceptions.index', 'plugin.policy-exceptions.policies.view', '42'],
-                    ['plugin.policy-exceptions.exceptions', 'policy-exceptions', 'plugin.policy-exceptions.root', 'plugin.policy-exceptions.exceptions', 'plugin.policy-exceptions.policies.view', '10'],
-                    ['plugin.data-flows-privacy.root', 'data-flows-privacy', '', 'plugin.data-flows-privacy.index', 'plugin.data-flows-privacy.records.view', '45'],
-                    ['plugin.data-flows-privacy.activities', 'data-flows-privacy', 'plugin.data-flows-privacy.root', 'plugin.data-flows-privacy.activities', 'plugin.data-flows-privacy.records.view', '10'],
-                    ['plugin.identity-local.users', 'identity-local', '', 'plugin.identity-local.users.index', 'plugin.identity-local.users.view', '47'],
-                    ['plugin.identity-local.memberships', 'identity-local', 'plugin.identity-local.users', 'plugin.identity-local.memberships.index', 'plugin.identity-local.memberships.view', '10'],
-                    ['plugin.identity-ldap.directory', 'identity-ldap', 'plugin.identity-local.users', 'plugin.identity-ldap.directory.index', 'plugin.identity-ldap.directory.view', '20'],
-                    ['plugin.continuity-bcm.root', 'continuity-bcm', '', 'plugin.continuity-bcm.index', 'plugin.continuity-bcm.plans.view', '50'],
-                    ['plugin.continuity-bcm.plans', 'continuity-bcm', 'plugin.continuity-bcm.root', 'plugin.continuity-bcm.plans', 'plugin.continuity-bcm.plans.view', '10'],
+                    ['core.dashboard', 'core', '', 'core.shell.index', '', 'app', '5'],
+                    ['core.platform', 'core', '', '', '', 'admin', '10'],
+                    ['core.plugins', 'core', 'core.platform', 'core.plugins.index', 'core.plugins.view', 'admin', '10'],
+                    ['core.permissions', 'core', 'core.platform', 'core.permissions.index', 'core.permissions.view', 'admin', '20'],
+                    ['core.roles', 'core', 'core.platform', 'core.roles.index', 'core.roles.view', 'admin', '25'],
+                    ['core.tenancy', 'core', 'core.platform', 'core.tenancy.index', 'core.tenancy.view', 'admin', '30'],
+                    ['core.audit', 'core', 'core.platform', 'core.audit.index', 'core.audit-logs.view', 'admin', '40'],
+                    ['core.functional-actors', 'core', 'core.platform', 'core.functional-actors.index', 'core.functional-actors.view', 'admin', '50'],
+                    ['plugin.identity-local.memberships', 'identity-local', '', 'plugin.identity-local.memberships.index', 'plugin.identity-local.memberships.view', 'app', '10'],
+                    ['plugin.asset-catalog.root', 'asset-catalog', '', 'plugin.asset-catalog.index', 'plugin.asset-catalog.assets.view', 'app', '20'],
+                    ['plugin.asset-catalog.lifecycle', 'asset-catalog', 'plugin.asset-catalog.root', 'plugin.asset-catalog.lifecycle', 'plugin.asset-catalog.assets.view', 'app', '10'],
+                    ['plugin.controls-catalog.root', 'controls-catalog', '', 'plugin.controls-catalog.index', 'plugin.controls-catalog.controls.view', 'app', '25'],
+                    ['plugin.controls-catalog.reviews', 'controls-catalog', 'plugin.controls-catalog.root', 'plugin.controls-catalog.reviews', 'plugin.controls-catalog.controls.view', 'app', '10'],
+                    ['plugin.hello-world.root', 'hello-world', '', 'plugin.hello-world.index', 'plugin.hello-world.hello.view', 'app', '30'],
+                    ['plugin.hello-world.examples', 'hello-world', 'plugin.hello-world.root', 'plugin.hello-world.index', 'plugin.hello-world.hello.view', 'app', '10'],
+                    ['plugin.risk-management.root', 'risk-management', '', 'plugin.risk-management.index', 'plugin.risk-management.risks.view', 'app', '35'],
+                    ['plugin.risk-management.board', 'risk-management', 'plugin.risk-management.root', 'plugin.risk-management.board', 'plugin.risk-management.risks.view', 'app', '10'],
+                    ['plugin.findings-remediation.root', 'findings-remediation', '', 'plugin.findings-remediation.index', 'plugin.findings-remediation.findings.view', 'app', '38'],
+                    ['plugin.findings-remediation.board', 'findings-remediation', 'plugin.findings-remediation.root', 'plugin.findings-remediation.board', 'plugin.findings-remediation.findings.view', 'app', '10'],
+                    ['plugin.actor-directory.root', 'actor-directory', '', 'plugin.actor-directory.index', 'plugin.actor-directory.actors.view', 'app', '40'],
+                    ['plugin.actor-directory.assignments', 'actor-directory', 'plugin.actor-directory.root', 'plugin.actor-directory.assignments', 'plugin.actor-directory.actors.view', 'app', '10'],
+                    ['plugin.policy-exceptions.root', 'policy-exceptions', '', 'plugin.policy-exceptions.index', 'plugin.policy-exceptions.policies.view', 'app', '42'],
+                    ['plugin.policy-exceptions.exceptions', 'policy-exceptions', 'plugin.policy-exceptions.root', 'plugin.policy-exceptions.exceptions', 'plugin.policy-exceptions.policies.view', 'app', '10'],
+                    ['plugin.data-flows-privacy.root', 'data-flows-privacy', '', 'plugin.data-flows-privacy.index', 'plugin.data-flows-privacy.records.view', 'app', '45'],
+                    ['plugin.data-flows-privacy.activities', 'data-flows-privacy', 'plugin.data-flows-privacy.root', 'plugin.data-flows-privacy.activities', 'plugin.data-flows-privacy.records.view', 'app', '10'],
+                    ['plugin.identity-local.users', 'identity-local', '', 'plugin.identity-local.users.index', 'plugin.identity-local.users.view', 'admin', '47'],
+                    ['plugin.identity-ldap.directory', 'identity-ldap', 'plugin.identity-local.users', 'plugin.identity-ldap.directory.index', 'plugin.identity-ldap.directory.view', 'admin', '20'],
+                    ['plugin.continuity-bcm.root', 'continuity-bcm', '', 'plugin.continuity-bcm.index', 'plugin.continuity-bcm.plans.view', 'app', '50'],
+                    ['plugin.continuity-bcm.plans', 'continuity-bcm', 'plugin.continuity-bcm.root', 'plugin.continuity-bcm.plans', 'plugin.continuity-bcm.plans.view', 'app', '10'],
                 ],
             )
             ->assertExitCode(0);

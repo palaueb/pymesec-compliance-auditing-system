@@ -69,7 +69,7 @@ class IdentityLocalPlugin implements IdentityPluginInterface
                 return [
                     new ToolbarAction(
                         label: 'People',
-                        url: route('core.shell.index', [...$this->baseQuery($screenContext), 'menu' => 'plugin.identity-local.users']),
+                        url: route('core.admin.index', [...$this->baseQuery($screenContext), 'menu' => 'plugin.identity-local.users']),
                         variant: 'secondary',
                     ),
                 ];

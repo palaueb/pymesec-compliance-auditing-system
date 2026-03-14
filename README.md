@@ -5,8 +5,8 @@ Compliance auditing system for small and medium-sized enterprises (SMEs). Automa
 [![PHP](https://img.shields.io/badge/PHP-^8.1-blue)](https://www.php.net/)
 [![Laravel](https://img.shields.io/badge/Laravel-^10-orange)](https://laravel.com/)
 [![License](https://img.shields.io/github/license/palaueb/pymesec-compliance-auditing-system)](https://github.com/palaueb/pymesec-compliance-auditing-system/blob/main/LICENSE)
-[![Lines of code](https://tokei.kojix2.net/badge/github/palaueb/pymesec-compliance-auditing-system/lines)](https://github.com/palaueb/pymesec-compliance-auditing-system)
-[![Top language](https://tokei.kojix2.net/badge/github/palaueb/pymesec-compliance-auditing-system/language)](https://github.com/palaueb/pymesec-compliance-auditing-system)
+[![Lines of Code](https://img.shields.io/endpoint?url=https%3A%2F%2Ftokei.kojix2.net%2Fbadge%2Fgithub%2Fpalaueb%2Fpymesec-compliance-auditing-system%2Flines)](https://tokei.kojix2.net/github/palaueb/pymesec-compliance-auditing-system)
+[![Top Language](https://img.shields.io/endpoint?url=https%3A%2F%2Ftokei.kojix2.net%2Fbadge%2Fgithub%2Fpalaueb%2Fpymesec-compliance-auditing-system%2Flanguage)](https://tokei.kojix2.net/github/palaueb/pymesec-compliance-auditing-system)
 [![Issues](https://img.shields.io/github/issues/palaueb/pymesec-compliance-auditing-system)](https://github.com/palaueb/pymesec-compliance-auditing-system/issues)
 [![Stars](https://img.shields.io/github/stars/palaueb/pymesec-compliance-auditing-system)](https://github.com/palaueb/pymesec-compliance-auditing-system/stargazers)
 

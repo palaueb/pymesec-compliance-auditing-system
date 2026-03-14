@@ -222,7 +222,7 @@ Route::post('/plugins/identity/users', function (
         );
     }
 
-    return redirect()->route('core.shell.index', array_filter([
+    return redirect()->route('core.admin.index', array_filter([
         'menu' => 'plugin.identity-local.users',
         'principal_id' => $requesterPrincipalId,
         'organization_id' => $validated['organization_id'],
@@ -282,7 +282,7 @@ Route::post('/plugins/identity/users/{userId}', function (
         );
     }
 
-    return redirect()->route('core.shell.index', array_filter([
+    return redirect()->route('core.admin.index', array_filter([
         'menu' => 'plugin.identity-local.users',
         'principal_id' => $requesterPrincipalId,
         'organization_id' => $validated['organization_id'],
@@ -290,6 +290,49 @@ Route::post('/plugins/identity/users/{userId}', function (
         'membership_ids' => is_string($requesterMembershipId) && $requesterMembershipId !== '' ? [$requesterMembershipId] : null,
     ]));
 })->middleware('core.permission:plugin.identity-local.users.manage')->name('plugin.identity-local.users.update');
+
+Route::post('/plugins/identity/users/{userId}/delete', function (
+    Request $request,
+    string $userId,
+    IdentityLocalRepository $repository
+) {
+    $user = $repository->findUser($userId);
+
+    abort_if($user === null, 404);
+
+    $requesterPrincipalId = (string) $request->input('principal_id', 'principal-org-a');
+    $requesterMembershipId = $request->input('membership_id');
+
+    if (($user['auth_provider'] ?? 'local') !== 'local') {
+        return redirect()->route('core.admin.index', array_filter([
+            'menu' => 'plugin.identity-local.users',
+            'principal_id' => $requesterPrincipalId,
+            'organization_id' => (string) ($user['organization_id'] ?? $request->input('organization_id', 'org-a')),
+            'locale' => $request->input('locale', 'en'),
+            'membership_ids' => is_string($requesterMembershipId) && $requesterMembershipId !== '' ? [$requesterMembershipId] : null,
+        ]))->with('error', 'Directory-backed people are removed through LDAP sync, not from the local people screen.');
+    }
+
+    if (($user['principal_id'] ?? null) === $requesterPrincipalId) {
+        return redirect()->route('core.admin.index', array_filter([
+            'menu' => 'plugin.identity-local.users',
+            'principal_id' => $requesterPrincipalId,
+            'organization_id' => (string) ($user['organization_id'] ?? $request->input('organization_id', 'org-a')),
+            'locale' => $request->input('locale', 'en'),
+            'membership_ids' => is_string($requesterMembershipId) && $requesterMembershipId !== '' ? [$requesterMembershipId] : null,
+        ]))->with('error', 'You cannot delete the account that is currently using the workspace.');
+    }
+
+    $repository->deleteUser($userId, $requesterPrincipalId);
+
+    return redirect()->route('core.admin.index', array_filter([
+        'menu' => 'plugin.identity-local.users',
+        'principal_id' => $requesterPrincipalId,
+        'organization_id' => (string) ($user['organization_id'] ?? $request->input('organization_id', 'org-a')),
+        'locale' => $request->input('locale', 'en'),
+        'membership_ids' => is_string($requesterMembershipId) && $requesterMembershipId !== '' ? [$requesterMembershipId] : null,
+    ]))->with('status', 'Person removed from the local workspace directory.');
+})->middleware('core.permission:plugin.identity-local.users.manage')->name('plugin.identity-local.users.delete');
 
 Route::post('/plugins/identity/memberships', function (Request $request, IdentityLocalRepository $repository) {
     $validated = $request->validate([

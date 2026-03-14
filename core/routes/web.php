@@ -26,6 +26,7 @@ use PymeSec\Core\Tenancy\TenancyContext;
 use PymeSec\Core\UI\Contracts\ScreenRegistryInterface;
 use PymeSec\Core\UI\ScreenRenderContext;
 use PymeSec\Core\Workflows\Contracts\WorkflowRegistryInterface;
+use PymeSec\Plugins\IdentityLocal\IdentityLocalRepository;
 
 $resolvePrincipalId = static function (?string $default = null): ?string {
     $requested = request()->input('principal_id', request()->query('principal_id'));
@@ -44,7 +45,32 @@ $resolvePrincipalId = static function (?string $default = null): ?string {
 };
 
 $shellRouteNameForMenu = static function (?string $menuId): string {
-    return is_string($menuId) && str_starts_with($menuId, 'core.')
+    if (! is_string($menuId) || $menuId === '' || ! app()->bound(MenuRegistryInterface::class)) {
+        return 'core.shell.index';
+    }
+
+    $flattenMenus = function (array $items) use (&$flattenMenus): array {
+        $map = [];
+
+        foreach ($items as $item) {
+            if (! is_array($item) || ! is_string($item['id'] ?? null)) {
+                continue;
+            }
+
+            $map[$item['id']] = $item;
+
+            foreach ($flattenMenus($item['children'] ?? []) as $id => $child) {
+                $map[$id] = $child;
+            }
+        }
+
+        return $map;
+    };
+
+    $definitions = $flattenMenus(app(MenuRegistryInterface::class)->all());
+    $menu = $definitions[$menuId] ?? null;
+
+    return is_array($menu) && ($menu['area'] ?? 'app') === 'admin'
         ? 'core.admin.index'
         : 'core.shell.index';
 };
@@ -85,6 +111,7 @@ $renderShell = function (
     $locale = is_string($locale) && in_array($locale, ['en', 'es', 'fr', 'de'], true) ? $locale : 'en';
     app()->setLocale($locale);
     $requestedMembershipIds = request()->query('membership_ids', []);
+    $requestedOrganizationId = request()->query('organization_id');
 
     if (! is_array($requestedMembershipIds)) {
         $requestedMembershipIds = [];
@@ -99,6 +126,43 @@ $renderShell = function (
     $organizationId = $tenancyContext->organization?->id;
     $scopeId = $tenancyContext->scope?->id;
     $memberships = $tenancyContext->memberships;
+    $bootstrapOrganizationId = is_string($organizationId) && $organizationId !== ''
+        ? $organizationId
+        : (is_string($requestedOrganizationId) && $requestedOrganizationId !== '' ? $requestedOrganizationId : null);
+
+    if (
+        $area === 'app'
+        && is_string($bootstrapOrganizationId)
+        && $bootstrapOrganizationId !== ''
+        && app()->bound(AuthorizationServiceInterface::class)
+        && class_exists(IdentityLocalRepository::class)
+    ) {
+        $isPlatformAdmin = app(AuthorizationServiceInterface::class)->authorize(new AuthorizationContext(
+            principal: new PrincipalReference(
+                id: $principalId,
+                provider: 'demo',
+            ),
+            permission: 'core.roles.view',
+            memberships: $memberships,
+            organizationId: null,
+            scopeId: null,
+        ))->allowed();
+
+        if ($isPlatformAdmin) {
+            app(IdentityLocalRepository::class)
+                ->ensureBootstrapOrganizationAccess($principalId, $bootstrapOrganizationId);
+
+            $tenancyContext = $tenancy->resolveContext(
+                principalId: $principalId,
+                requestedOrganizationId: request()->query('organization_id'),
+                requestedScopeId: request()->query('scope_id'),
+                requestedMembershipIds: $requestedMembershipIds,
+            );
+            $organizationId = $tenancyContext->organization?->id;
+            $scopeId = $tenancyContext->scope?->id;
+            $memberships = $tenancyContext->memberships;
+        }
+    }
 
     $visibleMenus = $labels->resolveTree($menus->visible(new MenuVisibilityContext(
         principal: new PrincipalReference(
@@ -118,10 +182,7 @@ $renderShell = function (
                 continue;
             }
 
-            $isCoreMenu = ($item['owner'] ?? 'core') === 'core';
-            $include = $targetArea === 'admin'
-                ? $isCoreMenu && ($item['id'] ?? null) !== 'core.dashboard'
-                : ! $isCoreMenu || ($item['id'] ?? null) === 'core.dashboard';
+            $include = ($item['area'] ?? 'app') === $targetArea;
 
             if (! $include) {
                 continue;

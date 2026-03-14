@@ -13,6 +13,7 @@ class MenuDefinition
         public readonly ?string $icon = null,
         public readonly int $order = 100,
         public readonly ?string $permission = null,
+        public readonly string $area = 'app',
     ) {}
 
     /**
@@ -29,6 +30,7 @@ class MenuDefinition
             'icon' => $this->icon,
             'order' => $this->order,
             'permission' => $this->permission,
+            'area' => $this->area,
         ];
     }
 }

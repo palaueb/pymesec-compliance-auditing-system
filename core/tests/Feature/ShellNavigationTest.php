@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use PymeSec\Plugins\IdentityLocal\IdentityLocalRepository;
 use Tests\TestCase;
 
 class ShellNavigationTest extends TestCase
@@ -34,37 +35,47 @@ class ShellNavigationTest extends TestCase
             ->assertSee('plugin.asset-catalog.root');
     }
 
-    public function test_the_shell_defaults_to_a_workspace_menu_before_platform_admin_when_both_are_visible(): void
+    public function test_platform_admin_bootstraps_workspace_access_and_lands_in_the_app(): void
     {
-        DB::table('memberships')->insert([
-            'id' => 'membership-org-a-admin',
-            'principal_id' => 'principal-admin',
+        DB::table('identity_local_users')->insert([
+            'id' => 'identity-user-platform-bootstrap',
+            'principal_id' => 'principal-platform-bootstrap',
             'organization_id' => 'org-a',
-            'roles' => json_encode(['asset-viewer'], JSON_THROW_ON_ERROR),
+            'username' => 'platform.bootstrap',
+            'display_name' => 'Platform Bootstrap',
+            'email' => 'platform.bootstrap@northwind.test',
+            'password_hash' => null,
+            'password_enabled' => false,
+            'magic_link_enabled' => true,
+            'job_title' => 'Platform administrator',
             'is_active' => true,
             'created_at' => now(),
             'updated_at' => now(),
         ]);
 
-        DB::table('authorization_grants')->insert([
-            'id' => 'grant-membership-org-a-admin-asset-viewer',
-            'target_type' => 'membership',
-            'target_id' => 'membership-org-a-admin',
-            'grant_type' => 'role',
-            'value' => 'asset-viewer',
-            'context_type' => 'organization',
-            'organization_id' => 'org-a',
-            'scope_id' => null,
-            'is_system' => false,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
+        $this->app->make(IdentityLocalRepository::class)->ensurePlatformAdminGrant('principal-platform-bootstrap');
 
-        $this->get('/app?principal_id=principal-admin&organization_id=org-a&membership_ids[]=membership-org-a-admin')
+        $this->get('/app?principal_id=principal-platform-bootstrap&organization_id=org-a')
             ->assertOk()
             ->assertSee('Workspace Dashboard')
             ->assertSee('Today in your workspace')
             ->assertSee('Assets')
             ->assertDontSee('Plugin Runtime');
+
+        $membershipId = DB::table('memberships')
+            ->where('principal_id', 'principal-platform-bootstrap')
+            ->where('organization_id', 'org-a')
+            ->value('id');
+
+        $this->assertIsString($membershipId);
+
+        $this->assertDatabaseHas('authorization_grants', [
+            'target_type' => 'membership',
+            'target_id' => $membershipId,
+            'grant_type' => 'role',
+            'value' => 'asset-operator',
+            'context_type' => 'organization',
+            'organization_id' => 'org-a',
+        ]);
     }
 }

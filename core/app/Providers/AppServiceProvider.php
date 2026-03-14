@@ -333,6 +333,7 @@ class AppServiceProvider extends ServiceProvider
             routeName: 'core.shell.index',
             icon: 'pulse',
             order: 5,
+            area: 'app',
         ));
 
         $menus->registerCore(new MenuDefinition(
@@ -341,6 +342,7 @@ class AppServiceProvider extends ServiceProvider
             labelKey: 'core.nav.platform',
             icon: 'layout',
             order: 10,
+            area: 'admin',
         ));
 
         $menus->registerCore(new MenuDefinition(
@@ -352,6 +354,7 @@ class AppServiceProvider extends ServiceProvider
             icon: 'plug',
             order: 10,
             permission: 'core.plugins.view',
+            area: 'admin',
         ));
 
         $menus->registerCore(new MenuDefinition(
@@ -363,6 +366,7 @@ class AppServiceProvider extends ServiceProvider
             icon: 'shield',
             order: 20,
             permission: 'core.permissions.view',
+            area: 'admin',
         ));
 
         $menus->registerCore(new MenuDefinition(
@@ -374,6 +378,7 @@ class AppServiceProvider extends ServiceProvider
             icon: 'key',
             order: 25,
             permission: 'core.roles.view',
+            area: 'admin',
         ));
 
         $menus->registerCore(new MenuDefinition(
@@ -385,6 +390,7 @@ class AppServiceProvider extends ServiceProvider
             icon: 'building',
             order: 30,
             permission: 'core.tenancy.view',
+            area: 'admin',
         ));
 
         $menus->registerCore(new MenuDefinition(
@@ -396,6 +402,7 @@ class AppServiceProvider extends ServiceProvider
             icon: 'journal',
             order: 40,
             permission: 'core.audit-logs.view',
+            area: 'admin',
         ));
 
         $menus->registerCore(new MenuDefinition(
@@ -407,6 +414,7 @@ class AppServiceProvider extends ServiceProvider
             icon: 'users',
             order: 50,
             permission: 'core.functional-actors.view',
+            area: 'admin',
         ));
 
         $screens = $this->app->make(ScreenRegistryInterface::class);
@@ -1018,10 +1026,7 @@ class AppServiceProvider extends ServiceProvider
                 continue;
             }
 
-            $isCoreMenu = ($item['owner'] ?? 'core') === 'core';
-            $include = $targetArea === 'admin'
-                ? $isCoreMenu && ($item['id'] ?? null) !== 'core.dashboard'
-                : ! $isCoreMenu || ($item['id'] ?? null) === 'core.dashboard';
+            $include = ($item['area'] ?? 'app') === $targetArea;
 
             if (! $include) {
                 continue;

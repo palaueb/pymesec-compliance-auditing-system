@@ -54,6 +54,8 @@ The v1 runtime exposes two separate shell entrypoints:
 - `/app` for functional product workspaces contributed mainly by plugins
 - `/admin` for core administration and platform operations
 
+Menu items must declare which shell area they belong to. The shell must not silently mix `admin` menu entries into `/app`, or `app` menu entries into `/admin`.
+
 Core administration must not be mixed into the default product landing experience.
 
 The `/app` shell should open on a lightweight workspace dashboard before sending the user into one specific module. That landing view may be core-owned, but it must summarize operational work and route the user into plugin workspaces rather than platform administration.
@@ -79,6 +81,7 @@ Each menu contribution should declare, at minimum:
 - owning component
 - target route reference
 - label translation key
+- shell area: `app` or `admin`
 - optional parent menu identifier
 - ordering hint
 - visibility metadata
@@ -95,8 +98,10 @@ The core shell owns the navigation frame, but plugins may create:
 Rules:
 
 - top-level items are allowed for both the core and plugins
+- top-level items may belong to either the `app` or `admin` shell area
 - child items may be attached to a parent owned by the same plugin
 - child items may also be attached to a core-owned or other-plugin-owned parent only when the parent exists and the contributing plugin declares an explicit dependency on that other plugin
+- child items must belong to the same shell area as their parent
 - deeper nesting is not allowed in v1
 
 This keeps the menu flexible enough for modular growth while limiting navigation sprawl and invalid cross-plugin coupling.

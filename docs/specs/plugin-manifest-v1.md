@@ -183,6 +183,7 @@ Each menu entry should declare:
 - menu item identifier
 - target route reference
 - label translation key
+- shell area: `app` or `admin`
 - optional parent menu identifier
 - ordering hint
 - visibility rule or permission reference
@@ -192,8 +193,11 @@ Constraints:
 - menu labels must use translation keys, not hardcoded UI text
 - menu visibility must be permission-aware
 - menu contributions must be removable when the plugin is disabled
+- menu area must default to `app` when omitted
+- `admin` menu entries must render only inside the `/admin` shell
 - top-level items are allowed
 - child items may target the core or another plugin only when platform policy and declared dependencies allow it
+- child menu entries must use the same area as their declared parent
 - v1 menu hierarchy is limited to one child level below top-level navigation
 
 ## 9.1 `admin` Section

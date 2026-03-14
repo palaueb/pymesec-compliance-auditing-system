@@ -354,6 +354,93 @@ class IdentityLocalRepository
         return $user;
     }
 
+    public function deleteUser(string $userId, ?string $managedByPrincipalId = null): bool
+    {
+        $existing = $this->findUser($userId);
+
+        if ($existing === null) {
+            return false;
+        }
+
+        if (($existing['auth_provider'] ?? 'local') !== 'local') {
+            throw new \RuntimeException('Directory-backed people are managed from Directory Sync, not deleted locally.');
+        }
+
+        DB::transaction(function () use ($existing, $userId): void {
+            $membershipIds = DB::table('memberships')
+                ->where('principal_id', (string) $existing['principal_id'])
+                ->pluck('id')
+                ->map(static fn ($membershipId): string => (string) $membershipId)
+                ->all();
+
+            if ($membershipIds !== []) {
+                DB::table('authorization_grants')
+                    ->where('target_type', 'membership')
+                    ->whereIn('target_id', $membershipIds)
+                    ->delete();
+
+                DB::table('membership_scope')
+                    ->whereIn('membership_id', $membershipIds)
+                    ->delete();
+
+                DB::table('memberships')
+                    ->whereIn('id', $membershipIds)
+                    ->delete();
+            }
+
+            DB::table('authorization_grants')
+                ->where('target_type', 'principal')
+                ->where('target_id', (string) $existing['principal_id'])
+                ->delete();
+
+            DB::table('principal_functional_actor_links')
+                ->where('principal_id', (string) $existing['principal_id'])
+                ->delete();
+
+            DB::table('identity_local_login_links')
+                ->where('principal_id', (string) $existing['principal_id'])
+                ->delete();
+
+            DB::table('identity_local_login_codes')
+                ->where('principal_id', (string) $existing['principal_id'])
+                ->delete();
+
+            DB::table('identity_local_users')
+                ->where('id', $userId)
+                ->delete();
+        });
+
+        $this->authorizationStore->refresh();
+
+        $this->audit->record(new AuditRecordData(
+            eventType: 'plugin.identity-local.user.deleted',
+            outcome: 'success',
+            originComponent: 'identity-local',
+            principalId: $managedByPrincipalId,
+            organizationId: (string) ($existing['organization_id'] ?? ''),
+            targetType: 'identity_local_user',
+            targetId: $userId,
+            summary: [
+                'principal_id' => $existing['principal_id'] ?? null,
+                'username' => $existing['username'] ?? null,
+                'email' => $existing['email'] ?? null,
+            ],
+            executionOrigin: 'identity-local',
+        ));
+
+        $this->events->publish(new PublicEvent(
+            name: 'plugin.identity-local.user.deleted',
+            originComponent: 'identity-local',
+            organizationId: (string) ($existing['organization_id'] ?? ''),
+            payload: [
+                'user_id' => $userId,
+                'principal_id' => $existing['principal_id'] ?? null,
+            ],
+        ));
+
+        return true;
+    }
+
     /**
      * @return array<int, array<string, mixed>>
      */
@@ -693,6 +780,13 @@ class IdentityLocalRepository
             ->value('id');
 
         $roles = [
+            'asset-operator',
+            'control-operator',
+            'risk-operator',
+            'findings-operator',
+            'policy-operator',
+            'privacy-operator',
+            'continuity-operator',
             'identity-operator',
             'identity-ldap-operator',
         ];

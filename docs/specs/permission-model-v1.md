@@ -58,7 +58,8 @@ Rules:
 Presentation guidance:
 
 - platform roles should be presented as `/admin` capabilities
-- access roles should be presented as identity and membership governance capabilities
+- identity and directory administration should be presented in `/admin`
+- access roles should be presented as identity and membership governance capabilities inside the application workspace when delegated
 - operational roles should be presented as workspace responsibilities such as assets, controls, risks, findings, privacy, or continuity
 - UI role pickers for organization memberships should prioritize operational roles and keep platform roles out of ordinary workspace assignment flows
 

@@ -35,7 +35,7 @@ class IdentityLocalTest extends TestCase
 
     public function test_the_identity_screens_render_inside_the_shell(): void
     {
-        $this->get('/app?menu=plugin.identity-local.users&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
+        $this->get('/admin?menu=plugin.identity-local.users&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
             ->assertOk()
             ->assertSee('People & Access')
             ->assertSee('Ava Mason')
@@ -70,7 +70,7 @@ class IdentityLocalTest extends TestCase
             'magic_link_enabled' => '1',
         ])->assertFound();
 
-        $this->get('/app?menu=plugin.identity-local.users&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
+        $this->get('/admin?menu=plugin.identity-local.users&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
             ->assertOk()
             ->assertSee('Nina Patel')
             ->assertSee('nina.patel')
@@ -146,6 +146,80 @@ class IdentityLocalTest extends TestCase
             ->assertSee($subjectPrincipalId)
             ->assertSee('control-viewer')
             ->assertSee('scope-it');
+    }
+
+    public function test_local_people_can_be_deleted_from_the_people_screen(): void
+    {
+        $payload = [
+            'principal_id' => 'principal-org-a',
+            'organization_id' => 'org-a',
+            'locale' => 'en',
+            'membership_id' => 'membership-org-a-hello',
+            'menu' => 'plugin.identity-local.users',
+        ];
+
+        $this->post('/plugins/identity/users', [
+            ...$payload,
+            'display_name' => 'Delete Me',
+            'username' => 'delete.me',
+            'email' => 'delete.me@northwind.test',
+            'job_title' => 'Temporary access',
+            'magic_link_enabled' => '1',
+        ])->assertFound();
+
+        $userId = DB::table('identity_local_users')
+            ->where('email', 'delete.me@northwind.test')
+            ->value('id');
+        $principalId = DB::table('identity_local_users')
+            ->where('email', 'delete.me@northwind.test')
+            ->value('principal_id');
+
+        $this->assertIsString($userId);
+        $this->assertIsString($principalId);
+
+        $this->post('/plugins/identity/memberships', [
+            ...$payload,
+            'menu' => 'plugin.identity-local.memberships',
+            'subject_principal_id' => $principalId,
+            'role_keys' => ['asset-viewer'],
+            'scope_ids' => ['scope-eu'],
+        ])->assertFound();
+
+        $membershipId = DB::table('memberships')
+            ->where('principal_id', $principalId)
+            ->where('organization_id', 'org-a')
+            ->value('id');
+
+        $this->assertIsString($membershipId);
+
+        $this->post(sprintf('/plugins/identity/users/%s/delete', $userId), $payload)
+            ->assertFound();
+
+        $this->assertDatabaseMissing('identity_local_users', ['id' => $userId]);
+        $this->assertDatabaseMissing('memberships', ['id' => $membershipId]);
+        $this->assertDatabaseMissing('authorization_grants', [
+            'target_type' => 'membership',
+            'target_id' => $membershipId,
+        ]);
+    }
+
+    public function test_directory_backed_people_cannot_be_deleted_from_the_local_people_screen(): void
+    {
+        $userId = DB::table('identity_local_users')
+            ->where('auth_provider', 'ldap')
+            ->value('id');
+
+        $this->assertIsString($userId);
+
+        $this->post(sprintf('/plugins/identity/users/%s/delete', $userId), [
+            'principal_id' => 'principal-org-a',
+            'organization_id' => 'org-a',
+            'locale' => 'en',
+            'membership_id' => 'membership-org-a-hello',
+            'menu' => 'plugin.identity-local.users',
+        ])->assertFound();
+
+        $this->assertDatabaseHas('identity_local_users', ['id' => $userId]);
     }
 
     public function test_magic_link_auth_sets_and_clears_the_shell_session(): void
@@ -271,5 +345,24 @@ class IdentityLocalTest extends TestCase
             'context_type' => 'organization',
             'organization_id' => 'org-a',
         ]);
+
+        foreach ([
+            'asset-operator',
+            'control-operator',
+            'risk-operator',
+            'findings-operator',
+            'policy-operator',
+            'privacy-operator',
+            'continuity-operator',
+        ] as $roleKey) {
+            $this->assertDatabaseHas('authorization_grants', [
+                'target_type' => 'membership',
+                'target_id' => $membershipId,
+                'grant_type' => 'role',
+                'value' => $roleKey,
+                'context_type' => 'organization',
+                'organization_id' => 'org-a',
+            ]);
+        }
     }
 }

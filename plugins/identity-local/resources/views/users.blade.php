@@ -138,6 +138,10 @@
                             @endif
                         </td>
                         <td>
+                            <div class="table-note" style="margin-bottom:8px;">
+                                {{ $row['user']['auth_provider'] === 'local' ? 'Local person' : 'LDAP cached person' }}
+                            </div>
+
                             @if ($row['workspace_url'] !== null)
                                 <a class="button button-secondary" href="{{ $row['workspace_url'] }}">Open workspace</a>
                             @else
@@ -204,6 +208,20 @@
                                         </div>
                                     </form>
                                 </details>
+
+                                @if ($row['user']['auth_provider'] === 'local' && $row['user']['principal_id'] !== ($query['principal_id'] ?? null))
+                                    <form class="upload-form" method="POST" action="{{ route('plugin.identity-local.users.delete', ['userId' => $row['user']['id']]) }}" style="margin-top:10px;">
+                                        @csrf
+                                        <input type="hidden" name="principal_id" value="{{ $query['principal_id'] }}">
+                                        <input type="hidden" name="organization_id" value="{{ $organization_id }}">
+                                        <input type="hidden" name="locale" value="{{ $query['locale'] }}">
+                                        <input type="hidden" name="menu" value="plugin.identity-local.users">
+                                        <input type="hidden" name="membership_id" value="{{ $query['membership_ids'][0] ?? 'membership-org-a-hello' }}">
+                                        <button class="button button-ghost" type="submit" onclick="return confirm('Remove this local person and all of their organization access?')">Delete</button>
+                                    </form>
+                                @elseif ($row['user']['auth_provider'] !== 'local')
+                                    <div class="muted-note" style="margin-top:10px;">LDAP people are refreshed from directory sync.</div>
+                                @endif
                             @endif
                         </td>
                     </tr>

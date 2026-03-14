@@ -72,16 +72,17 @@
       "route": "plugin.identity-local.users.index",
       "icon": "badge",
       "order": 47,
-      "permission": "plugin.identity-local.users.view"
+      "permission": "plugin.identity-local.users.view",
+      "area": "admin"
     },
     {
       "id": "plugin.identity-local.memberships",
       "label_key": "plugin.identity-local.nav.memberships",
       "route": "plugin.identity-local.memberships.index",
-      "parent_id": "plugin.identity-local.users",
       "icon": "shield",
       "order": 10,
-      "permission": "plugin.identity-local.memberships.view"
+      "permission": "plugin.identity-local.memberships.view",
+      "area": "app"
     }
   ],
   "migrations": [],

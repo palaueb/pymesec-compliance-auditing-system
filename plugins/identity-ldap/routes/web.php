@@ -45,7 +45,7 @@ Route::post('/plugins/identity/ldap/connection', function (Request $request, Ide
         'is_enabled' => $request->boolean('is_enabled'),
     ], $requesterPrincipalId);
 
-    return redirect()->route('core.shell.index', array_filter([
+    return redirect()->route('core.admin.index', array_filter([
         'menu' => 'plugin.identity-ldap.directory',
         'principal_id' => $requesterPrincipalId,
         'organization_id' => $validated['organization_id'],
@@ -77,7 +77,7 @@ Route::post('/plugins/identity/ldap/mappings', function (Request $request, Ident
         'is_active' => $request->boolean('is_active', true),
     ], $requesterPrincipalId);
 
-    return redirect()->route('core.shell.index', array_filter([
+    return redirect()->route('core.admin.index', array_filter([
         'menu' => 'plugin.identity-ldap.directory',
         'principal_id' => $requesterPrincipalId,
         'organization_id' => $validated['organization_id'],
@@ -97,7 +97,7 @@ Route::post('/plugins/identity/ldap/sync', function (Request $request, IdentityL
     try {
         $result = $service->syncOrganization((string) $validated['organization_id'], $requesterPrincipalId);
 
-        return redirect()->route('core.shell.index', array_filter([
+        return redirect()->route('core.admin.index', array_filter([
             'menu' => 'plugin.identity-ldap.directory',
             'principal_id' => $requesterPrincipalId,
             'organization_id' => $validated['organization_id'],
@@ -105,7 +105,7 @@ Route::post('/plugins/identity/ldap/sync', function (Request $request, IdentityL
             'membership_ids' => is_array($membershipIds) && $membershipIds !== [] ? $membershipIds : null,
         ]))->with('status', (string) ($result['message'] ?? 'LDAP directory synchronized.'));
     } catch (Throwable $exception) {
-        return redirect()->route('core.shell.index', array_filter([
+        return redirect()->route('core.admin.index', array_filter([
             'menu' => 'plugin.identity-ldap.directory',
             'principal_id' => $requesterPrincipalId,
             'organization_id' => $validated['organization_id'],

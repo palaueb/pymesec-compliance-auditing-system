@@ -959,13 +959,6 @@
                         </div>
                     @endif
 
-                    @if ($selectedMenu['url'] !== null)
-                        <div class="action-cluster" style="margin-top:18px;">
-                            <a class="button button-primary" href="{{ $selectedMenu['url'] }}" target="_blank" rel="noreferrer">
-                                {{ __('core.shell.open_route') }}
-                            </a>
-                        </div>
-                    @endif
                 @else
                     <div class="muted-note">{{ __('core.shell.no_selection') }}</div>
                 @endif
