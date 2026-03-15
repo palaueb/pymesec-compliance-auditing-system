@@ -787,6 +787,7 @@ class IdentityLocalRepository
             'policy-operator',
             'privacy-operator',
             'continuity-operator',
+            'assessment-operator',
             'identity-operator',
             'identity-ldap-operator',
         ];

@@ -811,6 +811,110 @@ class CoreTenancySeeder extends Seeder
             ],
         ]);
 
+        DB::table('assessment_campaigns')->insertOrIgnore([
+            [
+                'id' => 'assessment-q2-access-resilience',
+                'organization_id' => 'org-a',
+                'scope_id' => 'scope-eu',
+                'framework_id' => 'framework-iso-27001',
+                'title' => 'Q2 Access and Resilience Review',
+                'summary' => 'Quarterly assessment focused on access governance and backup resilience.',
+                'starts_on' => '2026-04-01',
+                'ends_on' => '2026-04-30',
+                'status' => 'active',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'id' => 'assessment-ops-readiness',
+                'organization_id' => 'org-b',
+                'scope_id' => 'scope-ops',
+                'framework_id' => null,
+                'title' => 'Operations Readiness Check',
+                'summary' => 'Operational assessment of logistics controls before peak season.',
+                'starts_on' => '2026-05-10',
+                'ends_on' => '2026-05-20',
+                'status' => 'draft',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+        ]);
+
+        DB::table('assessment_campaign_controls')->insertOrIgnore([
+            [
+                'id' => 'assessment-q2-access-resilience-control-01',
+                'assessment_id' => 'assessment-q2-access-resilience',
+                'control_id' => 'control-access-review',
+                'position' => 1,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'id' => 'assessment-q2-access-resilience-control-02',
+                'assessment_id' => 'assessment-q2-access-resilience',
+                'control_id' => 'control-backup-governance',
+                'position' => 2,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'id' => 'assessment-ops-readiness-control-01',
+                'assessment_id' => 'assessment-ops-readiness',
+                'control_id' => 'control-route-integrity',
+                'position' => 1,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+        ]);
+
+        DB::table('assessment_control_reviews')->insertOrIgnore([
+            [
+                'id' => 'review-assessment-q2-access-resilience-control-access-review',
+                'assessment_id' => 'assessment-q2-access-resilience',
+                'control_id' => 'control-access-review',
+                'organization_id' => 'org-a',
+                'scope_id' => 'scope-eu',
+                'result' => 'fail',
+                'test_notes' => 'Certification sample was incomplete for two leaver accounts in the selected period.',
+                'conclusion' => 'Control execution was not consistently evidenced for the quarter under review.',
+                'reviewed_on' => now()->subDays(9)->toDateString(),
+                'reviewer_principal_id' => 'principal-org-a',
+                'linked_finding_id' => 'finding-access-review-gap',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'id' => 'review-assessment-q2-access-resilience-control-backup-governance',
+                'assessment_id' => 'assessment-q2-access-resilience',
+                'control_id' => 'control-backup-governance',
+                'organization_id' => 'org-a',
+                'scope_id' => 'scope-eu',
+                'result' => 'pass',
+                'test_notes' => 'Restore drill notes and approval evidence were complete for the sampled period.',
+                'conclusion' => 'Backup governance operated effectively for the selected sample.',
+                'reviewed_on' => now()->subDays(6)->toDateString(),
+                'reviewer_principal_id' => 'principal-org-a',
+                'linked_finding_id' => null,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'id' => 'review-assessment-ops-readiness-control-route-integrity',
+                'assessment_id' => 'assessment-ops-readiness',
+                'control_id' => 'control-route-integrity',
+                'organization_id' => 'org-b',
+                'scope_id' => 'scope-ops',
+                'result' => 'not-tested',
+                'test_notes' => null,
+                'conclusion' => null,
+                'reviewed_on' => null,
+                'reviewer_principal_id' => null,
+                'linked_finding_id' => null,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+        ]);
+
         DB::table('functional_actors')->insertOrIgnore([
             [
                 'id' => 'actor-finance-ops',

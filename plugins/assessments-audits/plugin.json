@@ -1,0 +1,88 @@
+{
+  "plugin": {
+    "id": "assessments-audits",
+    "name": "Assessments & Audits",
+    "version": "0.1.0",
+    "type": "domain",
+    "description": "Assessment campaigns for planning, executing, and tracking audit work.",
+    "vendor": "pymesec",
+    "license": "AGPL-3.0-or-later"
+  },
+  "compatibility": {
+    "core": "^0.1.0",
+    "sdk": "^0.1.0"
+  },
+  "dependencies": [
+    "controls-catalog",
+    "findings-remediation"
+  ],
+  "permissions": [
+    {
+      "key": "plugin.assessments-audits.assessments.view",
+      "label": "View assessments",
+      "description": "View assessment campaigns and included controls.",
+      "feature_area": "assessments",
+      "operation": "view",
+      "contexts": [
+        "organization"
+      ]
+    },
+    {
+      "key": "plugin.assessments-audits.assessments.manage",
+      "label": "Manage assessments",
+      "description": "Create, update, and manage assessment campaigns.",
+      "feature_area": "assessments",
+      "operation": "manage",
+      "contexts": [
+        "organization"
+      ]
+    }
+  ],
+  "routes": [
+    {
+      "id": "assessments-audits.web",
+      "type": "web",
+      "file": "routes/web.php",
+      "middleware": [
+        "web"
+      ],
+      "permission": "plugin.assessments-audits.assessments.view"
+    }
+  ],
+  "menus": [
+    {
+      "id": "plugin.assessments-audits.root",
+      "label_key": "plugin.assessments-audits.nav.root",
+      "route": "plugin.assessments-audits.index",
+      "icon": "clipboard",
+      "order": 42,
+      "permission": "plugin.assessments-audits.assessments.view"
+    }
+  ],
+  "migrations": [],
+  "translations": {
+    "default_locale": "en",
+    "supported_locales": [
+      "en",
+      "es",
+      "fr",
+      "de"
+    ],
+    "path": "resources/lang"
+  },
+  "support": {
+    "path": "resources/support",
+    "supported_locales": [
+      "en"
+    ]
+  },
+  "lifecycle": {},
+  "runtime": {
+    "class": "PymeSec\\Plugins\\AssessmentsAudits\\AssessmentsAuditsPlugin",
+    "autoload": {
+      "psr-4": {
+        "PymeSec\\Plugins\\AssessmentsAudits\\": "src"
+      }
+    }
+  }
+}

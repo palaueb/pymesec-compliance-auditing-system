@@ -129,6 +129,19 @@ return [
                 'plugin.continuity-bcm.plans.view',
             ],
         ],
+        'assessment-operator' => [
+            'label' => 'Assessment operator',
+            'permissions' => [
+                'plugin.assessments-audits.assessments.view',
+                'plugin.assessments-audits.assessments.manage',
+            ],
+        ],
+        'assessment-viewer' => [
+            'label' => 'Assessment viewer',
+            'permissions' => [
+                'plugin.assessments-audits.assessments.view',
+            ],
+        ],
         'identity-operator' => [
             'label' => 'Identity operator',
             'permissions' => [
@@ -243,6 +256,14 @@ return [
             'target_type' => 'membership',
             'target_id' => 'membership-org-a-hello',
             'grant_type' => 'role',
+            'value' => 'assessment-operator',
+            'context_type' => 'organization',
+            'organization_id' => 'org-a',
+        ],
+        [
+            'target_type' => 'membership',
+            'target_id' => 'membership-org-a-hello',
+            'grant_type' => 'role',
             'value' => 'identity-operator',
             'context_type' => 'organization',
             'organization_id' => 'org-a',
@@ -331,6 +352,14 @@ return [
             'target_type' => 'membership',
             'target_id' => 'membership-org-a-viewer',
             'grant_type' => 'role',
+            'value' => 'assessment-viewer',
+            'context_type' => 'organization',
+            'organization_id' => 'org-a',
+        ],
+        [
+            'target_type' => 'membership',
+            'target_id' => 'membership-org-a-viewer',
+            'grant_type' => 'role',
             'value' => 'identity-viewer',
             'context_type' => 'organization',
             'organization_id' => 'org-a',
@@ -388,6 +417,14 @@ return [
             'target_id' => 'membership-org-b-ops',
             'grant_type' => 'role',
             'value' => 'continuity-viewer',
+            'context_type' => 'organization',
+            'organization_id' => 'org-b',
+        ],
+        [
+            'target_type' => 'membership',
+            'target_id' => 'membership-org-b-ops',
+            'grant_type' => 'role',
+            'value' => 'assessment-viewer',
             'context_type' => 'organization',
             'organization_id' => 'org-b',
         ],

@@ -1,0 +1,93 @@
+{
+  "concepts": [
+    {
+      "id": "assessment-campaign",
+      "label": "Assessment campaign",
+      "category": "verification",
+      "summary": "A bounded review exercise for a defined organization, scope, time window, and set of controls.",
+      "why_it_exists": "Assessments organize audit work into a repeatable exercise instead of leaving controls and evidence disconnected.",
+      "how_to_use": [
+        "Create an assessment for a specific review period.",
+        "Limit it to one scope when the audit is not organization-wide.",
+        "Select the controls that will be checked during that exercise."
+      ],
+      "related_to": [
+        "organization",
+        "scope",
+        "control"
+      ]
+    },
+    {
+      "id": "assessment-review",
+      "label": "Assessment review",
+      "category": "verification",
+      "summary": "The review record for one control inside one assessment.",
+      "why_it_exists": "Reviews are where the actual audit work gets recorded: result, notes, conclusion, evidence, and any finding raised from the test.",
+      "how_to_use": [
+        "Open the checklist for the assessment.",
+        "Record the result for each control you test.",
+        "Attach workpapers and create a finding when the control has a gap."
+      ],
+      "related_to": [
+        "assessment-campaign",
+        "control",
+        "finding",
+        "artifact"
+      ]
+    },
+    {
+      "id": "assessment-workpaper",
+      "label": "Assessment workpaper",
+      "category": "evidence",
+      "summary": "A file attached to a control review inside an assessment.",
+      "why_it_exists": "Workpapers keep the supporting sample, screenshot, export, or note package together with the review that used it.",
+      "how_to_use": [
+        "Upload the file from the control review panel.",
+        "Give it a clear label so the reviewer knows what it proves.",
+        "Use workpapers to support the conclusion or the linked finding."
+      ],
+      "related_to": [
+        "assessment-review",
+        "artifact"
+      ]
+    }
+  ],
+  "guide": [
+    {
+      "id": "assessment-campaigns",
+      "title": "Run an assessment",
+      "summary": "Use assessments to group the controls you want to review in one audit cycle.",
+      "body": [
+        "Start by choosing the organization, optional scope, and timeframe.",
+        "Then select the controls that belong to the review.",
+        "Use the campaign list to track whether the exercise is still in draft, active, or already closed.",
+        "Open the checklist to record control results, upload workpapers, and raise findings."
+      ],
+      "concept_ids": [
+        "assessment-campaign",
+        "assessment-review",
+        "assessment-workpaper"
+      ]
+    }
+  ],
+  "relationships": [
+    {
+      "source": "assessment-campaign",
+      "type": "includes",
+      "target": "control",
+      "summary": "An assessment campaign groups the controls that will be reviewed during the exercise."
+    },
+    {
+      "source": "assessment-review",
+      "type": "can-create",
+      "target": "finding",
+      "summary": "A review can create a finding when the test identifies a gap or nonconformity."
+    },
+    {
+      "source": "assessment-review",
+      "type": "is-supported-by",
+      "target": "artifact",
+      "summary": "A review can have workpapers attached as supporting evidence."
+    }
+  ]
+}
