@@ -100,7 +100,22 @@ class PolicyExceptionsPlugin implements PluginInterface
             viewPath: $context->path('resources/views/register.blade.php'),
             dataResolver: fn (ScreenRenderContext $screenContext): array => $this->registerData($context, $screenContext),
             toolbarResolver: function (ScreenRenderContext $screenContext): array {
-                $query = $this->baseQuery($screenContext);
+                $query = $this->baseQuery($screenContext, false);
+
+                if (is_string($screenContext->query['policy_id'] ?? null) && ($screenContext->query['policy_id'] ?? '') !== '') {
+                    return [
+                        new ToolbarAction(
+                            label: 'Back to policies',
+                            url: route('core.shell.index', [...$query, 'menu' => 'plugin.policy-exceptions.root']),
+                            variant: 'secondary',
+                        ),
+                        new ToolbarAction(
+                            label: 'Exceptions board',
+                            url: route('core.shell.index', [...$query, 'menu' => 'plugin.policy-exceptions.exceptions']),
+                            variant: 'secondary',
+                        ),
+                    ];
+                }
 
                 return [
                     new ToolbarAction(
@@ -124,13 +139,32 @@ class PolicyExceptionsPlugin implements PluginInterface
             subtitleKey: 'plugin.policy-exceptions.screen.exceptions.subtitle',
             viewPath: $context->path('resources/views/exceptions.blade.php'),
             dataResolver: fn (ScreenRenderContext $screenContext): array => $this->exceptionsData($context, $screenContext),
-            toolbarResolver: fn (ScreenRenderContext $screenContext): array => [
-                new ToolbarAction(
-                    label: 'Policies register',
-                    url: route('core.shell.index', [...$this->baseQuery($screenContext), 'menu' => 'plugin.policy-exceptions.root']),
-                    variant: 'secondary',
-                ),
-            ],
+            toolbarResolver: function (ScreenRenderContext $screenContext): array {
+                $query = $this->baseQuery($screenContext, false);
+
+                if (is_string($screenContext->query['exception_id'] ?? null) && ($screenContext->query['exception_id'] ?? '') !== '') {
+                    return [
+                        new ToolbarAction(
+                            label: 'Back to exceptions',
+                            url: route('core.shell.index', [...$query, 'menu' => 'plugin.policy-exceptions.exceptions']),
+                            variant: 'secondary',
+                        ),
+                        new ToolbarAction(
+                            label: 'Policies register',
+                            url: route('core.shell.index', [...$query, 'menu' => 'plugin.policy-exceptions.root']),
+                            variant: 'secondary',
+                        ),
+                    ];
+                }
+
+                return [
+                    new ToolbarAction(
+                        label: 'Policies register',
+                        url: route('core.shell.index', [...$query, 'menu' => 'plugin.policy-exceptions.root']),
+                        variant: 'secondary',
+                    ),
+                ];
+            },
         ));
     }
 
@@ -152,6 +186,20 @@ class PolicyExceptionsPlugin implements PluginInterface
         $tenancy = $context->app()->make(TenancyServiceInterface::class);
         $organizationId = $screenContext->organizationId ?? 'org-a';
         $canManage = $this->canManage($authorization, $screenContext, $organizationId);
+        $baseQuery = $this->baseQuery($screenContext, false);
+        $controlOptions = $this->linkedOptions('controls', 'id', 'name', $organizationId, $screenContext->scopeId);
+        $controlLabels = [];
+        $findingOptions = $this->linkedOptions('findings', 'id', 'title', $organizationId, $screenContext->scopeId);
+        $findingLabels = [];
+
+        foreach ($controlOptions as $option) {
+            $controlLabels[$option['id']] = $option['label'];
+        }
+
+        foreach ($findingOptions as $option) {
+            $findingLabels[$option['id']] = $option['label'];
+        }
+
         $policies = [];
 
         foreach ($repository->allPolicies($organizationId, $screenContext->scopeId) as $policy) {
@@ -164,9 +212,37 @@ class PolicyExceptionsPlugin implements PluginInterface
             );
 
             $exceptions = $repository->exceptionsForPolicy($policy['id']);
+            $policyExceptions = [];
+            $activeExceptionCount = 0;
+
+            foreach ($exceptions as $exception) {
+                $exceptionInstance = $workflow->instanceFor(
+                    workflowKey: 'plugin.policy-exceptions.exception-lifecycle',
+                    subjectType: 'policy-exception',
+                    subjectId: $exception['id'],
+                    organizationId: $organizationId,
+                    scopeId: $screenContext->scopeId,
+                );
+
+                if ($exceptionInstance->currentState === 'approved') {
+                    $activeExceptionCount++;
+                }
+
+                $policyExceptions[] = [
+                    ...$exception,
+                    'state' => $exceptionInstance->currentState,
+                    'owner_assignment' => $this->ownerAssignment($actors, 'policy-exception', $exception['id'], $organizationId, $screenContext->scopeId),
+                    'linked_finding_label' => $findingLabels[$exception['linked_finding_id']] ?? null,
+                    'linked_finding_url' => $exception['linked_finding_id'] !== ''
+                        ? route('core.shell.index', [...$baseQuery, 'menu' => 'plugin.findings-remediation.root', 'finding_id' => $exception['linked_finding_id']])
+                        : null,
+                    'open_url' => route('core.shell.index', [...$baseQuery, 'menu' => 'plugin.policy-exceptions.exceptions', 'exception_id' => $exception['id']]),
+                ];
+            }
 
             $policies[] = [
                 ...$policy,
+                'exceptions' => $policyExceptions,
                 'owner_assignment' => $this->ownerAssignment($actors, 'policy', $policy['id'], $organizationId, $screenContext->scopeId),
                 'artifacts' => array_map(
                     static fn ($artifact): array => $artifact->toArray(),
@@ -178,19 +254,29 @@ class PolicyExceptionsPlugin implements PluginInterface
                 'artifact_upload_route' => route('plugin.policy-exceptions.artifacts.store', ['policyId' => $policy['id']]),
                 'update_route' => route('plugin.policy-exceptions.update', ['policyId' => $policy['id']]),
                 'exception_store_route' => route('plugin.policy-exceptions.exceptions.store', ['policyId' => $policy['id']]),
+                'linked_control_label' => $controlLabels[$policy['linked_control_id']] ?? null,
+                'linked_control_url' => $policy['linked_control_id'] !== ''
+                    ? route('core.shell.index', [...$baseQuery, 'menu' => 'plugin.controls-catalog.root'])
+                    : null,
+                'history' => $workflow->history('plugin.policy-exceptions.policy-lifecycle', 'policy', $policy['id']),
+                'open_url' => route('core.shell.index', [...$baseQuery, 'menu' => 'plugin.policy-exceptions.root', 'policy_id' => $policy['id']]),
                 'exception_count' => count($exceptions),
-                'active_exception_count' => count(array_filter($exceptions, function (array $exception) use ($workflow, $organizationId, $screenContext): bool {
-                    $instance = $workflow->instanceFor(
-                        workflowKey: 'plugin.policy-exceptions.exception-lifecycle',
-                        subjectType: 'policy-exception',
-                        subjectId: $exception['id'],
-                        organizationId: $organizationId,
-                        scopeId: $screenContext->scopeId,
-                    );
-
-                    return $instance->currentState === 'approved';
-                })),
+                'active_exception_count' => $activeExceptionCount,
             ];
+        }
+
+        $selectedPolicyId = is_string($screenContext->query['policy_id'] ?? null) && ($screenContext->query['policy_id'] ?? '') !== ''
+            ? (string) $screenContext->query['policy_id']
+            : null;
+        $selectedPolicy = null;
+
+        if (is_string($selectedPolicyId)) {
+            foreach ($policies as $policy) {
+                if ($policy['id'] === $selectedPolicyId) {
+                    $selectedPolicy = $policy;
+                    break;
+                }
+            }
         }
 
         $scopeContext = $tenancy->resolveContext(
@@ -202,13 +288,16 @@ class PolicyExceptionsPlugin implements PluginInterface
 
         return [
             'policies' => $policies,
+            'selected_policy' => $selectedPolicy,
             'can_manage_policies' => $canManage,
             'query' => $this->baseQuery($screenContext),
+            'list_query' => $baseQuery,
             'create_route' => route('plugin.policy-exceptions.store'),
             'owner_actor_options' => $this->actorOptions($actors, $organizationId, $screenContext->scopeId),
             'scope_options' => array_map(static fn ($scope): array => $scope->toArray(), $scopeContext->scopes),
-            'control_options' => $this->linkedOptions('controls', 'id', 'name', $organizationId, $screenContext->scopeId),
-            'finding_options' => $this->linkedOptions('findings', 'id', 'title', $organizationId, $screenContext->scopeId),
+            'control_options' => $controlOptions,
+            'finding_options' => $findingOptions,
+            'policies_list_url' => route('core.shell.index', [...$baseQuery, 'menu' => 'plugin.policy-exceptions.root']),
         ];
     }
 
@@ -225,6 +314,14 @@ class PolicyExceptionsPlugin implements PluginInterface
         $tenancy = $context->app()->make(TenancyServiceInterface::class);
         $organizationId = $screenContext->organizationId ?? 'org-a';
         $canManage = $this->canManage($authorization, $screenContext, $organizationId);
+        $baseQuery = $this->baseQuery($screenContext, false);
+        $findingOptions = $this->linkedOptions('findings', 'id', 'title', $organizationId, $screenContext->scopeId);
+        $findingLabels = [];
+
+        foreach ($findingOptions as $option) {
+            $findingLabels[$option['id']] = $option['label'];
+        }
+
         $exceptions = [];
 
         foreach ($repository->exceptions($organizationId, $screenContext->scopeId) as $exception) {
@@ -255,7 +352,28 @@ class PolicyExceptionsPlugin implements PluginInterface
                 'transition_route' => route('plugin.policy-exceptions.exceptions.transition', ['exceptionId' => $exception['id'], 'transitionKey' => '__TRANSITION__']),
                 'artifact_upload_route' => route('plugin.policy-exceptions.exceptions.artifacts.store', ['exceptionId' => $exception['id']]),
                 'update_route' => route('plugin.policy-exceptions.exceptions.update', ['exceptionId' => $exception['id']]),
+                'history' => $workflow->history('plugin.policy-exceptions.exception-lifecycle', 'policy-exception', $exception['id']),
+                'linked_finding_label' => $findingLabels[$exception['linked_finding_id']] ?? null,
+                'linked_finding_url' => $exception['linked_finding_id'] !== ''
+                    ? route('core.shell.index', [...$baseQuery, 'menu' => 'plugin.findings-remediation.root', 'finding_id' => $exception['linked_finding_id']])
+                    : null,
+                'policy_url' => route('core.shell.index', [...$baseQuery, 'menu' => 'plugin.policy-exceptions.root', 'policy_id' => $policy['id']]),
+                'open_url' => route('core.shell.index', [...$baseQuery, 'menu' => 'plugin.policy-exceptions.exceptions', 'exception_id' => $exception['id']]),
             ];
+        }
+
+        $selectedExceptionId = is_string($screenContext->query['exception_id'] ?? null) && ($screenContext->query['exception_id'] ?? '') !== ''
+            ? (string) $screenContext->query['exception_id']
+            : null;
+        $selectedException = null;
+
+        if (is_string($selectedExceptionId)) {
+            foreach ($exceptions as $exception) {
+                if ($exception['id'] === $selectedExceptionId) {
+                    $selectedException = $exception;
+                    break;
+                }
+            }
         }
 
         $scopeContext = $tenancy->resolveContext(
@@ -267,11 +385,14 @@ class PolicyExceptionsPlugin implements PluginInterface
 
         return [
             'exceptions' => $exceptions,
+            'selected_exception' => $selectedException,
             'can_manage_policies' => $canManage,
             'query' => $this->baseQuery($screenContext),
+            'list_query' => $baseQuery,
             'owner_actor_options' => $this->actorOptions($actors, $organizationId, $screenContext->scopeId),
             'scope_options' => array_map(static fn ($scope): array => $scope->toArray(), $scopeContext->scopes),
-            'finding_options' => $this->linkedOptions('findings', 'id', 'title', $organizationId, $screenContext->scopeId),
+            'finding_options' => $findingOptions,
+            'exceptions_list_url' => route('core.shell.index', [...$baseQuery, 'menu' => 'plugin.policy-exceptions.exceptions']),
         ];
     }
 
@@ -318,12 +439,16 @@ class PolicyExceptionsPlugin implements PluginInterface
     /**
      * @return array<string, string>
      */
-    private function baseQuery(ScreenRenderContext $context): array
+    private function baseQuery(ScreenRenderContext $context, bool $includeSelection = true): array
     {
         $query = $context->query;
         $query['principal_id'] = $context->principal?->id ?? ($query['principal_id'] ?? 'principal-org-a');
         $query['organization_id'] = $context->organizationId ?? ($query['organization_id'] ?? 'org-a');
         $query['locale'] = $context->locale;
+
+        if (! $includeSelection) {
+            unset($query['policy_id'], $query['exception_id']);
+        }
 
         if ($context->scopeId !== null) {
             $query['scope_id'] = $context->scopeId;

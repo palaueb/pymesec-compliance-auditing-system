@@ -66,7 +66,22 @@ class RiskManagementPlugin implements PluginInterface
             viewPath: $context->path('resources/views/register.blade.php'),
             dataResolver: fn (ScreenRenderContext $screenContext): array => $this->registerData($context, $screenContext),
             toolbarResolver: function (ScreenRenderContext $screenContext): array {
-                $query = $this->baseQuery($screenContext);
+                $query = $this->baseQuery($screenContext, false);
+
+                if (is_string($screenContext->query['risk_id'] ?? null) && ($screenContext->query['risk_id'] ?? '') !== '') {
+                    return [
+                        new ToolbarAction(
+                            label: 'Back to risks',
+                            url: route('core.shell.index', [...$query, 'menu' => 'plugin.risk-management.root']),
+                            variant: 'secondary',
+                        ),
+                        new ToolbarAction(
+                            label: 'Risk board',
+                            url: route('core.shell.index', [...$query, 'menu' => 'plugin.risk-management.board']),
+                            variant: 'secondary',
+                        ),
+                    ];
+                }
 
                 return [
                     new ToolbarAction(
@@ -124,11 +139,18 @@ class RiskManagementPlugin implements PluginInterface
             organizationId: $organizationId,
             scopeId: $screenContext->scopeId,
         ))->allowed();
+        $baseQuery = $this->baseQuery($screenContext, false);
         $assetOptions = $this->linkedOptions('assets', 'id', 'name', $organizationId, $screenContext->scopeId);
         $assetLabels = [];
+        $controlOptions = $this->linkedOptions('controls', 'id', 'name', $organizationId, $screenContext->scopeId);
+        $controlLabels = [];
 
         foreach ($assetOptions as $option) {
             $assetLabels[$option['id']] = $option['label'];
+        }
+
+        foreach ($controlOptions as $option) {
+            $controlLabels[$option['id']] = $option['label'];
         }
 
         $risks = [];
@@ -155,7 +177,30 @@ class RiskManagementPlugin implements PluginInterface
                 'artifact_upload_route' => route('plugin.risk-management.artifacts.store', ['riskId' => $risk['id']]),
                 'update_route' => route('plugin.risk-management.update', ['riskId' => $risk['id']]),
                 'linked_asset_label' => $assetLabels[$risk['linked_asset_id']] ?? null,
+                'linked_control_label' => $controlLabels[$risk['linked_control_id']] ?? null,
+                'history' => $workflow->history('plugin.risk-management.risk-lifecycle', 'risk', $risk['id']),
+                'linked_asset_url' => $risk['linked_asset_id'] !== ''
+                    ? route('core.shell.index', [...$baseQuery, 'menu' => 'plugin.asset-catalog.root'])
+                    : null,
+                'linked_control_url' => $risk['linked_control_id'] !== ''
+                    ? route('core.shell.index', [...$baseQuery, 'menu' => 'plugin.controls-catalog.root'])
+                    : null,
+                'open_url' => route('core.shell.index', [...$baseQuery, 'menu' => 'plugin.risk-management.root', 'risk_id' => $risk['id']]),
             ];
+        }
+
+        $selectedRiskId = is_string($screenContext->query['risk_id'] ?? null) && $screenContext->query['risk_id'] !== ''
+            ? (string) $screenContext->query['risk_id']
+            : null;
+        $selectedRisk = null;
+
+        if (is_string($selectedRiskId)) {
+            foreach ($risks as $risk) {
+                if ($risk['id'] === $selectedRiskId) {
+                    $selectedRisk = $risk;
+                    break;
+                }
+            }
         }
 
         $scopeContext = $tenancy->resolveContext(
@@ -167,12 +212,16 @@ class RiskManagementPlugin implements PluginInterface
 
         return [
             'risks' => $risks,
+            'selected_risk' => $selectedRisk,
             'can_manage_risks' => $canManage,
             'query' => $this->baseQuery($screenContext),
+            'list_query' => $baseQuery,
             'create_route' => route('plugin.risk-management.store'),
             'owner_actor_options' => $this->actorOptions($actors, $organizationId, $screenContext->scopeId),
             'scope_options' => array_map(static fn ($scope): array => $scope->toArray(), $scopeContext->scopes),
             'asset_options' => $assetOptions,
+            'control_options' => $controlOptions,
+            'risks_list_url' => route('core.shell.index', [...$baseQuery, 'menu' => 'plugin.risk-management.root']),
         ];
     }
 
@@ -229,7 +278,7 @@ class RiskManagementPlugin implements PluginInterface
     /**
      * @return array<string, string>
      */
-    private function baseQuery(ScreenRenderContext $context): array
+    private function baseQuery(ScreenRenderContext $context, bool $includeSelection = true): array
     {
         $query = $context->query;
         $query['principal_id'] = $context->principal?->id ?? ($query['principal_id'] ?? 'principal-org-a');
@@ -242,6 +291,10 @@ class RiskManagementPlugin implements PluginInterface
 
         foreach ($context->memberships as $membership) {
             $query['membership_ids'][] = $membership->id;
+        }
+
+        if (! $includeSelection) {
+            unset($query['risk_id']);
         }
 
         return $query;

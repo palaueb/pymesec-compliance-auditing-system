@@ -115,7 +115,7 @@ class ControlsCatalogTest extends TestCase
             'artifact' => UploadedFile::fake()->createWithContent('quarterly-export.csv', 'row-1'),
         ])->assertFound();
 
-        $this->get('/app?menu=plugin.controls-catalog.root&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
+        $this->get('/app?menu=plugin.controls-catalog.root&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello&control_id=control-access-review')
             ->assertOk()
             ->assertSee('Quarterly export')
             ->assertSee('quarterly-export.csv');
@@ -195,7 +195,7 @@ class ControlsCatalogTest extends TestCase
             'notes' => 'Review ownership and entitlements as part of the quarterly cycle.',
         ])->assertFound();
 
-        $this->get('/app?menu=plugin.controls-catalog.root&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
+        $this->get('/app?menu=plugin.controls-catalog.root&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello&control_id=control-access-review')
             ->assertOk()
             ->assertSee('CIS Safeguards v8')
             ->assertSee('Maintain an enterprise asset inventory')

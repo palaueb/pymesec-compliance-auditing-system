@@ -66,7 +66,22 @@ class FindingsRemediationPlugin implements PluginInterface
             viewPath: $context->path('resources/views/register.blade.php'),
             dataResolver: fn (ScreenRenderContext $screenContext): array => $this->registerData($context, $screenContext),
             toolbarResolver: function (ScreenRenderContext $screenContext): array {
-                $query = $this->baseQuery($screenContext);
+                $query = $this->baseQuery($screenContext, false);
+
+                if (is_string($screenContext->query['finding_id'] ?? null) && ($screenContext->query['finding_id'] ?? '') !== '') {
+                    return [
+                        new ToolbarAction(
+                            label: 'Back to findings',
+                            url: route('core.shell.index', [...$query, 'menu' => 'plugin.findings-remediation.root']),
+                            variant: 'secondary',
+                        ),
+                        new ToolbarAction(
+                            label: 'Remediation board',
+                            url: route('core.shell.index', [...$query, 'menu' => 'plugin.findings-remediation.board']),
+                            variant: 'secondary',
+                        ),
+                    ];
+                }
 
                 return [
                     new ToolbarAction(
@@ -124,6 +139,20 @@ class FindingsRemediationPlugin implements PluginInterface
             organizationId: $organizationId,
             scopeId: $screenContext->scopeId,
         ))->allowed();
+        $baseQuery = $this->baseQuery($screenContext, false);
+        $controlOptions = $this->linkedOptions('controls', 'id', 'name', $organizationId, $screenContext->scopeId);
+        $controlLabels = [];
+        $riskOptions = $this->linkedOptions('risks', 'id', 'title', $organizationId, $screenContext->scopeId);
+        $riskLabels = [];
+
+        foreach ($controlOptions as $option) {
+            $controlLabels[$option['id']] = $option['label'];
+        }
+
+        foreach ($riskOptions as $option) {
+            $riskLabels[$option['id']] = $option['label'];
+        }
+
         $findings = [];
 
         foreach ($repository->allFindings($organizationId, $screenContext->scopeId) as $finding) {
@@ -136,9 +165,19 @@ class FindingsRemediationPlugin implements PluginInterface
             );
 
             $actions = $repository->actionsForFinding($finding['id']);
+            $findingActions = [];
+
+            foreach ($actions as $action) {
+                $findingActions[] = [
+                    ...$action,
+                    'owner_assignment' => $this->ownerAssignment($actors, 'remediation-action', $action['id'], $organizationId, $screenContext->scopeId),
+                    'update_route' => route('plugin.findings-remediation.actions.update', ['actionId' => $action['id']]),
+                ];
+            }
 
             $findings[] = [
                 ...$finding,
+                'actions' => $findingActions,
                 'owner_assignment' => $this->ownerAssignment($actors, 'finding', $finding['id'], $organizationId, $screenContext->scopeId),
                 'artifacts' => array_map(
                     static fn ($artifact): array => $artifact->toArray(),
@@ -150,9 +189,33 @@ class FindingsRemediationPlugin implements PluginInterface
                 'artifact_upload_route' => route('plugin.findings-remediation.artifacts.store', ['findingId' => $finding['id']]),
                 'update_route' => route('plugin.findings-remediation.update', ['findingId' => $finding['id']]),
                 'action_store_route' => route('plugin.findings-remediation.actions.store', ['findingId' => $finding['id']]),
+                'linked_control_label' => $controlLabels[$finding['linked_control_id']] ?? null,
+                'linked_risk_label' => $riskLabels[$finding['linked_risk_id']] ?? null,
+                'linked_control_url' => $finding['linked_control_id'] !== ''
+                    ? route('core.shell.index', [...$baseQuery, 'menu' => 'plugin.controls-catalog.root'])
+                    : null,
+                'linked_risk_url' => $finding['linked_risk_id'] !== ''
+                    ? route('core.shell.index', [...$baseQuery, 'menu' => 'plugin.risk-management.root', 'risk_id' => $finding['linked_risk_id']])
+                    : null,
+                'history' => $workflow->history('plugin.findings-remediation.finding-lifecycle', 'finding', $finding['id']),
+                'open_url' => route('core.shell.index', [...$baseQuery, 'menu' => 'plugin.findings-remediation.root', 'finding_id' => $finding['id']]),
                 'action_count' => count($actions),
                 'open_action_count' => count(array_filter($actions, static fn (array $action): bool => $action['status'] !== 'done')),
             ];
+        }
+
+        $selectedFindingId = is_string($screenContext->query['finding_id'] ?? null) && $screenContext->query['finding_id'] !== ''
+            ? (string) $screenContext->query['finding_id']
+            : null;
+        $selectedFinding = null;
+
+        if (is_string($selectedFindingId)) {
+            foreach ($findings as $finding) {
+                if ($finding['id'] === $selectedFindingId) {
+                    $selectedFinding = $finding;
+                    break;
+                }
+            }
         }
 
         $scopeContext = $tenancy->resolveContext(
@@ -164,13 +227,16 @@ class FindingsRemediationPlugin implements PluginInterface
 
         return [
             'findings' => $findings,
+            'selected_finding' => $selectedFinding,
             'can_manage_findings' => $canManage,
             'query' => $this->baseQuery($screenContext),
+            'list_query' => $baseQuery,
             'create_route' => route('plugin.findings-remediation.store'),
             'owner_actor_options' => $this->actorOptions($actors, $organizationId, $screenContext->scopeId),
             'scope_options' => array_map(static fn ($scope): array => $scope->toArray(), $scopeContext->scopes),
-            'control_options' => $this->linkedOptions('controls', 'id', 'name', $organizationId, $screenContext->scopeId),
-            'risk_options' => $this->linkedOptions('risks', 'id', 'title', $organizationId, $screenContext->scopeId),
+            'control_options' => $controlOptions,
+            'risk_options' => $riskOptions,
+            'findings_list_url' => route('core.shell.index', [...$baseQuery, 'menu' => 'plugin.findings-remediation.root']),
         ];
     }
 
@@ -240,12 +306,16 @@ class FindingsRemediationPlugin implements PluginInterface
     /**
      * @return array<string, string>
      */
-    private function baseQuery(ScreenRenderContext $context): array
+    private function baseQuery(ScreenRenderContext $context, bool $includeSelection = true): array
     {
         $query = $context->query;
         $query['principal_id'] = $context->principal?->id ?? ($query['principal_id'] ?? 'principal-org-a');
         $query['organization_id'] = $context->organizationId ?? ($query['organization_id'] ?? 'org-a');
         $query['locale'] = $context->locale;
+
+        if (! $includeSelection) {
+            unset($query['finding_id']);
+        }
 
         if ($context->scopeId !== null) {
             $query['scope_id'] = $context->scopeId;

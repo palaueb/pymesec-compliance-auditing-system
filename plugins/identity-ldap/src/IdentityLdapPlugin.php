@@ -10,6 +10,7 @@ use PymeSec\Core\Plugins\PluginContext;
 use PymeSec\Core\Tenancy\Contracts\TenancyServiceInterface;
 use PymeSec\Core\UI\ScreenDefinition;
 use PymeSec\Core\UI\ScreenRenderContext;
+use PymeSec\Core\UI\ToolbarAction;
 
 class IdentityLdapPlugin implements IdentityPluginInterface
 {
@@ -41,6 +42,7 @@ class IdentityLdapPlugin implements IdentityPluginInterface
             subtitleKey: 'plugin.identity-ldap.screen.directory.subtitle',
             viewPath: $context->path('resources/views/directory.blade.php'),
             dataResolver: fn (ScreenRenderContext $screenContext): array => $this->directoryData($context, $screenContext),
+            toolbarResolver: fn (ScreenRenderContext $screenContext): array => $this->directoryToolbar($context, $screenContext),
         ));
     }
 
@@ -117,6 +119,39 @@ class IdentityLdapPlugin implements IdentityPluginInterface
         }
 
         return $query;
+    }
+
+    /**
+     * @return array<int, ToolbarAction>
+     */
+    private function directoryToolbar(PluginContext $context, ScreenRenderContext $screenContext): array
+    {
+        $authorization = $context->app()->make(AuthorizationServiceInterface::class);
+        $organizationId = $screenContext->organizationId ?? 'org-a';
+
+        if (! $this->can($authorization, $screenContext, 'plugin.identity-ldap.directory.manage', $organizationId)) {
+            return [];
+        }
+
+        $repository = $context->app()->make(IdentityLdapRepository::class);
+        $connection = $repository->connectionForOrganization($organizationId);
+        $actions = [
+            new ToolbarAction(
+                label: $connection === null ? 'Set up directory' : 'Edit connector',
+                url: '#ldap-connection-editor',
+                variant: 'primary',
+            ),
+        ];
+
+        if ($connection !== null) {
+            $actions[] = new ToolbarAction(
+                label: 'Add group mapping',
+                url: '#ldap-mapping-editor',
+                variant: 'secondary',
+            );
+        }
+
+        return $actions;
     }
 
     private function can(

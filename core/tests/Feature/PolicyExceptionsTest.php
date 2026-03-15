@@ -31,7 +31,8 @@ class PolicyExceptionsTest extends TestCase
             ->assertSee('Policies Register')
             ->assertSee('Access Governance Policy')
             ->assertSee('1 exceptions')
-            ->assertSee('Create Policy');
+            ->assertSee('Add policy')
+            ->assertSee('Edit details');
     }
 
     public function test_policies_and_exceptions_can_be_created_and_edited_from_the_shell_runtime(): void
@@ -82,6 +83,7 @@ class PolicyExceptionsTest extends TestCase
         $this->post('/plugins/policies/exceptions/exception-legacy-supplier-bridge-exception', [
             ...$payload,
             'menu' => 'plugin.policy-exceptions.exceptions',
+            'exception_id' => 'exception-legacy-supplier-bridge-exception',
             'title' => 'Legacy supplier bridge approval exception',
             'rationale' => 'Bridge migration remains active until the final supplier connector is retired.',
             'compensating_control' => 'Twice-weekly manual access export review.',
@@ -91,12 +93,13 @@ class PolicyExceptionsTest extends TestCase
             'owner_actor_id' => 'actor-ava-mason',
         ])->assertFound();
 
-        $this->get('/app?menu=plugin.policy-exceptions.root&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
+        $this->get('/app?menu=plugin.policy-exceptions.root&policy_id=policy-supplier-governance-policy&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
             ->assertOk()
             ->assertSee('Supplier Access Governance Policy')
-            ->assertSee('Compliance Office');
+            ->assertSee('Compliance Office')
+            ->assertSee('Legacy supplier bridge approval exception');
 
-        $this->get('/app?menu=plugin.policy-exceptions.exceptions&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
+        $this->get('/app?menu=plugin.policy-exceptions.exceptions&exception_id=exception-legacy-supplier-bridge-exception&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
             ->assertOk()
             ->assertSee('Legacy supplier bridge approval exception')
             ->assertSee('Twice-weekly manual access export review.')
@@ -112,6 +115,7 @@ class PolicyExceptionsTest extends TestCase
             'organization_id' => 'org-a',
             'locale' => 'en',
             'menu' => 'plugin.policy-exceptions.root',
+            'policy_id' => 'policy-access-governance',
             'membership_id' => 'membership-org-a-hello',
         ])->assertFound();
 
@@ -120,6 +124,7 @@ class PolicyExceptionsTest extends TestCase
             'organization_id' => 'org-a',
             'locale' => 'en',
             'menu' => 'plugin.policy-exceptions.exceptions',
+            'exception_id' => 'exception-break-glass-window',
             'membership_id' => 'membership-org-a-hello',
         ])->assertFound();
 
@@ -128,6 +133,7 @@ class PolicyExceptionsTest extends TestCase
             'organization_id' => 'org-a',
             'locale' => 'en',
             'menu' => 'plugin.policy-exceptions.root',
+            'policy_id' => 'policy-access-governance',
             'membership_id' => 'membership-org-a-hello',
             'label' => 'Policy approval memo',
             'artifact_type' => 'document',
@@ -139,19 +145,20 @@ class PolicyExceptionsTest extends TestCase
             'organization_id' => 'org-a',
             'locale' => 'en',
             'menu' => 'plugin.policy-exceptions.exceptions',
+            'exception_id' => 'exception-break-glass-window',
             'membership_id' => 'membership-org-a-hello',
             'label' => 'Exception sign-off',
             'artifact_type' => 'evidence',
             'artifact' => UploadedFile::fake()->createWithContent('exception-signoff.txt', 'signoff'),
         ])->assertFound();
 
-        $this->get('/app?menu=plugin.policy-exceptions.root&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
+        $this->get('/app?menu=plugin.policy-exceptions.root&policy_id=policy-access-governance&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
             ->assertOk()
             ->assertSee('submit-review')
             ->assertSee('Policy approval memo')
             ->assertSee('policy-memo.pdf');
 
-        $this->get('/app?menu=plugin.policy-exceptions.exceptions&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
+        $this->get('/app?menu=plugin.policy-exceptions.exceptions&exception_id=exception-break-glass-window&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
             ->assertOk()
             ->assertSee('approve')
             ->assertSee('Exception sign-off')

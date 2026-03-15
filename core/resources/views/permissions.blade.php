@@ -1,5 +1,5 @@
 <section class="module-screen compact">
-    <div class="overview-grid">
+    <div class="overview-grid" style="grid-template-columns:repeat(4, minmax(0, 1fr));">
         <div class="metric-card"><div class="metric-label">Registered</div><div class="metric-value">{{ $metrics['total'] }}</div></div>
         <div class="metric-card"><div class="metric-label">Platform scope</div><div class="metric-value">{{ $metrics['platform'] }}</div></div>
         <div class="metric-card"><div class="metric-label">Organization scope</div><div class="metric-value">{{ $metrics['organization'] }}</div></div>

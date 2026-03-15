@@ -224,6 +224,7 @@ Route::post('/plugins/identity/users', function (
 
     return redirect()->route('core.admin.index', array_filter([
         'menu' => 'plugin.identity-local.users',
+        'user_id' => $user['id'],
         'principal_id' => $requesterPrincipalId,
         'organization_id' => $validated['organization_id'],
         'locale' => $request->input('locale', 'en'),
@@ -284,6 +285,7 @@ Route::post('/plugins/identity/users/{userId}', function (
 
     return redirect()->route('core.admin.index', array_filter([
         'menu' => 'plugin.identity-local.users',
+        'user_id' => $user['id'],
         'principal_id' => $requesterPrincipalId,
         'organization_id' => $validated['organization_id'],
         'locale' => $request->input('locale', 'en'),
@@ -306,6 +308,7 @@ Route::post('/plugins/identity/users/{userId}/delete', function (
     if (($user['auth_provider'] ?? 'local') !== 'local') {
         return redirect()->route('core.admin.index', array_filter([
             'menu' => 'plugin.identity-local.users',
+            'user_id' => $userId,
             'principal_id' => $requesterPrincipalId,
             'organization_id' => (string) ($user['organization_id'] ?? $request->input('organization_id', 'org-a')),
             'locale' => $request->input('locale', 'en'),
@@ -316,6 +319,7 @@ Route::post('/plugins/identity/users/{userId}/delete', function (
     if (($user['principal_id'] ?? null) === $requesterPrincipalId) {
         return redirect()->route('core.admin.index', array_filter([
             'menu' => 'plugin.identity-local.users',
+            'user_id' => $userId,
             'principal_id' => $requesterPrincipalId,
             'organization_id' => (string) ($user['organization_id'] ?? $request->input('organization_id', 'org-a')),
             'locale' => $request->input('locale', 'en'),
@@ -347,7 +351,7 @@ Route::post('/plugins/identity/memberships', function (Request $request, Identit
     $requesterPrincipalId = (string) $request->input('principal_id', 'principal-org-a');
     $requesterMembershipId = $request->input('membership_id');
 
-    $repository->createMembership([
+    $membership = $repository->createMembership([
         'principal_id' => $validated['subject_principal_id'],
         'organization_id' => $validated['organization_id'],
         'role_keys' => $validated['role_keys'] ?? [],
@@ -357,6 +361,7 @@ Route::post('/plugins/identity/memberships', function (Request $request, Identit
 
     return redirect()->route('core.shell.index', array_filter([
         'menu' => 'plugin.identity-local.memberships',
+        'selected_membership_id' => $membership['id'],
         'principal_id' => $requesterPrincipalId,
         'organization_id' => $validated['organization_id'],
         'locale' => $request->input('locale', 'en'),
@@ -394,6 +399,7 @@ Route::post('/plugins/identity/memberships/{membershipId}', function (
 
     return redirect()->route('core.shell.index', array_filter([
         'menu' => 'plugin.identity-local.memberships',
+        'selected_membership_id' => $membership['id'],
         'principal_id' => $requesterPrincipalId,
         'organization_id' => $validated['organization_id'],
         'locale' => $request->input('locale', 'en'),

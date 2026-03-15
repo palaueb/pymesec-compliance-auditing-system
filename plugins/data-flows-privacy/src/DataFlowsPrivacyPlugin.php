@@ -100,7 +100,22 @@ class DataFlowsPrivacyPlugin implements PluginInterface
             viewPath: $context->path('resources/views/register.blade.php'),
             dataResolver: fn (ScreenRenderContext $screenContext): array => $this->registerData($context, $screenContext),
             toolbarResolver: function (ScreenRenderContext $screenContext): array {
-                $query = $this->baseQuery($screenContext);
+                $query = $this->baseQuery($screenContext, false);
+
+                if (is_string($screenContext->query['flow_id'] ?? null) && ($screenContext->query['flow_id'] ?? '') !== '') {
+                    return [
+                        new ToolbarAction(
+                            label: 'Back to data flows',
+                            url: route('core.shell.index', [...$query, 'menu' => 'plugin.data-flows-privacy.root']),
+                            variant: 'secondary',
+                        ),
+                        new ToolbarAction(
+                            label: 'Processing activities',
+                            url: route('core.shell.index', [...$query, 'menu' => 'plugin.data-flows-privacy.activities']),
+                            variant: 'secondary',
+                        ),
+                    ];
+                }
 
                 return [
                     new ToolbarAction(
@@ -124,13 +139,37 @@ class DataFlowsPrivacyPlugin implements PluginInterface
             subtitleKey: 'plugin.data-flows-privacy.screen.activities.subtitle',
             viewPath: $context->path('resources/views/activities.blade.php'),
             dataResolver: fn (ScreenRenderContext $screenContext): array => $this->activitiesData($context, $screenContext),
-            toolbarResolver: fn (ScreenRenderContext $screenContext): array => [
-                new ToolbarAction(
-                    label: 'Data flows register',
-                    url: route('core.shell.index', [...$this->baseQuery($screenContext), 'menu' => 'plugin.data-flows-privacy.root']),
-                    variant: 'secondary',
-                ),
-            ],
+            toolbarResolver: function (ScreenRenderContext $screenContext): array {
+                $query = $this->baseQuery($screenContext, false);
+
+                if (is_string($screenContext->query['activity_id'] ?? null) && ($screenContext->query['activity_id'] ?? '') !== '') {
+                    return [
+                        new ToolbarAction(
+                            label: 'Back to activities',
+                            url: route('core.shell.index', [...$query, 'menu' => 'plugin.data-flows-privacy.activities']),
+                            variant: 'secondary',
+                        ),
+                        new ToolbarAction(
+                            label: 'Data flows register',
+                            url: route('core.shell.index', [...$query, 'menu' => 'plugin.data-flows-privacy.root']),
+                            variant: 'secondary',
+                        ),
+                    ];
+                }
+
+                return [
+                    new ToolbarAction(
+                        label: 'Add processing activity',
+                        url: '#privacy-activity-editor',
+                        variant: 'primary',
+                    ),
+                    new ToolbarAction(
+                        label: 'Data flows register',
+                        url: route('core.shell.index', [...$query, 'menu' => 'plugin.data-flows-privacy.root']),
+                        variant: 'secondary',
+                    ),
+                ];
+            },
         ));
     }
 
@@ -152,11 +191,18 @@ class DataFlowsPrivacyPlugin implements PluginInterface
         $tenancy = $context->app()->make(TenancyServiceInterface::class);
         $organizationId = $screenContext->organizationId ?? 'org-a';
         $canManage = $this->canManage($authorization, $screenContext, $organizationId);
+        $baseQuery = $this->baseQuery($screenContext, false);
         $assetOptions = $this->linkedOptions('assets', 'id', 'name', $organizationId, $screenContext->scopeId);
         $assetLabels = [];
+        $riskOptions = $this->linkedOptions('risks', 'id', 'title', $organizationId, $screenContext->scopeId);
+        $riskLabels = [];
 
         foreach ($assetOptions as $option) {
             $assetLabels[$option['id']] = $option['label'];
+        }
+
+        foreach ($riskOptions as $option) {
+            $riskLabels[$option['id']] = $option['label'];
         }
 
         $dataFlows = [];
@@ -183,7 +229,30 @@ class DataFlowsPrivacyPlugin implements PluginInterface
                 'artifact_upload_route' => route('plugin.data-flows-privacy.artifacts.store', ['flowId' => $flow['id']]),
                 'update_route' => route('plugin.data-flows-privacy.update', ['flowId' => $flow['id']]),
                 'linked_asset_label' => $assetLabels[$flow['linked_asset_id']] ?? null,
+                'linked_risk_label' => $riskLabels[$flow['linked_risk_id']] ?? null,
+                'linked_asset_url' => $flow['linked_asset_id'] !== ''
+                    ? route('core.shell.index', [...$baseQuery, 'menu' => 'plugin.asset-catalog.root', 'asset_id' => $flow['linked_asset_id']])
+                    : null,
+                'linked_risk_url' => $flow['linked_risk_id'] !== ''
+                    ? route('core.shell.index', [...$baseQuery, 'menu' => 'plugin.risk-management.root', 'risk_id' => $flow['linked_risk_id']])
+                    : null,
+                'history' => $workflow->history('plugin.data-flows-privacy.data-flow-lifecycle', 'privacy-data-flow', $flow['id']),
+                'open_url' => route('core.shell.index', [...$baseQuery, 'menu' => 'plugin.data-flows-privacy.root', 'flow_id' => $flow['id']]),
             ];
+        }
+
+        $selectedFlowId = is_string($screenContext->query['flow_id'] ?? null) && ($screenContext->query['flow_id'] ?? '') !== ''
+            ? (string) $screenContext->query['flow_id']
+            : null;
+        $selectedFlow = null;
+
+        if (is_string($selectedFlowId)) {
+            foreach ($dataFlows as $flow) {
+                if ($flow['id'] === $selectedFlowId) {
+                    $selectedFlow = $flow;
+                    break;
+                }
+            }
         }
 
         $scopeContext = $tenancy->resolveContext(
@@ -195,13 +264,16 @@ class DataFlowsPrivacyPlugin implements PluginInterface
 
         return [
             'data_flows' => $dataFlows,
+            'selected_flow' => $selectedFlow,
             'can_manage_privacy' => $canManage,
             'query' => $this->baseQuery($screenContext),
+            'list_query' => $baseQuery,
             'create_route' => route('plugin.data-flows-privacy.store'),
             'owner_actor_options' => $this->actorOptions($actors, $organizationId, $screenContext->scopeId),
             'scope_options' => array_map(static fn ($scope): array => $scope->toArray(), $scopeContext->scopes),
             'asset_options' => $assetOptions,
-            'risk_options' => $this->linkedOptions('risks', 'id', 'title', $organizationId, $screenContext->scopeId),
+            'risk_options' => $riskOptions,
+            'data_flows_list_url' => route('core.shell.index', [...$baseQuery, 'menu' => 'plugin.data-flows-privacy.root']),
         ];
     }
 
@@ -218,6 +290,32 @@ class DataFlowsPrivacyPlugin implements PluginInterface
         $tenancy = $context->app()->make(TenancyServiceInterface::class);
         $organizationId = $screenContext->organizationId ?? 'org-a';
         $canManage = $this->canManage($authorization, $screenContext, $organizationId);
+        $baseQuery = $this->baseQuery($screenContext, false);
+        $dataFlowOptions = $this->linkedOptions('privacy_data_flows', 'id', 'title', $organizationId, $screenContext->scopeId);
+        $dataFlowLabels = [];
+        $riskOptions = $this->linkedOptions('risks', 'id', 'title', $organizationId, $screenContext->scopeId);
+        $riskLabels = [];
+        $policyOptions = $this->linkedOptions('policies', 'id', 'title', $organizationId, $screenContext->scopeId);
+        $policyLabels = [];
+        $findingOptions = $this->linkedOptions('findings', 'id', 'title', $organizationId, $screenContext->scopeId);
+        $findingLabels = [];
+
+        foreach ($dataFlowOptions as $option) {
+            $dataFlowLabels[$option['id']] = $option['label'];
+        }
+
+        foreach ($riskOptions as $option) {
+            $riskLabels[$option['id']] = $option['label'];
+        }
+
+        foreach ($policyOptions as $option) {
+            $policyLabels[$option['id']] = $option['label'];
+        }
+
+        foreach ($findingOptions as $option) {
+            $findingLabels[$option['id']] = $option['label'];
+        }
+
         $activities = [];
 
         foreach ($repository->allProcessingActivities($organizationId, $screenContext->scopeId) as $activity) {
@@ -241,7 +339,39 @@ class DataFlowsPrivacyPlugin implements PluginInterface
                 'transition_route' => route('plugin.data-flows-privacy.activities.transition', ['activityId' => $activity['id'], 'transitionKey' => '__TRANSITION__']),
                 'artifact_upload_route' => route('plugin.data-flows-privacy.activities.artifacts.store', ['activityId' => $activity['id']]),
                 'update_route' => route('plugin.data-flows-privacy.activities.update', ['activityId' => $activity['id']]),
+                'linked_data_flow_label' => $dataFlowLabels[$activity['linked_data_flow_ids']] ?? null,
+                'linked_risk_label' => $riskLabels[$activity['linked_risk_ids']] ?? null,
+                'linked_policy_label' => $policyLabels[$activity['linked_policy_id']] ?? null,
+                'linked_finding_label' => $findingLabels[$activity['linked_finding_id']] ?? null,
+                'linked_data_flow_url' => $activity['linked_data_flow_ids'] !== ''
+                    ? route('core.shell.index', [...$baseQuery, 'menu' => 'plugin.data-flows-privacy.root', 'flow_id' => $activity['linked_data_flow_ids']])
+                    : null,
+                'linked_risk_url' => $activity['linked_risk_ids'] !== ''
+                    ? route('core.shell.index', [...$baseQuery, 'menu' => 'plugin.risk-management.root', 'risk_id' => $activity['linked_risk_ids']])
+                    : null,
+                'linked_policy_url' => $activity['linked_policy_id'] !== ''
+                    ? route('core.shell.index', [...$baseQuery, 'menu' => 'plugin.policy-exceptions.root', 'policy_id' => $activity['linked_policy_id']])
+                    : null,
+                'linked_finding_url' => $activity['linked_finding_id'] !== ''
+                    ? route('core.shell.index', [...$baseQuery, 'menu' => 'plugin.findings-remediation.root', 'finding_id' => $activity['linked_finding_id']])
+                    : null,
+                'history' => $workflow->history('plugin.data-flows-privacy.processing-activity-lifecycle', 'privacy-processing-activity', $activity['id']),
+                'open_url' => route('core.shell.index', [...$baseQuery, 'menu' => 'plugin.data-flows-privacy.activities', 'activity_id' => $activity['id']]),
             ];
+        }
+
+        $selectedActivityId = is_string($screenContext->query['activity_id'] ?? null) && ($screenContext->query['activity_id'] ?? '') !== ''
+            ? (string) $screenContext->query['activity_id']
+            : null;
+        $selectedActivity = null;
+
+        if (is_string($selectedActivityId)) {
+            foreach ($activities as $activity) {
+                if ($activity['id'] === $selectedActivityId) {
+                    $selectedActivity = $activity;
+                    break;
+                }
+            }
         }
 
         $scopeContext = $tenancy->resolveContext(
@@ -253,15 +383,18 @@ class DataFlowsPrivacyPlugin implements PluginInterface
 
         return [
             'activities' => $activities,
+            'selected_activity' => $selectedActivity,
             'can_manage_privacy' => $canManage,
             'query' => $this->baseQuery($screenContext),
+            'list_query' => $baseQuery,
             'create_route' => route('plugin.data-flows-privacy.activities.store'),
             'owner_actor_options' => $this->actorOptions($actors, $organizationId, $screenContext->scopeId),
             'scope_options' => array_map(static fn ($scope): array => $scope->toArray(), $scopeContext->scopes),
-            'data_flow_options' => $this->linkedOptions('privacy_data_flows', 'id', 'title', $organizationId, $screenContext->scopeId),
-            'risk_options' => $this->linkedOptions('risks', 'id', 'title', $organizationId, $screenContext->scopeId),
-            'policy_options' => $this->linkedOptions('policies', 'id', 'title', $organizationId, $screenContext->scopeId),
-            'finding_options' => $this->linkedOptions('findings', 'id', 'title', $organizationId, $screenContext->scopeId),
+            'data_flow_options' => $dataFlowOptions,
+            'risk_options' => $riskOptions,
+            'policy_options' => $policyOptions,
+            'finding_options' => $findingOptions,
+            'activities_list_url' => route('core.shell.index', [...$baseQuery, 'menu' => 'plugin.data-flows-privacy.activities']),
         ];
     }
 
@@ -295,12 +428,16 @@ class DataFlowsPrivacyPlugin implements PluginInterface
     /**
      * @return array<string, string>
      */
-    private function baseQuery(ScreenRenderContext $context): array
+    private function baseQuery(ScreenRenderContext $context, bool $includeSelection = true): array
     {
         $query = $context->query;
         $query['principal_id'] = $context->principal?->id ?? ($query['principal_id'] ?? 'principal-org-a');
         $query['organization_id'] = $context->organizationId ?? ($query['organization_id'] ?? 'org-a');
         $query['locale'] = $context->locale;
+
+        if (! $includeSelection) {
+            unset($query['flow_id'], $query['activity_id']);
+        }
 
         if ($context->scopeId !== null) {
             $query['scope_id'] = $context->scopeId;

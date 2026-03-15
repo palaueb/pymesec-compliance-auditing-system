@@ -27,14 +27,14 @@ class AssessmentsAuditsTest extends TestCase
 
     public function test_the_assessments_screen_renders_inside_the_shell(): void
     {
-        $this->get('/app?menu=plugin.assessments-audits.root&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
+        $this->get('/app?menu=plugin.assessments-audits.root&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello&assessment_id=assessment-q2-access-resilience')
             ->assertOk()
             ->assertSee('Assessment Campaigns')
             ->assertSee('Q2 Access and Resilience Review')
             ->assertSee('Quarterly Access Review')
             ->assertSee('Access rights')
             ->assertSee('Access review evidence gap')
-            ->assertSee('Review checklist')
+            ->assertSee('Record review')
             ->assertSee('Create assessment');
     }
 
@@ -60,7 +60,7 @@ class AssessmentsAuditsTest extends TestCase
             'control_ids' => ['control-access-review', 'control-backup-governance'],
         ])->assertFound();
 
-        $this->get('/app?menu=plugin.assessments-audits.root&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
+        $this->get('/app?menu=plugin.assessments-audits.root&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello&assessment_id=assessment-supplier-access-audit')
             ->assertOk()
             ->assertSee('Supplier Access Audit')
             ->assertSee('Focused review of supplier onboarding and entitlement controls.')
@@ -79,7 +79,7 @@ class AssessmentsAuditsTest extends TestCase
             'control_ids' => ['control-access-review'],
         ])->assertFound();
 
-        $this->get('/app?menu=plugin.assessments-audits.root&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
+        $this->get('/app?menu=plugin.assessments-audits.root&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello&assessment_id=assessment-supplier-access-audit')
             ->assertOk()
             ->assertSee('Supplier Access Review')
             ->assertSee('Updated review scope for supplier access and governance.')
@@ -122,7 +122,7 @@ class AssessmentsAuditsTest extends TestCase
             'artifact' => UploadedFile::fake()->createWithContent('review-notes.txt', 'sample notes'),
         ])->assertFound();
 
-        $this->get('/app?menu=plugin.assessments-audits.root&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
+        $this->get('/app?menu=plugin.assessments-audits.root&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello&assessment_id=assessment-q2-access-resilience')
             ->assertOk()
             ->assertSee('Control sample incomplete for the reviewed quarter.')
             ->assertSee('Evidence package does not support a full positive conclusion.')

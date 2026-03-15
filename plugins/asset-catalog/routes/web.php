@@ -66,6 +66,7 @@ Route::post('/plugins/assets', function (
 
     return redirect()->route('core.shell.index', array_filter([
         'menu' => 'plugin.asset-catalog.root',
+        'asset_id' => $asset['id'],
         'principal_id' => $principalId,
         'organization_id' => $asset['organization_id'],
         'scope_id' => $asset['scope_id'] !== '' ? $asset['scope_id'] : null,
@@ -115,6 +116,7 @@ Route::post('/plugins/assets/{assetId}', function (
 
     return redirect()->route('core.shell.index', array_filter([
         'menu' => 'plugin.asset-catalog.root',
+        'asset_id' => $asset['id'],
         'principal_id' => $principalId,
         'organization_id' => $asset['organization_id'],
         'scope_id' => $asset['scope_id'] !== '' ? $asset['scope_id'] : null,
@@ -161,6 +163,7 @@ Route::post('/plugins/assets/{assetId}/transitions/{transitionKey}', function (
 
     return redirect()->route('core.shell.index', [
         'menu' => $menu,
+        'asset_id' => $assetId,
         'principal_id' => $principalId,
         'organization_id' => $organizationId,
         'locale' => $locale,

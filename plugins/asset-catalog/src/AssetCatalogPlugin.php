@@ -66,19 +66,33 @@ class AssetCatalogPlugin implements PluginInterface
                 return $this->catalogData($context, $screenContext);
             },
             toolbarResolver: function (ScreenRenderContext $screenContext) use ($context): array {
-                $query = $this->baseQuery($screenContext);
+                $query = $this->baseQuery($screenContext, false);
+
+                if (is_string($screenContext->query['asset_id'] ?? null) && ($screenContext->query['asset_id'] ?? '') !== '') {
+                    return [
+                        new ToolbarAction(
+                            label: 'Back to assets',
+                            url: route('core.shell.index', [...$query, 'menu' => 'plugin.asset-catalog.root']),
+                            variant: 'secondary',
+                        ),
+                        new ToolbarAction(
+                            label: 'Lifecycle board',
+                            url: route('core.shell.index', [...$query, 'menu' => 'plugin.asset-catalog.lifecycle']),
+                            variant: 'secondary',
+                        ),
+                    ];
+                }
 
                 return [
+                    new ToolbarAction(
+                        label: 'Add asset',
+                        url: '#asset-editor',
+                        variant: 'primary',
+                    ),
                     new ToolbarAction(
                         label: 'Lifecycle board',
                         url: route('core.shell.index', [...$query, 'menu' => 'plugin.asset-catalog.lifecycle']),
                         variant: 'secondary',
-                    ),
-                    new ToolbarAction(
-                        label: 'Plugin route',
-                        url: route('plugin.asset-catalog.index', $query),
-                        variant: 'primary',
-                        target: '_self',
                     ),
                 ];
             },
@@ -130,7 +144,9 @@ class AssetCatalogPlugin implements PluginInterface
         ))->allowed();
         $assets = [];
 
-        foreach ($repository->all($organizationId, $screenContext->scopeId) as $asset) {
+        $catalog = $repository->all($organizationId, $screenContext->scopeId);
+
+        foreach ($catalog as $asset) {
             $instance = $workflow->instanceFor(
                 workflowKey: 'plugin.asset-catalog.asset-lifecycle',
                 subjectType: 'asset',
@@ -147,7 +163,24 @@ class AssetCatalogPlugin implements PluginInterface
                     ? $this->transitionsForState($instance->currentState)
                     : [],
                 'transition_route' => route('plugin.asset-catalog.transition', ['assetId' => $asset['id'], 'transitionKey' => '__TRANSITION__']),
+                'update_route' => route('plugin.asset-catalog.update', ['assetId' => $asset['id']]),
+                'history' => $workflow->history('plugin.asset-catalog.asset-lifecycle', 'asset', $asset['id']),
+                'open_url' => route('core.shell.index', [...$this->baseQuery($screenContext, false), 'menu' => 'plugin.asset-catalog.root', 'asset_id' => $asset['id']]),
             ];
+        }
+
+        $selectedAssetId = is_string($screenContext->query['asset_id'] ?? null) && $screenContext->query['asset_id'] !== ''
+            ? (string) $screenContext->query['asset_id']
+            : null;
+        $selectedAsset = null;
+
+        if (is_string($selectedAssetId)) {
+            foreach ($assets as $asset) {
+                if ($asset['id'] === $selectedAssetId) {
+                    $selectedAsset = $asset;
+                    break;
+                }
+            }
         }
 
         $scopeContext = $tenancy->resolveContext(
@@ -159,14 +192,17 @@ class AssetCatalogPlugin implements PluginInterface
 
         return [
             'assets' => $assets,
+            'selected_asset' => $selectedAsset,
             'can_manage_assets' => $canManageAssets,
             'query' => $this->baseQuery($screenContext),
+            'list_query' => $this->baseQuery($screenContext, false),
             'create_route' => route('plugin.asset-catalog.store'),
             'owner_actor_options' => array_map(static fn ($actor): array => [
                 'id' => $actor->id,
                 'label' => $actor->displayName,
             ], $actors->actors($organizationId, $screenContext->scopeId)),
             'scope_options' => array_map(static fn ($scope): array => $scope->toArray(), $scopeContext->scopes),
+            'assets_list_url' => route('core.shell.index', [...$this->baseQuery($screenContext, false), 'menu' => 'plugin.asset-catalog.root']),
         ];
     }
 
@@ -218,7 +254,7 @@ class AssetCatalogPlugin implements PluginInterface
     /**
      * @return array<string, mixed>
      */
-    private function baseQuery(ScreenRenderContext $context): array
+    private function baseQuery(ScreenRenderContext $context, bool $includeSelection = true): array
     {
         $query = $context->query;
 
@@ -232,6 +268,10 @@ class AssetCatalogPlugin implements PluginInterface
 
         foreach ($context->memberships as $membership) {
             $query['membership_ids'][] = $membership->id;
+        }
+
+        if (! $includeSelection) {
+            unset($query['asset_id']);
         }
 
         return $query;

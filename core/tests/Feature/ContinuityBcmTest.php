@@ -37,13 +37,30 @@ class ContinuityBcmTest extends TestCase
             ->assertOk()
             ->assertSee('Continuity Services')
             ->assertSee('Customer Support Operations')
-            ->assertSee('Create service')
+            ->assertSee('Add continuity service')
+            ->assertSee('Edit details')
             ->assertSee('Backup and Recovery Operations');
+
+        $this->get('/app?menu=plugin.continuity-bcm.root&service_id=continuity-service-customer-support&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
+            ->assertOk()
+            ->assertSee('Back to services')
+            ->assertSee('Add recovery plan')
+            ->assertSee('Dependencies')
+            ->assertSee('Documents');
 
         $this->get('/app?menu=plugin.continuity-bcm.plans&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
             ->assertOk()
             ->assertSee('Recovery Plans')
-            ->assertSee('Support fallback rota');
+            ->assertSee('Support fallback rota')
+            ->assertSee('Choose service')
+            ->assertSee('Open');
+
+        $this->get('/app?menu=plugin.continuity-bcm.plans&plan_id=continuity-plan-support-fallback&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
+            ->assertOk()
+            ->assertSee('Support fallback rota')
+            ->assertSee('Back to plans')
+            ->assertSee('Exercises')
+            ->assertSee('Evidence');
     }
 
     public function test_continuity_transitions_and_artifacts_render_inside_the_shell(): void
@@ -69,11 +86,11 @@ class ContinuityBcmTest extends TestCase
             'artifact' => UploadedFile::fake()->createWithContent('exercise.txt', 'exercise results'),
         ])->assertFound();
 
-        $this->get('/app?menu=plugin.continuity-bcm.root&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
+        $this->get('/app?menu=plugin.continuity-bcm.root&service_id=continuity-service-customer-support&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
             ->assertOk()
-            ->assertSee('submit-review');
+            ->assertSee('Activate');
 
-        $this->get('/app?menu=plugin.continuity-bcm.plans&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
+        $this->get('/app?menu=plugin.continuity-bcm.plans&plan_id=continuity-plan-support-fallback&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
             ->assertOk()
             ->assertSee('Recovery exercise')
             ->assertSee('exercise.txt');
@@ -143,7 +160,7 @@ class ContinuityBcmTest extends TestCase
             ->assertSee('Finance operations fallback bridge')
             ->assertSee('Compliance Office');
 
-        $this->get('/app?menu=plugin.continuity-bcm.plans&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
+        $this->get('/app?menu=plugin.continuity-bcm.plans&plan_id=continuity-plan-finance-bridge-fallback&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
             ->assertOk()
             ->assertSee('Finance approval fallback')
             ->assertSee('backup rota and validate ledgers after restore.')
@@ -187,12 +204,12 @@ class ContinuityBcmTest extends TestCase
             'notes' => 'Fallback intake stayed within the expected recovery window.',
         ])->assertFound();
 
-        $this->get('/app?menu=plugin.continuity-bcm.root&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
+        $this->get('/app?menu=plugin.continuity-bcm.root&service_id=continuity-service-customer-support&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
             ->assertOk()
             ->assertSee('Critical dependency')
             ->assertSee('Support fallback relies on backup restore validation.');
 
-        $this->get('/app?menu=plugin.continuity-bcm.plans&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
+        $this->get('/app?menu=plugin.continuity-bcm.plans&plan_id=continuity-plan-support-fallback&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
             ->assertOk()
             ->assertSee('Cross-team outage escalation using the fallback rota.')
             ->assertSee('Needs deeper vendor failover rehearsal.')

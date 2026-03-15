@@ -68,6 +68,7 @@ Route::post('/plugins/risks', function (
 
     return redirect()->route('core.shell.index', array_filter([
         'menu' => 'plugin.risk-management.root',
+        'risk_id' => $risk['id'],
         'principal_id' => $principalId,
         'organization_id' => $risk['organization_id'],
         'scope_id' => $risk['scope_id'] !== '' ? $risk['scope_id'] : null,
@@ -119,6 +120,7 @@ Route::post('/plugins/risks/{riskId}', function (
 
     return redirect()->route('core.shell.index', array_filter([
         'menu' => 'plugin.risk-management.root',
+        'risk_id' => $risk['id'],
         'principal_id' => $principalId,
         'organization_id' => $risk['organization_id'],
         'scope_id' => $risk['scope_id'] !== '' ? $risk['scope_id'] : null,
@@ -167,10 +169,12 @@ Route::post('/plugins/risks/{riskId}/artifacts', function (
 
     return redirect()->route('core.shell.index', array_filter([
         'menu' => 'plugin.risk-management.root',
+        'risk_id' => $riskId,
         'principal_id' => $principalId,
         'organization_id' => $risk['organization_id'],
         'scope_id' => $risk['scope_id'] ?? null,
         'locale' => $request->input('locale', 'en'),
+        'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
     ]));
 })->middleware('core.permission:plugin.risk-management.risks.manage')->name('plugin.risk-management.artifacts.store');
 
@@ -209,9 +213,11 @@ Route::post('/plugins/risks/{riskId}/transitions/{transitionKey}', function (
 
     return redirect()->route('core.shell.index', array_filter([
         'menu' => 'plugin.risk-management.root',
+        'risk_id' => $riskId,
         'principal_id' => $principalId,
         'organization_id' => $organizationId,
         'scope_id' => is_string($scopeId) && $scopeId !== '' ? $scopeId : null,
         'locale' => $request->input('locale', 'en'),
+        'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
     ]));
 })->middleware('core.permission:plugin.risk-management.risks.manage')->name('plugin.risk-management.transition');

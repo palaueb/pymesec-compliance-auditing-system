@@ -69,6 +69,7 @@ Route::post('/plugins/privacy/data-flows', function (
 
     return redirect()->route('core.shell.index', array_filter([
         'menu' => 'plugin.data-flows-privacy.root',
+        'flow_id' => $flow['id'],
         'principal_id' => $principalId,
         'organization_id' => $flow['organization_id'],
         'scope_id' => $flow['scope_id'] !== '' ? $flow['scope_id'] : null,
@@ -121,6 +122,7 @@ Route::post('/plugins/privacy/data-flows/{flowId}', function (
 
     return redirect()->route('core.shell.index', array_filter([
         'menu' => 'plugin.data-flows-privacy.root',
+        'flow_id' => $flow['id'],
         'principal_id' => $principalId,
         'organization_id' => $flow['organization_id'],
         'scope_id' => $flow['scope_id'] !== '' ? $flow['scope_id'] : null,
@@ -169,6 +171,7 @@ Route::post('/plugins/privacy/data-flows/{flowId}/artifacts', function (
 
     return redirect()->route('core.shell.index', array_filter([
         'menu' => 'plugin.data-flows-privacy.root',
+        'flow_id' => $flowId,
         'principal_id' => $principalId,
         'organization_id' => $flow['organization_id'],
         'scope_id' => $flow['scope_id'] !== '' ? $flow['scope_id'] : null,
@@ -211,6 +214,7 @@ Route::post('/plugins/privacy/data-flows/{flowId}/transitions/{transitionKey}', 
 
     return redirect()->route('core.shell.index', array_filter([
         'menu' => 'plugin.data-flows-privacy.root',
+        'flow_id' => $flowId,
         'principal_id' => $principalId,
         'organization_id' => $organizationId,
         'scope_id' => is_string($scopeId) && $scopeId !== '' ? $scopeId : null,
@@ -256,6 +260,7 @@ Route::post('/plugins/privacy/activities', function (
 
     return redirect()->route('core.shell.index', array_filter([
         'menu' => 'plugin.data-flows-privacy.activities',
+        'activity_id' => $activity['id'],
         'principal_id' => $principalId,
         'organization_id' => $activity['organization_id'],
         'scope_id' => $activity['scope_id'] !== '' ? $activity['scope_id'] : null,
@@ -308,6 +313,7 @@ Route::post('/plugins/privacy/activities/{activityId}', function (
 
     return redirect()->route('core.shell.index', array_filter([
         'menu' => 'plugin.data-flows-privacy.activities',
+        'activity_id' => $activity['id'],
         'principal_id' => $principalId,
         'organization_id' => $activity['organization_id'],
         'scope_id' => $activity['scope_id'] !== '' ? $activity['scope_id'] : null,
@@ -356,6 +362,7 @@ Route::post('/plugins/privacy/activities/{activityId}/artifacts', function (
 
     return redirect()->route('core.shell.index', array_filter([
         'menu' => 'plugin.data-flows-privacy.activities',
+        'activity_id' => $activityId,
         'principal_id' => $principalId,
         'organization_id' => $activity['organization_id'],
         'scope_id' => $activity['scope_id'] !== '' ? $activity['scope_id'] : null,
@@ -398,6 +405,7 @@ Route::post('/plugins/privacy/activities/{activityId}/transitions/{transitionKey
 
     return redirect()->route('core.shell.index', array_filter([
         'menu' => 'plugin.data-flows-privacy.activities',
+        'activity_id' => $activityId,
         'principal_id' => $principalId,
         'organization_id' => $organizationId,
         'scope_id' => is_string($scopeId) && $scopeId !== '' ? $scopeId : null,

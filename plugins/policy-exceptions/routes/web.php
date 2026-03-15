@@ -67,6 +67,7 @@ Route::post('/plugins/policies', function (
 
     return redirect()->route('core.shell.index', array_filter([
         'menu' => 'plugin.policy-exceptions.root',
+        'policy_id' => $policy['id'],
         'principal_id' => $principalId,
         'organization_id' => $policy['organization_id'],
         'scope_id' => $policy['scope_id'] !== '' ? $policy['scope_id'] : null,
@@ -117,6 +118,7 @@ Route::post('/plugins/policies/{policyId}', function (
 
     return redirect()->route('core.shell.index', array_filter([
         'menu' => 'plugin.policy-exceptions.root',
+        'policy_id' => $policy['id'],
         'principal_id' => $principalId,
         'organization_id' => $policy['organization_id'],
         'scope_id' => $policy['scope_id'] !== '' ? $policy['scope_id'] : null,
@@ -167,10 +169,11 @@ Route::post('/plugins/policies/{policyId}/exceptions', function (
     }
 
     return redirect()->route('core.shell.index', array_filter([
-        'menu' => 'plugin.policy-exceptions.exceptions',
+        'menu' => 'plugin.policy-exceptions.root',
+        'policy_id' => $policy['id'],
         'principal_id' => $principalId,
-        'organization_id' => $exception['organization_id'],
-        'scope_id' => $exception['scope_id'] !== '' ? $exception['scope_id'] : null,
+        'organization_id' => $policy['organization_id'],
+        'scope_id' => $policy['scope_id'] !== '' ? $policy['scope_id'] : null,
         'locale' => $request->input('locale', 'en'),
         'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
     ]));
@@ -195,6 +198,9 @@ Route::post('/plugins/policies/exceptions/{exceptionId}', function (
     $exception = $repository->updateException($exceptionId, $validated);
 
     abort_if($exception === null, 404);
+    $policy = $repository->findPolicy((string) $exception['policy_id']);
+
+    abort_if($policy === null, 404);
 
     $principalId = (string) $request->input('principal_id', 'principal-org-a');
     $membershipId = $request->input('membership_id');
@@ -214,6 +220,7 @@ Route::post('/plugins/policies/exceptions/{exceptionId}', function (
 
     return redirect()->route('core.shell.index', array_filter([
         'menu' => 'plugin.policy-exceptions.exceptions',
+        'exception_id' => $exception['id'],
         'principal_id' => $principalId,
         'organization_id' => $exception['organization_id'],
         'scope_id' => $exception['scope_id'] !== '' ? $exception['scope_id'] : null,
@@ -261,6 +268,7 @@ Route::post('/plugins/policies/{policyId}/artifacts', function (
 
     return redirect()->route('core.shell.index', array_filter([
         'menu' => 'plugin.policy-exceptions.root',
+        'policy_id' => $policy['id'],
         'principal_id' => $principalId,
         'organization_id' => $policy['organization_id'],
         'scope_id' => $policy['scope_id'] !== '' ? $policy['scope_id'] : null,
@@ -307,6 +315,7 @@ Route::post('/plugins/policies/exceptions/{exceptionId}/artifacts', function (
 
     return redirect()->route('core.shell.index', array_filter([
         'menu' => 'plugin.policy-exceptions.exceptions',
+        'exception_id' => $exception['id'],
         'principal_id' => $principalId,
         'organization_id' => $exception['organization_id'],
         'scope_id' => $exception['scope_id'] !== '' ? $exception['scope_id'] : null,
@@ -343,6 +352,7 @@ Route::post('/plugins/policies/{policyId}/transitions/{transitionKey}', function
 
     return redirect()->route('core.shell.index', array_filter([
         'menu' => 'plugin.policy-exceptions.root',
+        'policy_id' => $policyId,
         'principal_id' => $principalId,
         'organization_id' => $organizationId,
         'scope_id' => is_string($scopeId) && $scopeId !== '' ? $scopeId : null,
@@ -379,6 +389,7 @@ Route::post('/plugins/policies/exceptions/{exceptionId}/transitions/{transitionK
 
     return redirect()->route('core.shell.index', array_filter([
         'menu' => 'plugin.policy-exceptions.exceptions',
+        'exception_id' => $exceptionId,
         'principal_id' => $principalId,
         'organization_id' => $organizationId,
         'scope_id' => is_string($scopeId) && $scopeId !== '' ? $scopeId : null,

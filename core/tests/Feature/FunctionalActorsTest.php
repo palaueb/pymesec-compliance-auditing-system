@@ -47,10 +47,9 @@ class FunctionalActorsTest extends TestCase
 
     public function test_the_actor_directory_screen_renders_inside_the_shell(): void
     {
-        $this->get('/app?menu=plugin.actor-directory.root&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
+        $this->get('/admin?menu=core.functional-actors&principal_id=principal-admin&actor_id=actor-ava-mason')
             ->assertOk()
-            ->assertSee('Functional Actors')
-            ->assertSee('Finance Operations')
+            ->assertSee('Functional Directory')
             ->assertSee('Ava Mason')
             ->assertSee('principal-org-a');
     }

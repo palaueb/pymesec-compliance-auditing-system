@@ -23,5 +23,7 @@ Current notable documents:
 - `installation-bootstrap-and-seeding-profiles-v1.md`
 - `plugin-lifecycle-and-settings-ui-v1.md`
 - `support-catalog-v1.md`
+- `master-detail-navigation-and-governed-reference-data-v1.md`
+- `ui-review-and-refactor-todo-2026-03.md`
 - `assessments-audits-plugin-v1.md`
 - `next-steps-memory-2026-03.md`

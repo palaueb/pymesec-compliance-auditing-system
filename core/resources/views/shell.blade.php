@@ -241,6 +241,9 @@
             flex-wrap: wrap;
             gap: 8px;
         }
+        .toolbar{
+            padding-bottom:18px;
+        }
 
         .context-strip {
             justify-content: flex-end;
@@ -1152,21 +1155,26 @@
                         {{ $shellError['message'] }}
                     </div>
                 @elseif ($selectedMenu !== null)
-                    <div class="screen-header">
-                        <div>
-                            <h2 class="screen-title">{{ $screen?->title ?? $selectedMenu['label'] }}</h2>
-                            <p class="screen-subtitle">{{ $screen?->subtitle ?? __('core.shell.workspace_copy') }}</p>
-                        </div>
-                        @if ($screen !== null && $screen->toolbarActions !== [])
-                            <div class="toolbar">
-                                @foreach ($screen->toolbarActions as $action)
+                    @if ($screen !== null && $screen->toolbarActions !== [])
+                        <div class="toolbar" style="justify-content:flex-end;">
+                            @foreach ($screen->toolbarActions as $action)
+                                @if (str_starts_with($action->url, '#'))
+                                    <button
+                                        class="button {{ $action->variant === 'primary' ? 'button-primary' : 'button-secondary' }}"
+                                        type="button"
+                                        data-editor-toggle="{{ ltrim(str_starts_with($action->url, '#toggle-') ? substr($action->url, 8) : $action->url, '#') }}"
+                                        aria-expanded="false"
+                                    >
+                                        {{ $action->label }}
+                                    </button>
+                                @else
                                     <a class="button {{ $action->variant === 'primary' ? 'button-primary' : 'button-secondary' }}" href="{{ $action->url }}" target="{{ $action->target }}">
                                         {{ $action->label }}
                                     </a>
-                                @endforeach
-                            </div>
-                        @endif
-                    </div>
+                                @endif
+                            @endforeach
+                        </div>
+                    @endif
 
                     @if ($screen !== null)
                         <div class="screen-body">

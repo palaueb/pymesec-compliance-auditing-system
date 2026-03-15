@@ -483,6 +483,22 @@ class AppServiceProvider extends ServiceProvider
             subtitleKey: 'core.plugins.screen.subtitle',
             viewPath: resource_path('views/plugins.blade.php'),
             dataResolver: fn (ScreenRenderContext $screenContext): array => $this->pluginsScreenData($screenContext),
+            toolbarResolver: function (ScreenRenderContext $screenContext): array {
+                $query = $this->coreScreenQuery($screenContext);
+                unset($query['plugin_id']);
+
+                if (is_string($screenContext->query['plugin_id'] ?? null) && ($screenContext->query['plugin_id'] ?? '') !== '') {
+                    return [
+                        new ToolbarAction(
+                            label: 'Back to modules',
+                            url: route('core.admin.index', [...$query, 'menu' => 'core.plugins']),
+                            variant: 'secondary',
+                        ),
+                    ];
+                }
+
+                return [];
+            },
         ));
 
         $screens->register(new ScreenDefinition(
@@ -555,10 +571,58 @@ class AppServiceProvider extends ServiceProvider
                     ->values()
                     ->all();
 
+                $listQuery = $query;
+                unset($listQuery['role_key'], $listQuery['grant_id']);
+
+                $grants = array_map(static function (array $grant) use ($listQuery): array {
+                    return [
+                        ...$grant,
+                        'open_url' => route('core.admin.index', [...$listQuery, 'menu' => 'core.roles', 'grant_id' => $grant['id']]),
+                    ];
+                }, $store->grantRecords());
+
+                $roles = array_map(static function (array $role) use ($listQuery): array {
+                    return [
+                        ...$role,
+                        'open_url' => route('core.admin.index', [...$listQuery, 'menu' => 'core.roles', 'role_key' => $role['key']]),
+                    ];
+                }, $roleRecords);
+
+                $selectedRoleKey = is_string($screenContext->query['role_key'] ?? null) && $screenContext->query['role_key'] !== ''
+                    ? (string) $screenContext->query['role_key']
+                    : null;
+                $selectedGrantId = is_string($screenContext->query['grant_id'] ?? null) && $screenContext->query['grant_id'] !== ''
+                    ? (string) $screenContext->query['grant_id']
+                    : null;
+
+                $selectedRole = null;
+                $selectedGrant = null;
+
+                if (is_string($selectedRoleKey)) {
+                    foreach ($roles as $role) {
+                        if ($role['key'] === $selectedRoleKey) {
+                            $selectedRole = $role;
+                            break;
+                        }
+                    }
+                }
+
+                if (is_string($selectedGrantId)) {
+                    foreach ($grants as $grant) {
+                        if (($grant['id'] ?? null) === $selectedGrantId) {
+                            $selectedGrant = $grant;
+                            break;
+                        }
+                    }
+                }
+
                 return [
-                    'roles' => $roleRecords,
-                    'grants' => $store->grantRecords(),
+                    'roles' => $roles,
+                    'grants' => $grants,
+                    'selected_role' => $selectedRole,
+                    'selected_grant' => $selectedGrant,
                     'query' => $query,
+                    'list_query' => $listQuery,
                     'role_store_route' => route('core.roles.store'),
                     'grant_store_route' => route('core.grants.store'),
                     'permission_options' => $permissionOptions,
@@ -588,20 +652,56 @@ class AppServiceProvider extends ServiceProvider
                             'id' => (string) $scope->id,
                             'label' => sprintf('%s [%s]', (string) $scope->name, (string) $scope->organization_id),
                         ])->all(),
+                    'roles_list_url' => route('core.admin.index', [...$listQuery, 'menu' => 'core.roles']),
                 ];
             },
-            toolbarResolver: fn (ScreenRenderContext $screenContext): array => [
-                new ToolbarAction(
-                    label: 'Add role',
-                    url: '#role-editor',
-                    variant: 'primary',
-                ),
-                new ToolbarAction(
-                    label: 'Assign grant',
-                    url: '#grant-editor',
-                    variant: 'secondary',
-                ),
-            ],
+            toolbarResolver: function (ScreenRenderContext $screenContext): array {
+                $query = $this->coreScreenQuery($screenContext);
+                unset($query['role_key'], $query['grant_id']);
+
+                if (is_string($screenContext->query['role_key'] ?? null) && ($screenContext->query['role_key'] ?? '') !== '') {
+                    return [
+                        new ToolbarAction(
+                            label: 'Back to roles',
+                            url: route('core.admin.index', [...$query, 'menu' => 'core.roles']),
+                            variant: 'secondary',
+                        ),
+                        new ToolbarAction(
+                            label: 'Assign grant',
+                            url: '#grant-editor',
+                            variant: 'secondary',
+                        ),
+                    ];
+                }
+
+                if (is_string($screenContext->query['grant_id'] ?? null) && ($screenContext->query['grant_id'] ?? '') !== '') {
+                    return [
+                        new ToolbarAction(
+                            label: 'Back to grants',
+                            url: route('core.admin.index', [...$query, 'menu' => 'core.roles']),
+                            variant: 'secondary',
+                        ),
+                        new ToolbarAction(
+                            label: 'Add role',
+                            url: '#role-editor',
+                            variant: 'secondary',
+                        ),
+                    ];
+                }
+
+                return [
+                    new ToolbarAction(
+                        label: 'Add role',
+                        url: '#role-editor',
+                        variant: 'primary',
+                    ),
+                    new ToolbarAction(
+                        label: 'Assign grant',
+                        url: '#grant-editor',
+                        variant: 'secondary',
+                    ),
+                ];
+            },
         ));
 
         $screens->register(new ScreenDefinition(
@@ -643,6 +743,22 @@ class AppServiceProvider extends ServiceProvider
             subtitleKey: 'core.functional-actors.screen.subtitle',
             viewPath: resource_path('views/functional-actors.blade.php'),
             dataResolver: fn (ScreenRenderContext $screenContext): array => $this->functionalActorsScreenData($screenContext),
+            toolbarResolver: function (ScreenRenderContext $screenContext): array {
+                $query = $this->coreScreenQuery($screenContext);
+                unset($query['actor_id']);
+
+                if (is_string($screenContext->query['actor_id'] ?? null) && ($screenContext->query['actor_id'] ?? '') !== '') {
+                    return [
+                        new ToolbarAction(
+                            label: 'Back to directory',
+                            url: route('core.admin.index', [...$query, 'menu' => 'core.functional-actors']),
+                            variant: 'secondary',
+                        ),
+                    ];
+                }
+
+                return [];
+            },
         ));
     }
 
@@ -786,6 +902,7 @@ class AppServiceProvider extends ServiceProvider
 
             return [
                 ...$plugin,
+                'open_url' => route('core.admin.index', [...$query, 'menu' => 'core.plugins', 'plugin_id' => $plugin['id']]),
                 'workspace_url' => is_array($workspaceMenu)
                     ? route('core.shell.index', [...$query, 'menu' => $workspaceMenu['id']])
                     : null,
@@ -796,9 +913,28 @@ class AppServiceProvider extends ServiceProvider
             ];
         }, $this->app->make(PluginLifecycleManager::class)->enrichStatus($runtimePlugins));
 
+        $listQuery = $query;
+        unset($listQuery['plugin_id']);
+
+        $selectedPluginId = is_string($screenContext->query['plugin_id'] ?? null) && $screenContext->query['plugin_id'] !== ''
+            ? (string) $screenContext->query['plugin_id']
+            : null;
+        $selectedPlugin = null;
+
+        if (is_string($selectedPluginId)) {
+            foreach ($plugins as $plugin) {
+                if (($plugin['id'] ?? null) === $selectedPluginId) {
+                    $selectedPlugin = $plugin;
+                    break;
+                }
+            }
+        }
+
         return [
             'query' => $query,
+            'list_query' => $listQuery,
             'plugins' => $plugins,
+            'selected_plugin' => $selectedPlugin,
             'metrics' => [
                 'enabled' => collect($plugins)->where('effective_enabled', true)->count(),
                 'booted' => collect($plugins)->where('booted', true)->count(),
@@ -815,6 +951,7 @@ class AppServiceProvider extends ServiceProvider
             'enable_plugin_route' => static fn (string $pluginId): string => route('core.plugins.enable', ['pluginId' => $pluginId]),
             'disable_plugin_route' => static fn (string $pluginId): string => route('core.plugins.disable', ['pluginId' => $pluginId]),
             'state_path' => $this->app->make(PluginStateStore::class)->path(),
+            'plugins_list_url' => route('core.admin.index', [...$listQuery, 'menu' => 'core.plugins']),
         ];
     }
 
@@ -986,8 +1123,19 @@ class AppServiceProvider extends ServiceProvider
      */
     private function functionalActorsScreenData(ScreenRenderContext $screenContext): array
     {
-        $actors = $this->app->make(FunctionalActorServiceInterface::class)->actors();
-        $assignments = $this->app->make(FunctionalActorServiceInterface::class)->assignments();
+        $service = $this->app->make(FunctionalActorServiceInterface::class);
+        $actors = $service->actors();
+        $assignments = $service->assignments();
+        $query = $this->coreScreenQuery($screenContext);
+        $listQuery = $query;
+        unset($listQuery['actor_id']);
+
+        $actorRows = array_map(function ($actor) use ($listQuery): array {
+            $row = $actor->toArray();
+            $row['open_url'] = route('core.admin.index', [...$listQuery, 'menu' => 'core.functional-actors', 'actor_id' => $row['id']]);
+
+            return $row;
+        }, $actors);
 
         $links = DB::table('principal_functional_actor_links')
             ->orderByDesc('created_at')
@@ -1001,10 +1149,48 @@ class AppServiceProvider extends ServiceProvider
             ])
             ->all();
 
+        $assignmentRows = array_map(function ($assignment) use ($screenContext): array {
+            $row = $assignment->toArray();
+            $row['subject_url'] = $this->domainObjectShellUrl(
+                screenContext: $screenContext,
+                domainType: (string) $row['domain_object_type'],
+                domainId: (string) $row['domain_object_id'],
+                organizationId: (string) $row['organization_id'],
+                scopeId: is_string($row['scope_id'] ?? null) && $row['scope_id'] !== '' ? (string) $row['scope_id'] : null,
+            );
+
+            return $row;
+        }, $assignments);
+
+        $selectedActorId = is_string($screenContext->query['actor_id'] ?? null) && $screenContext->query['actor_id'] !== ''
+            ? (string) $screenContext->query['actor_id']
+            : null;
+        $selectedActor = null;
+
+        if (is_string($selectedActorId)) {
+            foreach ($actorRows as $actor) {
+                if (($actor['id'] ?? null) === $selectedActorId) {
+                    $selectedActor = $actor;
+                    break;
+                }
+            }
+        }
+
+        $selectedLinks = $selectedActorId !== null
+            ? array_values(array_filter($links, static fn (array $link): bool => $link['functional_actor_id'] === $selectedActorId))
+            : [];
+        $selectedAssignments = $selectedActorId !== null
+            ? array_values(array_filter($assignmentRows, static fn (array $assignment): bool => $assignment['functional_actor_id'] === $selectedActorId))
+            : [];
+
         return [
-            'query' => $this->coreScreenQuery($screenContext),
-            'actors' => array_map(static fn ($actor): array => $actor->toArray(), $actors),
-            'assignments' => array_map(static fn ($assignment): array => $assignment->toArray(), $assignments),
+            'query' => $query,
+            'list_query' => $listQuery,
+            'actors' => $actorRows,
+            'selected_actor' => $selectedActor,
+            'assignments' => $assignmentRows,
+            'selected_links' => $selectedLinks,
+            'selected_assignments' => $selectedAssignments,
             'links' => $links,
             'metrics' => [
                 'actors' => count($actors),
@@ -1012,7 +1198,40 @@ class AppServiceProvider extends ServiceProvider
                 'assignments' => count($assignments),
                 'organizations' => collect($actors)->pluck('organization_id')->filter()->unique()->count(),
             ],
+            'actors_list_url' => route('core.admin.index', [...$listQuery, 'menu' => 'core.functional-actors']),
         ];
+    }
+
+    private function domainObjectShellUrl(
+        ScreenRenderContext $screenContext,
+        string $domainType,
+        string $domainId,
+        string $organizationId,
+        ?string $scopeId,
+    ): ?string {
+        $query = $this->coreScreenQuery($screenContext);
+        $query['organization_id'] = $organizationId;
+
+        if ($scopeId !== null && $scopeId !== '') {
+            $query['scope_id'] = $scopeId;
+        } else {
+            unset($query['scope_id']);
+        }
+
+        return match ($domainType) {
+            'asset' => route('core.shell.index', [...$query, 'menu' => 'plugin.asset-catalog.root', 'asset_id' => $domainId]),
+            'risk' => route('core.shell.index', [...$query, 'menu' => 'plugin.risk-management.root', 'risk_id' => $domainId]),
+            'control' => route('core.shell.index', [...$query, 'menu' => 'plugin.controls-catalog.root', 'control_id' => $domainId]),
+            'finding' => route('core.shell.index', [...$query, 'menu' => 'plugin.findings-remediation.root', 'finding_id' => $domainId]),
+            'policy' => route('core.shell.index', [...$query, 'menu' => 'plugin.policy-exceptions.root', 'policy_id' => $domainId]),
+            'policy-exception' => route('core.shell.index', [...$query, 'menu' => 'plugin.policy-exceptions.exceptions', 'exception_id' => $domainId]),
+            'data-flow' => route('core.shell.index', [...$query, 'menu' => 'plugin.data-flows-privacy.root', 'flow_id' => $domainId]),
+            'processing-activity' => route('core.shell.index', [...$query, 'menu' => 'plugin.data-flows-privacy.activities', 'activity_id' => $domainId]),
+            'continuity-service' => route('core.shell.index', [...$query, 'menu' => 'plugin.continuity-bcm.root', 'service_id' => $domainId]),
+            'recovery-plan' => route('core.shell.index', [...$query, 'menu' => 'plugin.continuity-bcm.plans', 'plan_id' => $domainId]),
+            'assessment' => route('core.shell.index', [...$query, 'menu' => 'plugin.assessments-audits.root', 'assessment_id' => $domainId]),
+            default => null,
+        };
     }
 
     /**

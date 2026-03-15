@@ -46,9 +46,29 @@ class IdentityLocalPlugin implements IdentityPluginInterface
             viewPath: $context->path('resources/views/users.blade.php'),
             dataResolver: fn (ScreenRenderContext $screenContext): array => $this->usersData($context, $screenContext),
             toolbarResolver: function (ScreenRenderContext $screenContext): array {
-                $query = $this->baseQuery($screenContext);
+                $query = $this->baseQuery($screenContext, false);
+
+                if (is_string($screenContext->query['user_id'] ?? null) && ($screenContext->query['user_id'] ?? '') !== '') {
+                    return [
+                        new ToolbarAction(
+                            label: 'Back to people',
+                            url: route('core.admin.index', [...$query, 'menu' => 'plugin.identity-local.users']),
+                            variant: 'secondary',
+                        ),
+                        new ToolbarAction(
+                            label: 'Access',
+                            url: route('core.admin.index', [...$query, 'menu' => 'plugin.identity-local.memberships']),
+                            variant: 'secondary',
+                        ),
+                    ];
+                }
 
                 return [
+                    new ToolbarAction(
+                        label: 'Add person',
+                        url: '#identity-user-editor',
+                        variant: 'primary',
+                    ),
                     new ToolbarAction(
                         label: 'Access',
                         url: route('core.shell.index', [...$query, 'menu' => 'plugin.identity-local.memberships']),
@@ -66,10 +86,32 @@ class IdentityLocalPlugin implements IdentityPluginInterface
             viewPath: $context->path('resources/views/memberships.blade.php'),
             dataResolver: fn (ScreenRenderContext $screenContext): array => $this->membershipsData($context, $screenContext),
             toolbarResolver: function (ScreenRenderContext $screenContext): array {
+                $query = $this->baseQuery($screenContext, false);
+
+                if (is_string($screenContext->query['selected_membership_id'] ?? null) && ($screenContext->query['selected_membership_id'] ?? '') !== '') {
+                    return [
+                        new ToolbarAction(
+                            label: 'Back to access',
+                            url: route('core.shell.index', [...$query, 'menu' => 'plugin.identity-local.memberships']),
+                            variant: 'secondary',
+                        ),
+                        new ToolbarAction(
+                            label: 'People',
+                            url: route('core.admin.index', [...$query, 'menu' => 'plugin.identity-local.users']),
+                            variant: 'secondary',
+                        ),
+                    ];
+                }
+
                 return [
                     new ToolbarAction(
+                        label: 'Grant access',
+                        url: '#identity-membership-editor',
+                        variant: 'primary',
+                    ),
+                    new ToolbarAction(
                         label: 'People',
-                        url: route('core.admin.index', [...$this->baseQuery($screenContext), 'menu' => 'plugin.identity-local.users']),
+                        url: route('core.admin.index', [...$query, 'menu' => 'plugin.identity-local.users']),
                         variant: 'secondary',
                     ),
                 ];
@@ -92,6 +134,7 @@ class IdentityLocalPlugin implements IdentityPluginInterface
         $authorization = $context->app()->make(AuthorizationServiceInterface::class);
         $organizationId = $screenContext->organizationId ?? 'org-a';
         $query = $this->baseQuery($screenContext);
+        $listQuery = $this->baseQuery($screenContext, false);
         $membershipsByPrincipal = [];
         $rows = [];
 
@@ -120,16 +163,34 @@ class IdentityLocalPlugin implements IdentityPluginInterface
                 'memberships' => $userMemberships,
                 'linked_actors' => $linkedActors,
                 'workspace_url' => $workspaceUrl,
+                'open_url' => route('core.admin.index', [...$listQuery, 'menu' => 'plugin.identity-local.users', 'user_id' => $user['id']]),
             ];
+        }
+
+        $selectedUserId = is_string($screenContext->query['user_id'] ?? null) && ($screenContext->query['user_id'] ?? '') !== ''
+            ? (string) $screenContext->query['user_id']
+            : null;
+        $selectedRow = null;
+
+        if (is_string($selectedUserId)) {
+            foreach ($rows as $row) {
+                if ($row['user']['id'] === $selectedUserId) {
+                    $selectedRow = $row;
+                    break;
+                }
+            }
         }
 
         return [
             'rows' => $rows,
+            'selected_row' => $selectedRow,
             'query' => $query,
+            'list_query' => $listQuery,
             'organization_id' => $organizationId,
             'create_route' => route('plugin.identity-local.users.store'),
             'owner_actor_options' => $this->actorOptions($actors, $organizationId, $screenContext->scopeId),
             'can_manage_users' => $this->can($authorization, $screenContext, 'plugin.identity-local.users.manage', $organizationId),
+            'users_list_url' => route('core.admin.index', [...$listQuery, 'menu' => 'plugin.identity-local.users']),
         ];
     }
 
@@ -143,6 +204,7 @@ class IdentityLocalPlugin implements IdentityPluginInterface
         $authorization = $context->app()->make(AuthorizationServiceInterface::class);
         $store = $context->app()->make(DatabaseAuthorizationStore::class);
         $organizationId = $screenContext->organizationId ?? 'org-a';
+        $listQuery = $this->baseQuery($screenContext, false);
         $usersByPrincipal = [];
         $rows = [];
 
@@ -154,7 +216,22 @@ class IdentityLocalPlugin implements IdentityPluginInterface
             $rows[] = [
                 'membership' => $membership,
                 'user' => $usersByPrincipal[$membership['principal_id']] ?? null,
+                'open_url' => route('core.shell.index', [...$listQuery, 'menu' => 'plugin.identity-local.memberships', 'selected_membership_id' => $membership['id']]),
             ];
+        }
+
+        $selectedMembershipId = is_string($screenContext->query['selected_membership_id'] ?? null) && ($screenContext->query['selected_membership_id'] ?? '') !== ''
+            ? (string) $screenContext->query['selected_membership_id']
+            : null;
+        $selectedRow = null;
+
+        if (is_string($selectedMembershipId)) {
+            foreach ($rows as $row) {
+                if ($row['membership']['id'] === $selectedMembershipId) {
+                    $selectedRow = $row;
+                    break;
+                }
+            }
         }
 
         $scopeContext = $tenancy->resolveContext(
@@ -166,7 +243,9 @@ class IdentityLocalPlugin implements IdentityPluginInterface
 
         return [
             'rows' => $rows,
+            'selected_row' => $selectedRow,
             'query' => $this->baseQuery($screenContext),
+            'list_query' => $listQuery,
             'organization_id' => $organizationId,
             'create_route' => route('plugin.identity-local.memberships.store'),
             'user_options' => array_map(static fn (array $user): array => [
@@ -176,18 +255,23 @@ class IdentityLocalPlugin implements IdentityPluginInterface
             'role_option_groups' => $this->roleOptions($store),
             'scope_options' => array_map(static fn ($scope): array => $scope->toArray(), $scopeContext->scopes),
             'can_manage_memberships' => $this->can($authorization, $screenContext, 'plugin.identity-local.memberships.manage', $organizationId),
+            'memberships_list_url' => route('core.shell.index', [...$listQuery, 'menu' => 'plugin.identity-local.memberships']),
         ];
     }
 
     /**
      * @return array<string, mixed>
      */
-    private function baseQuery(ScreenRenderContext $context): array
+    private function baseQuery(ScreenRenderContext $context, bool $includeSelection = true): array
     {
         $query = $context->query;
         $query['principal_id'] = $context->principal?->id ?? ($query['principal_id'] ?? 'principal-org-a');
         $query['organization_id'] = $context->organizationId ?? ($query['organization_id'] ?? 'org-a');
         $query['locale'] = $context->locale;
+
+        if (! $includeSelection) {
+            unset($query['user_id'], $query['selected_membership_id']);
+        }
 
         if ($context->scopeId !== null) {
             $query['scope_id'] = $context->scopeId;

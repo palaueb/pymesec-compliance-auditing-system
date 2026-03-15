@@ -31,7 +31,8 @@ class FindingsRemediationTest extends TestCase
             ->assertSee('Findings Register')
             ->assertSee('Access review evidence gap')
             ->assertSee('1 remediation actions')
-            ->assertSee('Create Finding');
+            ->assertSee('Add finding')
+            ->assertSee('Edit details');
     }
 
     public function test_findings_can_be_created_edited_and_linked_to_remediation_actions(): void
@@ -80,7 +81,8 @@ class FindingsRemediationTest extends TestCase
 
         $this->post('/plugins/findings/actions/action-upload-signed-exception-log', [
             ...$payload,
-            'menu' => 'plugin.findings-remediation.board',
+            'menu' => 'plugin.findings-remediation.root',
+            'finding_id' => 'finding-supplier-review-exception-gap',
             'title' => 'Upload signed exception evidence log',
             'status' => 'in-progress',
             'notes' => 'Evidence collection has started.',
@@ -89,16 +91,18 @@ class FindingsRemediationTest extends TestCase
             'owner_actor_id' => 'actor-ava-mason',
         ])->assertFound();
 
-        $this->get('/app?menu=plugin.findings-remediation.root&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
+        $this->get('/app?menu=plugin.findings-remediation.root&finding_id=finding-supplier-review-exception-gap&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
             ->assertOk()
             ->assertSee('Supplier review exception traceability gap')
-            ->assertSee('Compliance Office');
+            ->assertSee('Compliance Office')
+            ->assertSee('Upload signed exception evidence log')
+            ->assertSee('Evidence collection has started.')
+            ->assertSee('Ava Mason');
 
         $this->get('/app?menu=plugin.findings-remediation.board&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
             ->assertOk()
             ->assertSee('Upload signed exception evidence log')
-            ->assertSee('Evidence collection has started.')
-            ->assertSee('Ava Mason');
+            ->assertSee('Evidence collection has started.');
     }
 
     public function test_findings_transition_and_artifact_render_on_the_register(): void
@@ -118,13 +122,14 @@ class FindingsRemediationTest extends TestCase
             'organization_id' => 'org-a',
             'locale' => 'en',
             'menu' => 'plugin.findings-remediation.root',
+            'finding_id' => 'finding-access-review-gap',
             'membership_id' => 'membership-org-a-hello',
             'label' => 'Missing approval note',
             'artifact_type' => 'evidence',
             'artifact' => UploadedFile::fake()->createWithContent('approval-gap.txt', 'approval gap'),
         ])->assertFound();
 
-        $this->get('/app?menu=plugin.findings-remediation.root&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
+        $this->get('/app?menu=plugin.findings-remediation.root&finding_id=finding-access-review-gap&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
             ->assertOk()
             ->assertSee('triage')
             ->assertSee('Missing approval note')

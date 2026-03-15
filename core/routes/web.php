@@ -276,6 +276,16 @@ $renderShell = function (
         $baseQuery['membership_ids'][] = $membership->id;
     }
 
+    $screenQuery = $baseQuery;
+
+    foreach (request()->query() as $key => $value) {
+        if (! is_string($key) || in_array($key, ['menu', 'theme', 'principal_id', 'organization_id', 'scope_id', 'locale', 'membership_ids'], true)) {
+            continue;
+        }
+
+        $screenQuery[$key] = $value;
+    }
+
     $currentShellRoute = $area === 'admin' ? 'core.admin.index' : 'core.shell.index';
 
     $decorate = function (array $items) use (&$decorate, $baseQuery, $currentShellRoute): array {
@@ -306,7 +316,7 @@ $renderShell = function (
             organizationId: $organizationId,
             scopeId: $scopeId,
             locale: $locale,
-            query: $baseQuery,
+            query: $screenQuery,
         ));
     }
 
@@ -482,6 +492,7 @@ Route::post('/core/plugins/{pluginId}/enable', function (
         'locale' => ['nullable', 'string', 'max:10'],
         'theme' => ['nullable', 'string', 'max:40'],
         'menu' => ['nullable', 'string', 'max:80'],
+        'plugin_id' => ['nullable', 'string', 'max:80'],
         'organization_id' => ['nullable', 'string', 'max:80'],
         'scope_id' => ['nullable', 'string', 'max:80'],
         'membership_ids' => ['nullable', 'array'],
@@ -512,6 +523,7 @@ Route::post('/core/plugins/{pluginId}/enable', function (
         'locale' => is_string($validated['locale'] ?? null) ? $validated['locale'] : null,
         'theme' => is_string($validated['theme'] ?? null) ? $validated['theme'] : null,
         'menu' => is_string($validated['menu'] ?? null) ? $validated['menu'] : 'core.plugins',
+        'plugin_id' => is_string($validated['plugin_id'] ?? null) ? $validated['plugin_id'] : null,
         'organization_id' => is_string($validated['organization_id'] ?? null) ? $validated['organization_id'] : null,
         'scope_id' => is_string($validated['scope_id'] ?? null) ? $validated['scope_id'] : null,
     ], static fn (mixed $value): bool => is_string($value) && $value !== '');
@@ -535,6 +547,7 @@ Route::post('/core/plugins/{pluginId}/disable', function (
         'locale' => ['nullable', 'string', 'max:10'],
         'theme' => ['nullable', 'string', 'max:40'],
         'menu' => ['nullable', 'string', 'max:80'],
+        'plugin_id' => ['nullable', 'string', 'max:80'],
         'organization_id' => ['nullable', 'string', 'max:80'],
         'scope_id' => ['nullable', 'string', 'max:80'],
         'membership_ids' => ['nullable', 'array'],
@@ -565,6 +578,7 @@ Route::post('/core/plugins/{pluginId}/disable', function (
         'locale' => is_string($validated['locale'] ?? null) ? $validated['locale'] : null,
         'theme' => is_string($validated['theme'] ?? null) ? $validated['theme'] : null,
         'menu' => is_string($validated['menu'] ?? null) ? $validated['menu'] : 'core.plugins',
+        'plugin_id' => is_string($validated['plugin_id'] ?? null) ? $validated['plugin_id'] : null,
         'organization_id' => is_string($validated['organization_id'] ?? null) ? $validated['organization_id'] : null,
         'scope_id' => is_string($validated['scope_id'] ?? null) ? $validated['scope_id'] : null,
     ], static fn (mixed $value): bool => is_string($value) && $value !== '');
@@ -629,6 +643,8 @@ Route::post('/core/roles', function (
         'principal_id' => ['nullable', 'string', 'max:80'],
         'locale' => ['nullable', 'string', 'max:10'],
         'menu' => ['nullable', 'string', 'max:80'],
+        'role_key' => ['nullable', 'string', 'max:80'],
+        'grant_id' => ['nullable', 'string', 'max:120'],
     ]);
 
     $selectedPermissions = array_values(array_filter(
@@ -670,6 +686,7 @@ Route::post('/core/roles', function (
 
     $query = array_filter([
         'menu' => is_string($validated['menu'] ?? null) ? $validated['menu'] : 'core.roles',
+        'role_key' => $role->key,
         'principal_id' => $principalId,
         'locale' => is_string($validated['locale'] ?? null) ? $validated['locale'] : 'en',
     ]);
@@ -694,6 +711,8 @@ Route::post('/core/roles/grants', function (
         'principal_id' => ['nullable', 'string', 'max:80'],
         'locale' => ['nullable', 'string', 'max:10'],
         'menu' => ['nullable', 'string', 'max:80'],
+        'role_key' => ['nullable', 'string', 'max:80'],
+        'grant_id' => ['nullable', 'string', 'max:120'],
     ]);
 
     if ($validated['grant_type'] === 'role' && ! isset($store->roleDefinitions()[$validated['value']])) {
@@ -745,6 +764,7 @@ Route::post('/core/roles/grants', function (
 
     $query = array_filter([
         'menu' => is_string($validated['menu'] ?? null) ? $validated['menu'] : 'core.roles',
+        'grant_id' => is_string($grant['id'] ?? null) ? $grant['id'] : null,
         'principal_id' => $principalId,
         'locale' => is_string($validated['locale'] ?? null) ? $validated['locale'] : 'en',
     ]);
@@ -770,6 +790,8 @@ Route::post('/core/roles/grants/{grantId}', function (
         'principal_id' => ['nullable', 'string', 'max:80'],
         'locale' => ['nullable', 'string', 'max:10'],
         'menu' => ['nullable', 'string', 'max:80'],
+        'role_key' => ['nullable', 'string', 'max:80'],
+        'grant_id' => ['nullable', 'string', 'max:120'],
     ]);
 
     if ($validated['grant_type'] === 'role' && ! isset($store->roleDefinitions()[$validated['value']])) {
@@ -821,6 +843,7 @@ Route::post('/core/roles/grants/{grantId}', function (
 
     $query = array_filter([
         'menu' => is_string($validated['menu'] ?? null) ? $validated['menu'] : 'core.roles',
+        'grant_id' => is_string($grant['id'] ?? null) ? $grant['id'] : null,
         'principal_id' => $principalId,
         'locale' => is_string($validated['locale'] ?? null) ? $validated['locale'] : 'en',
     ]);

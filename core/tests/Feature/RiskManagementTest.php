@@ -30,9 +30,16 @@ class RiskManagementTest extends TestCase
             ->assertOk()
             ->assertSee('Risk Register')
             ->assertSee('Privileged access drift')
-            ->assertSee('Quarterly certification and emergency access review.')
             ->assertSee('Ava Mason')
-            ->assertSee('Create Risk');
+            ->assertSee('Add risk')
+            ->assertSee('Edit details');
+
+        $this->get('/app?menu=plugin.risk-management.root&risk_id=risk-access-drift&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
+            ->assertOk()
+            ->assertSee('Quarterly certification and emergency access review.')
+            ->assertSee('Back to risks')
+            ->assertSee('Edit risk')
+            ->assertSee('Workflow');
     }
 
     public function test_risk_transition_and_artifact_render_on_the_board(): void
@@ -70,6 +77,11 @@ class RiskManagementTest extends TestCase
     {
         $this->get('/app?menu=plugin.risk-management.root&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-viewer')
             ->assertOk()
+            ->assertSee('Edit details')
+            ->assertDontSee('Start Assessment');
+
+        $this->get('/app?menu=plugin.risk-management.root&risk_id=risk-access-drift&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-viewer')
+            ->assertOk()
             ->assertSee('View-only access')
             ->assertDontSee('Start Assessment');
     }
@@ -97,7 +109,7 @@ class RiskManagementTest extends TestCase
             'owner_actor_id' => 'actor-ava-mason',
         ])->assertFound();
 
-        $this->get('/app?menu=plugin.risk-management.root&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
+        $this->get('/app?menu=plugin.risk-management.root&risk_id=risk-supplier-onboarding-gap&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
             ->assertOk()
             ->assertSee('Supplier onboarding gap')
             ->assertSee('Add supplier onboarding approval review.');
@@ -115,7 +127,7 @@ class RiskManagementTest extends TestCase
             'owner_actor_id' => 'actor-compliance-office',
         ])->assertFound();
 
-        $this->get('/app?menu=plugin.risk-management.root&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
+        $this->get('/app?menu=plugin.risk-management.root&risk_id=risk-supplier-onboarding-gap&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
             ->assertOk()
             ->assertSee('Supplier onboarding coverage gap')
             ->assertSee('Add onboarding approvals and quarterly supplier review.')

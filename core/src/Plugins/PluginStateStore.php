@@ -108,7 +108,16 @@ class PluginStateStore
             ];
         }
 
-        $decoded = json_decode((string) file_get_contents($this->path), true);
+        $contents = @file_get_contents($this->path);
+
+        if ($contents === false) {
+            return [
+                'enabled' => [],
+                'disabled' => [],
+            ];
+        }
+
+        $decoded = json_decode($contents, true);
 
         if (! is_array($decoded)) {
             return [

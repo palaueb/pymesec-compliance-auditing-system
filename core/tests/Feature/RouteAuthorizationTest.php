@@ -64,7 +64,7 @@ class RouteAuthorizationTest extends TestCase
 
     public function test_the_asset_shell_screen_hides_transitions_for_view_only_access(): void
     {
-        $this->get('/app?menu=plugin.asset-catalog.root&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-viewer')
+        $this->get('/app?menu=plugin.asset-catalog.root&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-viewer&asset_id=asset-erp-prod')
             ->assertOk()
             ->assertSee('View-only access')
             ->assertDontSee('Submit Review');

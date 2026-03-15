@@ -67,6 +67,7 @@ Route::post('/plugins/findings', function (
 
     return redirect()->route('core.shell.index', array_filter([
         'menu' => 'plugin.findings-remediation.root',
+        'finding_id' => $finding['id'],
         'principal_id' => $principalId,
         'organization_id' => $finding['organization_id'],
         'scope_id' => $finding['scope_id'] !== '' ? $finding['scope_id'] : null,
@@ -117,6 +118,7 @@ Route::post('/plugins/findings/{findingId}', function (
 
     return redirect()->route('core.shell.index', array_filter([
         'menu' => 'plugin.findings-remediation.root',
+        'finding_id' => $finding['id'],
         'principal_id' => $principalId,
         'organization_id' => $finding['organization_id'],
         'scope_id' => $finding['scope_id'] !== '' ? $finding['scope_id'] : null,
@@ -166,10 +168,11 @@ Route::post('/plugins/findings/{findingId}/actions', function (
     }
 
     return redirect()->route('core.shell.index', array_filter([
-        'menu' => 'plugin.findings-remediation.board',
+        'menu' => 'plugin.findings-remediation.root',
+        'finding_id' => $finding['id'],
         'principal_id' => $principalId,
-        'organization_id' => $action['organization_id'],
-        'scope_id' => $action['scope_id'] !== '' ? $action['scope_id'] : null,
+        'organization_id' => $finding['organization_id'],
+        'scope_id' => $finding['scope_id'] !== '' ? $finding['scope_id'] : null,
         'locale' => $request->input('locale', 'en'),
         'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
     ]));
@@ -193,6 +196,9 @@ Route::post('/plugins/findings/actions/{actionId}', function (
     $action = $repository->updateAction($actionId, $validated);
 
     abort_if($action === null, 404);
+    $finding = $repository->findFinding((string) $action['finding_id']);
+
+    abort_if($finding === null, 404);
 
     $principalId = (string) $request->input('principal_id', 'principal-org-a');
     $membershipId = $request->input('membership_id');
@@ -211,10 +217,11 @@ Route::post('/plugins/findings/actions/{actionId}', function (
     }
 
     return redirect()->route('core.shell.index', array_filter([
-        'menu' => 'plugin.findings-remediation.board',
+        'menu' => 'plugin.findings-remediation.root',
+        'finding_id' => $finding['id'],
         'principal_id' => $principalId,
-        'organization_id' => $action['organization_id'],
-        'scope_id' => $action['scope_id'] !== '' ? $action['scope_id'] : null,
+        'organization_id' => $finding['organization_id'],
+        'scope_id' => $finding['scope_id'] !== '' ? $finding['scope_id'] : null,
         'locale' => $request->input('locale', 'en'),
         'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
     ]));
@@ -260,6 +267,7 @@ Route::post('/plugins/findings/{findingId}/artifacts', function (
 
     return redirect()->route('core.shell.index', array_filter([
         'menu' => 'plugin.findings-remediation.root',
+        'finding_id' => $findingId,
         'principal_id' => $principalId,
         'organization_id' => $finding['organization_id'],
         'scope_id' => $finding['scope_id'] !== '' ? $finding['scope_id'] : null,
@@ -302,6 +310,7 @@ Route::post('/plugins/findings/{findingId}/transitions/{transitionKey}', functio
 
     return redirect()->route('core.shell.index', array_filter([
         'menu' => 'plugin.findings-remediation.root',
+        'finding_id' => $findingId,
         'principal_id' => $principalId,
         'organization_id' => $organizationId,
         'scope_id' => is_string($scopeId) && $scopeId !== '' ? $scopeId : null,

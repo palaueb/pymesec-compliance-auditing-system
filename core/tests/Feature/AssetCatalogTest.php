@@ -15,7 +15,14 @@ class AssetCatalogTest extends TestCase
             ->assertOk()
             ->assertSee('Asset Catalog')
             ->assertSee('ERP Production')
-            ->assertSee('Create Asset');
+            ->assertSee('Add asset')
+            ->assertSee('Edit details');
+
+        $this->get('/app?menu=plugin.asset-catalog.root&asset_id=asset-erp-prod&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
+            ->assertOk()
+            ->assertSee('Back to assets')
+            ->assertSee('Edit asset')
+            ->assertSee('Workflow');
     }
 
     public function test_assets_can_be_created_and_edited_from_the_shell_runtime(): void
@@ -50,7 +57,7 @@ class AssetCatalogTest extends TestCase
             'owner_actor_id' => 'actor-compliance-office',
         ])->assertFound();
 
-        $this->get('/app?menu=plugin.asset-catalog.root&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
+        $this->get('/app?menu=plugin.asset-catalog.root&asset_id=asset-supplier-access-gateway&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
             ->assertOk()
             ->assertSee('Supplier Access Gateway')
             ->assertSee('Compliance Office');

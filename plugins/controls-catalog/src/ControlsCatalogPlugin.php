@@ -112,6 +112,22 @@ class ControlsCatalogPlugin implements PluginInterface
             dataResolver: fn (ScreenRenderContext $screenContext): array => $this->catalogData($context, $screenContext),
             toolbarResolver: function (ScreenRenderContext $screenContext): array {
                 $query = $this->baseQuery($screenContext);
+                unset($query['control_id']);
+
+                if (is_string($screenContext->query['control_id'] ?? null) && ($screenContext->query['control_id'] ?? '') !== '') {
+                    return [
+                        new ToolbarAction(
+                            label: 'Back to controls',
+                            url: route('core.shell.index', [...$query, 'menu' => 'plugin.controls-catalog.root']),
+                            variant: 'secondary',
+                        ),
+                        new ToolbarAction(
+                            label: 'Review queue',
+                            url: route('core.shell.index', [...$query, 'menu' => 'plugin.controls-catalog.reviews']),
+                            variant: 'secondary',
+                        ),
+                    ];
+                }
 
                 return [
                     new ToolbarAction(
@@ -189,6 +205,7 @@ class ControlsCatalogPlugin implements PluginInterface
 
             $controls[] = [
                 ...$control,
+                'open_url' => route('core.shell.index', [...$this->baseQuery($screenContext), 'menu' => 'plugin.controls-catalog.root', 'control_id' => $control['id']]),
                 'owner_assignment' => $this->ownerAssignment($actors, $control['id'], $organizationId, $screenContext->scopeId),
                 'artifacts' => array_map(
                     static fn ($artifact): array => $artifact->toArray(),
@@ -204,6 +221,23 @@ class ControlsCatalogPlugin implements PluginInterface
             ];
         }
 
+        $selectedControlId = is_string($screenContext->query['control_id'] ?? null) && $screenContext->query['control_id'] !== ''
+            ? (string) $screenContext->query['control_id']
+            : null;
+        $selectedControl = null;
+
+        if (is_string($selectedControlId)) {
+            foreach ($controls as $control) {
+                if (($control['id'] ?? null) === $selectedControlId) {
+                    $selectedControl = $control;
+                    break;
+                }
+            }
+        }
+
+        $listQuery = $this->baseQuery($screenContext);
+        unset($listQuery['control_id']);
+
         $scopeContext = $tenancy->resolveContext(
             principalId: $screenContext->principal?->id,
             requestedOrganizationId: $organizationId,
@@ -213,10 +247,12 @@ class ControlsCatalogPlugin implements PluginInterface
 
         return [
             'controls' => $controls,
+            'selected_control' => $selectedControl,
             'frameworks' => $frameworks,
             'requirements' => $requirements,
             'can_manage_controls' => $canManage,
             'query' => $this->baseQuery($screenContext),
+            'list_query' => $listQuery,
             'create_route' => route('plugin.controls-catalog.store'),
             'create_framework_route' => route('plugin.controls-catalog.frameworks.store'),
             'create_requirement_route' => route('plugin.controls-catalog.requirements.store'),
@@ -230,6 +266,7 @@ class ControlsCatalogPlugin implements PluginInterface
                 'label' => sprintf('%s · %s', $requirement['code'], $requirement['title']),
             ], $requirements),
             'scope_options' => array_map(static fn ($scope): array => $scope->toArray(), $scopeContext->scopes),
+            'controls_list_url' => route('core.shell.index', [...$listQuery, 'menu' => 'plugin.controls-catalog.root']),
         ];
     }
 

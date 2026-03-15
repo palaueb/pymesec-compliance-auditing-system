@@ -1,5 +1,5 @@
 <section class="module-screen compact">
-    <div class="overview-grid">
+    <div class="overview-grid" style="grid-template-columns:repeat(4, minmax(0, 1fr));">
         <div class="metric-card"><div class="metric-label">Modules</div><div class="metric-value">{{ $metrics['plugins'] }}</div></div>
         <div class="metric-card"><div class="metric-label">Permissions</div><div class="metric-value">{{ $metrics['permissions'] }}</div></div>
         <div class="metric-card"><div class="metric-label">Roles</div><div class="metric-value">{{ $metrics['roles'] }}</div></div>

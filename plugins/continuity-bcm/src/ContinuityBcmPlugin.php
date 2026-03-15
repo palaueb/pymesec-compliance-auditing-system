@@ -100,12 +100,27 @@ class ContinuityBcmPlugin implements PluginInterface
             viewPath: $context->path('resources/views/register.blade.php'),
             dataResolver: fn (ScreenRenderContext $screenContext): array => $this->registerData($context, $screenContext),
             toolbarResolver: function (ScreenRenderContext $screenContext): array {
-                $query = $this->baseQuery($screenContext);
+                $query = $this->baseQuery($screenContext, false);
+
+                if (is_string($screenContext->query['service_id'] ?? null) && ($screenContext->query['service_id'] ?? '') !== '') {
+                    return [
+                        new ToolbarAction(
+                            label: 'Back to services',
+                            url: route('core.shell.index', [...$query, 'menu' => 'plugin.continuity-bcm.root']),
+                            variant: 'secondary',
+                        ),
+                        new ToolbarAction(
+                            label: 'Recovery plans',
+                            url: route('core.shell.index', [...$query, 'menu' => 'plugin.continuity-bcm.plans']),
+                            variant: 'secondary',
+                        ),
+                    ];
+                }
 
                 return [
                     new ToolbarAction(
                         label: 'Add continuity service',
-                        url: '#continuity-service-editor',
+                        url: '#toggle-continuity-service-editor',
                         variant: 'primary',
                     ),
                     new ToolbarAction(
@@ -124,13 +139,30 @@ class ContinuityBcmPlugin implements PluginInterface
             subtitleKey: 'plugin.continuity-bcm.screen.plans.subtitle',
             viewPath: $context->path('resources/views/plans.blade.php'),
             dataResolver: fn (ScreenRenderContext $screenContext): array => $this->plansData($context, $screenContext),
-            toolbarResolver: fn (ScreenRenderContext $screenContext): array => [
-                new ToolbarAction(
-                    label: 'Continuity services',
-                    url: route('core.shell.index', [...$this->baseQuery($screenContext), 'menu' => 'plugin.continuity-bcm.root']),
-                    variant: 'secondary',
-                ),
-            ],
+            toolbarResolver: function (ScreenRenderContext $screenContext): array {
+                $actions = [
+                    new ToolbarAction(
+                        label: 'Choose service',
+                        url: route('core.shell.index', [...$this->baseQuery($screenContext, false), 'menu' => 'plugin.continuity-bcm.root']).'#continuity-service-plans',
+                        variant: 'primary',
+                    ),
+                    new ToolbarAction(
+                        label: 'Continuity services',
+                        url: route('core.shell.index', [...$this->baseQuery($screenContext, false), 'menu' => 'plugin.continuity-bcm.root']),
+                        variant: 'secondary',
+                    ),
+                ];
+
+                if (is_string($screenContext->query['plan_id'] ?? null) && ($screenContext->query['plan_id'] ?? '') !== '') {
+                    array_unshift($actions, new ToolbarAction(
+                        label: 'Back to plans',
+                        url: route('core.shell.index', [...$this->baseQuery($screenContext, false), 'menu' => 'plugin.continuity-bcm.plans']),
+                        variant: 'secondary',
+                    ));
+                }
+
+                return $actions;
+            },
         ));
     }
 
@@ -152,8 +184,11 @@ class ContinuityBcmPlugin implements PluginInterface
         $tenancy = $context->app()->make(TenancyServiceInterface::class);
         $organizationId = $screenContext->organizationId ?? 'org-a';
         $canManage = $this->canManage($authorization, $screenContext, $organizationId);
+        $baseQuery = $this->baseQuery($screenContext, false);
         $assetOptions = $this->linkedOptions('assets', 'id', 'name', $organizationId, $screenContext->scopeId);
         $assetLabels = [];
+        $riskOptions = $this->linkedOptions('risks', 'id', 'title', $organizationId, $screenContext->scopeId);
+        $riskLabels = [];
         $serviceCatalog = $repository->allServices($organizationId, $screenContext->scopeId);
         $dependenciesByService = $repository->dependenciesForServices(array_map(
             static fn (array $service): string => $service['id'],
@@ -162,6 +197,10 @@ class ContinuityBcmPlugin implements PluginInterface
 
         foreach ($assetOptions as $option) {
             $assetLabels[$option['id']] = $option['label'];
+        }
+
+        foreach ($riskOptions as $option) {
+            $riskLabels[$option['id']] = $option['label'];
         }
 
         $services = [];
@@ -193,8 +232,40 @@ class ContinuityBcmPlugin implements PluginInterface
                 'dependency_store_route' => route('plugin.continuity-bcm.dependencies.store', ['serviceId' => $service['id']]),
                 'plan_count' => count($plans),
                 'linked_asset_label' => $assetLabels[$service['linked_asset_id']] ?? null,
+                'linked_assets' => $service['linked_asset_id'] !== '' ? [[
+                    'id' => $service['linked_asset_id'],
+                    'label' => $assetLabels[$service['linked_asset_id']] ?? $service['linked_asset_id'],
+                    'url' => route('core.shell.index', [...$baseQuery, 'menu' => 'plugin.asset-catalog.root']),
+                ]] : [],
+                'linked_risks' => $service['linked_risk_id'] !== '' ? [[
+                    'id' => $service['linked_risk_id'],
+                    'label' => $riskLabels[$service['linked_risk_id']] ?? $service['linked_risk_id'],
+                    'url' => route('core.shell.index', [...$baseQuery, 'menu' => 'plugin.risk-management.root']),
+                ]] : [],
                 'dependencies' => $dependenciesByService[$service['id']] ?? [],
+                'plans' => $plans,
+                'open_url' => route('core.shell.index', [...$baseQuery, 'menu' => 'plugin.continuity-bcm.root', 'service_id' => $service['id']]),
             ];
+        }
+
+        $selectedServiceId = is_string($screenContext->query['service_id'] ?? null) && $screenContext->query['service_id'] !== ''
+            ? (string) $screenContext->query['service_id']
+            : null;
+        $selectedService = null;
+
+        if (is_string($selectedServiceId)) {
+            foreach ($services as $service) {
+                if ($service['id'] !== $selectedServiceId) {
+                    continue;
+                }
+
+                $service['plans'] = array_map(fn (array $plan): array => [
+                    ...$plan,
+                    'open_url' => route('core.shell.index', [...$this->baseQuery($screenContext, false), 'menu' => 'plugin.continuity-bcm.plans', 'plan_id' => $plan['id']]),
+                ], $service['plans']);
+                $selectedService = $service;
+                break;
+            }
         }
 
         $scopeContext = $tenancy->resolveContext(
@@ -206,8 +277,10 @@ class ContinuityBcmPlugin implements PluginInterface
 
         return [
             'services' => $services,
+            'selected_service' => $selectedService,
             'can_manage_continuity' => $canManage,
             'query' => $this->baseQuery($screenContext),
+            'list_query' => $this->baseQuery($screenContext, false),
             'create_route' => route('plugin.continuity-bcm.store'),
             'owner_actor_options' => $this->actorOptions($actors, $organizationId, $screenContext->scopeId),
             'scope_options' => array_map(static fn ($scope): array => $scope->toArray(), $scopeContext->scopes),
@@ -219,6 +292,7 @@ class ContinuityBcmPlugin implements PluginInterface
                 'id' => $service['id'],
                 'label' => sprintf('%s [%s]', $service['title'], $service['id']),
             ], $serviceCatalog),
+            'services_list_url' => route('core.shell.index', [...$this->baseQuery($screenContext, false), 'menu' => 'plugin.continuity-bcm.root']),
         ];
     }
 
@@ -278,7 +352,22 @@ class ContinuityBcmPlugin implements PluginInterface
                 'execution_store_route' => route('plugin.continuity-bcm.plans.executions.store', ['planId' => $plan['id']]),
                 'exercises' => $exercisesByPlan[$plan['id']] ?? [],
                 'executions' => $executionsByPlan[$plan['id']] ?? [],
+                'open_url' => route('core.shell.index', [...$this->baseQuery($screenContext, false), 'menu' => 'plugin.continuity-bcm.plans', 'plan_id' => $plan['id']]),
             ];
+        }
+
+        $selectedPlanId = is_string($screenContext->query['plan_id'] ?? null) && $screenContext->query['plan_id'] !== ''
+            ? (string) $screenContext->query['plan_id']
+            : null;
+        $selectedPlan = null;
+
+        if (is_string($selectedPlanId)) {
+            foreach ($plans as $plan) {
+                if ($plan['id'] === $selectedPlanId) {
+                    $selectedPlan = $plan;
+                    break;
+                }
+            }
         }
 
         $scopeContext = $tenancy->resolveContext(
@@ -290,13 +379,16 @@ class ContinuityBcmPlugin implements PluginInterface
 
         return [
             'plans' => $plans,
+            'selected_plan' => $selectedPlan,
             'can_manage_continuity' => $canManage,
             'query' => $this->baseQuery($screenContext),
+            'list_query' => $this->baseQuery($screenContext, false),
             'owner_actor_options' => $this->actorOptions($actors, $organizationId, $screenContext->scopeId),
             'scope_options' => array_map(static fn ($scope): array => $scope->toArray(), $scopeContext->scopes),
             'service_options' => $this->linkedOptions('continuity_services', 'id', 'title', $organizationId, $screenContext->scopeId),
             'policy_options' => $this->linkedOptions('policies', 'id', 'title', $organizationId, $screenContext->scopeId),
             'finding_options' => $this->linkedOptions('findings', 'id', 'title', $organizationId, $screenContext->scopeId),
+            'plans_list_url' => route('core.shell.index', [...$this->baseQuery($screenContext, false), 'menu' => 'plugin.continuity-bcm.plans']),
         ];
     }
 
@@ -330,7 +422,7 @@ class ContinuityBcmPlugin implements PluginInterface
     /**
      * @return array<string, string>
      */
-    private function baseQuery(ScreenRenderContext $context): array
+    private function baseQuery(ScreenRenderContext $context, bool $includeSelection = true): array
     {
         $query = $context->query;
         $query['principal_id'] = $context->principal?->id ?? ($query['principal_id'] ?? 'principal-org-a');
@@ -343,6 +435,11 @@ class ContinuityBcmPlugin implements PluginInterface
 
         foreach ($context->memberships as $membership) {
             $query['membership_ids'][] = $membership->id;
+        }
+
+        if (! $includeSelection) {
+            unset($query['plan_id']);
+            unset($query['service_id']);
         }
 
         return $query;

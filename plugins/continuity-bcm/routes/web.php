@@ -67,6 +67,7 @@ Route::post('/plugins/continuity/services', function (
 
     return redirect()->route('core.shell.index', array_filter([
         'menu' => 'plugin.continuity-bcm.root',
+        'service_id' => $service['id'],
         'principal_id' => $principalId,
         'organization_id' => $service['organization_id'],
         'scope_id' => $service['scope_id'] !== '' ? $service['scope_id'] : null,
@@ -95,6 +96,7 @@ Route::post('/plugins/continuity/services/{serviceId}/dependencies', function (
 
     return redirect()->route('core.shell.index', array_filter([
         'menu' => 'plugin.continuity-bcm.root',
+        'service_id' => $serviceId,
         'principal_id' => $principalId,
         'organization_id' => $validated['organization_id'],
         'scope_id' => is_string($scopeId) && $scopeId !== '' ? $scopeId : null,
@@ -145,6 +147,7 @@ Route::post('/plugins/continuity/services/{serviceId}', function (
 
     return redirect()->route('core.shell.index', array_filter([
         'menu' => 'plugin.continuity-bcm.root',
+        'service_id' => $service['id'],
         'principal_id' => $principalId,
         'organization_id' => $service['organization_id'],
         'scope_id' => $service['scope_id'] !== '' ? $service['scope_id'] : null,
@@ -193,10 +196,12 @@ Route::post('/plugins/continuity/services/{serviceId}/artifacts', function (
 
     return redirect()->route('core.shell.index', array_filter([
         'menu' => 'plugin.continuity-bcm.root',
+        'service_id' => $serviceId,
         'principal_id' => $principalId,
         'organization_id' => $service['organization_id'],
         'scope_id' => $service['scope_id'] !== '' ? $service['scope_id'] : null,
         'locale' => $request->input('locale', 'en'),
+        'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
     ]));
 })->middleware('core.permission:plugin.continuity-bcm.plans.manage')->name('plugin.continuity-bcm.artifacts.store');
 
@@ -229,10 +234,12 @@ Route::post('/plugins/continuity/services/{serviceId}/transitions/{transitionKey
 
     return redirect()->route('core.shell.index', array_filter([
         'menu' => 'plugin.continuity-bcm.root',
+        'service_id' => $serviceId,
         'principal_id' => $principalId,
         'organization_id' => $organizationId,
         'scope_id' => is_string($scopeId) && $scopeId !== '' ? $scopeId : null,
         'locale' => $request->input('locale', 'en'),
+        'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
     ]));
 })->middleware('core.permission:plugin.continuity-bcm.plans.manage')->name('plugin.continuity-bcm.transition');
 
@@ -272,6 +279,7 @@ Route::post('/plugins/continuity/services/{serviceId}/plans', function (
 
     return redirect()->route('core.shell.index', array_filter([
         'menu' => 'plugin.continuity-bcm.plans',
+        'plan_id' => $plan['id'],
         'principal_id' => $principalId,
         'organization_id' => $plan['organization_id'],
         'scope_id' => $plan['scope_id'] !== '' ? $plan['scope_id'] : null,
@@ -302,6 +310,7 @@ Route::post('/plugins/continuity/plans/{planId}/exercises', function (
 
     return redirect()->route('core.shell.index', array_filter([
         'menu' => 'plugin.continuity-bcm.plans',
+        'plan_id' => $planId,
         'principal_id' => $principalId,
         'organization_id' => $validated['organization_id'],
         'scope_id' => is_string($scopeId) && $scopeId !== '' ? $scopeId : null,
@@ -332,6 +341,7 @@ Route::post('/plugins/continuity/plans/{planId}/executions', function (
 
     return redirect()->route('core.shell.index', array_filter([
         'menu' => 'plugin.continuity-bcm.plans',
+        'plan_id' => $planId,
         'principal_id' => $principalId,
         'organization_id' => $validated['organization_id'],
         'scope_id' => is_string($scopeId) && $scopeId !== '' ? $scopeId : null,
@@ -381,6 +391,7 @@ Route::post('/plugins/continuity/plans/{planId}', function (
 
     return redirect()->route('core.shell.index', array_filter([
         'menu' => 'plugin.continuity-bcm.plans',
+        'plan_id' => $plan['id'],
         'principal_id' => $principalId,
         'organization_id' => $plan['organization_id'],
         'scope_id' => $plan['scope_id'] !== '' ? $plan['scope_id'] : null,
@@ -428,6 +439,7 @@ Route::post('/plugins/continuity/plans/{planId}/artifacts', function (
 
     return redirect()->route('core.shell.index', array_filter([
         'menu' => 'plugin.continuity-bcm.plans',
+        'plan_id' => $planId,
         'principal_id' => $principalId,
         'organization_id' => $plan['organization_id'],
         'scope_id' => $plan['scope_id'] !== '' ? $plan['scope_id'] : null,
@@ -464,6 +476,7 @@ Route::post('/plugins/continuity/plans/{planId}/transitions/{transitionKey}', fu
 
     return redirect()->route('core.shell.index', array_filter([
         'menu' => 'plugin.continuity-bcm.plans',
+        'plan_id' => $planId,
         'principal_id' => $principalId,
         'organization_id' => $organizationId,
         'scope_id' => is_string($scopeId) && $scopeId !== '' ? $scopeId : null,

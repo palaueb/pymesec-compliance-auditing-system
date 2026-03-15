@@ -39,7 +39,8 @@ class IdentityLocalTest extends TestCase
             ->assertOk()
             ->assertSee('People & Access')
             ->assertSee('Ava Mason')
-            ->assertSee('Add person');
+            ->assertSee('Add person')
+            ->assertSee('Edit details');
 
         $this->get('/app?menu=plugin.identity-local.memberships&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
             ->assertOk()
@@ -47,7 +48,8 @@ class IdentityLocalTest extends TestCase
             ->assertSee('membership-org-a-hello')
             ->assertSee('Grant access')
             ->assertSee('Operational workspaces')
-            ->assertSee('Access administration');
+            ->assertSee('Access administration')
+            ->assertSee('Edit details');
     }
 
     public function test_users_and_memberships_can_be_created_and_updated_from_the_shell_runtime(): void
@@ -70,12 +72,6 @@ class IdentityLocalTest extends TestCase
             'magic_link_enabled' => '1',
         ])->assertFound();
 
-        $this->get('/admin?menu=plugin.identity-local.users&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
-            ->assertOk()
-            ->assertSee('Nina Patel')
-            ->assertSee('nina.patel')
-            ->assertSee('Security coordinator');
-
         $userId = DB::table('identity_local_users')
             ->where('email', 'nina.patel@northwind.test')
             ->value('id');
@@ -85,6 +81,12 @@ class IdentityLocalTest extends TestCase
 
         $this->assertIsString($userId);
         $this->assertIsString($subjectPrincipalId);
+
+        $this->get('/admin?menu=plugin.identity-local.users&user_id='.$userId.'&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
+            ->assertOk()
+            ->assertSee('Nina Patel')
+            ->assertSee('nina.patel')
+            ->assertSee('Security coordinator');
 
         $this->post('/plugins/identity/memberships', [
             ...$payload,
@@ -141,7 +143,7 @@ class IdentityLocalTest extends TestCase
             ->assertOk()
             ->assertJsonPath('result.status', 'allow');
 
-        $this->get('/app?menu=plugin.identity-local.memberships&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
+        $this->get('/app?menu=plugin.identity-local.memberships&selected_membership_id='.$membershipId.'&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
             ->assertOk()
             ->assertSee($subjectPrincipalId)
             ->assertSee('control-viewer')

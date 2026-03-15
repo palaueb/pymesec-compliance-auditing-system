@@ -1,5 +1,5 @@
 <section class="module-screen compact">
-    <div class="overview-grid">
+    <div class="overview-grid" style="grid-template-columns:repeat(4, minmax(0, 1fr));">
         <div class="metric-card"><div class="metric-label">Assets in view</div><div class="metric-value">{{ $metrics['assets'] }}</div></div>
         <div class="metric-card"><div class="metric-label">Risks under assessment</div><div class="metric-value">{{ $metrics['risks_assessing'] }}</div></div>
         <div class="metric-card"><div class="metric-label">Controls in review</div><div class="metric-value">{{ $metrics['controls_review'] }}</div></div>

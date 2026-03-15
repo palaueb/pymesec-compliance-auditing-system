@@ -25,13 +25,28 @@ class AssessmentsAuditsPlugin implements PluginInterface
             subtitleKey: 'plugin.assessments-audits.screen.root.subtitle',
             viewPath: $context->path('resources/views/index.blade.php'),
             dataResolver: fn (ScreenRenderContext $screenContext): array => $this->screenData($context, $screenContext),
-            toolbarResolver: fn (): array => [
-                new ToolbarAction(
-                    label: 'New assessment',
-                    url: '#assessment-editor',
-                    variant: 'primary',
-                ),
-            ],
+            toolbarResolver: function (ScreenRenderContext $screenContext): array {
+                $query = $this->baseQuery($screenContext);
+                unset($query['assessment_id']);
+
+                if (is_string($screenContext->query['assessment_id'] ?? null) && ($screenContext->query['assessment_id'] ?? '') !== '') {
+                    return [
+                        new ToolbarAction(
+                            label: 'Back to assessments',
+                            url: route('core.shell.index', [...$query, 'menu' => 'plugin.assessments-audits.root']),
+                            variant: 'secondary',
+                        ),
+                    ];
+                }
+
+                return [
+                    new ToolbarAction(
+                        label: 'New assessment',
+                        url: '#assessment-editor',
+                        variant: 'primary',
+                    ),
+                ];
+            },
         ));
     }
 
@@ -66,8 +81,7 @@ class AssessmentsAuditsPlugin implements PluginInterface
             requestedMembershipIds: array_map(static fn ($membership): string => $membership->id, $screenContext->memberships),
         );
 
-        return [
-            'campaigns' => array_map(function (array $campaign) use ($controls, $frameworkOptions, $repository, $screenContext, $scopeContext): array {
+        $campaignRows = array_map(function (array $campaign) use ($controls, $frameworkOptions, $repository, $screenContext, $scopeContext): array {
                 $scopeName = 'Organization-wide';
 
                 foreach ($scopeContext->scopes as $scope) {
@@ -110,6 +124,7 @@ class AssessmentsAuditsPlugin implements PluginInterface
 
                 return [
                     ...$campaign,
+                    'open_url' => route('core.shell.index', [...$this->baseQuery($screenContext), 'menu' => 'plugin.assessments-audits.root', 'assessment_id' => $campaign['id']]),
                     'scope_name' => $scopeName,
                     'framework_name' => $frameworkName,
                     'reviews' => $reviews,
@@ -119,9 +134,30 @@ class AssessmentsAuditsPlugin implements PluginInterface
                         ...$this->baseQuery($screenContext),
                     ]),
                 ];
-            }, $campaigns),
+            }, $campaigns);
+        $selectedAssessmentId = is_string($screenContext->query['assessment_id'] ?? null) && $screenContext->query['assessment_id'] !== ''
+            ? (string) $screenContext->query['assessment_id']
+            : null;
+        $selectedAssessment = null;
+
+        if (is_string($selectedAssessmentId)) {
+            foreach ($campaignRows as $campaign) {
+                if (($campaign['id'] ?? null) === $selectedAssessmentId) {
+                    $selectedAssessment = $campaign;
+                    break;
+                }
+            }
+        }
+
+        $listQuery = $this->baseQuery($screenContext);
+        unset($listQuery['assessment_id']);
+
+        return [
+            'campaigns' => $campaignRows,
+            'selected_assessment' => $selectedAssessment,
             'can_manage_assessments' => $canManage,
             'query' => $this->baseQuery($screenContext),
+            'list_query' => $listQuery,
             'create_route' => route('plugin.assessments-audits.store'),
             'framework_options' => $frameworkOptions,
             'control_options' => $repository->controlOptions($organizationId, $screenContext->scopeId),
@@ -138,6 +174,7 @@ class AssessmentsAuditsPlugin implements PluginInterface
                 'active' => 'Active',
                 'closed' => 'Closed',
             ],
+            'assessments_list_url' => route('core.shell.index', [...$listQuery, 'menu' => 'plugin.assessments-audits.root']),
         ];
     }
 

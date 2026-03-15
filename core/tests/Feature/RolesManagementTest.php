@@ -18,8 +18,9 @@ class RolesManagementTest extends TestCase
             ->assertSee('platform-admin')
             ->assertSee('Platform administration')
             ->assertSee('Operational workspaces')
-            ->assertSee('New Role')
-            ->assertSee('New Grant');
+            ->assertSee('Add role')
+            ->assertSee('Assign grant')
+            ->assertSee('Edit details');
     }
 
     public function test_roles_and_grants_can_be_created_and_updated_persistently(): void
@@ -67,7 +68,7 @@ class RolesManagementTest extends TestCase
             ->assertOk()
             ->assertJsonPath('result.status', 'allow');
 
-        $this->get('/admin?menu=core.roles&principal_id=principal-admin')
+        $this->get('/admin?menu=core.roles&role_key=privacy-auditor&principal_id=principal-admin')
             ->assertOk()
             ->assertSee('privacy-auditor')
             ->assertSee('Privacy and policy auditor');

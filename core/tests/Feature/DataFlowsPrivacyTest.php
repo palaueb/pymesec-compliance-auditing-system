@@ -30,7 +30,8 @@ class DataFlowsPrivacyTest extends TestCase
             ->assertOk()
             ->assertSee('Data Flows Register')
             ->assertSee('Customer support handoff')
-            ->assertSee('Create Data Flow');
+            ->assertSee('Add data flow')
+            ->assertSee('Edit details');
     }
 
     public function test_privacy_transitions_and_artifacts_render_on_the_shell(): void
@@ -42,6 +43,7 @@ class DataFlowsPrivacyTest extends TestCase
             'organization_id' => 'org-a',
             'locale' => 'en',
             'menu' => 'plugin.data-flows-privacy.root',
+            'flow_id' => 'data-flow-customer-support-handoff',
             'membership_id' => 'membership-org-a-hello',
         ])->assertFound();
 
@@ -50,17 +52,18 @@ class DataFlowsPrivacyTest extends TestCase
             'organization_id' => 'org-a',
             'locale' => 'en',
             'menu' => 'plugin.data-flows-privacy.activities',
+            'activity_id' => 'processing-activity-customer-support-operations',
             'membership_id' => 'membership-org-a-hello',
             'label' => 'RoPA export',
             'artifact_type' => 'record',
             'artifact' => UploadedFile::fake()->createWithContent('ropa.txt', 'ropa draft'),
         ])->assertFound();
 
-        $this->get('/app?menu=plugin.data-flows-privacy.root&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
+        $this->get('/app?menu=plugin.data-flows-privacy.root&flow_id=data-flow-customer-support-handoff&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
             ->assertOk()
             ->assertSee('submit-review');
 
-        $this->get('/app?menu=plugin.data-flows-privacy.activities&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
+        $this->get('/app?menu=plugin.data-flows-privacy.activities&activity_id=processing-activity-customer-support-operations&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
             ->assertOk()
             ->assertSee('Processing Activities')
             ->assertSee('RoPA export')
@@ -107,6 +110,7 @@ class DataFlowsPrivacyTest extends TestCase
         $this->post('/plugins/privacy/data-flows/data-flow-hr-onboarding-transfer', [
             ...$payload,
             'menu' => 'plugin.data-flows-privacy.root',
+            'flow_id' => 'data-flow-hr-onboarding-transfer',
             'title' => 'HR onboarding vendor transfer',
             'source' => 'HR workspace',
             'destination' => 'Payroll partner',
@@ -121,6 +125,7 @@ class DataFlowsPrivacyTest extends TestCase
         $this->post('/plugins/privacy/activities/processing-activity-hr-onboarding-administration', [
             ...$payload,
             'menu' => 'plugin.data-flows-privacy.activities',
+            'activity_id' => 'processing-activity-hr-onboarding-administration',
             'title' => 'HR onboarding workflow',
             'purpose' => 'Manage staff onboarding records and payroll initiation.',
             'lawful_basis' => 'contract',
@@ -132,13 +137,13 @@ class DataFlowsPrivacyTest extends TestCase
             'owner_actor_id' => 'actor-compliance-office',
         ])->assertFound();
 
-        $this->get('/app?menu=plugin.data-flows-privacy.root&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
+        $this->get('/app?menu=plugin.data-flows-privacy.root&flow_id=data-flow-hr-onboarding-transfer&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
             ->assertOk()
             ->assertSee('HR onboarding vendor transfer')
             ->assertSee('Employment identifiers, payroll setup data, and contract references.')
             ->assertSee('Compliance Office');
 
-        $this->get('/app?menu=plugin.data-flows-privacy.activities&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
+        $this->get('/app?menu=plugin.data-flows-privacy.activities&activity_id=processing-activity-hr-onboarding-administration&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
             ->assertOk()
             ->assertSee('HR onboarding workflow')
             ->assertSee('Manage staff onboarding records and payroll initiation.');
