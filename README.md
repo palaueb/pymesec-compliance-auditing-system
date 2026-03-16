@@ -21,18 +21,18 @@ Compliance auditing system for small and medium-sized enterprises (SMEs). Automa
 
 Primary documentation hubs:
 
-- [docs/README.md](/media/marc/4T_EXFAT/web/pymesec.com/pymesec/docs/README.md)
-- [docs/prd/README.md](/media/marc/4T_EXFAT/web/pymesec.com/pymesec/docs/prd/README.md)
-- [docs/adr/README.md](/media/marc/4T_EXFAT/web/pymesec.com/pymesec/docs/adr/README.md)
-- [docs/specs/README.md](/media/marc/4T_EXFAT/web/pymesec.com/pymesec/docs/specs/README.md)
+- [docs/README.md](docs/README.md)
+- [docs/prd/README.md](docs/prd/README.md)
+- [docs/adr/README.md](docs/adr/README.md)
+- [docs/specs/README.md](docs/specs/README.md)
 
 Operational READMEs:
 
-- [core/README.md](/media/marc/4T_EXFAT/web/pymesec.com/pymesec/core/README.md)
-- [core/database/README.md](/media/marc/4T_EXFAT/web/pymesec.com/pymesec/core/database/README.md)
-- [core/tests/README.md](/media/marc/4T_EXFAT/web/pymesec.com/pymesec/core/tests/README.md)
-- [plugins/README.md](/media/marc/4T_EXFAT/web/pymesec.com/pymesec/plugins/README.md)
-- [packages/README.md](/media/marc/4T_EXFAT/web/pymesec.com/pymesec/packages/README.md)
+- [core/README.md](core/README.md)
+- [core/database/README.md](core/database/README.md)
+- [core/tests/README.md](core/tests/README.md)
+- [plugins/README.md](plugins/README.md)
+- [packages/README.md](packages/README.md)
 
 ## Prerequisites
 
@@ -172,8 +172,8 @@ Connector values:
 
 This repository is licensed under `GNU Affero General Public License v3.0 or later`.
 
-- The monorepo root is covered by [LICENSE](/media/marc/4T_EXFAT/web/pymesec.com/pymesec/LICENSE).
-- The `core` declares `AGPL-3.0-or-later` in [core/composer.json](/media/marc/4T_EXFAT/web/pymesec.com/pymesec/core/composer.json).
+- The monorepo root is covered by [LICENSE](LICENSE).
+- The `core` declares `AGPL-3.0-or-later` in [core/composer.json](core/composer.json).
 - The official plugins currently shipped in `plugins/` also declare `AGPL-3.0-or-later` in their manifests.
 
 The practical policy in this repository is simple:
