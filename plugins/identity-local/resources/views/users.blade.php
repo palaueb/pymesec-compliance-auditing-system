@@ -1,6 +1,6 @@
 <section class="module-screen">
     @if (is_array($selected_row))
-        @php($selectedUser = $selected_row['user'])
+        @php $selectedUser = $selected_row['user']; @endphp
         <div class="surface-card" style="padding:16px; display:grid; gap:16px;">
             <div class="row-between" style="align-items:flex-start;">
                 <div>

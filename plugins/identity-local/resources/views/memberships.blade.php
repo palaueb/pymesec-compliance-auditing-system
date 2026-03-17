@@ -1,6 +1,6 @@
 <section class="module-screen">
     @if (is_array($selected_row))
-        @php($selectedMembership = $selected_row['membership'])
+        @php $selectedMembership = $selected_row['membership']; @endphp
         <div class="surface-card" style="padding:16px; display:grid; gap:16px;">
             <div class="row-between" style="align-items:flex-start;">
                 <div>
@@ -30,11 +30,19 @@
                             <span class="muted-note">No role sets yet</span>
                         @else
                             @foreach ($role_option_groups as $group)
-                                @php($groupRoles = array_values(array_filter($selectedMembership['roles'], static fn (string $roleKey): bool => in_array($roleKey, array_column($group['roles'], 'key'), true))))
-                                @if ($groupRoles !== [])
+                                @php
+                                    $labelsByKey = array_column($group['roles'], 'label', 'key');
+                                    $groupRoleLabels = [];
+                                    foreach ($selectedMembership['roles'] as $roleKey) {
+                                        if (isset($labelsByKey[$roleKey])) {
+                                            $groupRoleLabels[] = $labelsByKey[$roleKey];
+                                        }
+                                    }
+                                @endphp
+                                @if ($groupRoleLabels !== [])
                                     <div class="data-item">
                                         <div class="entity-title">{{ $group['label'] }}</div>
-                                        <div class="table-note">{{ implode(', ', $groupRoles) }}</div>
+                                        <div class="table-note">{{ implode(', ', $groupRoleLabels) }}</div>
                                     </div>
                                 @endif
                             @endforeach
@@ -77,6 +85,7 @@
                         </div>
                         <div class="field">
                             <label class="field-label">Role sets</label>
+                            <div class="table-note" style="margin:2px 0 10px;">Hold <kbd>Ctrl</kbd> (Windows/Linux) or <kbd>Cmd</kbd> (Mac) to select multiple roles. Click a selected role again to deselect it.</div>
                             <div class="overview-grid" style="grid-template-columns:repeat({{ max(1, count($role_option_groups)) }}, minmax(0, 1fr)); gap:12px;">
                                 @foreach ($role_option_groups as $group)
                                     <div class="surface-card" style="padding:12px;">
@@ -147,6 +156,7 @@
                         </div>
                         <div class="field" style="grid-column:1 / -1;">
                             <label class="field-label">Role sets</label>
+                            <div class="table-note" style="margin:2px 0 10px;">Hold <kbd>Ctrl</kbd> (Windows/Linux) or <kbd>Cmd</kbd> (Mac) to select multiple roles. Click a selected role again to deselect it.</div>
                             <div class="overview-grid" style="grid-template-columns:repeat({{ max(1, count($role_option_groups)) }}, minmax(0, 1fr)); gap:12px;">
                                 @foreach ($role_option_groups as $group)
                                     <div class="surface-card" style="padding:12px;">

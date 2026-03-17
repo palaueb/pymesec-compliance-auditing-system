@@ -109,8 +109,8 @@
             </thead>
             <tbody>
                 @foreach ($organizations as $organization)
-                    @php($organizationEditorId = 'org-editor-'.$organization['id'])
-                    @php($organizationEditorOpen = old('editor_target') === $organizationEditorId)
+                    @php $organizationEditorId = 'org-editor-'.$organization['id']; @endphp
+                    @php $organizationEditorOpen = old('editor_target') === $organizationEditorId; @endphp
                     <tr>
                         <td>
                             <div class="entity-title">{{ $organization['name'] }}</div>
@@ -188,7 +188,7 @@
                                                 <label class="field-label">Locale</label>
                                                 <select class="field-select" name="default_locale">
                                                     @foreach ($locale_options as $locale)
-                                                        @php($localeValue = old('editor_target') === $organizationEditorId ? old('default_locale', $organization['default_locale']) : $organization['default_locale'])
+                                                        @php $localeValue = old('editor_target') === $organizationEditorId ? old('default_locale', $organization['default_locale']) : $organization['default_locale']; @endphp
                                                         <option value="{{ $locale }}" @selected($localeValue === $locale)>{{ strtoupper($locale) }}</option>
                                                     @endforeach
                                                 </select>
@@ -229,8 +229,8 @@
             </thead>
             <tbody>
                 @foreach ($scopes as $scope)
-                    @php($scopeEditorId = 'scope-editor-'.$scope['id'])
-                    @php($scopeEditorOpen = old('editor_target') === $scopeEditorId)
+                    @php $scopeEditorId = 'scope-editor-'.$scope['id']; @endphp
+                    @php $scopeEditorOpen = old('editor_target') === $scopeEditorId; @endphp
                     <tr>
                         <td>
                             <div class="entity-title">{{ $scope['name'] }}</div>

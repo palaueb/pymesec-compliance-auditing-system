@@ -3,6 +3,9 @@ DOCKER_COMPOSE ?= docker compose
 .PHONY: up down shell test lint migrate ci logs ldap-logs seed-system seed-demo reset-demo
 
 up:
+	$(DOCKER_COMPOSE) up -d
+
+build:
 	$(DOCKER_COMPOSE) up -d --build
 
 down:

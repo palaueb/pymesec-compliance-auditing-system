@@ -53,7 +53,7 @@
                             @endif
                         </td>
                         <td>
-                            @php($matches = collect($row['notifications'])->filter(fn ($notification) => ($notification->metadata['control_id'] ?? null) === $row['control']['id']))
+                            @php $matches = collect($row['notifications'])->filter(fn ($notification) => ($notification->metadata['control_id'] ?? null) === $row['control']['id']); @endphp
                             @if ($matches->isEmpty())
                                 <span class="muted-note">None</span>
                             @else

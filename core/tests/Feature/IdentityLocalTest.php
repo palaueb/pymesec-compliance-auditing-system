@@ -52,6 +52,23 @@ class IdentityLocalTest extends TestCase
             ->assertSee('Open');
     }
 
+    public function test_the_identity_detail_views_render_without_errors(): void
+    {
+        // Membership detail view — exercises the @php block that triggered the @php(...) bug
+        $this->get('/app?menu=plugin.identity-local.memberships&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello&selected_membership_id=membership-org-a-hello')
+            ->assertOk()
+            ->assertSee('Access administration')
+            ->assertSee('Identity operator')         // label shown in display section
+            ->assertSee('Directory sync operator')   // label shown in display section
+            ->assertSee('Hold')                      // multi-select hint
+            ->assertSee('Save access');
+
+        // User detail view — exercises the same pattern in users.blade.php
+        $this->get('/admin?menu=plugin.identity-local.users&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello&user_id=identity-user-ava-mason')
+            ->assertOk()
+            ->assertSee('Ava Mason');
+    }
+
     public function test_users_and_memberships_can_be_created_and_updated_from_the_shell_runtime(): void
     {
         $payload = [
