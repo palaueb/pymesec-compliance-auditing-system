@@ -32,7 +32,7 @@ class PolicyExceptionsTest extends TestCase
             ->assertSee('Access Governance Policy')
             ->assertSee('1 exceptions')
             ->assertSee('Add policy')
-            ->assertSee('Edit details');
+            ->assertSee('Open');
     }
 
     public function test_policies_and_exceptions_can_be_created_and_edited_from_the_shell_runtime(): void

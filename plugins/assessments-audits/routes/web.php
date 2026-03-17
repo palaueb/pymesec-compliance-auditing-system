@@ -115,7 +115,7 @@ Route::post('/plugins/assessments', function (Request $request, AssessmentsAudit
         'scope_id' => $assessment['scope_id'] !== '' ? $assessment['scope_id'] : null,
         'locale' => $request->input('locale', 'en'),
         'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
-    ]));
+    ]))->with('status', 'Saved.');
 })->middleware('core.permission:plugin.assessments-audits.assessments.manage')->name('plugin.assessments-audits.store');
 
 Route::post('/plugins/assessments/{assessmentId}', function (
@@ -151,7 +151,7 @@ Route::post('/plugins/assessments/{assessmentId}', function (
         'scope_id' => $assessment['scope_id'] !== '' ? $assessment['scope_id'] : null,
         'locale' => $request->input('locale', 'en'),
         'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
-    ]));
+    ]))->with('status', 'Saved.');
 })->middleware('core.permission:plugin.assessments-audits.assessments.manage')->name('plugin.assessments-audits.update');
 
 Route::post('/plugins/assessments/{assessmentId}/reviews/{controlId}', function (
@@ -181,7 +181,7 @@ Route::post('/plugins/assessments/{assessmentId}/reviews/{controlId}', function 
         'scope_id' => $request->input('scope_id'),
         'locale' => $request->input('locale', 'en'),
         'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
-    ]));
+    ]))->with('status', 'Saved.');
 })->middleware('core.permission:plugin.assessments-audits.assessments.manage')->name('plugin.assessments-audits.reviews.update');
 
 Route::post('/plugins/assessments/{assessmentId}/reviews/{controlId}/artifacts', function (
@@ -231,7 +231,7 @@ Route::post('/plugins/assessments/{assessmentId}/reviews/{controlId}/artifacts',
         'scope_id' => $request->input('scope_id'),
         'locale' => $request->input('locale', 'en'),
         'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
-    ]));
+    ]))->with('status', 'Saved.');
 })->middleware('core.permission:plugin.assessments-audits.assessments.manage')->name('plugin.assessments-audits.reviews.artifacts.store');
 
 Route::post('/plugins/assessments/{assessmentId}/reviews/{controlId}/findings', function (
@@ -276,5 +276,5 @@ Route::post('/plugins/assessments/{assessmentId}/reviews/{controlId}/findings', 
         'scope_id' => $request->input('scope_id'),
         'locale' => $request->input('locale', 'en'),
         'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
-    ]));
+    ]))->with('status', 'Saved.');
 })->middleware('core.permission:plugin.assessments-audits.assessments.manage')->name('plugin.assessments-audits.reviews.findings.store');

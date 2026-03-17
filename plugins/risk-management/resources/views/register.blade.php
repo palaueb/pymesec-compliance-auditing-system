@@ -1,3 +1,13 @@
+<style>
+    .pill-assessing  { background: rgba(245,158,11,0.14); color: #92400e; }
+    .pill-accepted   { background: rgba(34,197,94,0.14);  color: #166534; }
+    .pill-closed     { background: rgba(31,42,34,0.06);   color: var(--muted); }
+    .pill-archived   { background: rgba(31,42,34,0.06);   color: var(--muted); }
+
+    details > summary { cursor: pointer; list-style: none; }
+    details > summary::-webkit-details-marker { display: none; }
+</style>
+
 <section class="module-screen">
     @if (is_array($selected_risk))
         <div class="surface-card" style="padding:16px; display:grid; gap:16px;">
@@ -9,8 +19,8 @@
                     <div class="table-note">{{ $selected_risk['category'] }}</div>
                 </div>
                 <div class="action-cluster">
-                    <a class="button button-ghost" href="{{ $risks_list_url }}">Back to risks</a>
-                    <span class="pill">{{ $selected_risk['state'] }}</span>
+                    @php $riskStatePill = match($selected_risk['state']) { 'assessing' => 'pill-assessing', 'accepted' => 'pill-accepted', 'closed' => 'pill-closed', 'archived' => 'pill-archived', default => '' }; @endphp
+                    <span class="pill {{ $riskStatePill }}">{{ $selected_risk['state'] }}</span>
                 </div>
             </div>
 
@@ -69,7 +79,7 @@
                         @forelse ($selected_risk['history'] as $history)
                             <div class="data-item">
                                 <div class="entity-title">{{ $history->transitionKey }}</div>
-                                <div class="table-note">{{ $history->fromState }} -> {{ $history->toState }}</div>
+                                <div class="table-note">{{ $history->fromState }} → {{ $history->toState }}</div>
                             </div>
                         @empty
                             <span class="muted-note">No transitions recorded yet</span>
@@ -115,77 +125,80 @@
 
                 @if ($can_manage_risks)
                     <div class="surface-card" style="padding:14px;">
-                        <div class="metric-label">Edit risk</div>
-                        <form class="upload-form" method="POST" action="{{ $selected_risk['update_route'] }}" style="margin-top:10px;">
-                            @csrf
-                            <input type="hidden" name="principal_id" value="{{ $query['principal_id'] }}">
-                            <input type="hidden" name="organization_id" value="{{ $query['organization_id'] }}">
-                            <input type="hidden" name="locale" value="{{ $query['locale'] }}">
-                            <input type="hidden" name="menu" value="plugin.risk-management.root">
-                            <input type="hidden" name="risk_id" value="{{ $selected_risk['id'] }}">
-                            <input type="hidden" name="membership_id" value="{{ $query['membership_ids'][0] ?? 'membership-org-a-hello' }}">
-                            <div class="overview-grid" style="grid-template-columns:repeat(2, minmax(0, 1fr));">
-                                <div class="field">
-                                    <label class="field-label">Title</label>
-                                    <input class="field-input" name="title" value="{{ $selected_risk['title'] }}" required>
+                        <hr style="border:none; border-top:1px solid rgba(31,42,34,0.07); margin:0;">
+                        <details>
+                            <summary class="button button-ghost" style="display:inline-flex; width:fit-content;">Edit risk details</summary>
+                            <form class="upload-form" method="POST" action="{{ $selected_risk['update_route'] }}" style="margin-top:14px;">
+                                @csrf
+                                <input type="hidden" name="principal_id" value="{{ $query['principal_id'] }}">
+                                <input type="hidden" name="organization_id" value="{{ $query['organization_id'] }}">
+                                <input type="hidden" name="locale" value="{{ $query['locale'] }}">
+                                <input type="hidden" name="menu" value="plugin.risk-management.root">
+                                <input type="hidden" name="risk_id" value="{{ $selected_risk['id'] }}">
+                                <input type="hidden" name="membership_id" value="{{ $query['membership_ids'][0] ?? 'membership-org-a-hello' }}">
+                                <div class="overview-grid" style="grid-template-columns:repeat(2, minmax(0, 1fr));">
+                                    <div class="field">
+                                        <label class="field-label">Title</label>
+                                        <input class="field-input" name="title" value="{{ $selected_risk['title'] }}" required>
+                                    </div>
+                                    <div class="field">
+                                        <label class="field-label">Category</label>
+                                        <input class="field-input" name="category" value="{{ $selected_risk['category'] }}" required>
+                                    </div>
+                                    <div class="field">
+                                        <label class="field-label">Inherent score</label>
+                                        <input class="field-input" name="inherent_score" type="number" min="0" max="100" value="{{ $selected_risk['inherent_score'] }}" required>
+                                    </div>
+                                    <div class="field">
+                                        <label class="field-label">Residual score</label>
+                                        <input class="field-input" name="residual_score" type="number" min="0" max="100" value="{{ $selected_risk['residual_score'] }}" required>
+                                    </div>
+                                    <div class="field">
+                                        <label class="field-label">Linked asset</label>
+                                        <select class="field-select" name="linked_asset_id">
+                                            <option value="">No linked asset</option>
+                                            @foreach ($asset_options as $asset)
+                                                <option value="{{ $asset['id'] }}" @selected($selected_risk['linked_asset_id'] === $asset['id'])>{{ $asset['label'] }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <div class="field">
+                                        <label class="field-label">Linked control</label>
+                                        <select class="field-select" name="linked_control_id">
+                                            <option value="">No linked control</option>
+                                            @foreach ($control_options as $control)
+                                                <option value="{{ $control['id'] }}" @selected($selected_risk['linked_control_id'] === $control['id'])>{{ $control['label'] }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <div class="field">
+                                        <label class="field-label">Scope</label>
+                                        <select class="field-select" name="scope_id">
+                                            <option value="">Organization-wide</option>
+                                            @foreach ($scope_options as $scope)
+                                                <option value="{{ $scope['id'] }}" @selected($selected_risk['scope_id'] === $scope['id'])>{{ $scope['name'] }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <div class="field">
+                                        <label class="field-label">Owner actor</label>
+                                        <select class="field-select" name="owner_actor_id">
+                                            <option value="">Keep current owner</option>
+                                            @foreach ($owner_actor_options as $actor)
+                                                <option value="{{ $actor['id'] }}" @selected(($selected_risk['owner_assignment']['id'] ?? null) === $actor['id'])>{{ $actor['label'] }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <div class="field" style="grid-column:1 / -1;">
+                                        <label class="field-label">Treatment summary</label>
+                                        <input class="field-input" name="treatment" value="{{ $selected_risk['treatment'] }}" required>
+                                    </div>
                                 </div>
-                                <div class="field">
-                                    <label class="field-label">Category</label>
-                                    <input class="field-input" name="category" value="{{ $selected_risk['category'] }}" required>
+                                <div class="action-cluster" style="margin-top:14px;">
+                                    <button class="button button-secondary" type="submit">Save changes</button>
                                 </div>
-                                <div class="field">
-                                    <label class="field-label">Inherent score</label>
-                                    <input class="field-input" name="inherent_score" type="number" min="0" max="100" value="{{ $selected_risk['inherent_score'] }}" required>
-                                </div>
-                                <div class="field">
-                                    <label class="field-label">Residual score</label>
-                                    <input class="field-input" name="residual_score" type="number" min="0" max="100" value="{{ $selected_risk['residual_score'] }}" required>
-                                </div>
-                                <div class="field">
-                                    <label class="field-label">Linked asset</label>
-                                    <select class="field-select" name="linked_asset_id">
-                                        <option value="">No linked asset</option>
-                                        @foreach ($asset_options as $asset)
-                                            <option value="{{ $asset['id'] }}" @selected($selected_risk['linked_asset_id'] === $asset['id'])>{{ $asset['label'] }}</option>
-                                        @endforeach
-                                    </select>
-                                </div>
-                                <div class="field">
-                                    <label class="field-label">Linked control</label>
-                                    <select class="field-select" name="linked_control_id">
-                                        <option value="">No linked control</option>
-                                        @foreach ($control_options as $control)
-                                            <option value="{{ $control['id'] }}" @selected($selected_risk['linked_control_id'] === $control['id'])>{{ $control['label'] }}</option>
-                                        @endforeach
-                                    </select>
-                                </div>
-                                <div class="field">
-                                    <label class="field-label">Scope</label>
-                                    <select class="field-select" name="scope_id">
-                                        <option value="">Organization-wide</option>
-                                        @foreach ($scope_options as $scope)
-                                            <option value="{{ $scope['id'] }}" @selected($selected_risk['scope_id'] === $scope['id'])>{{ $scope['name'] }}</option>
-                                        @endforeach
-                                    </select>
-                                </div>
-                                <div class="field">
-                                    <label class="field-label">Owner actor</label>
-                                    <select class="field-select" name="owner_actor_id">
-                                        <option value="">Keep current owner</option>
-                                        @foreach ($owner_actor_options as $actor)
-                                            <option value="{{ $actor['id'] }}" @selected(($selected_risk['owner_assignment']['id'] ?? null) === $actor['id'])>{{ $actor['label'] }}</option>
-                                        @endforeach
-                                    </select>
-                                </div>
-                                <div class="field" style="grid-column:1 / -1;">
-                                    <label class="field-label">Treatment summary</label>
-                                    <input class="field-input" name="treatment" value="{{ $selected_risk['treatment'] }}" required>
-                                </div>
-                            </div>
-                            <div class="action-cluster" style="margin-top:14px;">
-                                <button class="button button-secondary" type="submit">Save changes</button>
-                            </div>
-                        </form>
+                            </form>
+                        </details>
                     </div>
                 @endif
             </div>
@@ -309,8 +322,8 @@
                             </td>
                             <td>{{ $risk['category'] }}</td>
                             <td>
-                                <div><strong>Inherent:</strong> {{ $risk['inherent_score'] }}</div>
-                                <div><strong>Residual:</strong> {{ $risk['residual_score'] }}</div>
+                                <div><strong style="{{ $risk['inherent_score'] >= 70 ? 'color:#991b1b;' : ($risk['inherent_score'] >= 40 ? 'color:#92400e;' : 'color:#166534;') }}">Inherent:</strong> {{ $risk['inherent_score'] }}</div>
+                                <div><strong style="{{ $risk['residual_score'] >= 70 ? 'color:#991b1b;' : ($risk['residual_score'] >= 40 ? 'color:#92400e;' : 'color:#166534;') }}">Residual:</strong> {{ $risk['residual_score'] }}</div>
                             </td>
                             <td>
                                 @if ($risk['owner_assignment'] !== null)
@@ -334,9 +347,12 @@
                                     <span class="muted-note">{{ $risk['linked_control_id'] !== '' ? $risk['linked_control_id'] : 'No linked control' }}</span>
                                 @endif
                             </td>
-                            <td><span class="pill">{{ $risk['state'] }}</span></td>
                             <td>
-                                <a class="button button-secondary" href="{{ $risk['open_url'] }}">Edit details</a>
+                                @php $sRiskPill = match($risk['state']) { 'assessing' => 'pill-assessing', 'accepted' => 'pill-accepted', 'closed' => 'pill-closed', 'archived' => 'pill-archived', default => '' }; @endphp
+                                <span class="pill {{ $sRiskPill }}">{{ $risk['state'] }}</span>
+                            </td>
+                            <td>
+                                <a class="button button-secondary" href="{{ $risk['open_url'] }}&{{ http_build_query(['context_label' => 'Risks', 'context_back_url' => $risks_list_url]) }}">Open</a>
                             </td>
                         </tr>
                     @endforeach

@@ -402,6 +402,9 @@ $renderShell = function (
         'query' => $baseQuery,
     ];
 
+    $contextBackUrl = request()->query('context_back_url');
+    $contextLabel = request()->query('context_label');
+
     return response()->view('shell', [
         'locale' => $locale,
         'theme' => $theme,
@@ -438,6 +441,8 @@ $renderShell = function (
         'tenancyShellUrl' => isset($adminMenuMap['core.tenancy'])
             ? route('core.admin.index', [...$baseQuery, 'menu' => 'core.tenancy'])
             : null,
+        'contextBackUrl' => is_string($contextBackUrl) && $contextBackUrl !== '' ? $contextBackUrl : null,
+        'contextLabel' => is_string($contextLabel) && $contextLabel !== '' ? $contextLabel : null,
     ]);
 };
 

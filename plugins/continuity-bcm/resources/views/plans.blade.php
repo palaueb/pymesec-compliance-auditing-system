@@ -8,10 +8,7 @@
                     <div class="table-note">{{ $selected_plan['id'] }}</div>
                     <div class="table-note">{{ $selected_plan['service']['title'] }}</div>
                 </div>
-                <div class="action-cluster">
-                    <a class="button button-ghost" href="{{ $plans_list_url }}">Back to plans</a>
-                    <span class="pill">{{ $selected_plan['state'] }}</span>
-                </div>
+                <span class="pill">{{ $selected_plan['state'] }}</span>
             </div>
 
             <div class="overview-grid">
@@ -297,13 +294,14 @@
                             <td>{{ $plan['service']['title'] }}</td>
                             <td>{{ $plan['owner_assignment']['display_name'] ?? 'No owner assigned' }}</td>
                             <td>
-                                <div class="table-note">Policy: {{ $plan['linked_policy_id'] !== '' ? $plan['linked_policy_id'] : 'None' }}</div>
-                                <div class="table-note">Finding: {{ $plan['linked_finding_id'] !== '' ? $plan['linked_finding_id'] : 'None' }}</div>
+                                @if ($plan['linked_policy_id'] !== '') <span class="tag">Policy</span> @endif
+                                @if ($plan['linked_finding_id'] !== '') <span class="tag">Finding</span> @endif
+                                @if ($plan['linked_policy_id'] === '' && $plan['linked_finding_id'] === '') <span class="muted-note">—</span> @endif
                             </td>
                             <td>{{ $plan['test_due_on'] !== '' ? $plan['test_due_on'] : 'No test date' }}</td>
                             <td><span class="pill">{{ $plan['state'] }}</span></td>
                             <td>
-                                <a class="button button-secondary" href="{{ $plan['open_url'] }}">Open</a>
+                                <a class="button button-secondary" href="{{ $plan['open_url'] }}&{{ http_build_query(['context_label' => 'Recovery Plans', 'context_back_url' => $plans_list_url]) }}">Open</a>
                             </td>
                         </tr>
                     @endforeach

@@ -1,0 +1,42 @@
+{
+  "plugin.framework-nis2.framework.name": "NIS2 Directive (EU 2022/2555)",
+  "plugin.framework-nis2.framework.description": "EU Directive on measures for a high common level of cybersecurity across the Union. Applies to essential and important entities in critical sectors.",
+
+  "plugin.framework-nis2.elements.nis2-chapter-2.title": "Coordinated vulnerability disclosure and cybersecurity strategies",
+  "plugin.framework-nis2.elements.nis2-chapter-4.title": "Cybersecurity risk-management and reporting obligations",
+  "plugin.framework-nis2.elements.nis2-chapter-5.title": "Jurisdiction and registration",
+
+  "plugin.framework-nis2.elements.nis2-article-21.title": "Cybersecurity risk-management measures",
+  "plugin.framework-nis2.elements.nis2-article-21.description": "Essential and important entities shall take appropriate and proportionate technical, operational and organisational measures to manage the risks posed to the security of network and information systems.",
+
+  "plugin.framework-nis2.elements.nis2-21-a.title": "Policies on risk analysis and information system security",
+  "plugin.framework-nis2.elements.nis2-21-a.description": "Policies on risk analysis and information system security.",
+  "plugin.framework-nis2.elements.nis2-21-b.title": "Incident handling",
+  "plugin.framework-nis2.elements.nis2-21-b.description": "Incident handling including prevention, detection and response.",
+  "plugin.framework-nis2.elements.nis2-21-c.title": "Business continuity and crisis management",
+  "plugin.framework-nis2.elements.nis2-21-c.description": "Business continuity, such as backup management and disaster recovery, and crisis management.",
+  "plugin.framework-nis2.elements.nis2-21-d.title": "Supply chain security",
+  "plugin.framework-nis2.elements.nis2-21-d.description": "Supply chain security including security-related aspects concerning the relationships between each entity and its direct suppliers or service providers.",
+  "plugin.framework-nis2.elements.nis2-21-e.title": "Security in network and information systems acquisition",
+  "plugin.framework-nis2.elements.nis2-21-e.description": "Security in network and information systems acquisition, development and maintenance, including vulnerability handling and disclosure.",
+  "plugin.framework-nis2.elements.nis2-21-f.title": "Policies and procedures to assess effectiveness",
+  "plugin.framework-nis2.elements.nis2-21-f.description": "Policies and procedures to assess the effectiveness of cybersecurity risk-management measures.",
+  "plugin.framework-nis2.elements.nis2-21-g.title": "Basic cyber hygiene practices and training",
+  "plugin.framework-nis2.elements.nis2-21-g.description": "Basic cyber hygiene practices and cybersecurity training.",
+  "plugin.framework-nis2.elements.nis2-21-h.title": "Policies and procedures on cryptography",
+  "plugin.framework-nis2.elements.nis2-21-h.description": "Policies and procedures regarding the use of cryptography and, where appropriate, encryption.",
+  "plugin.framework-nis2.elements.nis2-21-i.title": "Human resources security and access control policies",
+  "plugin.framework-nis2.elements.nis2-21-i.description": "Human resources security, access control policies and asset management.",
+  "plugin.framework-nis2.elements.nis2-21-j.title": "Use of multi-factor authentication",
+  "plugin.framework-nis2.elements.nis2-21-j.description": "The use of multi-factor authentication or continuous authentication solutions, secured voice, video and text communications and secured emergency communication systems within the entity, where appropriate.",
+
+  "plugin.framework-nis2.elements.nis2-article-23.title": "Reporting obligations",
+  "plugin.framework-nis2.elements.nis2-article-23.description": "Essential and important entities shall notify, without undue delay, the CSIRT or, where applicable, the competent authority of any incident having a significant impact on the provision of their services.",
+
+  "plugin.framework-nis2.elements.nis2-23-1.title": "Early warning within 24 hours",
+  "plugin.framework-nis2.elements.nis2-23-1.description": "An early warning, without undue delay and in any event within 24 hours of becoming aware of the significant incident, indicating whether the significant incident is suspected of being caused by unlawful or malicious action.",
+  "plugin.framework-nis2.elements.nis2-23-2.title": "Incident notification within 72 hours",
+  "plugin.framework-nis2.elements.nis2-23-2.description": "An incident notification, without undue delay and in any event within 72 hours of becoming aware of the significant incident, updating the information referred to in point (a) and indicating an initial assessment of the significant incident, including its severity and impact.",
+  "plugin.framework-nis2.elements.nis2-23-3.title": "Final report within one month",
+  "plugin.framework-nis2.elements.nis2-23-3.description": "A final report, at the latest one month after the submission of the incident notification including: a detailed description of the incident, the type of threat or root cause, the applied and ongoing mitigation measures, and the cross-border impact of the incident."
+}

@@ -42,7 +42,7 @@
                             @else
                                 <div class="data-stack">
                                     @foreach ($row['assignments'] as $assignment)
-                                        <div class="data-item">{{ $assignment->assignmentType }} -> {{ $assignment->domainObjectType }}:{{ $assignment->domainObjectId }}</div>
+                                        <div class="data-item"><span class="tag">{{ $assignment->assignmentType }}</span> {{ $assignment->domainObjectType }}:{{ $assignment->domainObjectId }}</div>
                                     @endforeach
                                 </div>
                             @endif

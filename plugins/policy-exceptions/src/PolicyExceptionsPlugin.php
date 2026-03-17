@@ -298,6 +298,7 @@ class PolicyExceptionsPlugin implements PluginInterface
             'control_options' => $controlOptions,
             'finding_options' => $findingOptions,
             'policies_list_url' => route('core.shell.index', [...$baseQuery, 'menu' => 'plugin.policy-exceptions.root']),
+            'exceptions_list_url' => route('core.shell.index', [...$baseQuery, 'menu' => 'plugin.policy-exceptions.exceptions']),
         ];
     }
 

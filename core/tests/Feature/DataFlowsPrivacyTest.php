@@ -31,7 +31,7 @@ class DataFlowsPrivacyTest extends TestCase
             ->assertSee('Data Flows Register')
             ->assertSee('Customer support handoff')
             ->assertSee('Add data flow')
-            ->assertSee('Edit details');
+            ->assertSee('Open');
     }
 
     public function test_privacy_transitions_and_artifacts_render_on_the_shell(): void

@@ -73,7 +73,7 @@ Route::post('/plugins/policies', function (
         'scope_id' => $policy['scope_id'] !== '' ? $policy['scope_id'] : null,
         'locale' => $request->input('locale', 'en'),
         'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
-    ]));
+    ]))->with('status', 'Saved.');
 })->middleware('core.permission:plugin.policy-exceptions.policies.manage')->name('plugin.policy-exceptions.store');
 
 Route::post('/plugins/policies/{policyId}', function (
@@ -124,7 +124,7 @@ Route::post('/plugins/policies/{policyId}', function (
         'scope_id' => $policy['scope_id'] !== '' ? $policy['scope_id'] : null,
         'locale' => $request->input('locale', 'en'),
         'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
-    ]));
+    ]))->with('status', 'Saved.');
 })->middleware('core.permission:plugin.policy-exceptions.policies.manage')->name('plugin.policy-exceptions.update');
 
 Route::post('/plugins/policies/{policyId}/exceptions', function (
@@ -176,7 +176,7 @@ Route::post('/plugins/policies/{policyId}/exceptions', function (
         'scope_id' => $policy['scope_id'] !== '' ? $policy['scope_id'] : null,
         'locale' => $request->input('locale', 'en'),
         'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
-    ]));
+    ]))->with('status', 'Saved.');
 })->middleware('core.permission:plugin.policy-exceptions.policies.manage')->name('plugin.policy-exceptions.exceptions.store');
 
 Route::post('/plugins/policies/exceptions/{exceptionId}', function (
@@ -226,7 +226,7 @@ Route::post('/plugins/policies/exceptions/{exceptionId}', function (
         'scope_id' => $exception['scope_id'] !== '' ? $exception['scope_id'] : null,
         'locale' => $request->input('locale', 'en'),
         'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
-    ]));
+    ]))->with('status', 'Saved.');
 })->middleware('core.permission:plugin.policy-exceptions.policies.manage')->name('plugin.policy-exceptions.exceptions.update');
 
 Route::post('/plugins/policies/{policyId}/artifacts', function (
@@ -273,7 +273,7 @@ Route::post('/plugins/policies/{policyId}/artifacts', function (
         'organization_id' => $policy['organization_id'],
         'scope_id' => $policy['scope_id'] !== '' ? $policy['scope_id'] : null,
         'locale' => $request->input('locale', 'en'),
-    ]));
+    ]))->with('status', 'Saved.');
 })->middleware('core.permission:plugin.policy-exceptions.policies.manage')->name('plugin.policy-exceptions.artifacts.store');
 
 Route::post('/plugins/policies/exceptions/{exceptionId}/artifacts', function (
@@ -320,7 +320,7 @@ Route::post('/plugins/policies/exceptions/{exceptionId}/artifacts', function (
         'organization_id' => $exception['organization_id'],
         'scope_id' => $exception['scope_id'] !== '' ? $exception['scope_id'] : null,
         'locale' => $request->input('locale', 'en'),
-    ]));
+    ]))->with('status', 'Saved.');
 })->middleware('core.permission:plugin.policy-exceptions.policies.manage')->name('plugin.policy-exceptions.exceptions.artifacts.store');
 
 Route::post('/plugins/policies/{policyId}/transitions/{transitionKey}', function (
@@ -357,7 +357,7 @@ Route::post('/plugins/policies/{policyId}/transitions/{transitionKey}', function
         'organization_id' => $organizationId,
         'scope_id' => is_string($scopeId) && $scopeId !== '' ? $scopeId : null,
         'locale' => $request->input('locale', 'en'),
-    ]));
+    ]))->with('status', 'Saved.');
 })->middleware('core.permission:plugin.policy-exceptions.policies.manage')->name('plugin.policy-exceptions.transition');
 
 Route::post('/plugins/policies/exceptions/{exceptionId}/transitions/{transitionKey}', function (
@@ -394,5 +394,5 @@ Route::post('/plugins/policies/exceptions/{exceptionId}/transitions/{transitionK
         'organization_id' => $organizationId,
         'scope_id' => is_string($scopeId) && $scopeId !== '' ? $scopeId : null,
         'locale' => $request->input('locale', 'en'),
-    ]));
+    ]))->with('status', 'Saved.');
 })->middleware('core.permission:plugin.policy-exceptions.policies.manage')->name('plugin.policy-exceptions.exceptions.transition');

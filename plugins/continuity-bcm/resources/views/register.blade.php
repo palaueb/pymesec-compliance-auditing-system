@@ -1,3 +1,13 @@
+<style>
+    .pill-active  { background: rgba(34,197,94,0.14);  color: #166534; }
+    .pill-review  { background: rgba(245,158,11,0.14); color: #92400e; }
+    .pill-draft   { background: rgba(31,42,34,0.06);   color: var(--muted); }
+    .pill-archived{ background: rgba(31,42,34,0.06);   color: var(--muted); }
+
+    details > summary { cursor: pointer; list-style: none; }
+    details > summary::-webkit-details-marker { display: none; }
+</style>
+
 <section class="module-screen">
     @if (is_array($selected_service))
         <div class="surface-card" style="padding:16px; display:grid; gap:16px;">
@@ -9,8 +19,8 @@
                     <div class="table-note">{{ $selected_service['impact_tier'] }}</div>
                 </div>
                 <div class="action-cluster">
-                    <a class="button button-ghost" href="{{ $services_list_url }}">Back to services</a>
-                    <span class="pill">{{ $selected_service['state'] }}</span>
+                    @php $svcStatePill = match($selected_service['state']) { 'active' => 'pill-active', 'review' => 'pill-review', 'draft' => 'pill-draft', 'archived' => 'pill-archived', default => '' }; @endphp
+                    <span class="pill {{ $svcStatePill }}">{{ $selected_service['state'] }}</span>
                 </div>
             </div>
 
@@ -433,9 +443,12 @@
                                     @endforelse
                                 </div>
                             </td>
-                            <td><span class="pill">{{ $service['state'] }}</span></td>
                             <td>
-                                <a class="button button-secondary" href="{{ $service['open_url'] }}">Edit details</a>
+                                @php $sSvcPill = match($service['state']) { 'active' => 'pill-active', 'review' => 'pill-review', 'draft' => 'pill-draft', 'archived' => 'pill-archived', default => '' }; @endphp
+                                <span class="pill {{ $sSvcPill }}">{{ $service['state'] }}</span>
+                            </td>
+                            <td>
+                                <a class="button button-secondary" href="{{ $service['open_url'] }}&{{ http_build_query(['context_label' => 'Services', 'context_back_url' => $services_list_url]) }}">Open</a>
                             </td>
                         </tr>
                     @endforeach

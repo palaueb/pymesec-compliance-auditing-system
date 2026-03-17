@@ -16,12 +16,11 @@ class AssetCatalogTest extends TestCase
             ->assertSee('Asset Catalog')
             ->assertSee('ERP Production')
             ->assertSee('Add asset')
-            ->assertSee('Edit details');
+            ->assertSee('Open');
 
         $this->get('/app?menu=plugin.asset-catalog.root&asset_id=asset-erp-prod&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
             ->assertOk()
-            ->assertSee('Back to assets')
-            ->assertSee('Edit asset')
+            ->assertSee('Edit asset details')
             ->assertSee('Workflow');
     }
 

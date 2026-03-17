@@ -1,3 +1,13 @@
+<style>
+    .pill-active  { background: rgba(34,197,94,0.14);  color: #166534; }
+    .pill-review  { background: rgba(245,158,11,0.14); color: #92400e; }
+    .pill-draft   { background: rgba(31,42,34,0.06);   color: var(--muted); }
+    .pill-archived{ background: rgba(31,42,34,0.06);   color: var(--muted); }
+
+    details > summary { cursor: pointer; list-style: none; }
+    details > summary::-webkit-details-marker { display: none; }
+</style>
+
 <section class="module-screen">
     @if (is_array($selected_flow))
         <div class="surface-card" style="padding:16px; display:grid; gap:16px;">
@@ -6,11 +16,11 @@
                     <div class="eyebrow">Data flow</div>
                     <h2 class="screen-title" style="font-size:28px;">{{ $selected_flow['title'] }}</h2>
                     <div class="table-note">{{ $selected_flow['id'] }} · {{ $selected_flow['transfer_type'] }}</div>
-                    <div class="table-note">{{ $selected_flow['source'] }} -> {{ $selected_flow['destination'] }}</div>
+                    <div class="table-note">{{ $selected_flow['source'] }} → {{ $selected_flow['destination'] }}</div>
                 </div>
                 <div class="action-cluster">
-                    <a class="button button-ghost" href="{{ $data_flows_list_url }}">Back to data flows</a>
-                    <span class="pill">{{ $selected_flow['state'] }}</span>
+                    @php $flowStatePill = match($selected_flow['state']) { 'active' => 'pill-active', 'review' => 'pill-review', 'draft' => 'pill-draft', 'archived' => 'pill-archived', default => '' }; @endphp
+                    <span class="pill {{ $flowStatePill }}">{{ $selected_flow['state'] }}</span>
                 </div>
             </div>
 
@@ -68,7 +78,7 @@
                         @forelse ($selected_flow['history'] as $history)
                             <div class="data-item">
                                 <div class="entity-title">{{ $history->transitionKey }}</div>
-                                <div class="table-note">{{ $history->fromState }} -> {{ $history->toState }}</div>
+                                <div class="table-note">{{ $history->fromState }} → {{ $history->toState }}</div>
                             </div>
                         @empty
                             <span class="muted-note">No transitions recorded yet</span>
@@ -114,81 +124,83 @@
 
                 @if ($can_manage_privacy)
                     <div class="surface-card" style="padding:14px;">
-                        <div class="metric-label">Edit data flow</div>
-                        <form class="upload-form" method="POST" action="{{ $selected_flow['update_route'] }}" style="margin-top:10px;">
-                            @csrf
-                            <input type="hidden" name="principal_id" value="{{ $query['principal_id'] }}">
-                            <input type="hidden" name="organization_id" value="{{ $query['organization_id'] }}">
-                            <input type="hidden" name="locale" value="{{ $query['locale'] }}">
-                            <input type="hidden" name="menu" value="plugin.data-flows-privacy.root">
-                            <input type="hidden" name="flow_id" value="{{ $selected_flow['id'] }}">
-                            <input type="hidden" name="membership_id" value="{{ $query['membership_ids'][0] ?? 'membership-org-a-hello' }}">
-                            <div class="overview-grid" style="grid-template-columns:repeat(2, minmax(0, 1fr));">
-                                <div class="field">
-                                    <label class="field-label">Title</label>
-                                    <input class="field-input" name="title" value="{{ $selected_flow['title'] }}" required>
+                        <details>
+                            <summary class="button button-ghost" style="display:inline-flex; width:fit-content;">Edit data flow details</summary>
+                            <form class="upload-form" method="POST" action="{{ $selected_flow['update_route'] }}" style="margin-top:14px;">
+                                @csrf
+                                <input type="hidden" name="principal_id" value="{{ $query['principal_id'] }}">
+                                <input type="hidden" name="organization_id" value="{{ $query['organization_id'] }}">
+                                <input type="hidden" name="locale" value="{{ $query['locale'] }}">
+                                <input type="hidden" name="menu" value="plugin.data-flows-privacy.root">
+                                <input type="hidden" name="flow_id" value="{{ $selected_flow['id'] }}">
+                                <input type="hidden" name="membership_id" value="{{ $query['membership_ids'][0] ?? 'membership-org-a-hello' }}">
+                                <div class="overview-grid" style="grid-template-columns:repeat(2, minmax(0, 1fr));">
+                                    <div class="field">
+                                        <label class="field-label">Title</label>
+                                        <input class="field-input" name="title" value="{{ $selected_flow['title'] }}" required>
+                                    </div>
+                                    <div class="field">
+                                        <label class="field-label">Transfer type</label>
+                                        <input class="field-input" name="transfer_type" value="{{ $selected_flow['transfer_type'] }}" required>
+                                    </div>
+                                    <div class="field">
+                                        <label class="field-label">Source</label>
+                                        <input class="field-input" name="source" value="{{ $selected_flow['source'] }}" required>
+                                    </div>
+                                    <div class="field">
+                                        <label class="field-label">Destination</label>
+                                        <input class="field-input" name="destination" value="{{ $selected_flow['destination'] }}" required>
+                                    </div>
+                                    <div class="field">
+                                        <label class="field-label">Review due</label>
+                                        <input class="field-input" name="review_due_on" type="date" value="{{ $selected_flow['review_due_on'] }}">
+                                    </div>
+                                    <div class="field">
+                                        <label class="field-label">Scope</label>
+                                        <select class="field-select" name="scope_id">
+                                            <option value="">Organization-wide</option>
+                                            @foreach ($scope_options as $scope)
+                                                <option value="{{ $scope['id'] }}" @selected($selected_flow['scope_id'] === $scope['id'])>{{ $scope['name'] }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <div class="field">
+                                        <label class="field-label">Linked asset</label>
+                                        <select class="field-select" name="linked_asset_id">
+                                            <option value="">No linked asset</option>
+                                            @foreach ($asset_options as $asset)
+                                                <option value="{{ $asset['id'] }}" @selected($selected_flow['linked_asset_id'] === $asset['id'])>{{ $asset['label'] }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <div class="field">
+                                        <label class="field-label">Linked risk</label>
+                                        <select class="field-select" name="linked_risk_id">
+                                            <option value="">No linked risk</option>
+                                            @foreach ($risk_options as $risk)
+                                                <option value="{{ $risk['id'] }}" @selected($selected_flow['linked_risk_id'] === $risk['id'])>{{ $risk['label'] }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <div class="field">
+                                        <label class="field-label">Owner actor</label>
+                                        <select class="field-select" name="owner_actor_id">
+                                            <option value="">Keep current owner</option>
+                                            @foreach ($owner_actor_options as $actor)
+                                                <option value="{{ $actor['id'] }}" @selected(($selected_flow['owner_assignment']['id'] ?? null) === $actor['id'])>{{ $actor['label'] }}</option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <div class="field" style="grid-column:1 / -1;">
+                                        <label class="field-label">Data category summary</label>
+                                        <input class="field-input" name="data_category_summary" value="{{ $selected_flow['data_category_summary'] }}" required>
+                                    </div>
                                 </div>
-                                <div class="field">
-                                    <label class="field-label">Transfer type</label>
-                                    <input class="field-input" name="transfer_type" value="{{ $selected_flow['transfer_type'] }}" required>
+                                <div class="action-cluster" style="margin-top:14px;">
+                                    <button class="button button-secondary" type="submit">Save changes</button>
                                 </div>
-                                <div class="field">
-                                    <label class="field-label">Source</label>
-                                    <input class="field-input" name="source" value="{{ $selected_flow['source'] }}" required>
-                                </div>
-                                <div class="field">
-                                    <label class="field-label">Destination</label>
-                                    <input class="field-input" name="destination" value="{{ $selected_flow['destination'] }}" required>
-                                </div>
-                                <div class="field">
-                                    <label class="field-label">Review due</label>
-                                    <input class="field-input" name="review_due_on" type="date" value="{{ $selected_flow['review_due_on'] }}">
-                                </div>
-                                <div class="field">
-                                    <label class="field-label">Scope</label>
-                                    <select class="field-select" name="scope_id">
-                                        <option value="">Organization-wide</option>
-                                        @foreach ($scope_options as $scope)
-                                            <option value="{{ $scope['id'] }}" @selected($selected_flow['scope_id'] === $scope['id'])>{{ $scope['name'] }}</option>
-                                        @endforeach
-                                    </select>
-                                </div>
-                                <div class="field">
-                                    <label class="field-label">Linked asset</label>
-                                    <select class="field-select" name="linked_asset_id">
-                                        <option value="">No linked asset</option>
-                                        @foreach ($asset_options as $asset)
-                                            <option value="{{ $asset['id'] }}" @selected($selected_flow['linked_asset_id'] === $asset['id'])>{{ $asset['label'] }}</option>
-                                        @endforeach
-                                    </select>
-                                </div>
-                                <div class="field">
-                                    <label class="field-label">Linked risk</label>
-                                    <select class="field-select" name="linked_risk_id">
-                                        <option value="">No linked risk</option>
-                                        @foreach ($risk_options as $risk)
-                                            <option value="{{ $risk['id'] }}" @selected($selected_flow['linked_risk_id'] === $risk['id'])>{{ $risk['label'] }}</option>
-                                        @endforeach
-                                    </select>
-                                </div>
-                                <div class="field">
-                                    <label class="field-label">Owner actor</label>
-                                    <select class="field-select" name="owner_actor_id">
-                                        <option value="">Keep current owner</option>
-                                        @foreach ($owner_actor_options as $actor)
-                                            <option value="{{ $actor['id'] }}" @selected(($selected_flow['owner_assignment']['id'] ?? null) === $actor['id'])>{{ $actor['label'] }}</option>
-                                        @endforeach
-                                    </select>
-                                </div>
-                                <div class="field" style="grid-column:1 / -1;">
-                                    <label class="field-label">Data category summary</label>
-                                    <input class="field-input" name="data_category_summary" value="{{ $selected_flow['data_category_summary'] }}" required>
-                                </div>
-                            </div>
-                            <div class="action-cluster" style="margin-top:14px;">
-                                <button class="button button-secondary" type="submit">Save changes</button>
-                            </div>
-                        </form>
+                            </form>
+                        </details>
                     </div>
                 @endif
             </div>
@@ -341,9 +353,12 @@
                                 @endif
                             </td>
                             <td>{{ $flow['review_due_on'] !== '' ? $flow['review_due_on'] : 'No review date' }}</td>
-                            <td><span class="pill">{{ $flow['state'] }}</span></td>
                             <td>
-                                <a class="button button-secondary" href="{{ $flow['open_url'] }}">Edit details</a>
+                                @php $sFlowPill = match($flow['state']) { 'active' => 'pill-active', 'review' => 'pill-review', 'draft' => 'pill-draft', 'archived' => 'pill-archived', default => '' }; @endphp
+                                <span class="pill {{ $sFlowPill }}">{{ $flow['state'] }}</span>
+                            </td>
+                            <td>
+                                <a class="button button-secondary" href="{{ $flow['open_url'] }}&{{ http_build_query(['context_label' => 'Data Flows', 'context_back_url' => $data_flows_list_url]) }}">Open</a>
                             </td>
                         </tr>
                     @endforeach

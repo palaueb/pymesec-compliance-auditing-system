@@ -292,6 +292,18 @@ class PluginManifest
         ));
     }
 
+    /**
+     * Returns the fully-qualified seeder class declared in lifecycle.seeder, if any.
+     * Used by SystemBootstrapSeeder to run framework pack seeders without hard-coding
+     * plugin class names in core's composer.json autoload.
+     */
+    public function lifecycleSeeder(): ?string
+    {
+        $seeder = data_get($this->data, 'lifecycle.seeder');
+
+        return is_string($seeder) && trim($seeder) !== '' ? trim($seeder) : null;
+    }
+
     public function settingsMenuId(): ?string
     {
         $menuId = data_get($this->data, 'admin.settings_menu_id');

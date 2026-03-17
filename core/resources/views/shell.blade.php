@@ -616,6 +616,12 @@
             margin-bottom: 0;
         }
 
+        .context-breadcrumb {
+            padding: 0 0 12px;
+            border-bottom: 1px solid var(--border);
+            margin-bottom: 16px;
+        }
+
         .rail-list,
         .data-list {
             display: grid;
@@ -1177,6 +1183,11 @@
                     @endif
 
                     @if ($screen !== null)
+                        @if ($contextBackUrl !== null)
+                            <nav class="context-breadcrumb">
+                                <a class="button button-ghost" href="{{ $contextBackUrl }}">← {{ $contextLabel ?? 'Back' }}</a>
+                            </nav>
+                        @endif
                         <div class="screen-body">
                             {!! $screen->content !!}
                         </div>

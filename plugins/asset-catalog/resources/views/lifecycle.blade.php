@@ -1,26 +1,46 @@
+<style>
+    .pill-active    { background: rgba(34,197,94,0.14);  color: #166534; }
+    .pill-review    { background: rgba(245,158,11,0.14); color: #92400e; }
+    .pill-draft     { background: rgba(31,42,34,0.06);   color: var(--muted); }
+    .pill-retired   { background: rgba(31,42,34,0.06);   color: var(--muted); }
+    .pill-disposed  { background: rgba(239,68,68,0.08);  color: #991b1b; }
+</style>
+
 <section class="module-screen compact">
     <div class="workflow-stack">
-        @foreach ($rows as $row)
+        @forelse ($rows as $row)
             <article class="workflow-card">
                 <div class="workflow-header">
                     <div>
                         <div class="entity-title">{{ $row['asset']['name'] }}</div>
                         <div class="entity-id">{{ $row['asset']['id'] }}</div>
                     </div>
-                    <span class="pill">{{ $row['instance']->currentState }}</span>
+                    @php $lcPill = match($row['instance']->currentState) {
+                        'active'   => 'pill-active',
+                        'review'   => 'pill-review',
+                        'draft'    => 'pill-draft',
+                        'retired'  => 'pill-retired',
+                        'disposed' => 'pill-disposed',
+                        default    => '',
+                    }; @endphp
+                    <span class="pill {{ $lcPill }}">{{ $row['instance']->currentState }}</span>
                 </div>
 
                 <div class="workflow-history">
                     @forelse ($row['history'] as $history)
                         <div class="workflow-row">
-                            <span>{{ $history->transitionKey }}</span>
-                            <span>{{ $history->fromState }} -> {{ $history->toState }}</span>
+                            <span class="table-note">{{ $history->transitionKey }}</span>
+                            <span>{{ $history->fromState }} → {{ $history->toState }}</span>
                         </div>
                     @empty
                         <div class="muted-note">No transitions recorded yet.</div>
                     @endforelse
                 </div>
             </article>
-        @endforeach
+        @empty
+            <div class="surface-card">
+                <span class="muted-note">No assets with lifecycle activity yet.</span>
+            </div>
+        @endforelse
     </div>
 </section>

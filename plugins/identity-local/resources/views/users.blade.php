@@ -205,7 +205,7 @@
                             <td><div>{{ $row['user']['username'] }}</div><div>{{ $row['user']['email'] }}</div><div class="entity-id">{{ $row['user']['principal_id'] }}</div></td>
                             <td>@if ($row['memberships'] === [])<span class="muted-note">No workspace access yet</span>@else<div class="table-note">{{ count($row['memberships']) }} memberships</div>@endif</td>
                             <td>@if ($row['linked_actors'] === [])<span class="muted-note">No linked business owner</span>@else<div class="table-note">{{ count($row['linked_actors']) }} linked profiles</div>@endif</td>
-                            <td><a class="button button-secondary" href="{{ $row['open_url'] }}">Edit details</a></td>
+                            <td><a class="button button-secondary" href="{{ $row['open_url'] }}">Open</a></td>
                         </tr>
                     @endforeach
                 </tbody>

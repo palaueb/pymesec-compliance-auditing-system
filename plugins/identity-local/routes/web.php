@@ -404,5 +404,5 @@ Route::post('/plugins/identity/memberships/{membershipId}', function (
         'organization_id' => $validated['organization_id'],
         'locale' => $request->input('locale', 'en'),
         'membership_ids' => is_string($requesterMembershipId) && $requesterMembershipId !== '' ? [$requesterMembershipId] : null,
-    ]));
+    ]))->with('status', 'Access updated.');
 })->middleware('core.permission:plugin.identity-local.memberships.manage')->name('plugin.identity-local.memberships.update');

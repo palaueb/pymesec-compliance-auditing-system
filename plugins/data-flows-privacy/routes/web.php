@@ -75,7 +75,7 @@ Route::post('/plugins/privacy/data-flows', function (
         'scope_id' => $flow['scope_id'] !== '' ? $flow['scope_id'] : null,
         'locale' => $request->input('locale', 'en'),
         'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
-    ]));
+    ]))->with('status', 'Saved.');
 })->middleware('core.permission:plugin.data-flows-privacy.records.manage')->name('plugin.data-flows-privacy.store');
 
 Route::post('/plugins/privacy/data-flows/{flowId}', function (
@@ -128,7 +128,7 @@ Route::post('/plugins/privacy/data-flows/{flowId}', function (
         'scope_id' => $flow['scope_id'] !== '' ? $flow['scope_id'] : null,
         'locale' => $request->input('locale', 'en'),
         'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
-    ]));
+    ]))->with('status', 'Saved.');
 })->middleware('core.permission:plugin.data-flows-privacy.records.manage')->name('plugin.data-flows-privacy.update');
 
 Route::post('/plugins/privacy/data-flows/{flowId}/artifacts', function (
@@ -176,7 +176,7 @@ Route::post('/plugins/privacy/data-flows/{flowId}/artifacts', function (
         'organization_id' => $flow['organization_id'],
         'scope_id' => $flow['scope_id'] !== '' ? $flow['scope_id'] : null,
         'locale' => $request->input('locale', 'en'),
-    ]));
+    ]))->with('status', 'Saved.');
 })->middleware('core.permission:plugin.data-flows-privacy.records.manage')->name('plugin.data-flows-privacy.artifacts.store');
 
 Route::post('/plugins/privacy/data-flows/{flowId}/transitions/{transitionKey}', function (
@@ -219,7 +219,7 @@ Route::post('/plugins/privacy/data-flows/{flowId}/transitions/{transitionKey}', 
         'organization_id' => $organizationId,
         'scope_id' => is_string($scopeId) && $scopeId !== '' ? $scopeId : null,
         'locale' => $request->input('locale', 'en'),
-    ]));
+    ]))->with('status', 'Saved.');
 })->middleware('core.permission:plugin.data-flows-privacy.records.manage')->name('plugin.data-flows-privacy.transition');
 
 Route::post('/plugins/privacy/activities', function (
@@ -266,7 +266,7 @@ Route::post('/plugins/privacy/activities', function (
         'scope_id' => $activity['scope_id'] !== '' ? $activity['scope_id'] : null,
         'locale' => $request->input('locale', 'en'),
         'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
-    ]));
+    ]))->with('status', 'Saved.');
 })->middleware('core.permission:plugin.data-flows-privacy.records.manage')->name('plugin.data-flows-privacy.activities.store');
 
 Route::post('/plugins/privacy/activities/{activityId}', function (
@@ -319,7 +319,7 @@ Route::post('/plugins/privacy/activities/{activityId}', function (
         'scope_id' => $activity['scope_id'] !== '' ? $activity['scope_id'] : null,
         'locale' => $request->input('locale', 'en'),
         'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
-    ]));
+    ]))->with('status', 'Saved.');
 })->middleware('core.permission:plugin.data-flows-privacy.records.manage')->name('plugin.data-flows-privacy.activities.update');
 
 Route::post('/plugins/privacy/activities/{activityId}/artifacts', function (
@@ -367,7 +367,7 @@ Route::post('/plugins/privacy/activities/{activityId}/artifacts', function (
         'organization_id' => $activity['organization_id'],
         'scope_id' => $activity['scope_id'] !== '' ? $activity['scope_id'] : null,
         'locale' => $request->input('locale', 'en'),
-    ]));
+    ]))->with('status', 'Saved.');
 })->middleware('core.permission:plugin.data-flows-privacy.records.manage')->name('plugin.data-flows-privacy.activities.artifacts.store');
 
 Route::post('/plugins/privacy/activities/{activityId}/transitions/{transitionKey}', function (
@@ -410,5 +410,5 @@ Route::post('/plugins/privacy/activities/{activityId}/transitions/{transitionKey
         'organization_id' => $organizationId,
         'scope_id' => is_string($scopeId) && $scopeId !== '' ? $scopeId : null,
         'locale' => $request->input('locale', 'en'),
-    ]));
+    ]))->with('status', 'Saved.');
 })->middleware('core.permission:plugin.data-flows-privacy.records.manage')->name('plugin.data-flows-privacy.activities.transition');

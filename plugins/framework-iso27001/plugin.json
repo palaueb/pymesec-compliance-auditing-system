@@ -1,0 +1,38 @@
+{
+  "plugin": {
+    "id": "framework-iso27001",
+    "name": "ISO 27001:2022 Framework Pack",
+    "version": "2022.1.0",
+    "type": "framework-pack",
+    "description": "Compliance framework pack for ISO/IEC 27001:2022 — Information security management systems. Seeds the full Annex A catalog (93 controls across 4 themes) as global framework elements.",
+    "vendor": "pymesec",
+    "license": "AGPL-3.0-or-later"
+  },
+  "compatibility": {
+    "core": "^0.1.0",
+    "sdk": "^0.1.0"
+  },
+  "dependencies": [],
+  "permissions": [],
+  "routes": [],
+  "menus": [],
+  "migrations": [],
+  "translations": {
+    "default_locale": "en",
+    "supported_locales": [
+      "en"
+    ],
+    "path": "resources/lang"
+  },
+  "lifecycle": {
+    "seeder": "PymeSec\\Plugins\\FrameworkIso27001\\Iso27001FrameworkSeeder"
+  },
+  "runtime": {
+    "class": "PymeSec\\Plugins\\FrameworkIso27001\\FrameworkIso27001Plugin",
+    "autoload": {
+      "psr-4": {
+        "PymeSec\\Plugins\\FrameworkIso27001\\": "src"
+      }
+    }
+  }
+}

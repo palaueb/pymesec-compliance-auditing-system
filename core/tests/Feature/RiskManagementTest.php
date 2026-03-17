@@ -32,7 +32,7 @@ class RiskManagementTest extends TestCase
             ->assertSee('Privileged access drift')
             ->assertSee('Ava Mason')
             ->assertSee('Add risk')
-            ->assertSee('Edit details');
+            ->assertSee('Open');
 
         $this->get('/app?menu=plugin.risk-management.root&risk_id=risk-access-drift&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
             ->assertOk()
@@ -77,7 +77,7 @@ class RiskManagementTest extends TestCase
     {
         $this->get('/app?menu=plugin.risk-management.root&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-viewer')
             ->assertOk()
-            ->assertSee('Edit details')
+            ->assertSee('Open')
             ->assertDontSee('Start Assessment');
 
         $this->get('/app?menu=plugin.risk-management.root&risk_id=risk-access-drift&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-viewer')

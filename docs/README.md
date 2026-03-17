@@ -10,6 +10,6 @@ This repository skeleton is derived from these documents and should remain align
 
 Entry points:
 
-- `docs/prd/README.md`
-- `docs/adr/README.md`
-- `docs/specs/README.md`
+- [docs/prd/README.md](./prd/README.md)
+- [docs/adr/README.md](./adr/README.md)
+- [docs/specs/README.md](./specs/README.md)

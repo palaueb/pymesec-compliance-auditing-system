@@ -6,9 +6,13 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use PymeSec\Core\Menus\MenuLabelResolver;
 
 class ControlsCatalogRepository
 {
+    public function __construct(
+        private readonly MenuLabelResolver $translator,
+    ) {}
     /**
      * @return array<int, array<string, string>>
      */
@@ -28,16 +32,23 @@ class ControlsCatalogRepository
     }
 
     /**
+     * Returns all frameworks visible to the given organization:
+     *   - Global framework packs (organization_id IS NULL)
+     *   - Custom frameworks owned by this organization
+     *
      * @return array<int, array<string, string>>
      */
     public function frameworks(string $organizationId): array
     {
-        if (! $this->hasFrameworkCatalogTables()) {
+        if (! $this->hasFrameworkTables()) {
             return [];
         }
 
-        return DB::table('control_frameworks')
-            ->where('organization_id', $organizationId)
+        return DB::table('frameworks')
+            ->where(function ($q) use ($organizationId): void {
+                $q->whereNull('organization_id')
+                    ->orWhere('organization_id', $organizationId);
+            })
             ->orderBy('name')
             ->get()
             ->map(fn ($framework): array => $this->mapFramework($framework))
@@ -45,118 +56,130 @@ class ControlsCatalogRepository
     }
 
     /**
-     * @return array<string, string> | null
+     * @return array<string, string>|null
      */
     public function findFramework(string $organizationId, string $frameworkId): ?array
     {
-        if (! $this->hasFrameworkCatalogTables()) {
+        if (! $this->hasFrameworkTables()) {
             return null;
         }
 
-        $framework = DB::table('control_frameworks')
-            ->where('organization_id', $organizationId)
+        $framework = DB::table('frameworks')
             ->where('id', $frameworkId)
+            ->where(function ($q) use ($organizationId): void {
+                $q->whereNull('organization_id')
+                    ->orWhere('organization_id', $organizationId);
+            })
             ->first();
 
         return $framework !== null ? $this->mapFramework($framework) : null;
     }
 
     /**
+     * Returns framework elements (requirements/clauses/articles) visible to the org.
+     * Optionally filtered by framework.
+     *
      * @return array<int, array<string, string>>
      */
     public function requirements(string $organizationId, ?string $frameworkId = null): array
     {
-        if (! $this->hasFrameworkCatalogTables()) {
+        if (! $this->hasFrameworkTables()) {
             return [];
         }
 
-        $query = DB::table('control_requirements as requirements')
-            ->join('control_frameworks as frameworks', function ($join): void {
-                $join->on('frameworks.id', '=', 'requirements.framework_id')
-                    ->on('frameworks.organization_id', '=', 'requirements.organization_id');
+        $query = DB::table('framework_elements as elements')
+            ->join('frameworks', function ($join): void {
+                $join->on('frameworks.id', '=', 'elements.framework_id');
             })
-            ->where('requirements.organization_id', $organizationId)
+            ->where(function ($q) use ($organizationId): void {
+                $q->whereNull('frameworks.organization_id')
+                    ->orWhere('frameworks.organization_id', $organizationId);
+            })
             ->orderBy('frameworks.name')
-            ->orderBy('requirements.code');
+            ->orderBy('elements.sort_order');
 
         if (is_string($frameworkId) && $frameworkId !== '') {
-            $query->where('requirements.framework_id', $frameworkId);
+            $query->where('elements.framework_id', $frameworkId);
         }
 
         return $query->get([
-            'requirements.id',
-            'requirements.organization_id',
-            'requirements.framework_id',
-            'requirements.code',
-            'requirements.title',
-            'requirements.description',
+            'elements.id',
+            'elements.framework_id',
+            'elements.parent_id',
+            'elements.code',
+            'elements.title',
+            'elements.description',
+            'elements.element_type',
+            'elements.applicability_level',
             'frameworks.code as framework_code',
             'frameworks.name as framework_name',
-        ])->map(fn ($requirement): array => $this->mapRequirement($requirement))
+            'frameworks.organization_id as framework_organization_id',
+        ])->map(fn ($element): array => $this->mapRequirement($element))
             ->all();
     }
 
     /**
-     * @return array<string, string> | null
+     * @return array<string, string>|null
      */
     public function findRequirement(string $organizationId, string $requirementId): ?array
     {
-        if (! $this->hasFrameworkCatalogTables()) {
+        if (! $this->hasFrameworkTables()) {
             return null;
         }
 
-        $requirement = DB::table('control_requirements as requirements')
-            ->join('control_frameworks as frameworks', function ($join): void {
-                $join->on('frameworks.id', '=', 'requirements.framework_id')
-                    ->on('frameworks.organization_id', '=', 'requirements.organization_id');
+        $element = DB::table('framework_elements as elements')
+            ->join('frameworks', function ($join): void {
+                $join->on('frameworks.id', '=', 'elements.framework_id');
             })
-            ->where('requirements.organization_id', $organizationId)
-            ->where('requirements.id', $requirementId)
+            ->where('elements.id', $requirementId)
+            ->where(function ($q) use ($organizationId): void {
+                $q->whereNull('frameworks.organization_id')
+                    ->orWhere('frameworks.organization_id', $organizationId);
+            })
             ->first([
-                'requirements.id',
-                'requirements.organization_id',
-                'requirements.framework_id',
-                'requirements.code',
-                'requirements.title',
-                'requirements.description',
+                'elements.id',
+                'elements.framework_id',
+                'elements.parent_id',
+                'elements.code',
+                'elements.title',
+                'elements.description',
+                'elements.element_type',
+                'elements.applicability_level',
                 'frameworks.code as framework_code',
                 'frameworks.name as framework_name',
+                'frameworks.organization_id as framework_organization_id',
             ]);
 
-        return $requirement !== null ? $this->mapRequirement($requirement) : null;
+        return $element !== null ? $this->mapRequirement($element) : null;
     }
 
     /**
+     * Returns framework elements mapped to the given controls, grouped by control ID.
+     *
      * @param  array<int, string>  $controlIds
      * @return array<string, array<int, array<string, string>>>
      */
     public function requirementsForControls(array $controlIds): array
     {
-        if ($controlIds === [] || ! $this->hasFrameworkCatalogTables() || ! Schema::hasTable('control_requirement_mappings')) {
+        if ($controlIds === [] || ! $this->hasFrameworkTables() || ! Schema::hasTable('control_requirement_mappings')) {
             return [];
         }
 
         $grouped = [];
 
         $rows = DB::table('control_requirement_mappings as mappings')
-            ->join('control_requirements as requirements', function ($join): void {
-                $join->on('requirements.id', '=', 'mappings.requirement_id')
-                    ->on('requirements.organization_id', '=', 'mappings.organization_id');
-            })
-            ->join('control_frameworks as frameworks', function ($join): void {
-                $join->on('frameworks.id', '=', 'requirements.framework_id')
-                    ->on('frameworks.organization_id', '=', 'requirements.organization_id');
-            })
+            ->join('framework_elements as elements', 'elements.id', '=', 'mappings.framework_element_id')
+            ->join('frameworks', 'frameworks.id', '=', 'elements.framework_id')
             ->whereIn('mappings.control_id', $controlIds)
             ->orderBy('frameworks.name')
-            ->orderBy('requirements.code')
+            ->orderBy('elements.sort_order')
             ->get([
                 'mappings.control_id',
                 'mappings.coverage',
                 'mappings.notes',
-                'requirements.id as requirement_id',
-                'requirements.code as requirement_code',
-                'requirements.title as requirement_title',
+                'elements.id as element_id',
+                'elements.code as element_code',
+                'elements.title as element_title',
                 'frameworks.id as framework_id',
                 'frameworks.code as framework_code',
                 'frameworks.name as framework_name',
@@ -164,12 +187,12 @@ class ControlsCatalogRepository
 
         foreach ($rows as $row) {
             $grouped[(string) $row->control_id][] = [
-                'requirement_id' => (string) $row->requirement_id,
-                'requirement_code' => (string) $row->requirement_code,
-                'requirement_title' => (string) $row->requirement_title,
+                'requirement_id' => (string) $row->element_id,
+                'requirement_code' => (string) $row->element_code,
+                'requirement_title' => $this->translateIfKey((string) $row->element_title),
                 'framework_id' => (string) $row->framework_id,
                 'framework_code' => (string) $row->framework_code,
-                'framework_name' => (string) $row->framework_name,
+                'framework_name' => $this->translateIfKey((string) $row->framework_name),
                 'coverage' => (string) $row->coverage,
                 'notes' => is_string($row->notes) ? $row->notes : '',
             ];
@@ -179,7 +202,7 @@ class ControlsCatalogRepository
     }
 
     /**
-     * @return array<string, string> | null
+     * @return array<string, string>|null
      */
     public function find(string $controlId): ?array
     {
@@ -201,23 +224,19 @@ class ControlsCatalogRepository
             $data['framework'] ?? null,
         );
 
-        $payload = [
+        DB::table('controls')->insert([
             'id' => $id,
             'organization_id' => $data['organization_id'],
             'scope_id' => ($data['scope_id'] ?? null) ?: null,
+            'framework_id' => $frameworkId,
+            'framework_element_id' => null,
             'name' => $data['name'],
             'framework' => $frameworkLabel,
             'domain' => $data['domain'],
             'evidence' => $data['evidence'],
             'created_at' => now(),
             'updated_at' => now(),
-        ];
-
-        if ($this->controlsSupportFrameworkId()) {
-            $payload['framework_id'] = $frameworkId;
-        }
-
-        DB::table('controls')->insert($payload);
+        ]);
 
         /** @var array<string, string> $control */
         $control = $this->find($id);
@@ -227,7 +246,7 @@ class ControlsCatalogRepository
 
     /**
      * @param  array<string, string|null>  $data
-     * @return array<string, string> | null
+     * @return array<string, string>|null
      */
     public function update(string $controlId, array $data): ?array
     {
@@ -237,50 +256,45 @@ class ControlsCatalogRepository
             $data['framework'] ?? null,
         );
 
-        $payload = [
-            'scope_id' => ($data['scope_id'] ?? null) ?: null,
-            'name' => $data['name'],
-            'framework' => $frameworkLabel,
-            'domain' => $data['domain'],
-            'evidence' => $data['evidence'],
-            'updated_at' => now(),
-        ];
-
-        if ($this->controlsSupportFrameworkId()) {
-            $payload['framework_id'] = $frameworkId;
-        }
-
-        $updated = DB::table('controls')
+        DB::table('controls')
             ->where('id', $controlId)
-            ->update($payload);
-
-        if ($updated === 0) {
-            return $this->find($controlId);
-        }
+            ->update([
+                'scope_id' => ($data['scope_id'] ?? null) ?: null,
+                'framework_id' => $frameworkId,
+                'name' => $data['name'],
+                'framework' => $frameworkLabel,
+                'domain' => $data['domain'],
+                'evidence' => $data['evidence'],
+                'updated_at' => now(),
+            ]);
 
         return $this->find($controlId);
     }
 
     /**
+     * Creates a custom org-level framework (not a global pack).
+     *
      * @param  array<string, string|null>  $data
      * @return array<string, string>
      */
     public function createFramework(array $data): array
     {
-        $this->assertFrameworkCatalogAvailable();
+        $this->assertFrameworkTablesAvailable();
 
         $id = $this->nextScopedId(
-            table: 'control_frameworks',
+            table: 'frameworks',
             prefix: 'framework',
             seed: (string) ($data['code'] ?? $data['name'] ?? 'framework'),
         );
 
-        DB::table('control_frameworks')->insert([
+        DB::table('frameworks')->insert([
             'id' => $id,
             'organization_id' => $data['organization_id'],
             'code' => $data['code'],
             'name' => $data['name'],
+            'version' => null,
             'description' => ($data['description'] ?? null) ?: null,
+            'kind' => 'custom',
             'created_at' => now(),
             'updated_at' => now(),
         ]);
@@ -292,12 +306,14 @@ class ControlsCatalogRepository
     }
 
     /**
+     * Creates a framework element (requirement/clause) inside any framework visible to the org.
+     *
      * @param  array<string, string|null>  $data
      * @return array<string, string>
      */
     public function createRequirement(array $data): array
     {
-        $this->assertFrameworkCatalogAvailable();
+        $this->assertFrameworkTablesAvailable();
 
         $framework = $this->findFramework((string) $data['organization_id'], (string) $data['framework_id']);
 
@@ -308,18 +324,22 @@ class ControlsCatalogRepository
         }
 
         $id = $this->nextScopedId(
-            table: 'control_requirements',
+            table: 'framework_elements',
             prefix: 'requirement',
             seed: (string) ($data['code'] ?? $data['title'] ?? 'requirement'),
         );
 
-        DB::table('control_requirements')->insert([
+        DB::table('framework_elements')->insert([
             'id' => $id,
-            'organization_id' => $data['organization_id'],
             'framework_id' => $framework['id'],
+            'parent_id' => null,
             'code' => $data['code'],
             'title' => $data['title'],
             'description' => ($data['description'] ?? null) ?: null,
+            'element_type' => 'control',
+            'applicability_level' => null,
+            'sort_order' => 0,
+            'metadata' => null,
             'created_at' => now(),
             'updated_at' => now(),
         ]);
@@ -337,7 +357,7 @@ class ControlsCatalogRepository
         string $coverage = 'supports',
         ?string $notes = null,
     ): void {
-        $this->assertFrameworkCatalogAvailable();
+        $this->assertFrameworkTablesAvailable();
 
         $control = $this->find($controlId);
 
@@ -358,14 +378,14 @@ class ControlsCatalogRepository
         $existing = DB::table('control_requirement_mappings')
             ->where('organization_id', $organizationId)
             ->where('control_id', $controlId)
-            ->where('requirement_id', $requirementId)
+            ->where('framework_element_id', $requirementId)
             ->first();
 
         if ($existing !== null) {
             DB::table('control_requirement_mappings')
                 ->where('organization_id', $organizationId)
                 ->where('control_id', $controlId)
-                ->where('requirement_id', $requirementId)
+                ->where('framework_element_id', $requirementId)
                 ->update([
                     'coverage' => $coverage,
                     'notes' => $notes !== null && $notes !== '' ? $notes : null,
@@ -383,7 +403,7 @@ class ControlsCatalogRepository
             ),
             'organization_id' => $organizationId,
             'control_id' => $controlId,
-            'requirement_id' => $requirementId,
+            'framework_element_id' => $requirementId,
             'coverage' => $coverage,
             'notes' => $notes !== null && $notes !== '' ? $notes : null,
             'created_at' => now(),
@@ -420,7 +440,7 @@ class ControlsCatalogRepository
      */
     private function resolveFramework(string $organizationId, ?string $frameworkId, ?string $frameworkLabel): array
     {
-        if (! $this->hasFrameworkCatalogTables()) {
+        if (! $this->hasFrameworkTables()) {
             if (is_string($frameworkLabel) && $frameworkLabel !== '') {
                 return [null, $frameworkLabel];
             }
@@ -458,27 +478,29 @@ class ControlsCatalogRepository
     {
         return [
             'id' => (string) $framework->id,
-            'organization_id' => (string) $framework->organization_id,
+            'organization_id' => is_string($framework->organization_id) ? $framework->organization_id : '',
             'code' => (string) $framework->code,
-            'name' => (string) $framework->name,
-            'description' => is_string($framework->description) ? $framework->description : '',
+            'name' => $this->translateIfKey((string) $framework->name),
+            'description' => $this->translateIfKey(is_string($framework->description) ? $framework->description : ''),
         ];
     }
 
     /**
      * @return array<string, string>
      */
-    private function mapRequirement(object $requirement): array
+    private function mapRequirement(object $element): array
     {
         return [
-            'id' => (string) $requirement->id,
-            'organization_id' => (string) $requirement->organization_id,
-            'framework_id' => (string) $requirement->framework_id,
-            'framework_code' => (string) $requirement->framework_code,
-            'framework_name' => (string) $requirement->framework_name,
-            'code' => (string) $requirement->code,
-            'title' => (string) $requirement->title,
-            'description' => is_string($requirement->description) ? $requirement->description : '',
+            'id' => (string) $element->id,
+            // Backward-compatible: consumers expect organization_id; for global elements it is empty
+            'organization_id' => is_string($element->framework_organization_id) ? $element->framework_organization_id : '',
+            'framework_id' => (string) $element->framework_id,
+            'framework_code' => (string) $element->framework_code,
+            'framework_name' => $this->translateIfKey((string) $element->framework_name),
+            'code' => is_string($element->code) ? $element->code : '',
+            'title' => $this->translateIfKey((string) $element->title),
+            'description' => $this->translateIfKey(is_string($element->description) ? $element->description : ''),
+            'element_type' => (string) $element->element_type,
         ];
     }
 
@@ -491,7 +513,8 @@ class ControlsCatalogRepository
             'id' => (string) $control->id,
             'organization_id' => (string) $control->organization_id,
             'scope_id' => is_string($control->scope_id) ? $control->scope_id : '',
-            'framework_id' => property_exists($control, 'framework_id') && is_string($control->framework_id) ? $control->framework_id : '',
+            'framework_id' => is_string($control->framework_id) ? $control->framework_id : '',
+            'framework_element_id' => property_exists($control, 'framework_element_id') && is_string($control->framework_element_id) ? $control->framework_element_id : '',
             'name' => (string) $control->name,
             'framework' => (string) $control->framework,
             'domain' => (string) $control->domain,
@@ -499,19 +522,36 @@ class ControlsCatalogRepository
         ];
     }
 
-    private function hasFrameworkCatalogTables(): bool
+    /**
+     * Resolves a translation key of the form plugin.<plugin-id>.* using the plugin's lang file.
+     * Values that are not translation keys (custom org framework text) are returned unchanged.
+     */
+    private function translateIfKey(string $value): string
     {
-        return Schema::hasTable('control_frameworks') && Schema::hasTable('control_requirements');
+        if (! str_starts_with($value, 'plugin.')) {
+            return $value;
+        }
+
+        $parts = explode('.', $value, 3);
+
+        if (count($parts) < 2 || $parts[1] === '') {
+            return $value;
+        }
+
+        $pluginId = $parts[1];
+        $locale = app()->getLocale();
+
+        return $this->translator->label($pluginId, $value, $locale);
     }
 
-    private function controlsSupportFrameworkId(): bool
+    private function hasFrameworkTables(): bool
     {
-        return Schema::hasColumn('controls', 'framework_id');
+        return Schema::hasTable('frameworks') && Schema::hasTable('framework_elements');
     }
 
-    private function assertFrameworkCatalogAvailable(): void
+    private function assertFrameworkTablesAvailable(): void
     {
-        if ($this->hasFrameworkCatalogTables()) {
+        if ($this->hasFrameworkTables()) {
             return;
         }
 

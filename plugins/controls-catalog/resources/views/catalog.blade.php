@@ -1,3 +1,13 @@
+<style>
+    .pill-draft    { background: rgba(31,42,34,0.06);   color: var(--muted); }
+    .pill-review   { background: rgba(245,158,11,0.14); color: #92400e; }
+    .pill-approved { background: rgba(34,197,94,0.14);  color: #166534; }
+    .pill-archived { background: rgba(31,42,34,0.06);   color: var(--muted); }
+
+    details > summary { cursor: pointer; list-style: none; }
+    details > summary::-webkit-details-marker { display: none; }
+</style>
+
 @php
     $hasFrameworks = $framework_options !== [];
     $hasRequirements = $requirement_options !== [];
@@ -148,19 +158,24 @@
                 </div>
             </div>
 
-            <div class="data-stack" style="margin-bottom:14px;">
-                @forelse ($requirements as $requirement)
-                    <div class="data-item">
-                        <div class="entity-title">{{ $requirement['code'] }} · {{ $requirement['title'] }}</div>
-                        <div class="table-note">{{ $requirement['framework_name'] }}</div>
-                        @if ($requirement['description'] !== '')
-                            <div class="table-note">{{ $requirement['description'] }}</div>
-                        @endif
-                    </div>
-                @empty
-                    <span class="muted-note">No requirements yet.</span>
-                @endforelse
-            </div>
+            <details style="margin-bottom:14px;">
+                <summary class="button button-ghost" style="display:inline-flex; margin-bottom:10px;">
+                    Browse {{ count($requirements) }} requirements
+                </summary>
+                <div class="data-stack">
+                    @forelse ($requirements as $requirement)
+                        <div class="data-item">
+                            <div class="entity-title">{{ $requirement['code'] }} · {{ $requirement['title'] }}</div>
+                            <div class="table-note">{{ $requirement['framework_name'] }}</div>
+                            @if ($requirement['description'] !== '')
+                                <div class="table-note">{{ $requirement['description'] }}</div>
+                            @endif
+                        </div>
+                    @empty
+                        <span class="muted-note">No requirements yet.</span>
+                    @endforelse
+                </div>
+            </details>
 
             @if ($can_manage_controls)
                 <details>
@@ -215,7 +230,8 @@
                     <p class="screen-subtitle">{{ $selectedControl['framework'] }} · {{ $selectedControl['domain'] }} · {{ $selectedControl['id'] }}</p>
                 </div>
                 <div class="action-cluster">
-                    <span class="pill">{{ $selectedControl['state'] }}</span>
+                    @php $ctrlStatePill = match($selectedControl['state']) { 'draft' => 'pill-draft', 'review' => 'pill-review', 'approved' => 'pill-approved', 'archived' => 'pill-archived', default => '' }; @endphp
+                    <span class="pill {{ $ctrlStatePill }}">{{ $selectedControl['state'] }}</span>
                 </div>
             </div>
 
@@ -344,58 +360,60 @@
 
                 @if ($can_manage_controls)
                     <div class="surface-card" style="padding:16px;">
-                        <div class="field-label">Edit control</div>
-                        <form class="upload-form" method="POST" action="{{ $selectedControl['update_route'] }}" style="margin-top:12px;">
-                            @csrf
-                            <input type="hidden" name="principal_id" value="{{ $query['principal_id'] }}">
-                            <input type="hidden" name="organization_id" value="{{ $query['organization_id'] }}">
-                            <input type="hidden" name="locale" value="{{ $query['locale'] }}">
-                            <input type="hidden" name="menu" value="plugin.controls-catalog.root">
-                            <input type="hidden" name="control_id" value="{{ $selectedControl['id'] }}">
-                            <input type="hidden" name="membership_id" value="{{ $query['membership_ids'][0] ?? 'membership-org-a-hello' }}">
-                            <div class="field">
-                                <label class="field-label">Name</label>
-                                <input class="field-input" name="name" value="{{ $selectedControl['name'] }}" required>
-                            </div>
-                            <div class="field">
-                                <label class="field-label">Framework</label>
-                                <select class="field-select" name="framework_id" @if ($hasFrameworks) required @endif>
-                                    <option value="">{{ $hasFrameworks ? 'Select a framework' : 'Create a framework first' }}</option>
-                                    @foreach ($framework_options as $framework)
-                                        <option value="{{ $framework['id'] }}" @selected($selectedControl['framework_id'] === $framework['id'])>{{ $framework['label'] }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                            <div class="field">
-                                <label class="field-label">Domain</label>
-                                <input class="field-input" name="domain" value="{{ $selectedControl['domain'] }}" required>
-                            </div>
-                            <div class="field">
-                                <label class="field-label">Scope</label>
-                                <select class="field-select" name="scope_id">
-                                    <option value="">Organization-wide</option>
-                                    @foreach ($scope_options as $scope)
-                                        <option value="{{ $scope['id'] }}" @selected($selectedControl['scope_id'] === $scope['id'])>{{ $scope['name'] }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                            <div class="field">
-                                <label class="field-label">Evidence summary</label>
-                                <input class="field-input" name="evidence" value="{{ $selectedControl['evidence'] }}" required>
-                            </div>
-                            <div class="field">
-                                <label class="field-label">Owner actor</label>
-                                <select class="field-select" name="owner_actor_id">
-                                    <option value="">No owner</option>
-                                    @foreach ($owner_actor_options as $actor)
-                                        <option value="{{ $actor['id'] }}" @selected(($selectedControl['owner_assignment']['id'] ?? null) === $actor['id'])>{{ $actor['label'] }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                            <div class="action-cluster">
-                                <button class="button button-secondary" type="submit" @disabled(! $hasFrameworks)>Save changes</button>
-                            </div>
-                        </form>
+                        <details>
+                            <summary class="button button-ghost" style="display:inline-flex; width:fit-content;">Edit control details</summary>
+                            <form class="upload-form" method="POST" action="{{ $selectedControl['update_route'] }}" style="margin-top:14px;">
+                                @csrf
+                                <input type="hidden" name="principal_id" value="{{ $query['principal_id'] }}">
+                                <input type="hidden" name="organization_id" value="{{ $query['organization_id'] }}">
+                                <input type="hidden" name="locale" value="{{ $query['locale'] }}">
+                                <input type="hidden" name="menu" value="plugin.controls-catalog.root">
+                                <input type="hidden" name="control_id" value="{{ $selectedControl['id'] }}">
+                                <input type="hidden" name="membership_id" value="{{ $query['membership_ids'][0] ?? 'membership-org-a-hello' }}">
+                                <div class="field">
+                                    <label class="field-label">Name</label>
+                                    <input class="field-input" name="name" value="{{ $selectedControl['name'] }}" required>
+                                </div>
+                                <div class="field">
+                                    <label class="field-label">Framework</label>
+                                    <select class="field-select" name="framework_id" @if ($hasFrameworks) required @endif>
+                                        <option value="">{{ $hasFrameworks ? 'Select a framework' : 'Create a framework first' }}</option>
+                                        @foreach ($framework_options as $framework)
+                                            <option value="{{ $framework['id'] }}" @selected($selectedControl['framework_id'] === $framework['id'])>{{ $framework['label'] }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="field">
+                                    <label class="field-label">Domain</label>
+                                    <input class="field-input" name="domain" value="{{ $selectedControl['domain'] }}" required>
+                                </div>
+                                <div class="field">
+                                    <label class="field-label">Scope</label>
+                                    <select class="field-select" name="scope_id">
+                                        <option value="">Organization-wide</option>
+                                        @foreach ($scope_options as $scope)
+                                            <option value="{{ $scope['id'] }}" @selected($selectedControl['scope_id'] === $scope['id'])>{{ $scope['name'] }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="field">
+                                    <label class="field-label">Evidence summary</label>
+                                    <input class="field-input" name="evidence" value="{{ $selectedControl['evidence'] }}" required>
+                                </div>
+                                <div class="field">
+                                    <label class="field-label">Owner actor</label>
+                                    <select class="field-select" name="owner_actor_id">
+                                        <option value="">No owner</option>
+                                        @foreach ($owner_actor_options as $actor)
+                                            <option value="{{ $actor['id'] }}" @selected(($selectedControl['owner_assignment']['id'] ?? null) === $actor['id'])>{{ $actor['label'] }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="action-cluster">
+                                    <button class="button button-secondary" type="submit" @disabled(! $hasFrameworks)>Save changes</button>
+                                </div>
+                            </form>
+                        </details>
                     </div>
                 @endif
             </div>
@@ -432,10 +450,13 @@
                             @endif
                         </td>
                         <td>{{ $control['evidence'] }}</td>
-                        <td><span class="pill">{{ $control['state'] }}</span></td>
+                        <td>
+                            @php $sCtrlPill = match($control['state']) { 'draft' => 'pill-draft', 'review' => 'pill-review', 'approved' => 'pill-approved', 'archived' => 'pill-archived', default => '' }; @endphp
+                            <span class="pill {{ $sCtrlPill }}">{{ $control['state'] }}</span>
+                        </td>
                         <td>
                             <div class="action-cluster">
-                                <a class="button button-ghost" href="{{ $control['open_url'] }}">Edit details</a>
+                                <a class="button button-secondary" href="{{ $control['open_url'] }}&{{ http_build_query(['context_label' => 'Controls', 'context_back_url' => $controls_list_url]) }}">Open</a>
                             </div>
                         </td>
                     </tr>

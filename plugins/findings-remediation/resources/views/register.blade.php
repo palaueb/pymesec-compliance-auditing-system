@@ -1,3 +1,23 @@
+<style>
+    .pill-open        { background: rgba(239,68,68,0.12);  color: #991b1b; }
+    .pill-remediating { background: rgba(245,158,11,0.14); color: #92400e; }
+    .pill-closed      { background: rgba(31,42,34,0.06);   color: var(--muted); }
+    .pill-archived    { background: rgba(31,42,34,0.06);   color: var(--muted); }
+
+    .pill-critical    { background: rgba(239,68,68,0.18);  color: #7f1d1d; }
+    .pill-high        { background: rgba(239,68,68,0.12);  color: #991b1b; }
+    .pill-medium      { background: rgba(245,158,11,0.12); color: #92400e; }
+    .pill-low         { background: rgba(34,197,94,0.12);  color: #166534; }
+
+    .pill-planned     { background: rgba(31,42,34,0.06);   color: var(--muted); }
+    .pill-in-progress { background: rgba(245,158,11,0.12); color: #92400e; }
+    .pill-blocked     { background: rgba(239,68,68,0.12);  color: #991b1b; }
+    .pill-done        { background: rgba(34,197,94,0.12);  color: #166534; }
+
+    details > summary { cursor: pointer; list-style: none; }
+    details > summary::-webkit-details-marker { display: none; }
+</style>
+
 <section class="module-screen">
     @if (is_array($selected_finding))
         <div class="surface-card" style="padding:16px; display:grid; gap:16px;">
@@ -9,8 +29,12 @@
                     <div class="table-note">{{ ucfirst($selected_finding['severity']) }} severity</div>
                 </div>
                 <div class="action-cluster">
-                    <a class="button button-ghost" href="{{ $findings_list_url }}">Back to findings</a>
-                    <span class="pill">{{ $selected_finding['state'] }}</span>
+                    @php
+                        $findingStatePill = match($selected_finding['state']) { 'open' => 'pill-open', 'remediating' => 'pill-remediating', 'closed' => 'pill-closed', 'archived' => 'pill-archived', default => '' };
+                        $severityPill = match($selected_finding['severity']) { 'critical' => 'pill-critical', 'high' => 'pill-high', 'medium' => 'pill-medium', 'low' => 'pill-low', default => '' };
+                    @endphp
+                    <span class="pill {{ $findingStatePill }}">{{ $selected_finding['state'] }}</span>
+                    <span class="pill {{ $severityPill }}">{{ $selected_finding['severity'] }}</span>
                 </div>
             </div>
 
@@ -70,7 +94,7 @@
                         @forelse ($selected_finding['history'] as $history)
                             <div class="data-item">
                                 <div class="entity-title">{{ $history->transitionKey }}</div>
-                                <div class="table-note">{{ $history->fromState }} -> {{ $history->toState }}</div>
+                                <div class="table-note">{{ $history->fromState }} → {{ $history->toState }}</div>
                             </div>
                         @empty
                             <span class="muted-note">No transitions recorded yet</span>
@@ -176,7 +200,8 @@
                                             <div class="table-note">{{ $action['notes'] }}</div>
                                         @endif
                                     </div>
-                                    <span class="pill">{{ $action['status'] }}</span>
+                                    @php $actionPill = match($action['status']) { 'planned' => 'pill-planned', 'in-progress' => 'pill-in-progress', 'blocked' => 'pill-blocked', 'done' => 'pill-done', default => '' }; @endphp
+                                    <span class="pill {{ $actionPill }}">{{ $action['status'] }}</span>
                                 </div>
                                 @if ($can_manage_findings)
                                     <details style="margin-top:10px;">
@@ -243,77 +268,80 @@
 
             @if ($can_manage_findings)
                 <div class="surface-card" style="padding:14px;">
-                    <div class="metric-label">Edit finding</div>
-                    <form class="upload-form" method="POST" action="{{ $selected_finding['update_route'] }}" style="margin-top:10px;">
-                        @csrf
-                        <input type="hidden" name="principal_id" value="{{ $query['principal_id'] }}">
-                        <input type="hidden" name="organization_id" value="{{ $query['organization_id'] }}">
-                        <input type="hidden" name="locale" value="{{ $query['locale'] }}">
-                        <input type="hidden" name="menu" value="plugin.findings-remediation.root">
-                        <input type="hidden" name="finding_id" value="{{ $selected_finding['id'] }}">
-                        <input type="hidden" name="membership_id" value="{{ $query['membership_ids'][0] ?? 'membership-org-a-hello' }}">
-                        <div class="overview-grid" style="grid-template-columns:repeat(2, minmax(0, 1fr));">
-                            <div class="field">
-                                <label class="field-label">Title</label>
-                                <input class="field-input" name="title" value="{{ $selected_finding['title'] }}" required>
+                    <hr style="border:none; border-top:1px solid rgba(31,42,34,0.07); margin:0 0 14px;">
+                    <details>
+                        <summary class="button button-ghost" style="display:inline-flex; width:fit-content;">Edit finding details</summary>
+                        <form class="upload-form" method="POST" action="{{ $selected_finding['update_route'] }}" style="margin-top:14px;">
+                            @csrf
+                            <input type="hidden" name="principal_id" value="{{ $query['principal_id'] }}">
+                            <input type="hidden" name="organization_id" value="{{ $query['organization_id'] }}">
+                            <input type="hidden" name="locale" value="{{ $query['locale'] }}">
+                            <input type="hidden" name="menu" value="plugin.findings-remediation.root">
+                            <input type="hidden" name="finding_id" value="{{ $selected_finding['id'] }}">
+                            <input type="hidden" name="membership_id" value="{{ $query['membership_ids'][0] ?? 'membership-org-a-hello' }}">
+                            <div class="overview-grid" style="grid-template-columns:repeat(2, minmax(0, 1fr));">
+                                <div class="field">
+                                    <label class="field-label">Title</label>
+                                    <input class="field-input" name="title" value="{{ $selected_finding['title'] }}" required>
+                                </div>
+                                <div class="field">
+                                    <label class="field-label">Severity</label>
+                                    <select class="field-select" name="severity" required>
+                                        @foreach (['low', 'medium', 'high', 'critical'] as $severity)
+                                            <option value="{{ $severity }}" @selected($selected_finding['severity'] === $severity)>{{ ucfirst($severity) }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="field">
+                                    <label class="field-label">Linked control</label>
+                                    <select class="field-select" name="linked_control_id">
+                                        <option value="">No linked control</option>
+                                        @foreach ($control_options as $control)
+                                            <option value="{{ $control['id'] }}" @selected($selected_finding['linked_control_id'] === $control['id'])>{{ $control['label'] }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="field">
+                                    <label class="field-label">Linked risk</label>
+                                    <select class="field-select" name="linked_risk_id">
+                                        <option value="">No linked risk</option>
+                                        @foreach ($risk_options as $risk)
+                                            <option value="{{ $risk['id'] }}" @selected($selected_finding['linked_risk_id'] === $risk['id'])>{{ $risk['label'] }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="field">
+                                    <label class="field-label">Due date</label>
+                                    <input class="field-input" name="due_on" type="date" value="{{ $selected_finding['due_on'] }}">
+                                </div>
+                                <div class="field">
+                                    <label class="field-label">Scope</label>
+                                    <select class="field-select" name="scope_id">
+                                        <option value="">Organization-wide</option>
+                                        @foreach ($scope_options as $scope)
+                                            <option value="{{ $scope['id'] }}" @selected($selected_finding['scope_id'] === $scope['id'])>{{ $scope['name'] }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="field">
+                                    <label class="field-label">Owner actor</label>
+                                    <select class="field-select" name="owner_actor_id">
+                                        <option value="">Keep current owner</option>
+                                        @foreach ($owner_actor_options as $actor)
+                                            <option value="{{ $actor['id'] }}" @selected(($selected_finding['owner_assignment']['id'] ?? null) === $actor['id'])>{{ $actor['label'] }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="field" style="grid-column:1 / -1;">
+                                    <label class="field-label">Description</label>
+                                    <textarea class="field-input" name="description" rows="3" required>{{ $selected_finding['description'] }}</textarea>
+                                </div>
                             </div>
-                            <div class="field">
-                                <label class="field-label">Severity</label>
-                                <select class="field-select" name="severity" required>
-                                    @foreach (['low', 'medium', 'high', 'critical'] as $severity)
-                                        <option value="{{ $severity }}" @selected($selected_finding['severity'] === $severity)>{{ ucfirst($severity) }}</option>
-                                    @endforeach
-                                </select>
+                            <div class="action-cluster" style="margin-top:14px;">
+                                <button class="button button-secondary" type="submit">Save changes</button>
                             </div>
-                            <div class="field">
-                                <label class="field-label">Linked control</label>
-                                <select class="field-select" name="linked_control_id">
-                                    <option value="">No linked control</option>
-                                    @foreach ($control_options as $control)
-                                        <option value="{{ $control['id'] }}" @selected($selected_finding['linked_control_id'] === $control['id'])>{{ $control['label'] }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                            <div class="field">
-                                <label class="field-label">Linked risk</label>
-                                <select class="field-select" name="linked_risk_id">
-                                    <option value="">No linked risk</option>
-                                    @foreach ($risk_options as $risk)
-                                        <option value="{{ $risk['id'] }}" @selected($selected_finding['linked_risk_id'] === $risk['id'])>{{ $risk['label'] }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                            <div class="field">
-                                <label class="field-label">Due date</label>
-                                <input class="field-input" name="due_on" type="date" value="{{ $selected_finding['due_on'] }}">
-                            </div>
-                            <div class="field">
-                                <label class="field-label">Scope</label>
-                                <select class="field-select" name="scope_id">
-                                    <option value="">Organization-wide</option>
-                                    @foreach ($scope_options as $scope)
-                                        <option value="{{ $scope['id'] }}" @selected($selected_finding['scope_id'] === $scope['id'])>{{ $scope['name'] }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                            <div class="field">
-                                <label class="field-label">Owner actor</label>
-                                <select class="field-select" name="owner_actor_id">
-                                    <option value="">Keep current owner</option>
-                                    @foreach ($owner_actor_options as $actor)
-                                        <option value="{{ $actor['id'] }}" @selected(($selected_finding['owner_assignment']['id'] ?? null) === $actor['id'])>{{ $actor['label'] }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                            <div class="field" style="grid-column:1 / -1;">
-                                <label class="field-label">Description</label>
-                                <textarea class="field-input" name="description" rows="3" required>{{ $selected_finding['description'] }}</textarea>
-                            </div>
-                        </div>
-                        <div class="action-cluster" style="margin-top:14px;">
-                            <button class="button button-secondary" type="submit">Save changes</button>
-                        </div>
-                    </form>
+                        </form>
+                    </details>
                 </div>
             @endif
         </div>
@@ -436,7 +464,10 @@
                                 <div class="table-note">{{ $finding['description'] }}</div>
                                 <div class="table-note">{{ $finding['action_count'] }} remediation actions</div>
                             </td>
-                            <td><span class="pill">{{ $finding['severity'] }}</span></td>
+                            <td>
+                                @php $sSevPill = match($finding['severity']) { 'critical' => 'pill-critical', 'high' => 'pill-high', 'medium' => 'pill-medium', 'low' => 'pill-low', default => '' }; @endphp
+                                <span class="pill {{ $sSevPill }}">{{ $finding['severity'] }}</span>
+                            </td>
                             <td>
                                 @if ($finding['owner_assignment'] !== null)
                                     <div>{{ $finding['owner_assignment']['display_name'] }}</div>
@@ -460,9 +491,12 @@
                                 @endif
                             </td>
                             <td>{{ $finding['due_on'] !== '' ? $finding['due_on'] : 'No target date' }}</td>
-                            <td><span class="pill">{{ $finding['state'] }}</span></td>
                             <td>
-                                <a class="button button-secondary" href="{{ $finding['open_url'] }}">Edit details</a>
+                                @php $sFindPill = match($finding['state']) { 'open' => 'pill-open', 'remediating' => 'pill-remediating', 'closed' => 'pill-closed', 'archived' => 'pill-archived', default => '' }; @endphp
+                                <span class="pill {{ $sFindPill }}">{{ $finding['state'] }}</span>
+                            </td>
+                            <td>
+                                <a class="button button-secondary" href="{{ $finding['open_url'] }}&{{ http_build_query(['context_label' => 'Findings', 'context_back_url' => $findings_list_url]) }}">Open</a>
                             </td>
                         </tr>
                     @endforeach

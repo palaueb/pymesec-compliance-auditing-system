@@ -73,7 +73,7 @@ Route::post('/plugins/findings', function (
         'scope_id' => $finding['scope_id'] !== '' ? $finding['scope_id'] : null,
         'locale' => $request->input('locale', 'en'),
         'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
-    ]));
+    ]))->with('status', 'Saved.');
 })->middleware('core.permission:plugin.findings-remediation.findings.manage')->name('plugin.findings-remediation.store');
 
 Route::post('/plugins/findings/{findingId}', function (
@@ -124,7 +124,7 @@ Route::post('/plugins/findings/{findingId}', function (
         'scope_id' => $finding['scope_id'] !== '' ? $finding['scope_id'] : null,
         'locale' => $request->input('locale', 'en'),
         'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
-    ]));
+    ]))->with('status', 'Saved.');
 })->middleware('core.permission:plugin.findings-remediation.findings.manage')->name('plugin.findings-remediation.update');
 
 Route::post('/plugins/findings/{findingId}/actions', function (
@@ -175,7 +175,7 @@ Route::post('/plugins/findings/{findingId}/actions', function (
         'scope_id' => $finding['scope_id'] !== '' ? $finding['scope_id'] : null,
         'locale' => $request->input('locale', 'en'),
         'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
-    ]));
+    ]))->with('status', 'Saved.');
 })->middleware('core.permission:plugin.findings-remediation.findings.manage')->name('plugin.findings-remediation.actions.store');
 
 Route::post('/plugins/findings/actions/{actionId}', function (
@@ -224,7 +224,7 @@ Route::post('/plugins/findings/actions/{actionId}', function (
         'scope_id' => $finding['scope_id'] !== '' ? $finding['scope_id'] : null,
         'locale' => $request->input('locale', 'en'),
         'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
-    ]));
+    ]))->with('status', 'Saved.');
 })->middleware('core.permission:plugin.findings-remediation.findings.manage')->name('plugin.findings-remediation.actions.update');
 
 Route::post('/plugins/findings/{findingId}/artifacts', function (
@@ -272,7 +272,7 @@ Route::post('/plugins/findings/{findingId}/artifacts', function (
         'organization_id' => $finding['organization_id'],
         'scope_id' => $finding['scope_id'] !== '' ? $finding['scope_id'] : null,
         'locale' => $request->input('locale', 'en'),
-    ]));
+    ]))->with('status', 'Saved.');
 })->middleware('core.permission:plugin.findings-remediation.findings.manage')->name('plugin.findings-remediation.artifacts.store');
 
 Route::post('/plugins/findings/{findingId}/transitions/{transitionKey}', function (
@@ -315,5 +315,5 @@ Route::post('/plugins/findings/{findingId}/transitions/{transitionKey}', functio
         'organization_id' => $organizationId,
         'scope_id' => is_string($scopeId) && $scopeId !== '' ? $scopeId : null,
         'locale' => $request->input('locale', 'en'),
-    ]));
+    ]))->with('status', 'Saved.');
 })->middleware('core.permission:plugin.findings-remediation.findings.manage')->name('plugin.findings-remediation.transition');

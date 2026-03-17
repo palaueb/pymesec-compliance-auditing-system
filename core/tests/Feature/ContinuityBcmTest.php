@@ -38,7 +38,7 @@ class ContinuityBcmTest extends TestCase
             ->assertSee('Continuity Services')
             ->assertSee('Customer Support Operations')
             ->assertSee('Add continuity service')
-            ->assertSee('Edit details')
+            ->assertSee('Open')
             ->assertSee('Backup and Recovery Operations');
 
         $this->get('/app?menu=plugin.continuity-bcm.root&service_id=continuity-service-customer-support&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')

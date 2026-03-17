@@ -1,3 +1,13 @@
+<style>
+    .pill-active  { background: rgba(34,197,94,0.14);  color: #166534; }
+    .pill-review  { background: rgba(245,158,11,0.14); color: #92400e; }
+    .pill-draft   { background: rgba(31,42,34,0.06);   color: var(--muted); }
+    .pill-archived{ background: rgba(31,42,34,0.06);   color: var(--muted); }
+
+    details > summary { cursor: pointer; list-style: none; }
+    details > summary::-webkit-details-marker { display: none; }
+</style>
+
 <section class="module-screen">
     @if (is_array($selected_activity))
         <div class="surface-card" style="padding:16px; display:grid; gap:16px;">
@@ -9,8 +19,8 @@
                     <div class="table-note">{{ $selected_activity['purpose'] }}</div>
                 </div>
                 <div class="action-cluster">
-                    <a class="button button-ghost" href="{{ $activities_list_url }}">Back to activities</a>
-                    <span class="pill">{{ $selected_activity['state'] }}</span>
+                    @php $actStatePill = match($selected_activity['state']) { 'active' => 'pill-active', 'review' => 'pill-review', 'draft' => 'pill-draft', 'archived' => 'pill-archived', default => '' }; @endphp
+                    <span class="pill {{ $actStatePill }}">{{ $selected_activity['state'] }}</span>
                 </div>
             </div>
 
@@ -83,7 +93,7 @@
                         @forelse ($selected_activity['history'] as $history)
                             <div class="data-item">
                                 <div class="entity-title">{{ $history->transitionKey }}</div>
-                                <div class="table-note">{{ $history->fromState }} -> {{ $history->toState }}</div>
+                                <div class="table-note">{{ $history->fromState }} → {{ $history->toState }}</div>
                             </div>
                         @empty
                             <span class="muted-note">No transitions recorded yet</span>
@@ -129,8 +139,9 @@
 
                 @if ($can_manage_privacy)
                     <div class="surface-card" style="padding:14px;">
-                        <div class="metric-label">Edit processing activity</div>
-                        <form class="upload-form" method="POST" action="{{ $selected_activity['update_route'] }}" style="margin-top:10px;">
+                        <details>
+                        <summary class="button button-ghost" style="display:inline-flex; width:fit-content;">Edit activity details</summary>
+                        <form class="upload-form" method="POST" action="{{ $selected_activity['update_route'] }}" style="margin-top:14px;">
                             @csrf
                             <input type="hidden" name="principal_id" value="{{ $query['principal_id'] }}">
                             <input type="hidden" name="organization_id" value="{{ $query['organization_id'] }}">
@@ -214,6 +225,7 @@
                                 <button class="button button-secondary" type="submit">Save changes</button>
                             </div>
                         </form>
+                        </details>
                     </div>
                 @endif
             </div>
@@ -387,9 +399,12 @@
                                 @endif
                             </td>
                             <td>{{ $activity['review_due_on'] !== '' ? $activity['review_due_on'] : 'No review date' }}</td>
-                            <td><span class="pill">{{ $activity['state'] }}</span></td>
                             <td>
-                                <a class="button button-secondary" href="{{ $activity['open_url'] }}">Edit details</a>
+                                @php $sActPill = match($activity['state']) { 'active' => 'pill-active', 'review' => 'pill-review', 'draft' => 'pill-draft', 'archived' => 'pill-archived', default => '' }; @endphp
+                                <span class="pill {{ $sActPill }}">{{ $activity['state'] }}</span>
+                            </td>
+                            <td>
+                                <a class="button button-secondary" href="{{ $activity['open_url'] }}&{{ http_build_query(['context_label' => 'Activities', 'context_back_url' => $activities_list_url]) }}">Open</a>
                             </td>
                         </tr>
                     @endforeach

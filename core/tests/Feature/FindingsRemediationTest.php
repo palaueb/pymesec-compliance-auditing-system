@@ -32,7 +32,7 @@ class FindingsRemediationTest extends TestCase
             ->assertSee('Access review evidence gap')
             ->assertSee('1 remediation actions')
             ->assertSee('Add finding')
-            ->assertSee('Edit details');
+            ->assertSee('Open');
     }
 
     public function test_findings_can_be_created_edited_and_linked_to_remediation_actions(): void

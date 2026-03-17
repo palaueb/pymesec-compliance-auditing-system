@@ -23,7 +23,7 @@ class ControlsCatalogPlugin implements PluginInterface
 {
     public function register(PluginContext $context): void
     {
-        $context->app()->singleton(ControlsCatalogRepository::class, fn () => new ControlsCatalogRepository());
+        $context->app()->singleton(ControlsCatalogRepository::class);
 
         $context->app()->make(WorkflowRegistryInterface::class)->register(new WorkflowDefinition(
             key: 'plugin.controls-catalog.control-lifecycle',
@@ -261,10 +261,13 @@ class ControlsCatalogPlugin implements PluginInterface
                 'id' => $framework['id'],
                 'label' => sprintf('%s · %s', $framework['code'], $framework['name']),
             ], $frameworks),
-            'requirement_options' => array_map(static fn (array $requirement): array => [
-                'id' => $requirement['id'],
-                'label' => sprintf('%s · %s', $requirement['code'], $requirement['title']),
-            ], $requirements),
+            'requirement_options' => array_values(array_map(
+                static fn (array $requirement): array => [
+                    'id' => $requirement['id'],
+                    'label' => sprintf('%s · %s · %s', $requirement['framework_code'], $requirement['code'], $requirement['title']),
+                ],
+                array_filter($requirements, static fn (array $req): bool => ($req['element_type'] ?? '') !== 'domain'),
+            )),
             'scope_options' => array_map(static fn ($scope): array => $scope->toArray(), $scopeContext->scopes),
             'controls_list_url' => route('core.shell.index', [...$listQuery, 'menu' => 'plugin.controls-catalog.root']),
         ];

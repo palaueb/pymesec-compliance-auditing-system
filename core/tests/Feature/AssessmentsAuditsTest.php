@@ -34,8 +34,8 @@ class AssessmentsAuditsTest extends TestCase
             ->assertSee('Quarterly Access Review')
             ->assertSee('Access rights')
             ->assertSee('Access review evidence gap')
-            ->assertSee('Record review')
-            ->assertSee('Create assessment');
+            ->assertSee('Update review')
+            ->assertSee('Edit assessment details');
     }
 
     public function test_assessments_can_be_created_and_edited_from_the_shell_runtime(): void

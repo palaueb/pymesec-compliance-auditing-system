@@ -1,0 +1,38 @@
+{
+  "plugin": {
+    "id": "framework-nis2",
+    "name": "NIS2 Framework Pack",
+    "version": "2022.1.0",
+    "type": "framework-pack",
+    "description": "Compliance framework pack for the NIS2 Directive (EU 2022/2555) — Network and Information Security. Seeds the key articles and obligations for essential and important entities.",
+    "vendor": "pymesec",
+    "license": "AGPL-3.0-or-later"
+  },
+  "compatibility": {
+    "core": "^0.1.0",
+    "sdk": "^0.1.0"
+  },
+  "dependencies": [],
+  "permissions": [],
+  "routes": [],
+  "menus": [],
+  "migrations": [],
+  "translations": {
+    "default_locale": "en",
+    "supported_locales": [
+      "en"
+    ],
+    "path": "resources/lang"
+  },
+  "lifecycle": {
+    "seeder": "PymeSec\\Plugins\\FrameworkNis2\\Nis2FrameworkSeeder"
+  },
+  "runtime": {
+    "class": "PymeSec\\Plugins\\FrameworkNis2\\FrameworkNis2Plugin",
+    "autoload": {
+      "psr-4": {
+        "PymeSec\\Plugins\\FrameworkNis2\\": "src"
+      }
+    }
+  }
+}

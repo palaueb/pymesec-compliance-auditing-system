@@ -1,3 +1,13 @@
+<style>
+    .pill-approved  { background: rgba(34,197,94,0.14);  color: #166534; }
+    .pill-requested { background: rgba(245,158,11,0.14); color: #92400e; }
+    .pill-expired   { background: rgba(31,42,34,0.06);   color: var(--muted); }
+    .pill-revoked   { background: rgba(239,68,68,0.12);  color: #991b1b; }
+
+    details > summary { cursor: pointer; list-style: none; }
+    details > summary::-webkit-details-marker { display: none; }
+</style>
+
 <section class="module-screen">
     @if (is_array($selected_exception))
         <div class="surface-card" style="padding:16px; display:grid; gap:16px;">
@@ -9,8 +19,8 @@
                     <div class="table-note">{{ $selected_exception['policy']['title'] }}</div>
                 </div>
                 <div class="action-cluster">
-                    <a class="button button-ghost" href="{{ $exceptions_list_url }}">Back to exceptions</a>
-                    <span class="pill">{{ $selected_exception['state'] }}</span>
+                    @php $excStatePill = match($selected_exception['state']) { 'approved' => 'pill-approved', 'requested' => 'pill-requested', 'expired' => 'pill-expired', 'revoked' => 'pill-revoked', default => '' }; @endphp
+                    <span class="pill {{ $excStatePill }}">{{ $selected_exception['state'] }}</span>
                 </div>
             </div>
 
@@ -62,7 +72,7 @@
                         @forelse ($selected_exception['history'] as $history)
                             <div class="data-item">
                                 <div class="entity-title">{{ $history->transitionKey }}</div>
-                                <div class="table-note">{{ $history->fromState }} -> {{ $history->toState }}</div>
+                                <div class="table-note">{{ $history->fromState }} → {{ $history->toState }}</div>
                             </div>
                         @empty
                             <span class="muted-note">No transitions recorded yet</span>
@@ -108,62 +118,64 @@
 
                 @if ($can_manage_policies)
                     <div class="surface-card" style="padding:14px;">
-                        <div class="metric-label">Edit exception</div>
-                        <form class="upload-form" method="POST" action="{{ $selected_exception['update_route'] }}" style="margin-top:10px;">
-                            @csrf
-                            <input type="hidden" name="principal_id" value="{{ $query['principal_id'] }}">
-                            <input type="hidden" name="organization_id" value="{{ $query['organization_id'] }}">
-                            <input type="hidden" name="locale" value="{{ $query['locale'] }}">
-                            <input type="hidden" name="menu" value="plugin.policy-exceptions.exceptions">
-                            <input type="hidden" name="exception_id" value="{{ $selected_exception['id'] }}">
-                            <input type="hidden" name="membership_id" value="{{ $query['membership_ids'][0] ?? 'membership-org-a-hello' }}">
-                            <div class="field">
-                                <label class="field-label">Title</label>
-                                <input class="field-input" name="title" value="{{ $selected_exception['title'] }}" required>
-                            </div>
-                            <div class="field">
-                                <label class="field-label">Linked finding</label>
-                                <select class="field-select" name="linked_finding_id">
-                                    <option value="">No linked finding</option>
-                                    @foreach ($finding_options as $finding)
-                                        <option value="{{ $finding['id'] }}" @selected($selected_exception['linked_finding_id'] === $finding['id'])>{{ $finding['label'] }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                            <div class="field">
-                                <label class="field-label">Expires on</label>
-                                <input class="field-input" name="expires_on" type="date" value="{{ $selected_exception['expires_on'] }}">
-                            </div>
-                            <div class="field">
-                                <label class="field-label">Scope</label>
-                                <select class="field-select" name="scope_id">
-                                    <option value="">Organization-wide</option>
-                                    @foreach ($scope_options as $scope)
-                                        <option value="{{ $scope['id'] }}" @selected($selected_exception['scope_id'] === $scope['id'])>{{ $scope['name'] }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                            <div class="field">
-                                <label class="field-label">Owner actor</label>
-                                <select class="field-select" name="owner_actor_id">
-                                    <option value="">Keep current owner</option>
-                                    @foreach ($owner_actor_options as $actor)
-                                        <option value="{{ $actor['id'] }}" @selected(($selected_exception['owner_assignment']['id'] ?? null) === $actor['id'])>{{ $actor['label'] }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                            <div class="field">
-                                <label class="field-label">Rationale</label>
-                                <textarea class="field-input" name="rationale" rows="2" required>{{ $selected_exception['rationale'] }}</textarea>
-                            </div>
-                            <div class="field">
-                                <label class="field-label">Compensating control</label>
-                                <textarea class="field-input" name="compensating_control" rows="2">{{ $selected_exception['compensating_control'] }}</textarea>
-                            </div>
-                            <div class="action-cluster">
-                                <button class="button button-secondary" type="submit">Save exception</button>
-                            </div>
-                        </form>
+                        <details>
+                            <summary class="button button-ghost" style="display:inline-flex; width:fit-content;">Edit exception details</summary>
+                            <form class="upload-form" method="POST" action="{{ $selected_exception['update_route'] }}" style="margin-top:14px;">
+                                @csrf
+                                <input type="hidden" name="principal_id" value="{{ $query['principal_id'] }}">
+                                <input type="hidden" name="organization_id" value="{{ $query['organization_id'] }}">
+                                <input type="hidden" name="locale" value="{{ $query['locale'] }}">
+                                <input type="hidden" name="menu" value="plugin.policy-exceptions.exceptions">
+                                <input type="hidden" name="exception_id" value="{{ $selected_exception['id'] }}">
+                                <input type="hidden" name="membership_id" value="{{ $query['membership_ids'][0] ?? 'membership-org-a-hello' }}">
+                                <div class="field">
+                                    <label class="field-label">Title</label>
+                                    <input class="field-input" name="title" value="{{ $selected_exception['title'] }}" required>
+                                </div>
+                                <div class="field">
+                                    <label class="field-label">Linked finding</label>
+                                    <select class="field-select" name="linked_finding_id">
+                                        <option value="">No linked finding</option>
+                                        @foreach ($finding_options as $finding)
+                                            <option value="{{ $finding['id'] }}" @selected($selected_exception['linked_finding_id'] === $finding['id'])>{{ $finding['label'] }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="field">
+                                    <label class="field-label">Expires on</label>
+                                    <input class="field-input" name="expires_on" type="date" value="{{ $selected_exception['expires_on'] }}">
+                                </div>
+                                <div class="field">
+                                    <label class="field-label">Scope</label>
+                                    <select class="field-select" name="scope_id">
+                                        <option value="">Organization-wide</option>
+                                        @foreach ($scope_options as $scope)
+                                            <option value="{{ $scope['id'] }}" @selected($selected_exception['scope_id'] === $scope['id'])>{{ $scope['name'] }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="field">
+                                    <label class="field-label">Owner actor</label>
+                                    <select class="field-select" name="owner_actor_id">
+                                        <option value="">Keep current owner</option>
+                                        @foreach ($owner_actor_options as $actor)
+                                            <option value="{{ $actor['id'] }}" @selected(($selected_exception['owner_assignment']['id'] ?? null) === $actor['id'])>{{ $actor['label'] }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="field">
+                                    <label class="field-label">Rationale</label>
+                                    <textarea class="field-input" name="rationale" rows="2" required>{{ $selected_exception['rationale'] }}</textarea>
+                                </div>
+                                <div class="field">
+                                    <label class="field-label">Compensating control</label>
+                                    <textarea class="field-input" name="compensating_control" rows="2">{{ $selected_exception['compensating_control'] }}</textarea>
+                                </div>
+                                <div class="action-cluster">
+                                    <button class="button button-secondary" type="submit">Save exception</button>
+                                </div>
+                            </form>
+                        </details>
                     </div>
                 @endif
             </div>
@@ -222,9 +234,12 @@
                                 @endif
                             </td>
                             <td>{{ $exception['expires_on'] !== '' ? $exception['expires_on'] : 'No expiry set' }}</td>
-                            <td><span class="pill">{{ $exception['state'] }}</span></td>
                             <td>
-                                <a class="button button-secondary" href="{{ $exception['open_url'] }}">Edit details</a>
+                                @php $sExcPill = match($exception['state']) { 'approved' => 'pill-approved', 'requested' => 'pill-requested', 'expired' => 'pill-expired', 'revoked' => 'pill-revoked', default => '' }; @endphp
+                                <span class="pill {{ $sExcPill }}">{{ $exception['state'] }}</span>
+                            </td>
+                            <td>
+                                <a class="button button-secondary" href="{{ $exception['open_url'] }}&{{ http_build_query(['context_label' => 'Exceptions', 'context_back_url' => $exceptions_list_url]) }}">Open</a>
                             </td>
                         </tr>
                     @endforeach

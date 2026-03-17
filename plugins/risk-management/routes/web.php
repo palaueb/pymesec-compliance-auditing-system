@@ -74,7 +74,7 @@ Route::post('/plugins/risks', function (
         'scope_id' => $risk['scope_id'] !== '' ? $risk['scope_id'] : null,
         'locale' => $request->input('locale', 'en'),
         'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
-    ]));
+    ]))->with('status', 'Saved.');
 })->middleware('core.permission:plugin.risk-management.risks.manage')->name('plugin.risk-management.store');
 
 Route::post('/plugins/risks/{riskId}', function (
@@ -126,7 +126,7 @@ Route::post('/plugins/risks/{riskId}', function (
         'scope_id' => $risk['scope_id'] !== '' ? $risk['scope_id'] : null,
         'locale' => $request->input('locale', 'en'),
         'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
-    ]));
+    ]))->with('status', 'Saved.');
 })->middleware('core.permission:plugin.risk-management.risks.manage')->name('plugin.risk-management.update');
 
 Route::post('/plugins/risks/{riskId}/artifacts', function (
@@ -175,7 +175,7 @@ Route::post('/plugins/risks/{riskId}/artifacts', function (
         'scope_id' => $risk['scope_id'] ?? null,
         'locale' => $request->input('locale', 'en'),
         'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
-    ]));
+    ]))->with('status', 'Saved.');
 })->middleware('core.permission:plugin.risk-management.risks.manage')->name('plugin.risk-management.artifacts.store');
 
 Route::post('/plugins/risks/{riskId}/transitions/{transitionKey}', function (
@@ -219,5 +219,5 @@ Route::post('/plugins/risks/{riskId}/transitions/{transitionKey}', function (
         'scope_id' => is_string($scopeId) && $scopeId !== '' ? $scopeId : null,
         'locale' => $request->input('locale', 'en'),
         'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
-    ]));
+    ]))->with('status', 'Saved.');
 })->middleware('core.permission:plugin.risk-management.risks.manage')->name('plugin.risk-management.transition');

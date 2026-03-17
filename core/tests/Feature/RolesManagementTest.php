@@ -20,7 +20,7 @@ class RolesManagementTest extends TestCase
             ->assertSee('Operational workspaces')
             ->assertSee('Add role')
             ->assertSee('Assign grant')
-            ->assertSee('Edit details');
+            ->assertSee('Open');
     }
 
     public function test_roles_and_grants_can_be_created_and_updated_persistently(): void

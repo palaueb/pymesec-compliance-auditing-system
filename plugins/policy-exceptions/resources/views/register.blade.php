@@ -1,3 +1,18 @@
+<style>
+    .pill-active   { background: rgba(34,197,94,0.14);  color: #166534; }
+    .pill-draft    { background: rgba(31,42,34,0.06);   color: var(--muted); }
+    .pill-review   { background: rgba(245,158,11,0.14); color: #92400e; }
+    .pill-archived { background: rgba(31,42,34,0.06);   color: var(--muted); }
+
+    .pill-approved  { background: rgba(34,197,94,0.14);  color: #166534; }
+    .pill-requested { background: rgba(245,158,11,0.14); color: #92400e; }
+    .pill-expired   { background: rgba(31,42,34,0.06);   color: var(--muted); }
+    .pill-revoked   { background: rgba(239,68,68,0.12);  color: #991b1b; }
+
+    details > summary { cursor: pointer; list-style: none; }
+    details > summary::-webkit-details-marker { display: none; }
+</style>
+
 <section class="module-screen">
     @if (is_array($selected_policy))
         <div class="surface-card" style="padding:16px; display:grid; gap:16px;">
@@ -9,8 +24,8 @@
                     <div class="table-note">{{ $selected_policy['area'] }}</div>
                 </div>
                 <div class="action-cluster">
-                    <a class="button button-ghost" href="{{ $policies_list_url }}">Back to policies</a>
-                    <span class="pill">{{ $selected_policy['state'] }}</span>
+                    @php $polStatePill = match($selected_policy['state']) { 'active' => 'pill-active', 'draft' => 'pill-draft', 'review' => 'pill-review', 'archived' => 'pill-archived', default => '' }; @endphp
+                    <span class="pill {{ $polStatePill }}">{{ $selected_policy['state'] }}</span>
                 </div>
             </div>
 
@@ -62,7 +77,7 @@
                         @forelse ($selected_policy['history'] as $history)
                             <div class="data-item">
                                 <div class="entity-title">{{ $history->transitionKey }}</div>
-                                <div class="table-note">{{ $history->fromState }} -> {{ $history->toState }}</div>
+                                <div class="table-note">{{ $history->fromState }} → {{ $history->toState }}</div>
                             </div>
                         @empty
                             <span class="muted-note">No transitions recorded yet</span>
@@ -170,13 +185,14 @@
                                         <div class="table-note">{{ ucfirst($exception['state']) }}{{ $exception['expires_on'] !== '' ? ' · expires '.$exception['expires_on'] : '' }}</div>
                                         <div class="table-note">{{ $exception['owner_assignment']['display_name'] ?? 'No owner assigned' }}</div>
                                     </div>
-                                    <span class="pill">{{ $exception['state'] }}</span>
+                                    @php $excPill = match($exception['state']) { 'approved' => 'pill-approved', 'requested' => 'pill-requested', 'expired' => 'pill-expired', 'revoked' => 'pill-revoked', default => '' }; @endphp
+                                    <span class="pill {{ $excPill }}">{{ $exception['state'] }}</span>
                                 </div>
                                 @if ($exception['linked_finding_url'] !== null)
                                     <div class="table-note" style="margin-top:6px;">Finding: <a href="{{ $exception['linked_finding_url'] }}">{{ $exception['linked_finding_label'] ?? $exception['linked_finding_id'] }}</a></div>
                                 @endif
                                 <div class="action-cluster" style="margin-top:10px;">
-                                    <a class="button button-secondary" href="{{ $exception['open_url'] }}">Edit details</a>
+                                    <a class="button button-secondary" href="{{ $exception['open_url'] }}&{{ http_build_query(['context_label' => 'Exceptions', 'context_back_url' => $exceptions_list_url]) }}">Open</a>
                                 </div>
                             </div>
                         @empty
@@ -188,68 +204,70 @@
 
             @if ($can_manage_policies)
                 <div class="surface-card" style="padding:14px;">
-                    <div class="metric-label">Edit policy</div>
-                    <form class="upload-form" method="POST" action="{{ $selected_policy['update_route'] }}" style="margin-top:10px;">
-                        @csrf
-                        <input type="hidden" name="principal_id" value="{{ $query['principal_id'] }}">
-                        <input type="hidden" name="organization_id" value="{{ $query['organization_id'] }}">
-                        <input type="hidden" name="locale" value="{{ $query['locale'] }}">
-                        <input type="hidden" name="menu" value="plugin.policy-exceptions.root">
-                        <input type="hidden" name="policy_id" value="{{ $selected_policy['id'] }}">
-                        <input type="hidden" name="membership_id" value="{{ $query['membership_ids'][0] ?? 'membership-org-a-hello' }}">
-                        <div class="overview-grid" style="grid-template-columns:repeat(2, minmax(0, 1fr));">
-                            <div class="field">
-                                <label class="field-label">Title</label>
-                                <input class="field-input" name="title" value="{{ $selected_policy['title'] }}" required>
+                    <details>
+                        <summary class="button button-ghost" style="display:inline-flex; width:fit-content;">Edit policy details</summary>
+                        <form class="upload-form" method="POST" action="{{ $selected_policy['update_route'] }}" style="margin-top:14px;">
+                            @csrf
+                            <input type="hidden" name="principal_id" value="{{ $query['principal_id'] }}">
+                            <input type="hidden" name="organization_id" value="{{ $query['organization_id'] }}">
+                            <input type="hidden" name="locale" value="{{ $query['locale'] }}">
+                            <input type="hidden" name="menu" value="plugin.policy-exceptions.root">
+                            <input type="hidden" name="policy_id" value="{{ $selected_policy['id'] }}">
+                            <input type="hidden" name="membership_id" value="{{ $query['membership_ids'][0] ?? 'membership-org-a-hello' }}">
+                            <div class="overview-grid" style="grid-template-columns:repeat(2, minmax(0, 1fr));">
+                                <div class="field">
+                                    <label class="field-label">Title</label>
+                                    <input class="field-input" name="title" value="{{ $selected_policy['title'] }}" required>
+                                </div>
+                                <div class="field">
+                                    <label class="field-label">Area</label>
+                                    <input class="field-input" name="area" value="{{ $selected_policy['area'] }}" required>
+                                </div>
+                                <div class="field">
+                                    <label class="field-label">Version</label>
+                                    <input class="field-input" name="version_label" value="{{ $selected_policy['version_label'] }}" required>
+                                </div>
+                                <div class="field">
+                                    <label class="field-label">Review due</label>
+                                    <input class="field-input" name="review_due_on" type="date" value="{{ $selected_policy['review_due_on'] }}">
+                                </div>
+                                <div class="field">
+                                    <label class="field-label">Linked control</label>
+                                    <select class="field-select" name="linked_control_id">
+                                        <option value="">No linked control</option>
+                                        @foreach ($control_options as $control)
+                                            <option value="{{ $control['id'] }}" @selected($selected_policy['linked_control_id'] === $control['id'])>{{ $control['label'] }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="field">
+                                    <label class="field-label">Scope</label>
+                                    <select class="field-select" name="scope_id">
+                                        <option value="">Organization-wide</option>
+                                        @foreach ($scope_options as $scope)
+                                            <option value="{{ $scope['id'] }}" @selected($selected_policy['scope_id'] === $scope['id'])>{{ $scope['name'] }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="field">
+                                    <label class="field-label">Owner actor</label>
+                                    <select class="field-select" name="owner_actor_id">
+                                        <option value="">Keep current owner</option>
+                                        @foreach ($owner_actor_options as $actor)
+                                            <option value="{{ $actor['id'] }}" @selected(($selected_policy['owner_assignment']['id'] ?? null) === $actor['id'])>{{ $actor['label'] }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="field" style="grid-column:1 / -1;">
+                                    <label class="field-label">Statement</label>
+                                    <textarea class="field-input" name="statement" rows="4" required>{{ $selected_policy['statement'] }}</textarea>
+                                </div>
                             </div>
-                            <div class="field">
-                                <label class="field-label">Area</label>
-                                <input class="field-input" name="area" value="{{ $selected_policy['area'] }}" required>
+                            <div class="action-cluster" style="margin-top:14px;">
+                                <button class="button button-secondary" type="submit">Save changes</button>
                             </div>
-                            <div class="field">
-                                <label class="field-label">Version</label>
-                                <input class="field-input" name="version_label" value="{{ $selected_policy['version_label'] }}" required>
-                            </div>
-                            <div class="field">
-                                <label class="field-label">Review due</label>
-                                <input class="field-input" name="review_due_on" type="date" value="{{ $selected_policy['review_due_on'] }}">
-                            </div>
-                            <div class="field">
-                                <label class="field-label">Linked control</label>
-                                <select class="field-select" name="linked_control_id">
-                                    <option value="">No linked control</option>
-                                    @foreach ($control_options as $control)
-                                        <option value="{{ $control['id'] }}" @selected($selected_policy['linked_control_id'] === $control['id'])>{{ $control['label'] }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                            <div class="field">
-                                <label class="field-label">Scope</label>
-                                <select class="field-select" name="scope_id">
-                                    <option value="">Organization-wide</option>
-                                    @foreach ($scope_options as $scope)
-                                        <option value="{{ $scope['id'] }}" @selected($selected_policy['scope_id'] === $scope['id'])>{{ $scope['name'] }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                            <div class="field">
-                                <label class="field-label">Owner actor</label>
-                                <select class="field-select" name="owner_actor_id">
-                                    <option value="">Keep current owner</option>
-                                    @foreach ($owner_actor_options as $actor)
-                                        <option value="{{ $actor['id'] }}" @selected(($selected_policy['owner_assignment']['id'] ?? null) === $actor['id'])>{{ $actor['label'] }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
-                            <div class="field" style="grid-column:1 / -1;">
-                                <label class="field-label">Statement</label>
-                                <textarea class="field-input" name="statement" rows="4" required>{{ $selected_policy['statement'] }}</textarea>
-                            </div>
-                        </div>
-                        <div class="action-cluster" style="margin-top:14px;">
-                            <button class="button button-secondary" type="submit">Save changes</button>
-                        </div>
-                    </form>
+                        </form>
+                    </details>
                 </div>
             @endif
         </div>
@@ -378,9 +396,12 @@
                                 @endif
                             </td>
                             <td>{{ $policy['review_due_on'] !== '' ? $policy['review_due_on'] : 'No review date' }}</td>
-                            <td><span class="pill">{{ $policy['state'] }}</span></td>
                             <td>
-                                <a class="button button-secondary" href="{{ $policy['open_url'] }}">Edit details</a>
+                                @php $sPolPill = match($policy['state']) { 'active' => 'pill-active', 'draft' => 'pill-draft', 'review' => 'pill-review', 'archived' => 'pill-archived', default => '' }; @endphp
+                                <span class="pill {{ $sPolPill }}">{{ $policy['state'] }}</span>
+                            </td>
+                            <td>
+                                <a class="button button-secondary" href="{{ $policy['open_url'] }}&{{ http_build_query(['context_label' => 'Policies', 'context_back_url' => $policies_list_url]) }}">Open</a>
                             </td>
                         </tr>
                     @endforeach

@@ -199,74 +199,49 @@ class CoreTenancySeeder extends Seeder
             ],
         ]);
 
-        DB::table('control_frameworks')->insertOrIgnore([
-            [
-                'id' => 'framework-iso-27001',
-                'organization_id' => 'org-a',
-                'code' => 'ISO 27001',
-                'name' => 'ISO 27001:2022',
-                'description' => 'Core information security management requirements and Annex A controls.',
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
-            [
-                'id' => 'framework-nis2',
-                'organization_id' => 'org-a',
-                'code' => 'NIS2',
-                'name' => 'NIS2',
-                'description' => 'Operational resilience and cybersecurity obligations for essential entities.',
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
+        // SOC 2 is a custom org-level framework for org-b (demo only — not a global plugin pack).
+        // ISO 27001 and NIS2 are global packs seeded by SystemBootstrapSeeder via their plugins.
+        // See ADR-020 for the distinction between global framework packs and custom org frameworks.
+        DB::table('frameworks')->insertOrIgnore([
             [
                 'id' => 'framework-soc-2',
                 'organization_id' => 'org-b',
                 'code' => 'SOC 2',
                 'name' => 'SOC 2',
+                'version' => null,
                 'description' => 'Trust services criteria for security and operations monitoring.',
+                'kind' => 'audit',
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
         ]);
 
-        DB::table('control_requirements')->insertOrIgnore([
+        DB::table('framework_elements')->insertOrIgnore([
             [
-                'id' => 'requirement-iso-a-5-18',
-                'organization_id' => 'org-a',
-                'framework_id' => 'framework-iso-27001',
-                'code' => 'A.5.18',
-                'title' => 'Access rights',
-                'description' => 'Access rights should be provisioned and reviewed according to business need.',
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
-            [
-                'id' => 'requirement-iso-a-8-15',
-                'organization_id' => 'org-a',
-                'framework_id' => 'framework-iso-27001',
-                'code' => 'A.8.15',
-                'title' => 'Logging',
-                'description' => 'Event logging should support traceability and investigations.',
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
-            [
-                'id' => 'requirement-nis2-backup-testing',
-                'organization_id' => 'org-a',
-                'framework_id' => 'framework-nis2',
-                'code' => 'Article 21',
-                'title' => 'Business continuity and backup management',
-                'description' => 'Organizations should maintain continuity capability and test backup resilience.',
-                'created_at' => now(),
-                'updated_at' => now(),
-            ],
-            [
-                'id' => 'requirement-soc2-cc7-2',
-                'organization_id' => 'org-b',
+                'id' => 'soc2-cc7',
                 'framework_id' => 'framework-soc-2',
+                'parent_id' => null,
+                'code' => 'CC7',
+                'title' => 'System Operations',
+                'description' => 'System operations controls covering monitoring, anomaly detection and incident response.',
+                'element_type' => 'domain',
+                'applicability_level' => null,
+                'sort_order' => 1,
+                'metadata' => null,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'id' => 'soc2-cc7-2',
+                'framework_id' => 'framework-soc-2',
+                'parent_id' => 'soc2-cc7',
                 'code' => 'CC7.2',
                 'title' => 'System monitoring',
                 'description' => 'Monitoring controls should detect anomalies and unauthorized activity.',
+                'element_type' => 'criterion',
+                'applicability_level' => null,
+                'sort_order' => 2,
+                'metadata' => null,
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
@@ -278,6 +253,7 @@ class CoreTenancySeeder extends Seeder
                 'organization_id' => 'org-a',
                 'scope_id' => 'scope-eu',
                 'framework_id' => 'framework-iso-27001',
+                'framework_element_id' => 'iso27001-5-18',
                 'name' => 'Quarterly Access Review',
                 'framework' => 'ISO 27001',
                 'domain' => 'Identity',
@@ -290,6 +266,7 @@ class CoreTenancySeeder extends Seeder
                 'organization_id' => 'org-a',
                 'scope_id' => 'scope-it',
                 'framework_id' => 'framework-nis2',
+                'framework_element_id' => 'nis2-21-c',
                 'name' => 'Backup Governance',
                 'framework' => 'NIS2',
                 'domain' => 'Resilience',
@@ -302,6 +279,7 @@ class CoreTenancySeeder extends Seeder
                 'organization_id' => 'org-b',
                 'scope_id' => 'scope-ops',
                 'framework_id' => 'framework-soc-2',
+                'framework_element_id' => 'soc2-cc7-2',
                 'name' => 'Route Integrity Monitoring',
                 'framework' => 'SOC 2',
                 'domain' => 'Operations',
@@ -311,12 +289,14 @@ class CoreTenancySeeder extends Seeder
             ],
         ]);
 
+        // Mappings now use framework_element_id (pointing to framework_elements.id)
+        // instead of the old requirement_id (pointing to the dropped control_requirements table).
         DB::table('control_requirement_mappings')->insertOrIgnore([
             [
                 'id' => 'mapping-control-access-review-iso-a-5-18',
                 'organization_id' => 'org-a',
                 'control_id' => 'control-access-review',
-                'requirement_id' => 'requirement-iso-a-5-18',
+                'framework_element_id' => 'iso27001-5-18',
                 'coverage' => 'full',
                 'notes' => 'Quarterly certification covers approval, review, and recertification checkpoints.',
                 'created_at' => now(),
@@ -326,7 +306,7 @@ class CoreTenancySeeder extends Seeder
                 'id' => 'mapping-control-access-review-iso-a-8-15',
                 'organization_id' => 'org-a',
                 'control_id' => 'control-access-review',
-                'requirement_id' => 'requirement-iso-a-8-15',
+                'framework_element_id' => 'iso27001-8-15',
                 'coverage' => 'partial',
                 'notes' => 'Review evidence supports traceability but depends on logging controls elsewhere.',
                 'created_at' => now(),
@@ -336,7 +316,7 @@ class CoreTenancySeeder extends Seeder
                 'id' => 'mapping-control-backup-governance-nis2',
                 'organization_id' => 'org-a',
                 'control_id' => 'control-backup-governance',
-                'requirement_id' => 'requirement-nis2-backup-testing',
+                'framework_element_id' => 'nis2-21-c',
                 'coverage' => 'full',
                 'notes' => 'Backup governance includes test cadence and recovery readiness evidence.',
                 'created_at' => now(),
@@ -346,7 +326,7 @@ class CoreTenancySeeder extends Seeder
                 'id' => 'mapping-control-route-integrity-soc2',
                 'organization_id' => 'org-b',
                 'control_id' => 'control-route-integrity',
-                'requirement_id' => 'requirement-soc2-cc7-2',
+                'framework_element_id' => 'soc2-cc7-2',
                 'coverage' => 'full',
                 'notes' => 'Telemetry reviews demonstrate continuous operational monitoring.',
                 'created_at' => now(),

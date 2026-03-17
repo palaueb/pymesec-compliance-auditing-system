@@ -40,7 +40,7 @@ class IdentityLocalTest extends TestCase
             ->assertSee('People & Access')
             ->assertSee('Ava Mason')
             ->assertSee('Add person')
-            ->assertSee('Edit details');
+            ->assertSee('Open');
 
         $this->get('/app?menu=plugin.identity-local.memberships&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
             ->assertOk()
@@ -49,7 +49,7 @@ class IdentityLocalTest extends TestCase
             ->assertSee('Grant access')
             ->assertSee('Operational workspaces')
             ->assertSee('Access administration')
-            ->assertSee('Edit details');
+            ->assertSee('Open');
     }
 
     public function test_users_and_memberships_can_be_created_and_updated_from_the_shell_runtime(): void

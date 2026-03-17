@@ -125,12 +125,15 @@ class AssessmentsAuditsRepository
      */
     public function frameworkOptions(string $organizationId): array
     {
-        if (! Schema::hasTable('control_frameworks')) {
+        if (! Schema::hasTable('frameworks')) {
             return [];
         }
 
-        return DB::table('control_frameworks')
-            ->where('organization_id', $organizationId)
+        return DB::table('frameworks')
+            ->where(function ($q) use ($organizationId): void {
+                $q->whereNull('organization_id')
+                    ->orWhere('organization_id', $organizationId);
+            })
             ->orderBy('code')
             ->get(['id', 'code', 'name'])
             ->map(static fn ($framework): array => [

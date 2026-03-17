@@ -72,7 +72,7 @@ Route::post('/plugins/controls', function (
         'scope_id' => $control['scope_id'] !== '' ? $control['scope_id'] : null,
         'locale' => $request->input('locale', 'en'),
         'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
-    ]));
+    ]))->with('status', 'Saved.');
 })->middleware('core.permission:plugin.controls-catalog.controls.manage')->name('plugin.controls-catalog.store');
 
 Route::post('/plugins/controls/frameworks', function (
@@ -100,7 +100,7 @@ Route::post('/plugins/controls/frameworks', function (
         'scope_id' => is_string($scopeId) && $scopeId !== '' ? $scopeId : null,
         'locale' => $request->input('locale', 'en'),
         'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
-    ]));
+    ]))->with('status', 'Saved.');
 })->middleware('core.permission:plugin.controls-catalog.controls.manage')->name('plugin.controls-catalog.frameworks.store');
 
 Route::post('/plugins/controls/requirements', function (
@@ -129,7 +129,7 @@ Route::post('/plugins/controls/requirements', function (
         'scope_id' => is_string($scopeId) && $scopeId !== '' ? $scopeId : null,
         'locale' => $request->input('locale', 'en'),
         'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
-    ]));
+    ]))->with('status', 'Saved.');
 })->middleware('core.permission:plugin.controls-catalog.controls.manage')->name('plugin.controls-catalog.requirements.store');
 
 Route::post('/plugins/controls/{controlId}/requirements', function (
@@ -164,7 +164,7 @@ Route::post('/plugins/controls/{controlId}/requirements', function (
         'scope_id' => is_string($scopeId) && $scopeId !== '' ? $scopeId : null,
         'locale' => $request->input('locale', 'en'),
         'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
-    ]));
+    ]))->with('status', 'Saved.');
 })->middleware('core.permission:plugin.controls-catalog.controls.manage')->name('plugin.controls-catalog.requirements.attach');
 
 Route::post('/plugins/controls/{controlId}', function (
@@ -214,7 +214,7 @@ Route::post('/plugins/controls/{controlId}', function (
         'scope_id' => $control['scope_id'] !== '' ? $control['scope_id'] : null,
         'locale' => $request->input('locale', 'en'),
         'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
-    ]));
+    ]))->with('status', 'Saved.');
 })->middleware('core.permission:plugin.controls-catalog.controls.manage')->name('plugin.controls-catalog.update');
 
 Route::post('/plugins/controls/{controlId}/artifacts', function (
@@ -262,7 +262,7 @@ Route::post('/plugins/controls/{controlId}/artifacts', function (
         'control_id' => $controlId,
         'scope_id' => $control['scope_id'] ?? null,
         'locale' => $locale,
-    ]));
+    ]))->with('status', 'Saved.');
 })->middleware('core.permission:plugin.controls-catalog.controls.manage')->name('plugin.controls-catalog.artifacts.store');
 
 Route::post('/plugins/controls/{controlId}/transitions/{transitionKey}', function (
@@ -305,5 +305,5 @@ Route::post('/plugins/controls/{controlId}/transitions/{transitionKey}', functio
         'control_id' => $controlId,
         'scope_id' => is_string($scopeId) && $scopeId !== '' ? $scopeId : null,
         'locale' => $request->input('locale', 'en'),
-    ]));
+    ]))->with('status', 'Saved.');
 })->middleware('core.permission:plugin.controls-catalog.controls.manage')->name('plugin.controls-catalog.transition');

@@ -194,7 +194,7 @@
                             <td>@if ($row['membership']['roles'] === [])<span class="muted-note">No role sets yet</span>@else<div class="table-note">{{ count($row['membership']['roles']) }} roles</div>@endif</td>
                             <td>@if ($row['membership']['scope_ids'] === [])<span class="muted-note">All organization scopes</span>@else<div class="table-note">{{ count($row['membership']['scope_ids']) }} scopes</div>@endif</td>
                             <td><span class="pill">{{ $row['membership']['is_active'] ? 'active' : 'inactive' }}</span></td>
-                            <td><a class="button button-secondary" href="{{ $row['open_url'] }}">Edit details</a></td>
+                            <td><a class="button button-secondary" href="{{ $row['open_url'] }}">Open</a></td>
                         </tr>
                     @endforeach
                 </tbody>

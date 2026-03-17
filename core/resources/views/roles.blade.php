@@ -241,7 +241,7 @@
                             <td><div>{{ $role['category_label'] }}</div><div class="table-note">{{ $role['category_description'] }}</div></td>
                             <td><div class="table-note">{{ implode(', ', $role['permissions']) }}</div></td>
                             <td><span class="pill">{{ ($role['is_system'] ?? false) ? 'system' : 'custom' }}</span></td>
-                            <td><a class="button button-secondary" href="{{ $role['open_url'] }}">Edit details</a></td>
+                            <td><a class="button button-secondary" href="{{ $role['open_url'] }}">Open</a></td>
                         </tr>
                     @endforeach
                 </tbody>
@@ -260,7 +260,7 @@
                             <td><div>{{ $grant['target_type'] }}</div><div class="table-note">{{ $grant['target_id'] }}</div></td>
                             <td><div>{{ $grant['context_type'] }}</div><div class="table-note">{{ $grant['organization_id'] ?? 'platform' }}{{ ($grant['scope_id'] ?? null) !== null ? ' / '.$grant['scope_id'] : '' }}</div></td>
                             <td><span class="pill">{{ ($grant['is_system'] ?? false) ? 'system' : 'custom' }}</span></td>
-                            <td><a class="button button-secondary" href="{{ $grant['open_url'] }}">Edit details</a></td>
+                            <td><a class="button button-secondary" href="{{ $grant['open_url'] }}">Open</a></td>
                         </tr>
                     @endforeach
                 </tbody>

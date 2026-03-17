@@ -73,7 +73,7 @@ Route::post('/plugins/continuity/services', function (
         'scope_id' => $service['scope_id'] !== '' ? $service['scope_id'] : null,
         'locale' => $request->input('locale', 'en'),
         'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
-    ]));
+    ]))->with('status', 'Saved.');
 })->middleware('core.permission:plugin.continuity-bcm.plans.manage')->name('plugin.continuity-bcm.store');
 
 Route::post('/plugins/continuity/services/{serviceId}/dependencies', function (
@@ -102,7 +102,7 @@ Route::post('/plugins/continuity/services/{serviceId}/dependencies', function (
         'scope_id' => is_string($scopeId) && $scopeId !== '' ? $scopeId : null,
         'locale' => $request->input('locale', 'en'),
         'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
-    ]));
+    ]))->with('status', 'Saved.');
 })->middleware('core.permission:plugin.continuity-bcm.plans.manage')->name('plugin.continuity-bcm.dependencies.store');
 
 Route::post('/plugins/continuity/services/{serviceId}', function (
@@ -153,7 +153,7 @@ Route::post('/plugins/continuity/services/{serviceId}', function (
         'scope_id' => $service['scope_id'] !== '' ? $service['scope_id'] : null,
         'locale' => $request->input('locale', 'en'),
         'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
-    ]));
+    ]))->with('status', 'Saved.');
 })->middleware('core.permission:plugin.continuity-bcm.plans.manage')->name('plugin.continuity-bcm.update');
 
 Route::post('/plugins/continuity/services/{serviceId}/artifacts', function (
@@ -202,7 +202,7 @@ Route::post('/plugins/continuity/services/{serviceId}/artifacts', function (
         'scope_id' => $service['scope_id'] !== '' ? $service['scope_id'] : null,
         'locale' => $request->input('locale', 'en'),
         'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
-    ]));
+    ]))->with('status', 'Saved.');
 })->middleware('core.permission:plugin.continuity-bcm.plans.manage')->name('plugin.continuity-bcm.artifacts.store');
 
 Route::post('/plugins/continuity/services/{serviceId}/transitions/{transitionKey}', function (
@@ -240,7 +240,7 @@ Route::post('/plugins/continuity/services/{serviceId}/transitions/{transitionKey
         'scope_id' => is_string($scopeId) && $scopeId !== '' ? $scopeId : null,
         'locale' => $request->input('locale', 'en'),
         'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
-    ]));
+    ]))->with('status', 'Saved.');
 })->middleware('core.permission:plugin.continuity-bcm.plans.manage')->name('plugin.continuity-bcm.transition');
 
 Route::post('/plugins/continuity/services/{serviceId}/plans', function (
@@ -285,7 +285,7 @@ Route::post('/plugins/continuity/services/{serviceId}/plans', function (
         'scope_id' => $plan['scope_id'] !== '' ? $plan['scope_id'] : null,
         'locale' => $request->input('locale', 'en'),
         'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
-    ]));
+    ]))->with('status', 'Saved.');
 })->middleware('core.permission:plugin.continuity-bcm.plans.manage')->name('plugin.continuity-bcm.plans.store');
 
 Route::post('/plugins/continuity/plans/{planId}/exercises', function (
@@ -316,7 +316,7 @@ Route::post('/plugins/continuity/plans/{planId}/exercises', function (
         'scope_id' => is_string($scopeId) && $scopeId !== '' ? $scopeId : null,
         'locale' => $request->input('locale', 'en'),
         'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
-    ]));
+    ]))->with('status', 'Saved.');
 })->middleware('core.permission:plugin.continuity-bcm.plans.manage')->name('plugin.continuity-bcm.plans.exercises.store');
 
 Route::post('/plugins/continuity/plans/{planId}/executions', function (
@@ -347,7 +347,7 @@ Route::post('/plugins/continuity/plans/{planId}/executions', function (
         'scope_id' => is_string($scopeId) && $scopeId !== '' ? $scopeId : null,
         'locale' => $request->input('locale', 'en'),
         'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
-    ]));
+    ]))->with('status', 'Saved.');
 })->middleware('core.permission:plugin.continuity-bcm.plans.manage')->name('plugin.continuity-bcm.plans.executions.store');
 
 Route::post('/plugins/continuity/plans/{planId}', function (
@@ -397,7 +397,7 @@ Route::post('/plugins/continuity/plans/{planId}', function (
         'scope_id' => $plan['scope_id'] !== '' ? $plan['scope_id'] : null,
         'locale' => $request->input('locale', 'en'),
         'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
-    ]));
+    ]))->with('status', 'Saved.');
 })->middleware('core.permission:plugin.continuity-bcm.plans.manage')->name('plugin.continuity-bcm.plans.update');
 
 Route::post('/plugins/continuity/plans/{planId}/artifacts', function (
@@ -444,7 +444,7 @@ Route::post('/plugins/continuity/plans/{planId}/artifacts', function (
         'organization_id' => $plan['organization_id'],
         'scope_id' => $plan['scope_id'] !== '' ? $plan['scope_id'] : null,
         'locale' => $request->input('locale', 'en'),
-    ]));
+    ]))->with('status', 'Saved.');
 })->middleware('core.permission:plugin.continuity-bcm.plans.manage')->name('plugin.continuity-bcm.plans.artifacts.store');
 
 Route::post('/plugins/continuity/plans/{planId}/transitions/{transitionKey}', function (
@@ -481,5 +481,5 @@ Route::post('/plugins/continuity/plans/{planId}/transitions/{transitionKey}', fu
         'organization_id' => $organizationId,
         'scope_id' => is_string($scopeId) && $scopeId !== '' ? $scopeId : null,
         'locale' => $request->input('locale', 'en'),
-    ]));
+    ]))->with('status', 'Saved.');
 })->middleware('core.permission:plugin.continuity-bcm.plans.manage')->name('plugin.continuity-bcm.plans.transition');

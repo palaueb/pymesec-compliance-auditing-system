@@ -17,7 +17,7 @@ Route::get('/plugins/assets', function (Request $request) {
         'locale' => $request->query('locale', app()->getLocale()),
         'membership_ids' => $request->query('membership_ids', ['membership-org-a-hello']),
         'scope_id' => $request->query('scope_id'),
-    ]);
+    ])->with('status', 'Saved.');
 })->name('plugin.asset-catalog.index');
 
 Route::get('/plugins/assets/lifecycle', function (Request $request) {
@@ -28,7 +28,7 @@ Route::get('/plugins/assets/lifecycle', function (Request $request) {
         'locale' => $request->query('locale', app()->getLocale()),
         'membership_ids' => $request->query('membership_ids', ['membership-org-a-hello']),
         'scope_id' => $request->query('scope_id'),
-    ]);
+    ])->with('status', 'Saved.');
 })->name('plugin.asset-catalog.lifecycle');
 
 Route::post('/plugins/assets', function (
@@ -72,7 +72,7 @@ Route::post('/plugins/assets', function (
         'scope_id' => $asset['scope_id'] !== '' ? $asset['scope_id'] : null,
         'locale' => $request->input('locale', app()->getLocale()),
         'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
-    ]));
+    ]))->with('status', 'Saved.');
 })->middleware('core.permission:plugin.asset-catalog.assets.manage')->name('plugin.asset-catalog.store');
 
 Route::post('/plugins/assets/{assetId}', function (
@@ -122,7 +122,7 @@ Route::post('/plugins/assets/{assetId}', function (
         'scope_id' => $asset['scope_id'] !== '' ? $asset['scope_id'] : null,
         'locale' => $request->input('locale', app()->getLocale()),
         'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
-    ]));
+    ]))->with('status', 'Saved.');
 })->middleware('core.permission:plugin.asset-catalog.assets.manage')->name('plugin.asset-catalog.update');
 
 Route::post('/plugins/assets/{assetId}/transitions/{transitionKey}', function (
@@ -169,5 +169,5 @@ Route::post('/plugins/assets/{assetId}/transitions/{transitionKey}', function (
         'locale' => $locale,
         'membership_ids' => [is_string($membershipId) ? $membershipId : 'membership-org-a-hello'],
         'scope_id' => $scopeId,
-    ]);
+    ])->with('status', 'Saved.');
 })->middleware('core.permission:plugin.asset-catalog.assets.manage')->name('plugin.asset-catalog.transition');
