@@ -793,13 +793,7 @@ class IdentityLocalRepository
         ];
 
         if (is_string($existingMembershipId) && $existingMembershipId !== '') {
-            return $this->upsertManagedMembership($existingMembershipId, [
-                'principal_id' => $principalId,
-                'organization_id' => $organizationId,
-                'role_keys' => $roles,
-                'scope_ids' => [],
-                'is_active' => true,
-            ], $principalId);
+            return $this->findMembership($existingMembershipId) ?? [];
         }
 
         return $this->createMembership([

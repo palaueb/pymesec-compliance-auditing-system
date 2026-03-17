@@ -112,4 +112,75 @@ class ShellNavigationTest extends TestCase
 
         $this->assertIsString($membershipId);
     }
+
+    public function test_platform_admin_bootstrap_does_not_overwrite_manual_workspace_roles(): void
+    {
+        DB::table('identity_local_users')->insert([
+            'id' => 'identity-user-platform-bootstrap-3',
+            'principal_id' => 'principal-platform-bootstrap-3',
+            'organization_id' => 'org-a',
+            'username' => 'platform.bootstrap.3',
+            'display_name' => 'Platform Bootstrap Three',
+            'email' => 'platform.bootstrap.3@northwind.test',
+            'password_hash' => null,
+            'password_enabled' => false,
+            'magic_link_enabled' => true,
+            'job_title' => 'Platform administrator',
+            'is_active' => true,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $repository = $this->app->make(IdentityLocalRepository::class);
+        $repository->ensurePlatformAdminGrant('principal-platform-bootstrap-3');
+
+        $membership = $repository->ensureBootstrapOrganizationAccess('principal-platform-bootstrap-3', 'org-a');
+        $membershipId = $membership['id'] ?? null;
+
+        $this->assertIsString($membershipId);
+
+        $repository->updateMembership((string) $membershipId, [
+            'principal_id' => 'principal-platform-bootstrap-3',
+            'organization_id' => 'org-a',
+            'role_keys' => [
+                'identity-operator',
+                'identity-viewer',
+                'identity-ldap-operator',
+                'identity-ldap-viewer',
+            ],
+            'scope_ids' => [],
+            'is_active' => true,
+        ], 'principal-platform-bootstrap-3');
+
+        $this->get('/app?principal_id=principal-platform-bootstrap-3&organization_id=org-a')
+            ->assertOk()
+            ->assertSee('Workspace Dashboard');
+
+        $this->assertDatabaseHas('authorization_grants', [
+            'target_type' => 'membership',
+            'target_id' => $membershipId,
+            'grant_type' => 'role',
+            'value' => 'identity-viewer',
+            'context_type' => 'organization',
+            'organization_id' => 'org-a',
+        ]);
+
+        $this->assertDatabaseHas('authorization_grants', [
+            'target_type' => 'membership',
+            'target_id' => $membershipId,
+            'grant_type' => 'role',
+            'value' => 'identity-ldap-viewer',
+            'context_type' => 'organization',
+            'organization_id' => 'org-a',
+        ]);
+
+        $this->assertDatabaseMissing('authorization_grants', [
+            'target_type' => 'membership',
+            'target_id' => $membershipId,
+            'grant_type' => 'role',
+            'value' => 'asset-operator',
+            'context_type' => 'organization',
+            'organization_id' => 'org-a',
+        ]);
+    }
 }
