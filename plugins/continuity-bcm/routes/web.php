@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Route;
 use PymeSec\Core\Artifacts\ArtifactUploadData;
 use PymeSec\Core\Artifacts\Contracts\ArtifactServiceInterface;
@@ -9,6 +10,7 @@ use PymeSec\Core\Principals\MembershipReference;
 use PymeSec\Core\Principals\PrincipalReference;
 use PymeSec\Core\Workflows\Contracts\WorkflowServiceInterface;
 use PymeSec\Core\Workflows\WorkflowExecutionContext;
+use PymeSec\Plugins\ContinuityBcm\ContinuityReferenceData;
 use PymeSec\Plugins\ContinuityBcm\ContinuityBcmRepository;
 
 Route::get('/plugins/continuity/services', function (Request $request, ContinuityBcmRepository $repository) {
@@ -38,7 +40,7 @@ Route::post('/plugins/continuity/services', function (
 ) {
     $validated = $request->validate([
         'title' => ['required', 'string', 'max:160'],
-        'impact_tier' => ['required', 'string', 'max:80'],
+        'impact_tier' => ['required', 'string', Rule::in(ContinuityReferenceData::impactTierKeys())],
         'recovery_time_objective_hours' => ['required', 'integer', 'min:0', 'max:8760'],
         'recovery_point_objective_hours' => ['required', 'integer', 'min:0', 'max:8760'],
         'linked_asset_id' => ['nullable', 'string', 'max:120', 'exists:assets,id'],
@@ -84,7 +86,7 @@ Route::post('/plugins/continuity/services/{serviceId}/dependencies', function (
     $validated = $request->validate([
         'organization_id' => ['required', 'string', 'max:64'],
         'depends_on_service_id' => ['required', 'string', 'max:120'],
-        'dependency_kind' => ['required', 'string', 'max:80'],
+        'dependency_kind' => ['required', 'string', Rule::in(ContinuityReferenceData::dependencyKindKeys())],
         'recovery_notes' => ['nullable', 'string', 'max:255'],
     ]);
 
@@ -113,7 +115,7 @@ Route::post('/plugins/continuity/services/{serviceId}', function (
 ) {
     $validated = $request->validate([
         'title' => ['required', 'string', 'max:160'],
-        'impact_tier' => ['required', 'string', 'max:80'],
+        'impact_tier' => ['required', 'string', Rule::in(ContinuityReferenceData::impactTierKeys())],
         'recovery_time_objective_hours' => ['required', 'integer', 'min:0', 'max:8760'],
         'recovery_point_objective_hours' => ['required', 'integer', 'min:0', 'max:8760'],
         'linked_asset_id' => ['nullable', 'string', 'max:120', 'exists:assets,id'],

@@ -60,6 +60,8 @@ class IdentityLocalTest extends TestCase
             ->assertSee('Access administration')
             ->assertSee('Identity operator')         // label shown in display section
             ->assertSee('Directory sync operator')   // label shown in display section
+            ->assertSee('Functional profiles')
+            ->assertSee('Manage responsibilities')
             ->assertSee('Hold')                      // multi-select hint
             ->assertSee('Save access');
 
@@ -373,6 +375,7 @@ class IdentityLocalTest extends TestCase
             'policy-operator',
             'privacy-operator',
             'continuity-operator',
+            'evidence-operator',
         ] as $roleKey) {
             $this->assertDatabaseHas('authorization_grants', [
                 'target_type' => 'membership',

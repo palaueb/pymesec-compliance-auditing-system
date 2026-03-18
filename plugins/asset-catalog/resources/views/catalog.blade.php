@@ -32,15 +32,30 @@
                     </div>
                     <div class="field">
                         <label class="field-label" for="asset-type">Type</label>
-                        <input class="field-input" id="asset-type" name="type" placeholder="application, service, endpoint" required>
+                        <select class="field-select" id="asset-type" name="type" required>
+                            <option value="">Choose a type</option>
+                            @foreach ($asset_type_options as $option)
+                                <option value="{{ $option['id'] }}">{{ $option['label'] }}</option>
+                            @endforeach
+                        </select>
                     </div>
                     <div class="field">
                         <label class="field-label" for="asset-criticality">Criticality</label>
-                        <input class="field-input" id="asset-criticality" name="criticality" placeholder="high, medium, low" required>
+                        <select class="field-select" id="asset-criticality" name="criticality" required>
+                            <option value="">Choose a level</option>
+                            @foreach ($asset_criticality_options as $option)
+                                <option value="{{ $option['id'] }}">{{ $option['label'] }}</option>
+                            @endforeach
+                        </select>
                     </div>
                     <div class="field">
                         <label class="field-label" for="asset-classification">Classification</label>
-                        <input class="field-input" id="asset-classification" name="classification" placeholder="restricted, internal" required>
+                        <select class="field-select" id="asset-classification" name="classification" required>
+                            <option value="">Choose a classification</option>
+                            @foreach ($asset_classification_options as $option)
+                                <option value="{{ $option['id'] }}">{{ $option['label'] }}</option>
+                            @endforeach
+                        </select>
                     </div>
                     <div class="field">
                         <label class="field-label" for="asset-scope">Scope</label>
@@ -50,10 +65,6 @@
                                 <option value="{{ $scope['id'] }}" @selected(($query['scope_id'] ?? null) === $scope['id'])>{{ $scope['name'] }}</option>
                             @endforeach
                         </select>
-                    </div>
-                    <div class="field">
-                        <label class="field-label" for="asset-owner-label">Owner label</label>
-                        <input class="field-input" id="asset-owner-label" name="owner_label" placeholder="Finance Operations">
                     </div>
                     <div class="field">
                         <label class="field-label" for="asset-owner-actor">Owner actor</label>
@@ -102,16 +113,15 @@
             <div class="overview-grid" style="grid-template-columns:repeat(4, minmax(0, 1fr));">
                 <div class="metric-card">
                     <div class="metric-label">Type</div>
-                    <div class="metric-value" style="font-size:18px;">{{ ucfirst($selected_asset['type']) }}</div>
+                    <div class="metric-value" style="font-size:18px;">{{ $selected_asset['type_label'] }}</div>
                 </div>
                 <div class="metric-card">
                     <div class="metric-label">Criticality</div>
-                    @php $critPill = match(strtolower($selected_asset['criticality'])) { 'high' => 'pill-high', 'medium' => 'pill-medium', 'low' => 'pill-low', default => '' }; @endphp
-                    <div class="metric-value" style="font-size:18px;">{{ ucfirst($selected_asset['criticality']) }}</div>
+                    <div class="metric-value" style="font-size:18px;">{{ $selected_asset['criticality_label'] }}</div>
                 </div>
                 <div class="metric-card">
                     <div class="metric-label">Classification</div>
-                    <div class="metric-value" style="font-size:18px;">{{ ucfirst($selected_asset['classification']) }}</div>
+                    <div class="metric-value" style="font-size:18px;">{{ $selected_asset['classification_label'] }}</div>
                 </div>
                 <div class="metric-card">
                     <div class="metric-label">Scope</div>
@@ -126,7 +136,7 @@
                     <div class="entity-title" style="font-size:14px;">{{ $selected_asset['owner_assignment']['display_name'] }}</div>
                     <div class="table-note">{{ $selected_asset['owner_assignment']['kind'] }}</div>
                 @else
-                    <div class="table-note">{{ $selected_asset['owner_label'] !== '' ? $selected_asset['owner_label'] : 'No owner assigned' }}</div>
+                    <div class="table-note">{{ $selected_asset['owner_label'] !== '' ? 'Legacy owner label: '.$selected_asset['owner_label'] : 'No owner assigned' }}</div>
                 @endif
             </div>
 
@@ -184,15 +194,27 @@
                             </div>
                             <div class="field">
                                 <label class="field-label">Type</label>
-                                <input class="field-input" name="type" value="{{ $selected_asset['type'] }}" required>
+                                <select class="field-select" name="type" required>
+                                    @foreach ($asset_type_options as $option)
+                                        <option value="{{ $option['id'] }}" @selected($selected_asset['type'] === $option['id'])>{{ $option['label'] }}</option>
+                                    @endforeach
+                                </select>
                             </div>
                             <div class="field">
                                 <label class="field-label">Criticality</label>
-                                <input class="field-input" name="criticality" value="{{ $selected_asset['criticality'] }}" required>
+                                <select class="field-select" name="criticality" required>
+                                    @foreach ($asset_criticality_options as $option)
+                                        <option value="{{ $option['id'] }}" @selected($selected_asset['criticality'] === $option['id'])>{{ $option['label'] }}</option>
+                                    @endforeach
+                                </select>
                             </div>
                             <div class="field">
                                 <label class="field-label">Classification</label>
-                                <input class="field-input" name="classification" value="{{ $selected_asset['classification'] }}" required>
+                                <select class="field-select" name="classification" required>
+                                    @foreach ($asset_classification_options as $option)
+                                        <option value="{{ $option['id'] }}" @selected($selected_asset['classification'] === $option['id'])>{{ $option['label'] }}</option>
+                                    @endforeach
+                                </select>
                             </div>
                             <div class="field">
                                 <label class="field-label">Scope</label>
@@ -202,10 +224,6 @@
                                         <option value="{{ $scope['id'] }}" @selected($selected_asset['scope_id'] === $scope['id'])>{{ $scope['name'] }}</option>
                                     @endforeach
                                 </select>
-                            </div>
-                            <div class="field">
-                                <label class="field-label">Owner label</label>
-                                <input class="field-input" name="owner_label" value="{{ $selected_asset['owner_label'] }}">
                             </div>
                             <div class="field">
                                 <label class="field-label">Owner actor</label>
@@ -257,19 +275,19 @@
                                 <div class="entity-id">{{ $asset['id'] }}</div>
                             </td>
                             <td>
-                                <div>{{ ucfirst($asset['type']) }}</div>
+                                <div>{{ $asset['type_label'] }}</div>
                                 @php $critPill = match(strtolower($asset['criticality'])) { 'high' => 'pill-high', 'medium' => 'pill-medium', 'low' => 'pill-low', default => '' }; @endphp
-                                <span class="pill {{ $critPill }}" style="margin-top:4px; display:inline-block;">{{ ucfirst($asset['criticality']) }}</span>
+                                <span class="pill {{ $critPill }}" style="margin-top:4px; display:inline-block;">{{ $asset['criticality_label'] }}</span>
                             </td>
                             <td>
                                 @if ($asset['owner_assignment'] !== null)
                                     <div>{{ $asset['owner_assignment']['display_name'] }}</div>
                                     <div class="table-note">{{ $asset['owner_assignment']['kind'] }}</div>
                                 @else
-                                    <span class="table-note">{{ $asset['owner_label'] !== '' ? $asset['owner_label'] : 'No owner' }}</span>
+                                    <span class="table-note">{{ $asset['owner_label'] !== '' ? 'Legacy owner label' : 'No owner' }}</span>
                                 @endif
                             </td>
-                            <td>{{ ucfirst($asset['classification']) }}</td>
+                            <td>{{ $asset['classification_label'] }}</td>
                             <td>
                                 @php
                                     $sPill = match($asset['state']) {

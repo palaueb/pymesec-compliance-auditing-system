@@ -5,6 +5,7 @@ namespace PymeSec\Plugins\RiskManagement;
 use Illuminate\Support\Facades\DB;
 use PymeSec\Core\Artifacts\Contracts\ArtifactServiceInterface;
 use PymeSec\Core\FunctionalActors\Contracts\FunctionalActorServiceInterface;
+use PymeSec\Core\ObjectAccess\ObjectAccessService;
 use PymeSec\Core\Permissions\AuthorizationContext;
 use PymeSec\Core\Permissions\Contracts\AuthorizationServiceInterface;
 use PymeSec\Core\Plugins\Contracts\PluginInterface;
@@ -130,6 +131,7 @@ class RiskManagementPlugin implements PluginInterface
         $workflow = $context->app()->make(WorkflowServiceInterface::class);
         $actors = $context->app()->make(FunctionalActorServiceInterface::class);
         $authorization = $context->app()->make(AuthorizationServiceInterface::class);
+        $objectAccess = $context->app()->make(ObjectAccessService::class);
         $tenancy = $context->app()->make(TenancyServiceInterface::class);
         $organizationId = $screenContext->organizationId ?? 'org-a';
         $canManage = $screenContext->principal !== null && $authorization->authorize(new AuthorizationContext(
@@ -155,7 +157,16 @@ class RiskManagementPlugin implements PluginInterface
 
         $risks = [];
 
-        foreach ($repository->all($organizationId, $screenContext->scopeId) as $risk) {
+        $visibleRisks = $objectAccess->filterRecords(
+            records: $repository->all($organizationId, $screenContext->scopeId),
+            idKey: 'id',
+            principalId: $screenContext->principal?->id,
+            organizationId: $organizationId,
+            scopeId: $screenContext->scopeId,
+            domainObjectType: 'risk',
+        );
+
+        foreach ($visibleRisks as $risk) {
             $instance = $workflow->instanceFor(
                 workflowKey: 'plugin.risk-management.risk-lifecycle',
                 subjectType: 'risk',
@@ -231,12 +242,22 @@ class RiskManagementPlugin implements PluginInterface
     private function boardData(PluginContext $context, ScreenRenderContext $screenContext): array
     {
         $repository = $context->app()->make(RiskRepository::class);
+        $objectAccess = $context->app()->make(ObjectAccessService::class);
         $artifacts = $context->app()->make(ArtifactServiceInterface::class);
         $workflow = $context->app()->make(WorkflowServiceInterface::class);
         $organizationId = $screenContext->organizationId ?? 'org-a';
         $rows = [];
 
-        foreach ($repository->all($organizationId, $screenContext->scopeId) as $risk) {
+        $visibleRisks = $objectAccess->filterRecords(
+            records: $repository->all($organizationId, $screenContext->scopeId),
+            idKey: 'id',
+            principalId: $screenContext->principal?->id,
+            organizationId: $organizationId,
+            scopeId: $screenContext->scopeId,
+            domainObjectType: 'risk',
+        );
+
+        foreach ($visibleRisks as $risk) {
             $instance = $workflow->instanceFor(
                 workflowKey: 'plugin.risk-management.risk-lifecycle',
                 subjectType: 'risk',

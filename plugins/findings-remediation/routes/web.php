@@ -5,29 +5,56 @@ use Illuminate\Support\Facades\Route;
 use PymeSec\Core\Artifacts\ArtifactUploadData;
 use PymeSec\Core\Artifacts\Contracts\ArtifactServiceInterface;
 use PymeSec\Core\FunctionalActors\Contracts\FunctionalActorServiceInterface;
+use PymeSec\Core\ObjectAccess\ObjectAccessService;
 use PymeSec\Core\Principals\MembershipReference;
 use PymeSec\Core\Principals\PrincipalReference;
 use PymeSec\Core\Workflows\Contracts\WorkflowServiceInterface;
 use PymeSec\Core\Workflows\WorkflowExecutionContext;
 use PymeSec\Plugins\FindingsRemediation\FindingsRemediationRepository;
 
-Route::get('/plugins/findings', function (Request $request, FindingsRemediationRepository $repository) {
+Route::get('/plugins/findings', function (Request $request, FindingsRemediationRepository $repository, ObjectAccessService $objectAccess) {
+    $organizationId = (string) $request->query('organization_id', 'org-a');
+    $scopeId = $request->query('scope_id');
+
     return response()->json([
         'plugin' => 'findings-remediation',
-        'findings' => $repository->allFindings(
-            (string) $request->query('organization_id', 'org-a'),
-            $request->query('scope_id'),
+        'findings' => $objectAccess->filterRecords(
+            records: $repository->allFindings($organizationId, $scopeId),
+            idKey: 'id',
+            principalId: is_string($request->query('principal_id')) ? $request->query('principal_id') : null,
+            organizationId: $organizationId,
+            scopeId: is_string($scopeId) ? $scopeId : null,
+            domainObjectType: 'finding',
         ),
     ]);
 })->name('plugin.findings-remediation.index');
 
-Route::get('/plugins/findings/board', function (Request $request, FindingsRemediationRepository $repository) {
+Route::get('/plugins/findings/board', function (Request $request, FindingsRemediationRepository $repository, ObjectAccessService $objectAccess) {
+    $organizationId = (string) $request->query('organization_id', 'org-a');
+    $scopeId = is_string($request->query('scope_id')) ? $request->query('scope_id') : null;
+    $principalId = is_string($request->query('principal_id')) ? $request->query('principal_id') : null;
+    $visibleFindingIds = $objectAccess->visibleObjectIds($principalId, $organizationId, $scopeId, 'finding');
+    $visibleActionIds = $objectAccess->visibleObjectIds($principalId, $organizationId, $scopeId, 'remediation-action');
+    $isFindingScoped = is_array($visibleFindingIds);
+    $isActionScoped = is_array($visibleActionIds);
+    $actions = [];
+
+    foreach ($repository->actions($organizationId, $scopeId) as $action) {
+        if ($isFindingScoped || $isActionScoped) {
+            $matchesFinding = $isFindingScoped && in_array($action['finding_id'], $visibleFindingIds, true);
+            $matchesAction = $isActionScoped && in_array($action['id'], $visibleActionIds, true);
+
+            if (! $matchesFinding && ! $matchesAction) {
+                continue;
+            }
+        }
+
+        $actions[] = $action;
+    }
+
     return response()->json([
         'plugin' => 'findings-remediation',
-        'actions' => $repository->actions(
-            (string) $request->query('organization_id', 'org-a'),
-            $request->query('scope_id'),
-        ),
+        'actions' => $actions,
     ]);
 })->name('plugin.findings-remediation.board');
 
@@ -80,8 +107,20 @@ Route::post('/plugins/findings/{findingId}', function (
     Request $request,
     string $findingId,
     FindingsRemediationRepository $repository,
-    FunctionalActorServiceInterface $actors
+    FunctionalActorServiceInterface $actors,
+    ObjectAccessService $objectAccess,
 ) {
+    $existingFinding = $repository->findFinding($findingId);
+
+    abort_if($existingFinding === null, 404);
+    abort_unless($objectAccess->canAccessObject(
+        principalId: (string) $request->input('principal_id', 'principal-org-a'),
+        organizationId: $existingFinding['organization_id'],
+        scopeId: $existingFinding['scope_id'] !== '' ? $existingFinding['scope_id'] : null,
+        domainObjectType: 'finding',
+        domainObjectId: $existingFinding['id'],
+    ), 403);
+
     $validated = $request->validate([
         'title' => ['required', 'string', 'max:140'],
         'severity' => ['required', 'string', 'max:40'],
@@ -131,11 +170,19 @@ Route::post('/plugins/findings/{findingId}/actions', function (
     Request $request,
     string $findingId,
     FindingsRemediationRepository $repository,
-    FunctionalActorServiceInterface $actors
+    FunctionalActorServiceInterface $actors,
+    ObjectAccessService $objectAccess,
 ) {
     $finding = $repository->findFinding($findingId);
 
     abort_if($finding === null, 404);
+    abort_unless($objectAccess->canAccessObject(
+        principalId: (string) $request->input('principal_id', 'principal-org-a'),
+        organizationId: $finding['organization_id'],
+        scopeId: $finding['scope_id'] !== '' ? $finding['scope_id'] : null,
+        domainObjectType: 'finding',
+        domainObjectId: $finding['id'],
+    ), 403);
 
     $validated = $request->validate([
         'title' => ['required', 'string', 'max:140'],
@@ -182,8 +229,32 @@ Route::post('/plugins/findings/actions/{actionId}', function (
     Request $request,
     string $actionId,
     FindingsRemediationRepository $repository,
-    FunctionalActorServiceInterface $actors
+    FunctionalActorServiceInterface $actors,
+    ObjectAccessService $objectAccess,
 ) {
+    $existingAction = $repository->findAction($actionId);
+
+    abort_if($existingAction === null, 404);
+    $existingFinding = $repository->findFinding((string) $existingAction['finding_id']);
+
+    abort_if($existingFinding === null, 404);
+    abort_unless(
+        $objectAccess->canAccessObject(
+            principalId: (string) $request->input('principal_id', 'principal-org-a'),
+            organizationId: $existingFinding['organization_id'],
+            scopeId: $existingFinding['scope_id'] !== '' ? $existingFinding['scope_id'] : null,
+            domainObjectType: 'finding',
+            domainObjectId: $existingFinding['id'],
+        ) || $objectAccess->canAccessObject(
+            principalId: (string) $request->input('principal_id', 'principal-org-a'),
+            organizationId: $existingAction['organization_id'],
+            scopeId: $existingAction['scope_id'] !== '' ? $existingAction['scope_id'] : null,
+            domainObjectType: 'remediation-action',
+            domainObjectId: $existingAction['id'],
+        ),
+        403
+    );
+
     $validated = $request->validate([
         'title' => ['required', 'string', 'max:140'],
         'status' => ['required', 'string', 'max:40'],
@@ -231,11 +302,19 @@ Route::post('/plugins/findings/{findingId}/artifacts', function (
     Request $request,
     string $findingId,
     FindingsRemediationRepository $repository,
-    ArtifactServiceInterface $artifacts
+    ArtifactServiceInterface $artifacts,
+    ObjectAccessService $objectAccess,
 ) {
     $finding = $repository->findFinding($findingId);
 
     abort_if($finding === null, 404);
+    abort_unless($objectAccess->canAccessObject(
+        principalId: (string) $request->input('principal_id', 'principal-org-a'),
+        organizationId: $finding['organization_id'],
+        scopeId: $finding['scope_id'] !== '' ? $finding['scope_id'] : null,
+        domainObjectType: 'finding',
+        domainObjectId: $finding['id'],
+    ), 403);
 
     $validated = $request->validate([
         'artifact' => ['required', 'file', 'max:10240'],
@@ -279,12 +358,24 @@ Route::post('/plugins/findings/{findingId}/transitions/{transitionKey}', functio
     Request $request,
     string $findingId,
     string $transitionKey,
-    WorkflowServiceInterface $workflows
+    WorkflowServiceInterface $workflows,
+    FindingsRemediationRepository $repository,
+    ObjectAccessService $objectAccess,
 ) {
     $principalId = (string) $request->input('principal_id', 'principal-org-a');
     $membershipId = $request->input('membership_id');
     $organizationId = (string) $request->input('organization_id', 'org-a');
     $scopeId = $request->input('scope_id');
+    $finding = $repository->findFinding($findingId);
+
+    abort_if($finding === null, 404);
+    abort_unless($objectAccess->canAccessObject(
+        principalId: $principalId,
+        organizationId: $finding['organization_id'],
+        scopeId: $finding['scope_id'] !== '' ? $finding['scope_id'] : null,
+        domainObjectType: 'finding',
+        domainObjectId: $finding['id'],
+    ), 403);
 
     $workflows->transition(
         workflowKey: 'plugin.findings-remediation.finding-lifecycle',

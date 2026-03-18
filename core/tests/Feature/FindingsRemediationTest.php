@@ -66,7 +66,7 @@ class FindingsRemediationTest extends TestCase
             'linked_risk_id' => 'risk-access-drift',
             'due_on' => '2026-04-15',
             'scope_id' => 'scope-eu',
-            'owner_actor_id' => 'actor-compliance-office',
+            'owner_actor_id' => 'actor-ava-mason',
         ])->assertFound();
 
         $this->post('/plugins/findings/finding-supplier-review-exception-gap/actions', [
@@ -94,7 +94,7 @@ class FindingsRemediationTest extends TestCase
         $this->get('/app?menu=plugin.findings-remediation.root&finding_id=finding-supplier-review-exception-gap&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
             ->assertOk()
             ->assertSee('Supplier review exception traceability gap')
-            ->assertSee('Compliance Office')
+            ->assertSee('Ava Mason')
             ->assertSee('Upload signed exception evidence log')
             ->assertSee('Evidence collection has started.')
             ->assertSee('Ava Mason');

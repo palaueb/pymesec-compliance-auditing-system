@@ -15,7 +15,7 @@
                 <div>
                     <div class="eyebrow">Processing activity</div>
                     <h2 class="screen-title" style="font-size:28px;">{{ $selected_activity['title'] }}</h2>
-                    <div class="table-note">{{ $selected_activity['id'] }} · {{ $selected_activity['lawful_basis'] }}</div>
+                    <div class="table-note">{{ $selected_activity['id'] }} · {{ $selected_activity['lawful_basis_label'] }}</div>
                     <div class="table-note">{{ $selected_activity['purpose'] }}</div>
                 </div>
                 <div class="action-cluster">
@@ -156,7 +156,11 @@
                                 </div>
                                 <div class="field">
                                     <label class="field-label">Lawful basis</label>
-                                    <input class="field-input" name="lawful_basis" value="{{ $selected_activity['lawful_basis'] }}" required>
+                                    <select class="field-select" name="lawful_basis" required>
+                                        @foreach ($lawful_basis_options as $option)
+                                            <option value="{{ $option['id'] }}" @selected($selected_activity['lawful_basis'] === $option['id'])>{{ $option['label'] }}</option>
+                                        @endforeach
+                                    </select>
                                 </div>
                                 <div class="field">
                                     <label class="field-label">Review due</label>
@@ -255,7 +259,12 @@
                         </div>
                         <div class="field">
                             <label class="field-label" for="activity-lawful-basis">Lawful basis</label>
-                            <input class="field-input" id="activity-lawful-basis" name="lawful_basis" required>
+                            <select class="field-select" id="activity-lawful-basis" name="lawful_basis" required>
+                                <option value="">Choose lawful basis</option>
+                                @foreach ($lawful_basis_options as $option)
+                                    <option value="{{ $option['id'] }}">{{ $option['label'] }}</option>
+                                @endforeach
+                            </select>
                         </div>
                         <div class="field">
                             <label class="field-label" for="activity-review-due">Review due</label>
@@ -359,7 +368,7 @@
                         <tr>
                             <td>
                                 <div class="entity-title">{{ $activity['title'] }}</div>
-                                <div class="entity-id">{{ $activity['id'] }} · {{ $activity['lawful_basis'] }}</div>
+                                <div class="entity-id">{{ $activity['id'] }} · {{ $activity['lawful_basis_label'] }}</div>
                                 <div class="table-note">{{ $activity['purpose'] }}</div>
                             </td>
                             <td>

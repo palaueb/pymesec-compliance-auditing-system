@@ -218,6 +218,7 @@ class ContinuityBcmPlugin implements PluginInterface
 
             $services[] = [
                 ...$service,
+                'impact_tier_label' => ContinuityReferenceData::impactTierLabel($service['impact_tier']),
                 'owner_assignment' => $this->ownerAssignment($actors, 'continuity-service', $service['id'], $organizationId, $screenContext->scopeId),
                 'artifacts' => array_map(
                     static fn ($artifact): array => $artifact->toArray(),
@@ -242,7 +243,10 @@ class ContinuityBcmPlugin implements PluginInterface
                     'label' => $riskLabels[$service['linked_risk_id']] ?? $service['linked_risk_id'],
                     'url' => route('core.shell.index', [...$baseQuery, 'menu' => 'plugin.risk-management.root']),
                 ]] : [],
-                'dependencies' => $dependenciesByService[$service['id']] ?? [],
+                'dependencies' => array_map(static fn (array $dependency): array => [
+                    ...$dependency,
+                    'dependency_kind_label' => ContinuityReferenceData::dependencyKindLabel($dependency['dependency_kind']),
+                ], $dependenciesByService[$service['id']] ?? []),
                 'plans' => $plans,
                 'open_url' => route('core.shell.index', [...$baseQuery, 'menu' => 'plugin.continuity-bcm.root', 'service_id' => $service['id']]),
             ];
@@ -288,6 +292,8 @@ class ContinuityBcmPlugin implements PluginInterface
             'risk_options' => $this->linkedOptions('risks', 'id', 'title', $organizationId, $screenContext->scopeId),
             'policy_options' => $this->linkedOptions('policies', 'id', 'title', $organizationId, $screenContext->scopeId),
             'finding_options' => $this->linkedOptions('findings', 'id', 'title', $organizationId, $screenContext->scopeId),
+            'impact_tier_options' => ContinuityReferenceData::optionsFor('impact_tier'),
+            'dependency_kind_options' => ContinuityReferenceData::optionsFor('dependency_kind'),
             'service_options' => array_map(static fn (array $service): array => [
                 'id' => $service['id'],
                 'label' => sprintf('%s [%s]', $service['title'], $service['id']),

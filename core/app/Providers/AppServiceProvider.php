@@ -20,6 +20,7 @@ use PymeSec\Core\Menus\MenuRegistry;
 use PymeSec\Core\Menus\MenuVisibilityContext;
 use PymeSec\Core\Notifications\Contracts\NotificationServiceInterface;
 use PymeSec\Core\Notifications\DatabaseNotificationService;
+use PymeSec\Core\ObjectAccess\ObjectAccessService;
 use PymeSec\Core\Permissions\AuthorizationContext;
 use PymeSec\Core\Permissions\AuthorizationPresentation;
 use PymeSec\Core\Permissions\AuthorizationService;
@@ -83,6 +84,13 @@ class AppServiceProvider extends ServiceProvider
             return new DatabaseNotificationService(
                 audit: $this->app->make(AuditTrailInterface::class),
                 events: $this->app->make(EventBusInterface::class),
+            );
+        });
+
+        $this->app->singleton(ObjectAccessService::class, function ($app): ObjectAccessService {
+            return new ObjectAccessService(
+                actors: $app->make(FunctionalActorServiceInterface::class),
+                authorizationStore: $app->make(AuthorizationStoreInterface::class),
             );
         });
 
@@ -754,10 +762,31 @@ class AppServiceProvider extends ServiceProvider
                             url: route('core.admin.index', [...$query, 'menu' => 'core.functional-actors']),
                             variant: 'secondary',
                         ),
+                        new ToolbarAction(
+                            label: 'Link person',
+                            url: '#functional-actor-link-editor',
+                            variant: 'secondary',
+                        ),
+                        new ToolbarAction(
+                            label: 'Assign responsibility',
+                            url: '#functional-actor-assignment-editor',
+                            variant: 'primary',
+                        ),
                     ];
                 }
 
-                return [];
+                return [
+                    new ToolbarAction(
+                        label: 'Add functional profile',
+                        url: '#functional-actor-create-editor',
+                        variant: 'primary',
+                    ),
+                    new ToolbarAction(
+                        label: 'Link person',
+                        url: '#functional-actor-principal-link-editor',
+                        variant: 'secondary',
+                    ),
+                ];
             },
         ));
     }
@@ -816,10 +845,32 @@ class AppServiceProvider extends ServiceProvider
         $organizationId = $screenContext->organizationId;
         $scopeId = $screenContext->scopeId;
         $metrics = [
-            'assets' => $this->scopedCount('assets', $organizationId, $scopeId),
-            'risks_assessing' => $this->scopedStateCount('risks', $organizationId, $scopeId, 'state', ['assessing']),
+            'assets' => $this->filteredScopedCount(
+                table: 'assets',
+                organizationId: $organizationId,
+                scopeId: $scopeId,
+                principalId: $screenContext->principal?->id,
+                domainObjectType: 'asset',
+            ),
+            'risks_assessing' => $this->filteredScopedStateCount(
+                table: 'risks',
+                organizationId: $organizationId,
+                scopeId: $scopeId,
+                stateColumn: 'state',
+                states: ['assessing'],
+                principalId: $screenContext->principal?->id,
+                domainObjectType: 'risk',
+            ),
             'controls_review' => $this->scopedStateCount('controls', $organizationId, $scopeId, 'state', ['review']),
-            'findings_open' => $this->scopedStateCount('findings', $organizationId, $scopeId, 'state', ['open', 'remediating']),
+            'findings_open' => $this->filteredScopedStateCount(
+                table: 'findings',
+                organizationId: $organizationId,
+                scopeId: $scopeId,
+                stateColumn: 'state',
+                states: ['open', 'remediating'],
+                principalId: $screenContext->principal?->id,
+                domainObjectType: 'finding',
+            ),
             'exceptions_requested' => $this->scopedStateCount('policy_exceptions', $organizationId, $scopeId, 'state', ['requested']),
         ];
 
@@ -1124,11 +1175,18 @@ class AppServiceProvider extends ServiceProvider
     private function functionalActorsScreenData(ScreenRenderContext $screenContext): array
     {
         $service = $this->app->make(FunctionalActorServiceInterface::class);
+        $authorization = $this->app->make(AuthorizationServiceInterface::class);
         $actors = $service->actors();
         $assignments = $service->assignments();
         $query = $this->coreScreenQuery($screenContext);
         $listQuery = $query;
         unset($listQuery['actor_id']);
+        $organizationId = is_string($query['organization_id'] ?? null) && $query['organization_id'] !== ''
+            ? (string) $query['organization_id']
+            : null;
+        $selectedPrincipalId = is_string($screenContext->query['subject_principal_id'] ?? null) && ($screenContext->query['subject_principal_id'] ?? '') !== ''
+            ? (string) $screenContext->query['subject_principal_id']
+            : null;
 
         $actorRows = array_map(function ($actor) use ($listQuery): array {
             $row = $actor->toArray();
@@ -1182,6 +1240,9 @@ class AppServiceProvider extends ServiceProvider
         $selectedAssignments = $selectedActorId !== null
             ? array_values(array_filter($assignmentRows, static fn (array $assignment): bool => $assignment['functional_actor_id'] === $selectedActorId))
             : [];
+        $selectedPrincipalActors = $selectedPrincipalId !== null
+            ? array_map(static fn ($actor): array => $actor->toArray(), $service->actorsForPrincipal($selectedPrincipalId, $organizationId))
+            : [];
 
         return [
             'query' => $query,
@@ -1192,6 +1253,19 @@ class AppServiceProvider extends ServiceProvider
             'selected_links' => $selectedLinks,
             'selected_assignments' => $selectedAssignments,
             'links' => $links,
+            'selected_principal_id' => $selectedPrincipalId,
+            'selected_principal_actors' => $selectedPrincipalActors,
+            'principal_options' => $this->functionalActorPrincipalOptions($organizationId),
+            'actor_kind_options' => $this->functionalActorKindOptions(),
+            'assignment_type_options' => $this->functionalAssignmentTypeOptions(),
+            'assignable_object_options' => $this->functionalAssignableObjectOptions($organizationId),
+            'can_manage_functional_actors' => $screenContext->principal !== null && $authorization->authorize(new AuthorizationContext(
+                principal: $screenContext->principal,
+                permission: 'core.functional-actors.manage',
+                memberships: $screenContext->memberships,
+                organizationId: $organizationId,
+                scopeId: is_string($query['scope_id'] ?? null) && $query['scope_id'] !== '' ? (string) $query['scope_id'] : null,
+            ))->allowed(),
             'metrics' => [
                 'actors' => count($actors),
                 'links' => count($links),
@@ -1199,7 +1273,110 @@ class AppServiceProvider extends ServiceProvider
                 'organizations' => collect($actors)->pluck('organization_id')->filter()->unique()->count(),
             ],
             'actors_list_url' => route('core.admin.index', [...$listQuery, 'menu' => 'core.functional-actors']),
+            'create_actor_route' => route('core.functional-actors.store'),
+            'link_principal_route' => route('core.functional-actors.links.store'),
+            'assign_actor_route' => route('core.functional-actors.assignments.store'),
         ];
+    }
+
+    /**
+     * @return array<int, array{id: string, label: string}>
+     */
+    private function functionalActorPrincipalOptions(?string $organizationId): array
+    {
+        if (! Schema::hasTable('identity_local_users')) {
+            return [];
+        }
+
+        $query = DB::table('identity_local_users')
+            ->orderBy('display_name')
+            ->orderBy('email');
+
+        if (is_string($organizationId) && $organizationId !== '') {
+            $query->where('organization_id', $organizationId);
+        }
+
+        return $query->get(['principal_id', 'display_name', 'email'])
+            ->map(static fn ($row): array => [
+                'id' => (string) $row->principal_id,
+                'label' => sprintf(
+                    '%s%s',
+                    (string) ($row->display_name !== '' ? $row->display_name : $row->principal_id),
+                    is_string($row->email ?? null) && $row->email !== '' ? ' ('.$row->email.')' : ''
+                ),
+            ])->all();
+    }
+
+    /**
+     * @return array<int, array{id: string, label: string}>
+     */
+    private function functionalActorKindOptions(): array
+    {
+        return [
+            ['id' => 'person', 'label' => 'Person'],
+            ['id' => 'team', 'label' => 'Team'],
+            ['id' => 'office', 'label' => 'Office'],
+            ['id' => 'role', 'label' => 'Role'],
+        ];
+    }
+
+    /**
+     * @return array<int, array{id: string, label: string}>
+     */
+    private function functionalAssignmentTypeOptions(): array
+    {
+        return [
+            ['id' => 'owner', 'label' => 'Owner'],
+            ['id' => 'reviewer', 'label' => 'Reviewer'],
+            ['id' => 'approver', 'label' => 'Approver'],
+            ['id' => 'contributor', 'label' => 'Contributor'],
+        ];
+    }
+
+    /**
+     * @return array<int, array{id: string, label: string}>
+     */
+    private function functionalAssignableObjectOptions(?string $organizationId): array
+    {
+        if (! is_string($organizationId) || $organizationId === '') {
+            return [];
+        }
+
+        $definitions = [
+            ['table' => 'assets', 'type' => 'asset', 'label_column' => 'name', 'prefix' => 'Asset'],
+            ['table' => 'risks', 'type' => 'risk', 'label_column' => 'title', 'prefix' => 'Risk'],
+            ['table' => 'controls', 'type' => 'control', 'label_column' => 'title', 'prefix' => 'Control'],
+            ['table' => 'findings', 'type' => 'finding', 'label_column' => 'title', 'prefix' => 'Finding'],
+            ['table' => 'policies', 'type' => 'policy', 'label_column' => 'title', 'prefix' => 'Policy'],
+            ['table' => 'policy_exceptions', 'type' => 'policy-exception', 'label_column' => 'title', 'prefix' => 'Policy exception'],
+            ['table' => 'privacy_data_flows', 'type' => 'data-flow', 'label_column' => 'title', 'prefix' => 'Data flow'],
+            ['table' => 'privacy_processing_activities', 'type' => 'processing-activity', 'label_column' => 'title', 'prefix' => 'Processing activity'],
+            ['table' => 'continuity_services', 'type' => 'continuity-service', 'label_column' => 'title', 'prefix' => 'Continuity service'],
+            ['table' => 'continuity_plans', 'type' => 'recovery-plan', 'label_column' => 'title', 'prefix' => 'Recovery plan'],
+            ['table' => 'assessments', 'type' => 'assessment', 'label_column' => 'title', 'prefix' => 'Assessment'],
+        ];
+
+        $options = [];
+
+        foreach ($definitions as $definition) {
+            if (! Schema::hasTable($definition['table'])) {
+                continue;
+            }
+
+            $rows = DB::table($definition['table'])
+                ->where('organization_id', $organizationId)
+                ->orderBy($definition['label_column'])
+                ->get(['id', $definition['label_column']]);
+
+            foreach ($rows as $row) {
+                $options[] = [
+                    'id' => $definition['type'].'::'.(string) $row->id,
+                    'label' => sprintf('%s · %s [%s]', $definition['prefix'], (string) $row->{$definition['label_column']}, (string) $row->id),
+                ];
+            }
+        }
+
+        return $options;
     }
 
     private function domainObjectShellUrl(
@@ -1362,6 +1539,45 @@ class AppServiceProvider extends ServiceProvider
         return $query->count();
     }
 
+    private function filteredScopedCount(
+        string $table,
+        ?string $organizationId,
+        ?string $scopeId,
+        ?string $principalId,
+        string $domainObjectType,
+    ): int {
+        if (! Schema::hasTable($table)) {
+            return 0;
+        }
+
+        $query = DB::table($table);
+
+        if (is_string($organizationId) && $organizationId !== '' && Schema::hasColumn($table, 'organization_id')) {
+            $query->where('organization_id', $organizationId);
+        }
+
+        if (is_string($scopeId) && $scopeId !== '' && Schema::hasColumn($table, 'scope_id')) {
+            $query->where('scope_id', $scopeId);
+        }
+
+        $visibleIds = $this->app->make(ObjectAccessService::class)->visibleObjectIds(
+            principalId: $principalId,
+            organizationId: $organizationId,
+            scopeId: $scopeId,
+            domainObjectType: $domainObjectType,
+        );
+
+        if (is_array($visibleIds)) {
+            if ($visibleIds === []) {
+                return 0;
+            }
+
+            $query->whereIn('id', $visibleIds);
+        }
+
+        return $query->count();
+    }
+
     /**
      * @param  array<int, string>  $states
      */
@@ -1384,6 +1600,50 @@ class AppServiceProvider extends ServiceProvider
 
         if (is_string($scopeId) && $scopeId !== '' && Schema::hasColumn($table, 'scope_id')) {
             $query->where('scope_id', $scopeId);
+        }
+
+        return $query->whereIn($stateColumn, $states)->count();
+    }
+
+    /**
+     * @param  array<int, string>  $states
+     */
+    private function filteredScopedStateCount(
+        string $table,
+        ?string $organizationId,
+        ?string $scopeId,
+        string $stateColumn,
+        array $states,
+        ?string $principalId,
+        string $domainObjectType,
+    ): int {
+        if (! Schema::hasTable($table) || ! Schema::hasColumn($table, $stateColumn)) {
+            return 0;
+        }
+
+        $query = DB::table($table);
+
+        if (is_string($organizationId) && $organizationId !== '' && Schema::hasColumn($table, 'organization_id')) {
+            $query->where('organization_id', $organizationId);
+        }
+
+        if (is_string($scopeId) && $scopeId !== '' && Schema::hasColumn($table, 'scope_id')) {
+            $query->where('scope_id', $scopeId);
+        }
+
+        $visibleIds = $this->app->make(ObjectAccessService::class)->visibleObjectIds(
+            principalId: $principalId,
+            organizationId: $organizationId,
+            scopeId: $scopeId,
+            domainObjectType: $domainObjectType,
+        );
+
+        if (is_array($visibleIds)) {
+            if ($visibleIds === []) {
+                return 0;
+            }
+
+            $query->whereIn('id', $visibleIds);
         }
 
         return $query->whereIn($stateColumn, $states)->count();

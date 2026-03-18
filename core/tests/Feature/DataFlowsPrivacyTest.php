@@ -148,4 +148,38 @@ class DataFlowsPrivacyTest extends TestCase
             ->assertSee('HR onboarding workflow')
             ->assertSee('Manage staff onboarding records and payroll initiation.');
     }
+
+    public function test_privacy_rejects_invalid_governed_reference_values(): void
+    {
+        $payload = [
+            'principal_id' => 'principal-org-a',
+            'organization_id' => 'org-a',
+            'locale' => 'en',
+            'membership_id' => 'membership-org-a-hello',
+        ];
+
+        $this->from('/app?menu=plugin.data-flows-privacy.root')
+            ->post('/plugins/privacy/data-flows', [
+                ...$payload,
+                'menu' => 'plugin.data-flows-privacy.root',
+                'title' => 'Broken flow',
+                'source' => 'A',
+                'destination' => 'B',
+                'data_category_summary' => 'Test data',
+                'transfer_type' => 'partner',
+            ])
+            ->assertRedirect('/app?menu=plugin.data-flows-privacy.root')
+            ->assertSessionHasErrors(['transfer_type']);
+
+        $this->from('/app?menu=plugin.data-flows-privacy.activities')
+            ->post('/plugins/privacy/activities', [
+                ...$payload,
+                'menu' => 'plugin.data-flows-privacy.activities',
+                'title' => 'Broken activity',
+                'purpose' => 'Test purpose',
+                'lawful_basis' => 'custom',
+            ])
+            ->assertRedirect('/app?menu=plugin.data-flows-privacy.activities')
+            ->assertSessionHasErrors(['lawful_basis']);
+    }
 }

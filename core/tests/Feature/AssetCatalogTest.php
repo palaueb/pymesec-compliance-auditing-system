@@ -41,7 +41,6 @@ class AssetCatalogTest extends TestCase
             'criticality' => 'high',
             'classification' => 'restricted',
             'scope_id' => 'scope-eu',
-            'owner_label' => 'Operations Control',
             'owner_actor_id' => 'actor-compliance-office',
         ])->assertFound();
 
@@ -52,7 +51,6 @@ class AssetCatalogTest extends TestCase
             'criticality' => 'high',
             'classification' => 'confidential',
             'scope_id' => 'scope-eu',
-            'owner_label' => 'Compliance Office',
             'owner_actor_id' => 'actor-compliance-office',
         ])->assertFound();
 
@@ -60,5 +58,24 @@ class AssetCatalogTest extends TestCase
             ->assertOk()
             ->assertSee('Supplier Access Gateway')
             ->assertSee('Compliance Office');
+    }
+
+    public function test_assets_reject_invalid_governed_values(): void
+    {
+        $this->post('/plugins/assets', [
+            'principal_id' => 'principal-org-a',
+            'organization_id' => 'org-a',
+            'locale' => 'en',
+            'menu' => 'plugin.asset-catalog.root',
+            'membership_id' => 'membership-org-a-hello',
+            'name' => 'Unruled Asset',
+            'type' => 'whatever',
+            'criticality' => 'extreme',
+            'classification' => 'top-secret',
+        ])->assertSessionHasErrors([
+            'type',
+            'criticality',
+            'classification',
+        ]);
     }
 }

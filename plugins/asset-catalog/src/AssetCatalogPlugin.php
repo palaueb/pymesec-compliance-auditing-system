@@ -3,6 +3,7 @@
 namespace PymeSec\Plugins\AssetCatalog;
 
 use PymeSec\Core\FunctionalActors\Contracts\FunctionalActorServiceInterface;
+use PymeSec\Core\ObjectAccess\ObjectAccessService;
 use PymeSec\Core\Plugins\Contracts\PluginInterface;
 use PymeSec\Core\Plugins\PluginContext;
 use PymeSec\Core\Permissions\AuthorizationContext;
@@ -133,6 +134,7 @@ class AssetCatalogPlugin implements PluginInterface
         $workflow = $context->app()->make(WorkflowServiceInterface::class);
         $actors = $context->app()->make(FunctionalActorServiceInterface::class);
         $authorization = $context->app()->make(AuthorizationServiceInterface::class);
+        $objectAccess = $context->app()->make(ObjectAccessService::class);
         $tenancy = $context->app()->make(TenancyServiceInterface::class);
         $organizationId = $screenContext->organizationId ?? 'org-a';
         $canManageAssets = $screenContext->principal !== null && $authorization->authorize(new AuthorizationContext(
@@ -144,7 +146,14 @@ class AssetCatalogPlugin implements PluginInterface
         ))->allowed();
         $assets = [];
 
-        $catalog = $repository->all($organizationId, $screenContext->scopeId);
+        $catalog = $objectAccess->filterRecords(
+            records: $repository->all($organizationId, $screenContext->scopeId),
+            idKey: 'id',
+            principalId: $screenContext->principal?->id,
+            organizationId: $organizationId,
+            scopeId: $screenContext->scopeId,
+            domainObjectType: 'asset',
+        );
 
         foreach ($catalog as $asset) {
             $instance = $workflow->instanceFor(
@@ -157,6 +166,9 @@ class AssetCatalogPlugin implements PluginInterface
 
             $assets[] = [
                 ...$asset,
+                'type_label' => AssetReferenceData::typeLabel($asset['type']),
+                'criticality_label' => AssetReferenceData::criticalityLabel($asset['criticality']),
+                'classification_label' => AssetReferenceData::classificationLabel($asset['classification']),
                 'owner_assignment' => $this->ownerAssignment($actors, $asset['id'], $organizationId, $screenContext->scopeId),
                 'state' => $instance->currentState,
                 'transitions' => $canManageAssets
@@ -201,6 +213,9 @@ class AssetCatalogPlugin implements PluginInterface
                 'id' => $actor->id,
                 'label' => $actor->displayName,
             ], $actors->actors($organizationId, $screenContext->scopeId)),
+            'asset_type_options' => AssetReferenceData::optionsFor('types'),
+            'asset_criticality_options' => AssetReferenceData::optionsFor('criticality'),
+            'asset_classification_options' => AssetReferenceData::optionsFor('classification'),
             'scope_options' => array_map(static fn ($scope): array => $scope->toArray(), $scopeContext->scopes),
             'assets_list_url' => route('core.shell.index', [...$this->baseQuery($screenContext, false), 'menu' => 'plugin.asset-catalog.root']),
         ];
@@ -212,11 +227,21 @@ class AssetCatalogPlugin implements PluginInterface
     private function lifecycleData(PluginContext $context, ScreenRenderContext $screenContext): array
     {
         $repository = $context->app()->make(AssetCatalogRepository::class);
+        $objectAccess = $context->app()->make(ObjectAccessService::class);
         $workflow = $context->app()->make(WorkflowServiceInterface::class);
         $organizationId = $screenContext->organizationId ?? 'org-a';
         $rows = [];
 
-        foreach ($repository->all($organizationId, $screenContext->scopeId) as $asset) {
+        $catalog = $objectAccess->filterRecords(
+            records: $repository->all($organizationId, $screenContext->scopeId),
+            idKey: 'id',
+            principalId: $screenContext->principal?->id,
+            organizationId: $organizationId,
+            scopeId: $screenContext->scopeId,
+            domainObjectType: 'asset',
+        );
+
+        foreach ($catalog as $asset) {
             $instance = $workflow->instanceFor(
                 workflowKey: 'plugin.asset-catalog.asset-lifecycle',
                 subjectType: 'asset',

@@ -10,6 +10,93 @@
         <div class="metric-card"><div class="metric-label">Organizations</div><div class="metric-value">{{ $metrics['organizations'] }}</div></div>
     </div>
 
+    @if ($selected_principal_id !== null)
+        <div class="surface-card" style="padding:16px; display:grid; gap:12px;">
+            <div class="row-between" style="align-items:flex-start;">
+                <div>
+                    <div class="eyebrow">Person context</div>
+                    <div class="entity-title" style="font-size:24px;">{{ $selected_principal_id }}</div>
+                    <div class="table-note">This person can be linked to one or more functional profiles for team placement and object-level accountability.</div>
+                </div>
+                <a class="button button-ghost" href="{{ $actors_list_url }}">Clear person context</a>
+            </div>
+            <div class="data-stack">
+                @forelse ($selected_principal_actors as $actor)
+                    <div class="data-item">
+                        <div class="entity-title">{{ $actor['display_name'] }}</div>
+                        <div class="table-note">{{ $actor['kind'] }} · {{ $actor['organization_id'] }}</div>
+                    </div>
+                @empty
+                    <span class="muted-note">No functional profiles linked yet.</span>
+                @endforelse
+            </div>
+        </div>
+    @endif
+
+    @if ($can_manage_functional_actors && $selectedActor === null)
+        <div class="overview-grid" style="grid-template-columns:repeat(2, minmax(0, 1fr));">
+            <div class="surface-card" id="functional-actor-create-editor" hidden style="padding:16px;">
+                <div class="metric-label">New functional profile</div>
+                <form class="upload-form" method="POST" action="{{ $create_actor_route }}" style="margin-top:10px;">
+                    @csrf
+                    <input type="hidden" name="principal_id" value="{{ $query['principal_id'] ?? '' }}">
+                    <input type="hidden" name="organization_id" value="{{ $query['organization_id'] ?? '' }}">
+                    <input type="hidden" name="scope_id" value="{{ $query['scope_id'] ?? '' }}">
+                    <input type="hidden" name="locale" value="{{ $query['locale'] ?? 'en' }}">
+                    <input type="hidden" name="theme" value="{{ $query['theme'] ?? '' }}">
+                    <input type="hidden" name="subject_principal_id" value="{{ $selected_principal_id }}">
+                    <div class="field">
+                        <label class="field-label">Display name</label>
+                        <input class="field-input" name="display_name" required>
+                    </div>
+                    <div class="field">
+                        <label class="field-label">Profile type</label>
+                        <select class="field-select" name="kind" required>
+                            @foreach ($actor_kind_options as $option)
+                                <option value="{{ $option['id'] }}">{{ $option['label'] }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="action-cluster" style="margin-top:12px;">
+                        <button class="button button-primary" type="submit">Create profile</button>
+                    </div>
+                </form>
+            </div>
+
+            <div class="surface-card" id="functional-actor-principal-link-editor" hidden style="padding:16px;">
+                <div class="metric-label">Link person to profile</div>
+                <form class="upload-form" method="POST" action="{{ $link_principal_route }}" style="margin-top:10px;">
+                    @csrf
+                    <input type="hidden" name="principal_id" value="{{ $query['principal_id'] ?? '' }}">
+                    <input type="hidden" name="organization_id" value="{{ $query['organization_id'] ?? '' }}">
+                    <input type="hidden" name="locale" value="{{ $query['locale'] ?? 'en' }}">
+                    <input type="hidden" name="theme" value="{{ $query['theme'] ?? '' }}">
+                    <div class="field">
+                        <label class="field-label">Person</label>
+                        <select class="field-select" name="subject_principal_id" required>
+                            <option value="">Select a person</option>
+                            @foreach ($principal_options as $option)
+                                <option value="{{ $option['id'] }}" @selected($selected_principal_id === $option['id'])>{{ $option['label'] }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label class="field-label">Functional profile</label>
+                        <select class="field-select" name="actor_id" required>
+                            <option value="">Select a profile</option>
+                            @foreach ($actors as $actor)
+                                <option value="{{ $actor['id'] }}">{{ $actor['display_name'] }} ({{ $actor['kind'] }})</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="action-cluster" style="margin-top:12px;">
+                        <button class="button button-primary" type="submit">Link person</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    @endif
+
     @if ($selectedActor !== null)
         <div class="table-card">
             <div class="screen-header">
@@ -43,7 +130,9 @@
 
             <div class="overview-grid" style="grid-template-columns:repeat(2, minmax(0, 1fr));">
                 <div class="surface-card" style="padding:16px;">
-                    <div class="field-label">Linked people</div>
+                    <div class="row-between">
+                        <div class="field-label">Linked people</div>
+                    </div>
                     <div class="data-stack" style="margin-top:10px;">
                         @forelse ($selected_links as $link)
                             <div class="data-item">
@@ -55,10 +144,36 @@
                             <span class="muted-note">No people linked to this profile yet.</span>
                         @endforelse
                     </div>
+                    @if ($can_manage_functional_actors)
+                        <div class="surface-card" id="functional-actor-link-editor" hidden style="padding:14px; margin-top:14px;">
+                            <form class="upload-form" method="POST" action="{{ $link_principal_route }}">
+                                @csrf
+                                <input type="hidden" name="principal_id" value="{{ $query['principal_id'] ?? '' }}">
+                                <input type="hidden" name="organization_id" value="{{ $query['organization_id'] ?? '' }}">
+                                <input type="hidden" name="locale" value="{{ $query['locale'] ?? 'en' }}">
+                                <input type="hidden" name="theme" value="{{ $query['theme'] ?? '' }}">
+                                <input type="hidden" name="actor_id" value="{{ $selectedActor['id'] }}">
+                                <div class="field">
+                                    <label class="field-label">Person</label>
+                                    <select class="field-select" name="subject_principal_id" required>
+                                        <option value="">Select a person</option>
+                                        @foreach ($principal_options as $option)
+                                            <option value="{{ $option['id'] }}" @selected($selected_principal_id === $option['id'])>{{ $option['label'] }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="action-cluster" style="margin-top:12px;">
+                                    <button class="button button-secondary" type="submit">Link person</button>
+                                </div>
+                            </form>
+                        </div>
+                    @endif
                 </div>
 
                 <div class="surface-card" style="padding:16px;">
-                    <div class="field-label">Responsibilities</div>
+                    <div class="row-between">
+                        <div class="field-label">Responsibilities</div>
+                    </div>
                     <div class="data-stack" style="margin-top:10px;">
                         @forelse ($selected_assignments as $assignment)
                             <div class="data-item">
@@ -72,6 +187,39 @@
                             <span class="muted-note">No assignments recorded for this profile.</span>
                         @endforelse
                     </div>
+                    @if ($can_manage_functional_actors)
+                        <div class="surface-card" id="functional-actor-assignment-editor" hidden style="padding:14px; margin-top:14px;">
+                            <form class="upload-form" method="POST" action="{{ $assign_actor_route }}">
+                                @csrf
+                                <input type="hidden" name="principal_id" value="{{ $query['principal_id'] ?? '' }}">
+                                <input type="hidden" name="organization_id" value="{{ $query['organization_id'] ?? '' }}">
+                                <input type="hidden" name="scope_id" value="{{ $query['scope_id'] ?? '' }}">
+                                <input type="hidden" name="locale" value="{{ $query['locale'] ?? 'en' }}">
+                                <input type="hidden" name="theme" value="{{ $query['theme'] ?? '' }}">
+                                <input type="hidden" name="actor_id" value="{{ $selectedActor['id'] }}">
+                                <div class="field">
+                                    <label class="field-label">Responsibility type</label>
+                                    <select class="field-select" name="assignment_type" required>
+                                        @foreach ($assignment_type_options as $option)
+                                            <option value="{{ $option['id'] }}">{{ $option['label'] }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="field">
+                                    <label class="field-label">Workspace item</label>
+                                    <select class="field-select" name="subject_key" required>
+                                        <option value="">Select an item</option>
+                                        @foreach ($assignable_object_options as $option)
+                                            <option value="{{ $option['id'] }}">{{ $option['label'] }}</option>
+                                        @endforeach
+                                    </select>
+                                </div>
+                                <div class="action-cluster" style="margin-top:12px;">
+                                    <button class="button button-secondary" type="submit">Assign responsibility</button>
+                                </div>
+                            </form>
+                        </div>
+                    @endif
                 </div>
             </div>
         </div>

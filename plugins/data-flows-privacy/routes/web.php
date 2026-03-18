@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Route;
 use PymeSec\Core\Artifacts\ArtifactUploadData;
 use PymeSec\Core\Artifacts\Contracts\ArtifactServiceInterface;
@@ -10,6 +11,7 @@ use PymeSec\Core\Principals\PrincipalReference;
 use PymeSec\Core\Workflows\Contracts\WorkflowServiceInterface;
 use PymeSec\Core\Workflows\WorkflowExecutionContext;
 use PymeSec\Plugins\DataFlowsPrivacy\DataFlowsPrivacyRepository;
+use PymeSec\Plugins\DataFlowsPrivacy\PrivacyReferenceData;
 
 Route::get('/plugins/privacy/data-flows', function (Request $request, DataFlowsPrivacyRepository $repository) {
     return response()->json([
@@ -41,7 +43,7 @@ Route::post('/plugins/privacy/data-flows', function (
         'source' => ['required', 'string', 'max:160'],
         'destination' => ['required', 'string', 'max:160'],
         'data_category_summary' => ['required', 'string', 'max:200'],
-        'transfer_type' => ['required', 'string', 'max:80'],
+        'transfer_type' => ['required', 'string', Rule::in(PrivacyReferenceData::transferTypeKeys())],
         'review_due_on' => ['nullable', 'date'],
         'linked_asset_id' => ['nullable', 'string', 'max:120', 'exists:assets,id'],
         'linked_risk_id' => ['nullable', 'string', 'max:120'],
@@ -89,7 +91,7 @@ Route::post('/plugins/privacy/data-flows/{flowId}', function (
         'source' => ['required', 'string', 'max:160'],
         'destination' => ['required', 'string', 'max:160'],
         'data_category_summary' => ['required', 'string', 'max:200'],
-        'transfer_type' => ['required', 'string', 'max:80'],
+        'transfer_type' => ['required', 'string', Rule::in(PrivacyReferenceData::transferTypeKeys())],
         'review_due_on' => ['nullable', 'date'],
         'linked_asset_id' => ['nullable', 'string', 'max:120', 'exists:assets,id'],
         'linked_risk_id' => ['nullable', 'string', 'max:120'],
@@ -230,7 +232,7 @@ Route::post('/plugins/privacy/activities', function (
     $validated = $request->validate([
         'title' => ['required', 'string', 'max:160'],
         'purpose' => ['required', 'string', 'max:200'],
-        'lawful_basis' => ['required', 'string', 'max:120'],
+        'lawful_basis' => ['required', 'string', Rule::in(PrivacyReferenceData::lawfulBasisKeys())],
         'linked_data_flow_ids' => ['nullable', 'string', 'max:255'],
         'linked_risk_ids' => ['nullable', 'string', 'max:255'],
         'linked_policy_id' => ['nullable', 'string', 'max:120'],
@@ -278,7 +280,7 @@ Route::post('/plugins/privacy/activities/{activityId}', function (
     $validated = $request->validate([
         'title' => ['required', 'string', 'max:160'],
         'purpose' => ['required', 'string', 'max:200'],
-        'lawful_basis' => ['required', 'string', 'max:120'],
+        'lawful_basis' => ['required', 'string', Rule::in(PrivacyReferenceData::lawfulBasisKeys())],
         'linked_data_flow_ids' => ['nullable', 'string', 'max:255'],
         'linked_risk_ids' => ['nullable', 'string', 'max:255'],
         'linked_policy_id' => ['nullable', 'string', 'max:120'],

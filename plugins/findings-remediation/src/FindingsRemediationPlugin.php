@@ -5,6 +5,7 @@ namespace PymeSec\Plugins\FindingsRemediation;
 use Illuminate\Support\Facades\DB;
 use PymeSec\Core\Artifacts\Contracts\ArtifactServiceInterface;
 use PymeSec\Core\FunctionalActors\Contracts\FunctionalActorServiceInterface;
+use PymeSec\Core\ObjectAccess\ObjectAccessService;
 use PymeSec\Core\Permissions\AuthorizationContext;
 use PymeSec\Core\Permissions\Contracts\AuthorizationServiceInterface;
 use PymeSec\Core\Plugins\Contracts\PluginInterface;
@@ -130,6 +131,7 @@ class FindingsRemediationPlugin implements PluginInterface
         $workflow = $context->app()->make(WorkflowServiceInterface::class);
         $actors = $context->app()->make(FunctionalActorServiceInterface::class);
         $authorization = $context->app()->make(AuthorizationServiceInterface::class);
+        $objectAccess = $context->app()->make(ObjectAccessService::class);
         $tenancy = $context->app()->make(TenancyServiceInterface::class);
         $organizationId = $screenContext->organizationId ?? 'org-a';
         $canManage = $screenContext->principal !== null && $authorization->authorize(new AuthorizationContext(
@@ -155,7 +157,16 @@ class FindingsRemediationPlugin implements PluginInterface
 
         $findings = [];
 
-        foreach ($repository->allFindings($organizationId, $screenContext->scopeId) as $finding) {
+        $visibleFindings = $objectAccess->filterRecords(
+            records: $repository->allFindings($organizationId, $screenContext->scopeId),
+            idKey: 'id',
+            principalId: $screenContext->principal?->id,
+            organizationId: $organizationId,
+            scopeId: $screenContext->scopeId,
+            domainObjectType: 'finding',
+        );
+
+        foreach ($visibleFindings as $finding) {
             $instance = $workflow->instanceFor(
                 workflowKey: 'plugin.findings-remediation.finding-lifecycle',
                 subjectType: 'finding',
@@ -248,6 +259,7 @@ class FindingsRemediationPlugin implements PluginInterface
         $repository = $context->app()->make(FindingsRemediationRepository::class);
         $actors = $context->app()->make(FunctionalActorServiceInterface::class);
         $authorization = $context->app()->make(AuthorizationServiceInterface::class);
+        $objectAccess = $context->app()->make(ObjectAccessService::class);
         $organizationId = $screenContext->organizationId ?? 'org-a';
         $canManage = $screenContext->principal !== null && $authorization->authorize(new AuthorizationContext(
             principal: $screenContext->principal,
@@ -257,7 +269,22 @@ class FindingsRemediationPlugin implements PluginInterface
             scopeId: $screenContext->scopeId,
         ))->allowed();
 
+        $baseQuery = $this->baseQuery($screenContext, false);
         $actions = [];
+        $visibleFindingIds = $objectAccess->visibleObjectIds(
+            principalId: $screenContext->principal?->id,
+            organizationId: $organizationId,
+            scopeId: $screenContext->scopeId,
+            domainObjectType: 'finding',
+        );
+        $visibleActionIds = $objectAccess->visibleObjectIds(
+            principalId: $screenContext->principal?->id,
+            organizationId: $organizationId,
+            scopeId: $screenContext->scopeId,
+            domainObjectType: 'remediation-action',
+        );
+        $isFindingScoped = is_array($visibleFindingIds);
+        $isActionScoped = is_array($visibleActionIds);
 
         foreach ($repository->actions($organizationId, $screenContext->scopeId) as $action) {
             $finding = $repository->findFinding($action['finding_id']);
@@ -266,9 +293,19 @@ class FindingsRemediationPlugin implements PluginInterface
                 continue;
             }
 
+            if ($isFindingScoped || $isActionScoped) {
+                $matchesFinding = $isFindingScoped && in_array($finding['id'], $visibleFindingIds, true);
+                $matchesAction = $isActionScoped && in_array($action['id'], $visibleActionIds, true);
+
+                if (! $matchesFinding && ! $matchesAction) {
+                    continue;
+                }
+            }
+
             $actions[] = [
                 ...$action,
                 'finding' => $finding,
+                'finding_open_url' => route('core.shell.index', [...$baseQuery, 'menu' => 'plugin.findings-remediation.root', 'finding_id' => $action['finding_id']]),
                 'owner_assignment' => $this->ownerAssignment($actors, 'remediation-action', $action['id'], $organizationId, $screenContext->scopeId),
                 'update_route' => route('plugin.findings-remediation.actions.update', ['actionId' => $action['id']]),
             ];

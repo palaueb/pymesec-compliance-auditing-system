@@ -5,28 +5,43 @@ use Illuminate\Support\Facades\Route;
 use PymeSec\Core\Artifacts\ArtifactUploadData;
 use PymeSec\Core\Artifacts\Contracts\ArtifactServiceInterface;
 use PymeSec\Core\FunctionalActors\Contracts\FunctionalActorServiceInterface;
+use PymeSec\Core\ObjectAccess\ObjectAccessService;
 use PymeSec\Core\Principals\MembershipReference;
 use PymeSec\Core\Principals\PrincipalReference;
 use PymeSec\Core\Workflows\Contracts\WorkflowServiceInterface;
 use PymeSec\Core\Workflows\WorkflowExecutionContext;
 use PymeSec\Plugins\RiskManagement\RiskRepository;
 
-Route::get('/plugins/risks', function (Request $request, RiskRepository $repository) {
+Route::get('/plugins/risks', function (Request $request, RiskRepository $repository, ObjectAccessService $objectAccess) {
+    $organizationId = (string) $request->query('organization_id', 'org-a');
+    $scopeId = $request->query('scope_id');
+
     return response()->json([
         'plugin' => 'risk-management',
-        'risks' => $repository->all(
-            (string) $request->query('organization_id', 'org-a'),
-            $request->query('scope_id'),
+        'risks' => $objectAccess->filterRecords(
+            records: $repository->all($organizationId, $scopeId),
+            idKey: 'id',
+            principalId: is_string($request->query('principal_id')) ? $request->query('principal_id') : null,
+            organizationId: $organizationId,
+            scopeId: is_string($scopeId) ? $scopeId : null,
+            domainObjectType: 'risk',
         ),
     ]);
 })->name('plugin.risk-management.index');
 
-Route::get('/plugins/risks/board', function (Request $request, RiskRepository $repository) {
+Route::get('/plugins/risks/board', function (Request $request, RiskRepository $repository, ObjectAccessService $objectAccess) {
+    $organizationId = (string) $request->query('organization_id', 'org-a');
+    $scopeId = $request->query('scope_id');
+
     return response()->json([
         'plugin' => 'risk-management',
-        'board' => $repository->all(
-            (string) $request->query('organization_id', 'org-a'),
-            $request->query('scope_id'),
+        'board' => $objectAccess->filterRecords(
+            records: $repository->all($organizationId, $scopeId),
+            idKey: 'id',
+            principalId: is_string($request->query('principal_id')) ? $request->query('principal_id') : null,
+            organizationId: $organizationId,
+            scopeId: is_string($scopeId) ? $scopeId : null,
+            domainObjectType: 'risk',
         ),
     ]);
 })->name('plugin.risk-management.board');
@@ -81,8 +96,20 @@ Route::post('/plugins/risks/{riskId}', function (
     Request $request,
     string $riskId,
     RiskRepository $repository,
-    FunctionalActorServiceInterface $actors
+    FunctionalActorServiceInterface $actors,
+    ObjectAccessService $objectAccess,
 ) {
+    $existingRisk = $repository->find($riskId);
+
+    abort_if($existingRisk === null, 404);
+    abort_unless($objectAccess->canAccessObject(
+        principalId: (string) $request->input('principal_id', 'principal-org-a'),
+        organizationId: $existingRisk['organization_id'],
+        scopeId: $existingRisk['scope_id'] !== '' ? $existingRisk['scope_id'] : null,
+        domainObjectType: 'risk',
+        domainObjectId: $existingRisk['id'],
+    ), 403);
+
     $validated = $request->validate([
         'title' => ['required', 'string', 'max:140'],
         'category' => ['required', 'string', 'max:80'],
@@ -133,11 +160,19 @@ Route::post('/plugins/risks/{riskId}/artifacts', function (
     Request $request,
     string $riskId,
     RiskRepository $repository,
-    ArtifactServiceInterface $artifacts
+    ArtifactServiceInterface $artifacts,
+    ObjectAccessService $objectAccess,
 ) {
     $risk = $repository->find($riskId);
 
     abort_if($risk === null, 404);
+    abort_unless($objectAccess->canAccessObject(
+        principalId: (string) $request->input('principal_id', 'principal-org-a'),
+        organizationId: $risk['organization_id'],
+        scopeId: $risk['scope_id'] !== '' ? $risk['scope_id'] : null,
+        domainObjectType: 'risk',
+        domainObjectId: $risk['id'],
+    ), 403);
 
     $validated = $request->validate([
         'artifact' => ['required', 'file', 'max:10240'],
@@ -182,12 +217,24 @@ Route::post('/plugins/risks/{riskId}/transitions/{transitionKey}', function (
     Request $request,
     string $riskId,
     string $transitionKey,
-    WorkflowServiceInterface $workflows
+    WorkflowServiceInterface $workflows,
+    RiskRepository $repository,
+    ObjectAccessService $objectAccess,
 ) {
     $principalId = (string) $request->input('principal_id', 'principal-org-a');
     $membershipId = $request->input('membership_id');
     $organizationId = (string) $request->input('organization_id', 'org-a');
     $scopeId = $request->input('scope_id');
+    $risk = $repository->find($riskId);
+
+    abort_if($risk === null, 404);
+    abort_unless($objectAccess->canAccessObject(
+        principalId: $principalId,
+        organizationId: $risk['organization_id'],
+        scopeId: $risk['scope_id'] !== '' ? $risk['scope_id'] : null,
+        domainObjectType: 'risk',
+        domainObjectId: $risk['id'],
+    ), 403);
 
     $workflows->transition(
         workflowKey: 'plugin.risk-management.risk-lifecycle',

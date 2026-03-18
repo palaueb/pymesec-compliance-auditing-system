@@ -16,7 +16,7 @@
                     <div class="eyebrow">Continuity service</div>
                     <h2 class="screen-title" style="font-size:28px;">{{ $selected_service['title'] }}</h2>
                     <div class="table-note">{{ $selected_service['id'] }}</div>
-                    <div class="table-note">{{ $selected_service['impact_tier'] }}</div>
+                    <div class="table-note">{{ $selected_service['impact_tier_label'] }}</div>
                 </div>
                 <div class="action-cluster">
                     @php $svcStatePill = match($selected_service['state']) { 'active' => 'pill-active', 'review' => 'pill-review', 'draft' => 'pill-draft', 'archived' => 'pill-archived', default => '' }; @endphp
@@ -80,7 +80,11 @@
                                 </div>
                                 <div class="field">
                                     <label class="field-label">Impact tier</label>
-                                    <input class="field-input" name="impact_tier" value="{{ $selected_service['impact_tier'] }}" required>
+                                    <select class="field-select" name="impact_tier" required>
+                                        @foreach ($impact_tier_options as $option)
+                                            <option value="{{ $option['id'] }}" @selected($selected_service['impact_tier'] === $option['id'])>{{ $option['label'] }}</option>
+                                        @endforeach
+                                    </select>
                                 </div>
                                 <div class="field">
                                     <label class="field-label">RTO hours</label>
@@ -239,9 +243,9 @@
                                         @endforeach
                                     </select>
                                     <select class="field-select" name="dependency_kind">
-                                        <option value="critical">Critical</option>
-                                        <option value="supporting">Supporting</option>
-                                        <option value="external">External</option>
+                                        @foreach ($dependency_kind_options as $option)
+                                            <option value="{{ $option['id'] }}">{{ $option['label'] }}</option>
+                                        @endforeach
                                     </select>
                                     <input class="field-input" type="text" name="recovery_notes" placeholder="Recovery note">
                                     <button class="button button-secondary" type="submit">Save dependency</button>
@@ -253,7 +257,7 @@
                         @forelse ($selected_service['dependencies'] as $dependency)
                             <div class="data-item">
                                 <div class="entity-title">{{ $dependency['depends_on_service_title'] }}</div>
-                                <div class="table-note">{{ ucfirst($dependency['dependency_kind']) }} dependency</div>
+                                <div class="table-note">{{ $dependency['dependency_kind_label'] }} dependency</div>
                                 @if ($dependency['recovery_notes'] !== '')
                                     <div class="table-note">{{ $dependency['recovery_notes'] }}</div>
                                 @endif
@@ -325,7 +329,12 @@
                         </div>
                         <div class="field">
                             <label class="field-label" for="service-impact">Impact tier</label>
-                            <input class="field-input" id="service-impact" name="impact_tier" placeholder="critical, high, medium" required>
+                            <select class="field-select" id="service-impact" name="impact_tier" required>
+                                <option value="">Choose impact tier</option>
+                                @foreach ($impact_tier_options as $option)
+                                    <option value="{{ $option['id'] }}">{{ $option['label'] }}</option>
+                                @endforeach
+                            </select>
                         </div>
                         <div class="field">
                             <label class="field-label" for="service-rto">RTO hours</label>
@@ -410,7 +419,7 @@
                         <tr>
                             <td>
                                 <div class="entity-title">{{ $service['title'] }}</div>
-                                <div class="entity-id">{{ $service['id'] }} · {{ $service['impact_tier'] }}</div>
+                                <div class="entity-id">{{ $service['id'] }} · {{ $service['impact_tier_label'] }}</div>
                                 <div class="table-note">{{ $service['plan_count'] }} recovery plans</div>
                             </td>
                             <td>

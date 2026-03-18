@@ -142,6 +142,19 @@ return [
                 'plugin.assessments-audits.assessments.view',
             ],
         ],
+        'evidence-operator' => [
+            'label' => 'Evidence operator',
+            'permissions' => [
+                'plugin.evidence-management.evidence.view',
+                'plugin.evidence-management.evidence.manage',
+            ],
+        ],
+        'evidence-viewer' => [
+            'label' => 'Evidence viewer',
+            'permissions' => [
+                'plugin.evidence-management.evidence.view',
+            ],
+        ],
         'identity-operator' => [
             'label' => 'Identity operator',
             'permissions' => [
@@ -264,6 +277,14 @@ return [
             'target_type' => 'membership',
             'target_id' => 'membership-org-a-hello',
             'grant_type' => 'role',
+            'value' => 'evidence-operator',
+            'context_type' => 'organization',
+            'organization_id' => 'org-a',
+        ],
+        [
+            'target_type' => 'membership',
+            'target_id' => 'membership-org-a-hello',
+            'grant_type' => 'role',
             'value' => 'identity-operator',
             'context_type' => 'organization',
             'organization_id' => 'org-a',
@@ -360,6 +381,14 @@ return [
             'target_type' => 'membership',
             'target_id' => 'membership-org-a-viewer',
             'grant_type' => 'role',
+            'value' => 'evidence-viewer',
+            'context_type' => 'organization',
+            'organization_id' => 'org-a',
+        ],
+        [
+            'target_type' => 'membership',
+            'target_id' => 'membership-org-a-viewer',
+            'grant_type' => 'role',
             'value' => 'identity-viewer',
             'context_type' => 'organization',
             'organization_id' => 'org-a',
@@ -425,6 +454,14 @@ return [
             'target_id' => 'membership-org-b-ops',
             'grant_type' => 'role',
             'value' => 'assessment-viewer',
+            'context_type' => 'organization',
+            'organization_id' => 'org-b',
+        ],
+        [
+            'target_type' => 'membership',
+            'target_id' => 'membership-org-b-ops',
+            'grant_type' => 'role',
+            'value' => 'evidence-viewer',
             'context_type' => 'organization',
             'organization_id' => 'org-b',
         ],

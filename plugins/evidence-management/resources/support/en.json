@@ -1,0 +1,35 @@
+{
+  "guide": [
+    {
+      "id": "evidence-library-overview",
+      "title": "Evidence library",
+      "summary": "Use the evidence library to keep proof material in one governed place and reuse it across assessments, controls, findings, and other work areas.",
+      "body": [
+        "An evidence record wraps a file or existing artifact with business metadata such as status, validity, review dates, and linked records.",
+        "A single evidence record can support more than one control, assessment, or finding without uploading the same file again."
+      ],
+      "order": 240
+    }
+  ],
+  "concepts": [
+    {
+      "id": "evidence-record",
+      "label": "Evidence record",
+      "summary": "A governed proof item with status, dates, validation notes, and links to related records.",
+      "why_it_exists": "It turns a raw uploaded file into something the compliance team can review, reuse, and track over time.",
+      "how_to_use_it": [
+        "Create an evidence record from a new file or promote an existing artifact.",
+        "Link it to the controls, assessments, findings, risks, or plans that rely on it.",
+        "Keep the validation status and validity dates current."
+      ],
+      "related_to": [
+        "assessment-campaign",
+        "control",
+        "finding",
+        "risk"
+      ],
+      "area": "app",
+      "order": 240
+    }
+  ]
+}

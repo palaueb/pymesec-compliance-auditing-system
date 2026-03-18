@@ -41,16 +41,16 @@ Each page and object must be checked against these questions:
 
 ### Asset Domain
 
-- [ ] Govern `asset type`
-- [ ] Govern `asset criticality`
-- [ ] Govern `asset classification`
-- [ ] Replace `owner_label` with actor assignments
+- [x] Govern `asset type`
+- [x] Govern `asset criticality`
+- [x] Govern `asset classification`
+- [x] Replace `owner_label` editing with actor assignments
 - [ ] Support multiple accountable parties for assets
 
 ### Continuity Domain
 
-- [ ] Govern `impact tier`
-- [ ] Govern dependency kinds
+- [x] Govern `impact tier`
+- [x] Govern dependency kinds
 - [ ] Govern exercise types and execution types if they remain business-level concepts
 - [ ] Replace single owner semantics with assignment-based ownership where needed
 
@@ -59,6 +59,12 @@ Each page and object must be checked against these questions:
 - [ ] Govern assessment results as system values
 - [ ] Govern finding severity via existing controlled values
 - [ ] Keep requirements and controls linked by object, not by copied text
+
+### Privacy Domain
+
+- [x] Govern `transfer type`
+- [x] Govern `lawful basis`
+- [ ] Review linked object fields for multi-select governance where needed
 
 ## Execution Batches
 

@@ -64,6 +64,25 @@
                 </div>
             </div>
 
+            <div class="surface-card" style="padding:14px;">
+                <div class="row-between">
+                    <div class="metric-label">Functional profiles</div>
+                    @if (is_string($manage_functional_profiles_url ?? null))
+                        <a class="button button-ghost" href="{{ $manage_functional_profiles_url }}">Manage responsibilities</a>
+                    @endif
+                </div>
+                <div class="data-stack" style="margin-top:10px;">
+                    @forelse ($selected_row['linked_actors'] as $actor)
+                        <div class="data-item">
+                            <div class="entity-title">{{ $actor['display_name'] }}</div>
+                            <div class="table-note">{{ $actor['kind'] }} · {{ $actor['id'] }}</div>
+                        </div>
+                    @empty
+                        <span class="muted-note">No functional profiles linked yet.</span>
+                    @endforelse
+                </div>
+            </div>
+
             @if ($can_manage_memberships)
                 <div class="surface-card" style="padding:14px;">
                     <div class="metric-label">Edit access</div>

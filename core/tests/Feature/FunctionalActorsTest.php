@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class FunctionalActorsTest extends TestCase
@@ -51,7 +52,8 @@ class FunctionalActorsTest extends TestCase
             ->assertOk()
             ->assertSee('Functional Directory')
             ->assertSee('Ava Mason')
-            ->assertSee('principal-org-a');
+            ->assertSee('principal-org-a')
+            ->assertSee('Assign responsibility');
     }
 
     public function test_the_asset_catalog_uses_functional_actor_assignments_for_owner_display(): void
@@ -103,5 +105,47 @@ class FunctionalActorsTest extends TestCase
             ->assertJsonFragment([
                 'target_id' => 'asset-vault-docs',
             ]);
+    }
+
+    public function test_functional_profiles_can_be_created_linked_and_assigned_from_the_admin_ui(): void
+    {
+        $this->post('/core/functional-actors', [
+            'principal_id' => 'principal-admin',
+            'organization_id' => 'org-a',
+            'locale' => 'en',
+            'display_name' => 'IT Team',
+            'kind' => 'team',
+            'subject_principal_id' => 'principal-ldap-org-a-dirkkoch',
+        ])->assertFound();
+
+        $actorId = (string) DB::table('functional_actors')
+            ->where('display_name', 'IT Team')
+            ->value('id');
+
+        $this->assertNotSame('', $actorId);
+
+        $this->post('/core/functional-actors/links', [
+            'principal_id' => 'principal-admin',
+            'organization_id' => 'org-a',
+            'locale' => 'en',
+            'actor_id' => $actorId,
+            'subject_principal_id' => 'principal-ldap-org-a-dirkkoch',
+        ])->assertFound();
+
+        $this->post('/core/functional-actors/assignments', [
+            'principal_id' => 'principal-admin',
+            'organization_id' => 'org-a',
+            'locale' => 'en',
+            'actor_id' => $actorId,
+            'assignment_type' => 'owner',
+            'subject_key' => 'asset::asset-erp-prod',
+        ])->assertFound();
+
+        $this->get('/admin?menu=core.functional-actors&principal_id=principal-admin&organization_id=org-a&actor_id='.$actorId)
+            ->assertOk()
+            ->assertSee('IT Team')
+            ->assertSee('principal-ldap-org-a-dirkkoch')
+            ->assertSee('asset')
+            ->assertSee('asset-erp-prod');
     }
 }

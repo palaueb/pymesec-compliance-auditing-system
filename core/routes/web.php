@@ -1135,6 +1135,125 @@ Route::get('/core/functional-actors', function (FunctionalActorServiceInterface 
     ]);
 })->middleware('core.permission:core.functional-actors.view')->name('core.functional-actors.index');
 
+Route::post('/core/functional-actors', function (FunctionalActorServiceInterface $actors) {
+    $validated = request()->validate([
+        'display_name' => ['required', 'string', 'max:160'],
+        'kind' => ['required', 'string', 'max:40'],
+        'organization_id' => ['required', 'string', 'max:64'],
+        'scope_id' => ['nullable', 'string', 'max:64'],
+        'principal_id' => ['nullable', 'string', 'max:120'],
+        'locale' => ['nullable', 'string', 'max:12'],
+        'theme' => ['nullable', 'string', 'max:40'],
+        'subject_principal_id' => ['nullable', 'string', 'max:120'],
+    ]);
+
+    $actor = $actors->createActor(
+        provider: 'manual',
+        kind: $validated['kind'],
+        displayName: $validated['display_name'],
+        organizationId: $validated['organization_id'],
+        scopeId: is_string($validated['scope_id'] ?? null) && $validated['scope_id'] !== '' ? $validated['scope_id'] : null,
+        metadata: [],
+        createdByPrincipalId: is_string($validated['principal_id'] ?? null) && $validated['principal_id'] !== '' ? $validated['principal_id'] : null,
+    );
+
+    return redirect()->route('core.admin.index', array_filter([
+        'menu' => 'core.functional-actors',
+        'actor_id' => $actor->id,
+        'subject_principal_id' => $validated['subject_principal_id'] ?? null,
+        'principal_id' => $validated['principal_id'] ?? null,
+        'organization_id' => $validated['organization_id'],
+        'scope_id' => $validated['scope_id'] ?? null,
+        'locale' => $validated['locale'] ?? 'en',
+        'theme' => $validated['theme'] ?? null,
+    ]))->with('status', 'Functional profile created.');
+})->middleware('core.permission:core.functional-actors.manage')->name('core.functional-actors.store');
+
+Route::post('/core/functional-actors/links', function (FunctionalActorServiceInterface $actors) {
+    $validated = request()->validate([
+        'actor_id' => ['required', 'string', 'max:120'],
+        'subject_principal_id' => ['required', 'string', 'max:120'],
+        'organization_id' => ['required', 'string', 'max:64'],
+        'principal_id' => ['nullable', 'string', 'max:120'],
+        'locale' => ['nullable', 'string', 'max:12'],
+        'theme' => ['nullable', 'string', 'max:40'],
+    ]);
+
+    abort_if($actors->findActor($validated['actor_id']) === null, 404);
+
+    $actors->linkPrincipal(
+        principalId: $validated['subject_principal_id'],
+        actorId: $validated['actor_id'],
+        organizationId: $validated['organization_id'],
+        linkedByPrincipalId: is_string($validated['principal_id'] ?? null) && $validated['principal_id'] !== '' ? $validated['principal_id'] : null,
+    );
+
+    return redirect()->route('core.admin.index', array_filter([
+        'menu' => 'core.functional-actors',
+        'actor_id' => $validated['actor_id'],
+        'subject_principal_id' => $validated['subject_principal_id'],
+        'principal_id' => $validated['principal_id'] ?? null,
+        'organization_id' => $validated['organization_id'],
+        'locale' => $validated['locale'] ?? 'en',
+        'theme' => $validated['theme'] ?? null,
+    ]))->with('status', 'Person linked to functional profile.');
+})->middleware('core.permission:core.functional-actors.manage')->name('core.functional-actors.links.store');
+
+Route::post('/core/functional-actors/assignments', function (FunctionalActorServiceInterface $actors) {
+    $validated = request()->validate([
+        'actor_id' => ['required', 'string', 'max:120'],
+        'subject_key' => ['required', 'string', 'max:255'],
+        'assignment_type' => ['required', 'string', 'max:40'],
+        'organization_id' => ['required', 'string', 'max:64'],
+        'scope_id' => ['nullable', 'string', 'max:64'],
+        'principal_id' => ['nullable', 'string', 'max:120'],
+        'locale' => ['nullable', 'string', 'max:12'],
+        'theme' => ['nullable', 'string', 'max:40'],
+    ]);
+
+    abort_if($actors->findActor($validated['actor_id']) === null, 404);
+
+    [$domainObjectType, $domainObjectId] = array_pad(explode('::', $validated['subject_key'], 2), 2, null);
+
+    if (! is_string($domainObjectType) || $domainObjectType === '' || ! is_string($domainObjectId) || $domainObjectId === '') {
+        return back()->withErrors(['subject_key' => 'Choose a valid workspace item.'])->withInput();
+    }
+
+    if ($validated['assignment_type'] === 'owner') {
+        $actors->syncSingleAssignment(
+            actorId: $validated['actor_id'],
+            domainObjectType: $domainObjectType,
+            domainObjectId: $domainObjectId,
+            assignmentType: $validated['assignment_type'],
+            organizationId: $validated['organization_id'],
+            scopeId: is_string($validated['scope_id'] ?? null) && $validated['scope_id'] !== '' ? $validated['scope_id'] : null,
+            metadata: ['source' => 'functional-actors-admin'],
+            assignedByPrincipalId: is_string($validated['principal_id'] ?? null) && $validated['principal_id'] !== '' ? $validated['principal_id'] : null,
+        );
+    } else {
+        $actors->assignActor(
+            actorId: $validated['actor_id'],
+            domainObjectType: $domainObjectType,
+            domainObjectId: $domainObjectId,
+            assignmentType: $validated['assignment_type'],
+            organizationId: $validated['organization_id'],
+            scopeId: is_string($validated['scope_id'] ?? null) && $validated['scope_id'] !== '' ? $validated['scope_id'] : null,
+            metadata: ['source' => 'functional-actors-admin'],
+            assignedByPrincipalId: is_string($validated['principal_id'] ?? null) && $validated['principal_id'] !== '' ? $validated['principal_id'] : null,
+        );
+    }
+
+    return redirect()->route('core.admin.index', array_filter([
+        'menu' => 'core.functional-actors',
+        'actor_id' => $validated['actor_id'],
+        'principal_id' => $validated['principal_id'] ?? null,
+        'organization_id' => $validated['organization_id'],
+        'scope_id' => $validated['scope_id'] ?? null,
+        'locale' => $validated['locale'] ?? 'en',
+        'theme' => $validated['theme'] ?? null,
+    ]))->with('status', 'Responsibility assigned.');
+})->middleware('core.permission:core.functional-actors.manage')->name('core.functional-actors.assignments.store');
+
 Route::get('/core/events', function (EventBusInterface $events) {
     $limit = request()->integer('limit', 50);
     $filters = array_filter([

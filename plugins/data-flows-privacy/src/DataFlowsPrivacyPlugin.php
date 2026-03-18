@@ -218,6 +218,7 @@ class DataFlowsPrivacyPlugin implements PluginInterface
 
             $dataFlows[] = [
                 ...$flow,
+                'transfer_type_label' => PrivacyReferenceData::transferTypeLabel($flow['transfer_type']),
                 'owner_assignment' => $this->ownerAssignment($actors, 'privacy-data-flow', $flow['id'], $organizationId, $screenContext->scopeId),
                 'artifacts' => array_map(
                     static fn ($artifact): array => $artifact->toArray(),
@@ -273,6 +274,7 @@ class DataFlowsPrivacyPlugin implements PluginInterface
             'scope_options' => array_map(static fn ($scope): array => $scope->toArray(), $scopeContext->scopes),
             'asset_options' => $assetOptions,
             'risk_options' => $riskOptions,
+            'transfer_type_options' => PrivacyReferenceData::optionsFor('transfer_type'),
             'data_flows_list_url' => route('core.shell.index', [...$baseQuery, 'menu' => 'plugin.data-flows-privacy.root']),
         ];
     }
@@ -329,6 +331,7 @@ class DataFlowsPrivacyPlugin implements PluginInterface
 
             $activities[] = [
                 ...$activity,
+                'lawful_basis_label' => PrivacyReferenceData::lawfulBasisLabel($activity['lawful_basis']),
                 'owner_assignment' => $this->ownerAssignment($actors, 'privacy-processing-activity', $activity['id'], $organizationId, $screenContext->scopeId),
                 'artifacts' => array_map(
                     static fn ($artifact): array => $artifact->toArray(),
@@ -394,6 +397,7 @@ class DataFlowsPrivacyPlugin implements PluginInterface
             'risk_options' => $riskOptions,
             'policy_options' => $policyOptions,
             'finding_options' => $findingOptions,
+            'lawful_basis_options' => PrivacyReferenceData::optionsFor('lawful_basis'),
             'activities_list_url' => route('core.shell.index', [...$baseQuery, 'menu' => 'plugin.data-flows-privacy.activities']),
         ];
     }

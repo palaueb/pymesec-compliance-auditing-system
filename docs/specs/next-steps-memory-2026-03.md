@@ -6,70 +6,71 @@ This note captures the current recommendation for the next implementation blocks
 
 Priority order:
 
-1. `assessments-audits`
-2. `evidence-management`
-3. `object-level-access`
+1. `governed-reference-data`
+2. `assessment-sign-off-and-exports`
+3. `object-level-access phase 2`
 
 ## Why This Order
 
-### 1. Assessments and Audits
+### Completed
 
-This is the largest functional gap against the PRD promise of running assessments and audits with traceability across controls, evidence, findings, and conclusions.
+The following roadmap items are now in place:
 
-First practical increment:
+- `assessments-audits v1`
+- `evidence-management v1`
+- `object-level-access v1` for assets, risks, findings, remediation actions, and dashboard metrics
+- `governed-reference-data v1` started in `Asset Catalog`
+- `governed-reference-data v1` extended to `Continuity` and `Privacy`
 
-- create assessment campaigns
-- define organization, scope, dates, and framework perimeter
-- select relevant controls
-- allow a basic lifecycle for draft, active, and closed assessments
+### 1. Governed Reference Data
 
-Expected outcome:
+The next highest leverage block is normalizing business values that are still free text and therefore difficult to govern, filter, and report on.
 
-- the product stops being only a set of domain registers and starts behaving like an actual audit workspace
+Next increment:
 
-### 2. Evidence Management
-
-Artifacts already exist, but evidence is not yet managed as a first-class compliance object.
-
-Next increment after assessment campaigns:
-
-- evidence metadata
-- validity and expiration
-- review / validation status
-- reuse of evidence across controls and assessments
+- managed vocabularies for asset type, criticality, and classification
+- assignment-based ownership instead of free-text owner labels
+- controlled business values in continuity and privacy where they are still open text
 
 Expected outcome:
 
-- better audit execution
-- better traceability
-- clearer dashboards and reminders
+- cleaner reporting
+- less entropy in user-entered data
+- stronger object-level access policies later
 
-### 3. Object-Level Access
+### 2. Assessment Sign-Off and Exports
 
-Current access is already filtered by organization, scope, memberships, and grants, but not yet by real responsibility over specific records.
+Assessments now exist as a usable audit workspace, but they still need closure workflow and richer reporting to complete the audit loop.
 
-Next increment after evidence:
+Next increment:
 
-- object-level filters for assets, risks, controls, findings, and continuity records
-- connection between functional ownership and visibility
-- personal and team-focused dashboards
+- assessment sign-off
+- closure workflow
+- richer export bundles
+- management-facing summary outputs
+
+### 3. Object-Level Access Phase 2
+
+The first slice is now live, but coverage is still partial.
+
+Next increment:
+
+- extend object-level filters to controls, continuity, privacy, policy, and assessments
+- refine dashboards and boards so all summaries respect scoped visibility
+- tighten legacy fallback once domains are fully governed by assignments
 
 Expected outcome:
 
-- department users only see the records they should manage
-- the platform becomes usable in larger organizations without overexposing data
+- consistent team-based visibility across the full product
+- fewer workspaces exposing broad organization data by default
 
 ## Immediate Execution Decision
 
-Start with `assessments-audits v1`.
+Start with `governed-reference-data`.
 
-Target for the first implementation slice:
+Target for the current implementation slice:
 
-- a new plugin for assessment campaigns
-- campaign creation and editing
-- organization and optional scope perimeter
-- date range and framework selection
-- control selection
-- basic campaign status and list view
-
-This slice is intentionally smaller than the full PRD block, but it creates the right backbone for later workpapers, conclusions, sign-off, exports, and evidence reuse.
+- governed vocabularies for assets first
+- extend governed business values to continuity and privacy
+- ownership expressed through assignments instead of free-text labels
+- foundation for extending object-level access to the remaining domains

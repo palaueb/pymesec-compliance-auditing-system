@@ -216,4 +216,36 @@ class ContinuityBcmTest extends TestCase
             ->assertSee('Support Leads, Backup Operations')
             ->assertSee('Fallback intake stayed within the expected recovery window.');
     }
+
+    public function test_continuity_rejects_invalid_governed_reference_values(): void
+    {
+        $payload = [
+            'principal_id' => 'principal-org-a',
+            'organization_id' => 'org-a',
+            'locale' => 'en',
+            'membership_id' => 'membership-org-a-hello',
+        ];
+
+        $this->from('/app?menu=plugin.continuity-bcm.root')
+            ->post('/plugins/continuity/services', [
+                ...$payload,
+                'menu' => 'plugin.continuity-bcm.root',
+                'title' => 'Broken service',
+                'impact_tier' => 'urgent',
+                'recovery_time_objective_hours' => 4,
+                'recovery_point_objective_hours' => 1,
+            ])
+            ->assertRedirect('/app?menu=plugin.continuity-bcm.root')
+            ->assertSessionHasErrors(['impact_tier']);
+
+        $this->from('/app?menu=plugin.continuity-bcm.root&service_id=continuity-service-customer-support')
+            ->post('/plugins/continuity/services/continuity-service-customer-support/dependencies', [
+                ...$payload,
+                'menu' => 'plugin.continuity-bcm.root',
+                'depends_on_service_id' => 'continuity-service-backup-recovery',
+                'dependency_kind' => 'partner',
+            ])
+            ->assertRedirect('/app?menu=plugin.continuity-bcm.root&service_id=continuity-service-customer-support')
+            ->assertSessionHasErrors(['dependency_kind']);
+    }
 }

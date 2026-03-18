@@ -15,7 +15,7 @@
                 <div>
                     <div class="eyebrow">Data flow</div>
                     <h2 class="screen-title" style="font-size:28px;">{{ $selected_flow['title'] }}</h2>
-                    <div class="table-note">{{ $selected_flow['id'] }} · {{ $selected_flow['transfer_type'] }}</div>
+                    <div class="table-note">{{ $selected_flow['id'] }} · {{ $selected_flow['transfer_type_label'] }}</div>
                     <div class="table-note">{{ $selected_flow['source'] }} → {{ $selected_flow['destination'] }}</div>
                 </div>
                 <div class="action-cluster">
@@ -141,7 +141,11 @@
                                     </div>
                                     <div class="field">
                                         <label class="field-label">Transfer type</label>
-                                        <input class="field-input" name="transfer_type" value="{{ $selected_flow['transfer_type'] }}" required>
+                                        <select class="field-select" name="transfer_type" required>
+                                            @foreach ($transfer_type_options as $option)
+                                                <option value="{{ $option['id'] }}" @selected($selected_flow['transfer_type'] === $option['id'])>{{ $option['label'] }}</option>
+                                            @endforeach
+                                        </select>
                                     </div>
                                     <div class="field">
                                         <label class="field-label">Source</label>
@@ -230,7 +234,12 @@
                         </div>
                         <div class="field">
                             <label class="field-label" for="flow-transfer-type">Transfer type</label>
-                            <input class="field-input" id="flow-transfer-type" name="transfer_type" required>
+                            <select class="field-select" id="flow-transfer-type" name="transfer_type" required>
+                                <option value="">Choose transfer type</option>
+                                @foreach ($transfer_type_options as $option)
+                                    <option value="{{ $option['id'] }}">{{ $option['label'] }}</option>
+                                @endforeach
+                            </select>
                         </div>
                         <div class="field">
                             <label class="field-label" for="flow-source">Source</label>
@@ -323,7 +332,7 @@
                         <tr>
                             <td>
                                 <div class="entity-title">{{ $flow['title'] }}</div>
-                                <div class="entity-id">{{ $flow['id'] }} · {{ $flow['transfer_type'] }}</div>
+                                <div class="entity-id">{{ $flow['id'] }} · {{ $flow['transfer_type_label'] }}</div>
                                 <div class="table-note">{{ $flow['data_category_summary'] }}</div>
                             </td>
                             <td>

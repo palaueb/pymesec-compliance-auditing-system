@@ -200,6 +200,7 @@ class IdentityLocalPlugin implements IdentityPluginInterface
     private function membershipsData(PluginContext $context, ScreenRenderContext $screenContext): array
     {
         $repository = $context->app()->make(IdentityLocalRepository::class);
+        $actors = $context->app()->make(FunctionalActorServiceInterface::class);
         $tenancy = $context->app()->make(TenancyServiceInterface::class);
         $authorization = $context->app()->make(AuthorizationServiceInterface::class);
         $store = $context->app()->make(DatabaseAuthorizationStore::class);
@@ -216,6 +217,10 @@ class IdentityLocalPlugin implements IdentityPluginInterface
             $rows[] = [
                 'membership' => $membership,
                 'user' => $usersByPrincipal[$membership['principal_id']] ?? null,
+                'linked_actors' => array_map(
+                    static fn ($actor): array => $actor->toArray(),
+                    $actors->actorsForPrincipal($membership['principal_id'], $organizationId),
+                ),
                 'open_url' => route('core.shell.index', [...$listQuery, 'menu' => 'plugin.identity-local.memberships', 'selected_membership_id' => $membership['id']]),
             ];
         }
@@ -256,6 +261,9 @@ class IdentityLocalPlugin implements IdentityPluginInterface
             'scope_options' => array_map(static fn ($scope): array => $scope->toArray(), $scopeContext->scopes),
             'can_manage_memberships' => $this->can($authorization, $screenContext, 'plugin.identity-local.memberships.manage', $organizationId),
             'memberships_list_url' => route('core.shell.index', [...$listQuery, 'menu' => 'plugin.identity-local.memberships']),
+            'manage_functional_profiles_url' => $selectedRow !== null
+                ? route('core.admin.index', [...$listQuery, 'menu' => 'core.functional-actors', 'subject_principal_id' => $selectedRow['membership']['principal_id']])
+                : null,
         ];
     }
 

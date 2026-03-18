@@ -2,12 +2,15 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Validation\Rule;
 use PymeSec\Core\FunctionalActors\Contracts\FunctionalActorServiceInterface;
+use PymeSec\Core\ObjectAccess\ObjectAccessService;
 use PymeSec\Core\Principals\MembershipReference;
 use PymeSec\Core\Principals\PrincipalReference;
 use PymeSec\Core\Workflows\Contracts\WorkflowServiceInterface;
 use PymeSec\Core\Workflows\WorkflowExecutionContext;
 use PymeSec\Plugins\AssetCatalog\AssetCatalogRepository;
+use PymeSec\Plugins\AssetCatalog\AssetReferenceData;
 
 Route::get('/plugins/assets', function (Request $request) {
     return redirect()->route('core.shell.index', [
@@ -38,12 +41,11 @@ Route::post('/plugins/assets', function (
 ) {
     $validated = $request->validate([
         'name' => ['required', 'string', 'max:160'],
-        'type' => ['required', 'string', 'max:80'],
-        'criticality' => ['required', 'string', 'max:40'],
-        'classification' => ['required', 'string', 'max:80'],
+        'type' => ['required', 'string', Rule::in(AssetReferenceData::typeKeys())],
+        'criticality' => ['required', 'string', Rule::in(AssetReferenceData::criticalityKeys())],
+        'classification' => ['required', 'string', Rule::in(AssetReferenceData::classificationKeys())],
         'organization_id' => ['required', 'string', 'max:64'],
         'scope_id' => ['nullable', 'string', 'max:64'],
-        'owner_label' => ['nullable', 'string', 'max:160'],
         'owner_actor_id' => ['nullable', 'string', 'max:64'],
     ]);
 
@@ -79,15 +81,26 @@ Route::post('/plugins/assets/{assetId}', function (
     Request $request,
     string $assetId,
     AssetCatalogRepository $repository,
-    FunctionalActorServiceInterface $actors
+    FunctionalActorServiceInterface $actors,
+    ObjectAccessService $objectAccess,
 ) {
+    $existingAsset = $repository->find($assetId);
+
+    abort_if($existingAsset === null, 404);
+    abort_unless($objectAccess->canAccessObject(
+        principalId: (string) $request->input('principal_id', 'principal-org-a'),
+        organizationId: $existingAsset['organization_id'],
+        scopeId: $existingAsset['scope_id'] !== '' ? $existingAsset['scope_id'] : null,
+        domainObjectType: 'asset',
+        domainObjectId: $existingAsset['id'],
+    ), 403);
+
     $validated = $request->validate([
         'name' => ['required', 'string', 'max:160'],
-        'type' => ['required', 'string', 'max:80'],
-        'criticality' => ['required', 'string', 'max:40'],
-        'classification' => ['required', 'string', 'max:80'],
+        'type' => ['required', 'string', Rule::in(AssetReferenceData::typeKeys())],
+        'criticality' => ['required', 'string', Rule::in(AssetReferenceData::criticalityKeys())],
+        'classification' => ['required', 'string', Rule::in(AssetReferenceData::classificationKeys())],
         'scope_id' => ['nullable', 'string', 'max:64'],
-        'owner_label' => ['nullable', 'string', 'max:160'],
         'owner_actor_id' => ['nullable', 'string', 'max:64'],
     ]);
 
@@ -129,7 +142,9 @@ Route::post('/plugins/assets/{assetId}/transitions/{transitionKey}', function (
     string $assetId,
     string $transitionKey,
     Request $request,
-    WorkflowServiceInterface $workflows
+    WorkflowServiceInterface $workflows,
+    AssetCatalogRepository $repository,
+    ObjectAccessService $objectAccess,
 ) {
     $principalId = (string) $request->input('principal_id', 'principal-org-a');
     $organizationId = (string) $request->input('organization_id', 'org-a');
@@ -137,6 +152,16 @@ Route::post('/plugins/assets/{assetId}/transitions/{transitionKey}', function (
     $membershipId = $request->input('membership_id', 'membership-org-a-hello');
     $menu = (string) $request->input('menu', 'plugin.asset-catalog.root');
     $locale = (string) $request->input('locale', app()->getLocale());
+    $asset = $repository->find($assetId);
+
+    abort_if($asset === null, 404);
+    abort_unless($objectAccess->canAccessObject(
+        principalId: $principalId,
+        organizationId: $asset['organization_id'],
+        scopeId: $asset['scope_id'] !== '' ? $asset['scope_id'] : null,
+        domainObjectType: 'asset',
+        domainObjectId: $asset['id'],
+    ), 403);
 
     $workflows->transition(
         workflowKey: 'plugin.asset-catalog.asset-lifecycle',

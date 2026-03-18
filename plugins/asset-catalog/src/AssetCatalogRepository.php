@@ -69,17 +69,22 @@ class AssetCatalogRepository
      */
     public function update(string $assetId, array $data): ?array
     {
+        $update = [
+            'scope_id' => ($data['scope_id'] ?? null) ?: null,
+            'name' => $data['name'],
+            'type' => $data['type'],
+            'criticality' => $data['criticality'],
+            'classification' => $data['classification'],
+            'updated_at' => now(),
+        ];
+
+        if (array_key_exists('owner_label', $data)) {
+            $update['owner_label'] = ($data['owner_label'] ?? null) ?: null;
+        }
+
         $updated = DB::table('assets')
             ->where('id', $assetId)
-            ->update([
-                'scope_id' => ($data['scope_id'] ?? null) ?: null,
-                'name' => $data['name'],
-                'type' => $data['type'],
-                'criticality' => $data['criticality'],
-                'classification' => $data['classification'],
-                'owner_label' => ($data['owner_label'] ?? null) ?: null,
-                'updated_at' => now(),
-            ]);
+            ->update($update);
 
         if ($updated === 0) {
             return $this->find($assetId);
