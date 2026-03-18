@@ -4,15 +4,22 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use PymeSec\Core\Artifacts\ArtifactUploadData;
 use PymeSec\Core\Artifacts\Contracts\ArtifactServiceInterface;
+use PymeSec\Core\ObjectAccess\ObjectAccessService;
 use PymeSec\Plugins\AssessmentsAudits\AssessmentsAuditsRepository;
 use PymeSec\Plugins\FindingsRemediation\FindingsRemediationRepository;
 
-Route::get('/plugins/assessments', function (Request $request, AssessmentsAuditsRepository $repository) {
+Route::get('/plugins/assessments', function (Request $request, AssessmentsAuditsRepository $repository, ObjectAccessService $objectAccess) {
+    $organizationId = (string) $request->query('organization_id', 'org-a');
+
     return response()->json([
         'plugin' => 'assessments-audits',
-        'assessments' => $repository->all(
-            (string) $request->query('organization_id', 'org-a'),
-            $request->query('scope_id'),
+        'assessments' => $objectAccess->filterRecords(
+            $repository->all($organizationId, $request->query('scope_id')),
+            'id',
+            is_string($request->query('principal_id')) ? (string) $request->query('principal_id') : null,
+            $organizationId,
+            is_string($request->query('scope_id')) ? (string) $request->query('scope_id') : null,
+            'assessment',
         ),
     ]);
 })->middleware('core.permission:plugin.assessments-audits.assessments.view')->name('plugin.assessments-audits.index');
@@ -20,8 +27,17 @@ Route::get('/plugins/assessments', function (Request $request, AssessmentsAudits
 Route::get('/plugins/assessments/{assessmentId}/report', function (
     Request $request,
     string $assessmentId,
-    AssessmentsAuditsRepository $repository
+    AssessmentsAuditsRepository $repository,
+    ObjectAccessService $objectAccess,
 ) {
+    abort_unless($objectAccess->canAccessObject(
+        principalId: is_string($request->query('principal_id')) ? (string) $request->query('principal_id') : null,
+        organizationId: (string) $request->query('organization_id', 'org-a'),
+        scopeId: is_string($request->query('scope_id')) ? (string) $request->query('scope_id') : null,
+        domainObjectType: 'assessment',
+        domainObjectId: $assessmentId,
+    ), 403);
+
     $report = $repository->report($assessmentId);
 
     abort_if($report === null, 404);
@@ -29,6 +45,65 @@ Route::get('/plugins/assessments/{assessmentId}/report', function (
     $assessment = $report['assessment'];
     $summary = $report['summary'];
     $reviews = $report['reviews'];
+    $format = (string) $request->query('format', 'md');
+
+    if ($format === 'json') {
+        return response()->json($report, 200, [
+            'Content-Disposition' => sprintf('attachment; filename="%s-bundle.json"', $assessmentId),
+        ]);
+    }
+
+    if ($format === 'csv') {
+        $rows = [[
+            'assessment_id',
+            'assessment_title',
+            'status',
+            'scope',
+            'framework',
+            'control_id',
+            'control_name',
+            'result',
+            'reviewed_on',
+            'reviewer_principal_id',
+            'linked_finding_id',
+            'artifact_count',
+            'conclusion',
+        ]];
+
+        foreach ($reviews as $review) {
+            $rows[] = [
+                $assessment['id'],
+                $assessment['title'],
+                $assessment['status'],
+                $assessment['scope_id'] !== '' ? $assessment['scope_id'] : 'organization-wide',
+                $assessment['framework_id'] !== '' ? $assessment['framework_id'] : 'any',
+                $review['control_id'],
+                $review['control_name'],
+                $review['result'],
+                $review['reviewed_on'],
+                $review['reviewer_principal_id'],
+                $review['linked_finding_id'],
+                (string) count($review['artifacts']),
+                preg_replace('/\s+/', ' ', $review['conclusion']),
+            ];
+        }
+
+        $stream = fopen('php://temp', 'r+');
+
+        foreach ($rows as $row) {
+            fputcsv($stream, $row);
+        }
+
+        rewind($stream);
+        $csv = stream_get_contents($stream);
+        fclose($stream);
+
+        return response($csv ?: '', 200, [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => sprintf('attachment; filename="%s-summary.csv"', $assessmentId),
+        ]);
+    }
+
     $lines = [
         '# '.$assessment['title'],
         '',
@@ -39,6 +114,10 @@ Route::get('/plugins/assessments/{assessmentId}/report', function (
         'Framework: '.($assessment['framework_id'] !== '' ? $assessment['framework_id'] : 'any'),
         'Status: '.$assessment['status'],
         'Dates: '.$assessment['starts_on'].' -> '.$assessment['ends_on'],
+        'Signed off on: '.($assessment['signed_off_on'] !== '' ? $assessment['signed_off_on'] : 'not signed off'),
+        'Signed off by: '.($assessment['signed_off_by_principal_id'] !== '' ? $assessment['signed_off_by_principal_id'] : 'n/a'),
+        'Closed on: '.($assessment['closed_on'] !== '' ? $assessment['closed_on'] : 'not closed'),
+        'Closed by: '.($assessment['closed_by_principal_id'] !== '' ? $assessment['closed_by_principal_id'] : 'n/a'),
         '',
         'Summary',
         '- Pass: '.$summary['pass'],
@@ -48,6 +127,8 @@ Route::get('/plugins/assessments/{assessmentId}/report', function (
         '- Not applicable: '.$summary['not-applicable'],
         '- Linked findings: '.$summary['linked_findings'],
         '- Workpapers: '.$summary['artifacts'],
+        '- Sign-off notes: '.($assessment['signoff_notes'] !== '' ? $assessment['signoff_notes'] : 'n/a'),
+        '- Closure summary: '.($assessment['closure_summary'] !== '' ? $assessment['closure_summary'] : 'n/a'),
         '',
         'Checklist',
     ];
@@ -98,7 +179,7 @@ Route::post('/plugins/assessments', function (Request $request, AssessmentsAudit
         'summary' => ['required', 'string', 'max:500'],
         'starts_on' => ['required', 'date'],
         'ends_on' => ['required', 'date', 'after_or_equal:starts_on'],
-        'status' => ['nullable', 'in:draft,active,closed'],
+        'status' => ['nullable', 'in:draft,active,signed-off,closed'],
         'control_ids' => ['nullable', 'array'],
         'control_ids.*' => ['string', 'max:64'],
     ]);
@@ -121,7 +202,8 @@ Route::post('/plugins/assessments', function (Request $request, AssessmentsAudit
 Route::post('/plugins/assessments/{assessmentId}', function (
     Request $request,
     string $assessmentId,
-    AssessmentsAuditsRepository $repository
+    AssessmentsAuditsRepository $repository,
+    ObjectAccessService $objectAccess,
 ) {
     $validated = $request->validate([
         'organization_id' => ['required', 'string', 'max:64'],
@@ -131,16 +213,24 @@ Route::post('/plugins/assessments/{assessmentId}', function (
         'summary' => ['required', 'string', 'max:500'],
         'starts_on' => ['required', 'date'],
         'ends_on' => ['required', 'date', 'after_or_equal:starts_on'],
-        'status' => ['required', 'in:draft,active,closed'],
+        'status' => ['required', 'in:draft,active,signed-off,closed'],
         'control_ids' => ['nullable', 'array'],
         'control_ids.*' => ['string', 'max:64'],
     ]);
+
+    $principalId = (string) $request->input('principal_id', 'principal-org-a');
+    abort_unless($objectAccess->canAccessObject(
+        principalId: $principalId,
+        organizationId: (string) $validated['organization_id'],
+        scopeId: is_string($validated['scope_id'] ?? null) && $validated['scope_id'] !== '' ? $validated['scope_id'] : null,
+        domainObjectType: 'assessment',
+        domainObjectId: $assessmentId,
+    ), 403);
 
     $assessment = $repository->update($assessmentId, $validated);
 
     abort_if($assessment === null, 404);
 
-    $principalId = (string) $request->input('principal_id', 'principal-org-a');
     $membershipId = $request->input('membership_id');
 
     return redirect()->route('core.shell.index', array_filter([
@@ -158,7 +248,8 @@ Route::post('/plugins/assessments/{assessmentId}/reviews/{controlId}', function 
     Request $request,
     string $assessmentId,
     string $controlId,
-    AssessmentsAuditsRepository $repository
+    AssessmentsAuditsRepository $repository,
+    ObjectAccessService $objectAccess,
 ) {
     $validated = $request->validate([
         'result' => ['required', 'in:not-tested,pass,partial,fail,not-applicable'],
@@ -168,6 +259,13 @@ Route::post('/plugins/assessments/{assessmentId}/reviews/{controlId}', function 
     ]);
 
     $principalId = (string) $request->input('principal_id', 'principal-org-a');
+    abort_unless($objectAccess->canAccessObject(
+        principalId: $principalId,
+        organizationId: (string) $request->input('organization_id', 'org-a'),
+        scopeId: is_string($request->input('scope_id')) && $request->input('scope_id') !== '' ? (string) $request->input('scope_id') : null,
+        domainObjectType: 'assessment',
+        domainObjectId: $assessmentId,
+    ), 403);
     $membershipId = $request->input('membership_id');
     $assessment = $repository->upsertReview($assessmentId, $controlId, $validated, $principalId);
 
@@ -189,8 +287,18 @@ Route::post('/plugins/assessments/{assessmentId}/reviews/{controlId}/artifacts',
     string $assessmentId,
     string $controlId,
     AssessmentsAuditsRepository $repository,
-    ArtifactServiceInterface $artifacts
+    ArtifactServiceInterface $artifacts,
+    ObjectAccessService $objectAccess,
 ) {
+    $principalId = (string) $request->input('principal_id', 'principal-org-a');
+    abort_unless($objectAccess->canAccessObject(
+        principalId: $principalId,
+        organizationId: (string) $request->input('organization_id', 'org-a'),
+        scopeId: is_string($request->input('scope_id')) && $request->input('scope_id') !== '' ? (string) $request->input('scope_id') : null,
+        domainObjectType: 'assessment',
+        domainObjectId: $assessmentId,
+    ), 403);
+
     $review = $repository->review($assessmentId, $controlId);
 
     abort_if($review === null, 404);
@@ -201,7 +309,6 @@ Route::post('/plugins/assessments/{assessmentId}/reviews/{controlId}/artifacts',
         'artifact_type' => ['nullable', 'string', 'max:60'],
     ]);
 
-    $principalId = (string) $request->input('principal_id', 'principal-org-a');
     $membershipId = $request->input('membership_id');
 
     $artifacts->store(new ArtifactUploadData(
@@ -239,8 +346,18 @@ Route::post('/plugins/assessments/{assessmentId}/reviews/{controlId}/findings', 
     string $assessmentId,
     string $controlId,
     AssessmentsAuditsRepository $repository,
-    FindingsRemediationRepository $findings
+    FindingsRemediationRepository $findings,
+    ObjectAccessService $objectAccess,
 ) {
+    $principalId = (string) $request->input('principal_id', 'principal-org-a');
+    abort_unless($objectAccess->canAccessObject(
+        principalId: $principalId,
+        organizationId: (string) $request->input('organization_id', 'org-a'),
+        scopeId: is_string($request->input('scope_id')) && $request->input('scope_id') !== '' ? (string) $request->input('scope_id') : null,
+        domainObjectType: 'assessment',
+        domainObjectId: $assessmentId,
+    ), 403);
+
     $review = $repository->review($assessmentId, $controlId);
 
     abort_if($review === null, 404);
@@ -265,7 +382,6 @@ Route::post('/plugins/assessments/{assessmentId}/reviews/{controlId}/findings', 
 
     $repository->linkFinding($assessmentId, $controlId, $finding['id']);
 
-    $principalId = (string) $request->input('principal_id', 'principal-org-a');
     $membershipId = $request->input('membership_id');
 
     return redirect()->route('core.shell.index', array_filter([
@@ -278,3 +394,61 @@ Route::post('/plugins/assessments/{assessmentId}/reviews/{controlId}/findings', 
         'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
     ]))->with('status', 'Saved.');
 })->middleware('core.permission:plugin.assessments-audits.assessments.manage')->name('plugin.assessments-audits.reviews.findings.store');
+
+Route::post('/plugins/assessments/{assessmentId}/transitions/{transitionKey}', function (
+    Request $request,
+    string $assessmentId,
+    string $transitionKey,
+    AssessmentsAuditsRepository $repository,
+    ObjectAccessService $objectAccess,
+) {
+    $validated = $request->validate([
+        'signoff_notes' => ['nullable', 'string', 'max:5000'],
+        'signed_off_on' => ['nullable', 'date'],
+        'closure_summary' => ['nullable', 'string', 'max:5000'],
+        'closed_on' => ['nullable', 'date'],
+    ]);
+
+    $principalId = (string) $request->input('principal_id', 'principal-org-a');
+    abort_unless($objectAccess->canAccessObject(
+        principalId: $principalId,
+        organizationId: (string) $request->input('organization_id', 'org-a'),
+        scopeId: is_string($request->input('scope_id')) && $request->input('scope_id') !== '' ? (string) $request->input('scope_id') : null,
+        domainObjectType: 'assessment',
+        domainObjectId: $assessmentId,
+    ), 403);
+    $membershipId = $request->input('membership_id');
+    $assessment = $repository->find($assessmentId);
+
+    abort_if($assessment === null, 404);
+
+    $updated = match ($transitionKey) {
+        'activate' => $repository->update($assessmentId, [...$assessment, 'status' => 'active']),
+        'sign-off' => $repository->signOff(
+            $assessmentId,
+            $principalId,
+            $validated['signoff_notes'] ?? null,
+            is_string($validated['signed_off_on'] ?? null) ? $validated['signed_off_on'] : null,
+        ),
+        'close' => $repository->close(
+            $assessmentId,
+            $principalId,
+            $validated['closure_summary'] ?? null,
+            is_string($validated['closed_on'] ?? null) ? $validated['closed_on'] : null,
+        ),
+        'reopen' => $repository->reopen($assessmentId),
+        default => null,
+    };
+
+    abort_if($updated === null, 404);
+
+    return redirect()->route('core.shell.index', array_filter([
+        'menu' => 'plugin.assessments-audits.root',
+        'principal_id' => $principalId,
+        'organization_id' => $updated['organization_id'],
+        'assessment_id' => $updated['id'],
+        'scope_id' => $updated['scope_id'] !== '' ? $updated['scope_id'] : null,
+        'locale' => $request->input('locale', 'en'),
+        'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
+    ]))->with('status', 'Assessment updated.');
+})->middleware('core.permission:plugin.assessments-audits.assessments.manage')->name('plugin.assessments-audits.transition');

@@ -4,7 +4,7 @@
 
 Provide the first real audit workspace layer on top of existing controls, evidence, findings, risks, and tenancy.
 
-This first version now covers assessment campaigns, control-level checklist execution, workpaper attachments, linked findings, and a basic exportable summary report.
+This first version now covers assessment campaigns, control-level checklist execution, workpaper attachments, linked findings, sign-off and closure, and exportable summary outputs.
 
 ## Goals
 
@@ -16,15 +16,15 @@ This first version now covers assessment campaigns, control-level checklist exec
 - record conclusions per included control
 - attach workpapers to control reviews
 - create linked findings from the review flow
+- sign off and close the assessment formally
 - export a lightweight assessment summary
+- export CSV and JSON bundles for downstream use
 - track a minimal lifecycle
 
 ## Out of Scope for v1
 
 - detailed test steps per control
 - assessor conclusions per requirement
-- final sign-off workflow
-- export bundles
 - evidence validation rules
 
 ## Main Concepts
@@ -41,6 +41,10 @@ An assessment campaign is a bounded review exercise with:
 - start date
 - end date
 - status
+- signoff notes
+- signoff date and principal
+- closure summary
+- closure date and principal
 
 ### Assessment Review
 
@@ -75,6 +79,7 @@ Statuses for v1:
 
 - `draft`
 - `active`
+- `signed-off`
 - `closed`
 
 ### `assessment_campaign_controls`
@@ -124,7 +129,8 @@ Main screen:
 - each row has:
   - an edit panel
   - a checklist review panel
-  - a summary export action
+- summary export actions
+- sign-off and closure actions
 
 Checklist review panel:
 
@@ -175,6 +181,6 @@ Required feature tests:
 
 After v1:
 
-1. add conclusion workflow and formal sign-off
-2. add per-requirement conclusions
-3. add richer export bundles and report layouts
+1. add per-requirement conclusions
+2. add richer report layouts and branding
+3. add evidence validation rules

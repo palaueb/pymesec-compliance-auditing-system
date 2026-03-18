@@ -6,6 +6,7 @@ use PymeSec\Core\Artifacts\Contracts\ArtifactServiceInterface;
 use PymeSec\Core\Events\PublicEvent;
 use PymeSec\Core\FunctionalActors\Contracts\FunctionalActorServiceInterface;
 use PymeSec\Core\Notifications\Contracts\NotificationServiceInterface;
+use PymeSec\Core\ObjectAccess\ObjectAccessService;
 use PymeSec\Core\Permissions\AuthorizationContext;
 use PymeSec\Core\Permissions\Contracts\AuthorizationServiceInterface;
 use PymeSec\Core\Plugins\Contracts\PluginInterface;
@@ -173,6 +174,7 @@ class ControlsCatalogPlugin implements PluginInterface
     {
         $repository = $context->app()->make(ControlsCatalogRepository::class);
         $artifacts = $context->app()->make(ArtifactServiceInterface::class);
+        $objectAccess = $context->app()->make(ObjectAccessService::class);
         $workflow = $context->app()->make(WorkflowServiceInterface::class);
         $actors = $context->app()->make(FunctionalActorServiceInterface::class);
         $authorization = $context->app()->make(AuthorizationServiceInterface::class);
@@ -180,7 +182,14 @@ class ControlsCatalogPlugin implements PluginInterface
         $organizationId = $screenContext->organizationId ?? 'org-a';
         $frameworks = $repository->frameworks($organizationId);
         $requirements = $repository->requirements($organizationId);
-        $catalog = $repository->all($organizationId, $screenContext->scopeId);
+        $catalog = $objectAccess->filterRecords(
+            $repository->all($organizationId, $screenContext->scopeId),
+            'id',
+            $screenContext->principal?->id,
+            $organizationId,
+            $screenContext->scopeId,
+            'control',
+        );
         $requirementsByControl = $repository->requirementsForControls(array_map(
             static fn (array $control): string => $control['id'],
             $catalog,
@@ -280,12 +289,20 @@ class ControlsCatalogPlugin implements PluginInterface
     {
         $repository = $context->app()->make(ControlsCatalogRepository::class);
         $artifacts = $context->app()->make(ArtifactServiceInterface::class);
+        $objectAccess = $context->app()->make(ObjectAccessService::class);
         $workflow = $context->app()->make(WorkflowServiceInterface::class);
         $notifications = $context->app()->make(NotificationServiceInterface::class);
         $organizationId = $screenContext->organizationId ?? 'org-a';
         $rows = [];
 
-        foreach ($repository->all($organizationId, $screenContext->scopeId) as $control) {
+        foreach ($objectAccess->filterRecords(
+            $repository->all($organizationId, $screenContext->scopeId),
+            'id',
+            $screenContext->principal?->id,
+            $organizationId,
+            $screenContext->scopeId,
+            'control',
+        ) as $control) {
             $instance = $workflow->instanceFor(
                 workflowKey: 'plugin.controls-catalog.control-lifecycle',
                 subjectType: 'control',

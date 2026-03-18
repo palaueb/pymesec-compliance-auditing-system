@@ -5,6 +5,7 @@ namespace PymeSec\Plugins\ContinuityBcm;
 use Illuminate\Support\Facades\DB;
 use PymeSec\Core\Artifacts\Contracts\ArtifactServiceInterface;
 use PymeSec\Core\FunctionalActors\Contracts\FunctionalActorServiceInterface;
+use PymeSec\Core\ObjectAccess\ObjectAccessService;
 use PymeSec\Core\Permissions\AuthorizationContext;
 use PymeSec\Core\Permissions\Contracts\AuthorizationServiceInterface;
 use PymeSec\Core\Plugins\Contracts\PluginInterface;
@@ -178,6 +179,7 @@ class ContinuityBcmPlugin implements PluginInterface
     {
         $repository = $context->app()->make(ContinuityBcmRepository::class);
         $artifacts = $context->app()->make(ArtifactServiceInterface::class);
+        $objectAccess = $context->app()->make(ObjectAccessService::class);
         $workflow = $context->app()->make(WorkflowServiceInterface::class);
         $actors = $context->app()->make(FunctionalActorServiceInterface::class);
         $authorization = $context->app()->make(AuthorizationServiceInterface::class);
@@ -189,7 +191,14 @@ class ContinuityBcmPlugin implements PluginInterface
         $assetLabels = [];
         $riskOptions = $this->linkedOptions('risks', 'id', 'title', $organizationId, $screenContext->scopeId);
         $riskLabels = [];
-        $serviceCatalog = $repository->allServices($organizationId, $screenContext->scopeId);
+        $serviceCatalog = $objectAccess->filterRecords(
+            $repository->allServices($organizationId, $screenContext->scopeId),
+            'id',
+            $screenContext->principal?->id,
+            $organizationId,
+            $screenContext->scopeId,
+            'continuity-service',
+        );
         $dependenciesByService = $repository->dependenciesForServices(array_map(
             static fn (array $service): string => $service['id'],
             $serviceCatalog,
@@ -309,13 +318,21 @@ class ContinuityBcmPlugin implements PluginInterface
     {
         $repository = $context->app()->make(ContinuityBcmRepository::class);
         $artifacts = $context->app()->make(ArtifactServiceInterface::class);
+        $objectAccess = $context->app()->make(ObjectAccessService::class);
         $workflow = $context->app()->make(WorkflowServiceInterface::class);
         $actors = $context->app()->make(FunctionalActorServiceInterface::class);
         $authorization = $context->app()->make(AuthorizationServiceInterface::class);
         $tenancy = $context->app()->make(TenancyServiceInterface::class);
         $organizationId = $screenContext->organizationId ?? 'org-a';
         $canManage = $this->canManage($authorization, $screenContext, $organizationId);
-        $planCatalog = $repository->allPlans($organizationId, $screenContext->scopeId);
+        $planCatalog = $objectAccess->filterRecords(
+            $repository->allPlans($organizationId, $screenContext->scopeId),
+            'id',
+            $screenContext->principal?->id,
+            $organizationId,
+            $screenContext->scopeId,
+            'continuity-plan',
+        );
         $exercisesByPlan = $repository->exercisesForPlans(array_map(
             static fn (array $plan): string => $plan['id'],
             $planCatalog,

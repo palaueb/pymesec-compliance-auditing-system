@@ -32,7 +32,7 @@ class ControlsCatalogTest extends TestCase
             ->assertOk()
             ->assertSee('Controls Catalog')
             ->assertSee('Quarterly Access Review')
-            ->assertSee('Backup Governance')
+            ->assertDontSee('Backup Governance')
             ->assertSee('A.5.18')
             ->assertSee('Ava Mason')
             ->assertSee('Create control');

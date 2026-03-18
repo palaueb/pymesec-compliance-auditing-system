@@ -5,6 +5,7 @@ namespace PymeSec\Plugins\DataFlowsPrivacy;
 use Illuminate\Support\Facades\DB;
 use PymeSec\Core\Artifacts\Contracts\ArtifactServiceInterface;
 use PymeSec\Core\FunctionalActors\Contracts\FunctionalActorServiceInterface;
+use PymeSec\Core\ObjectAccess\ObjectAccessService;
 use PymeSec\Core\Permissions\AuthorizationContext;
 use PymeSec\Core\Permissions\Contracts\AuthorizationServiceInterface;
 use PymeSec\Core\Plugins\Contracts\PluginInterface;
@@ -185,6 +186,7 @@ class DataFlowsPrivacyPlugin implements PluginInterface
     {
         $repository = $context->app()->make(DataFlowsPrivacyRepository::class);
         $artifacts = $context->app()->make(ArtifactServiceInterface::class);
+        $objectAccess = $context->app()->make(ObjectAccessService::class);
         $workflow = $context->app()->make(WorkflowServiceInterface::class);
         $actors = $context->app()->make(FunctionalActorServiceInterface::class);
         $authorization = $context->app()->make(AuthorizationServiceInterface::class);
@@ -207,7 +209,14 @@ class DataFlowsPrivacyPlugin implements PluginInterface
 
         $dataFlows = [];
 
-        foreach ($repository->allDataFlows($organizationId, $screenContext->scopeId) as $flow) {
+        foreach ($objectAccess->filterRecords(
+            $repository->allDataFlows($organizationId, $screenContext->scopeId),
+            'id',
+            $screenContext->principal?->id,
+            $organizationId,
+            $screenContext->scopeId,
+            'privacy-data-flow',
+        ) as $flow) {
             $instance = $workflow->instanceFor(
                 workflowKey: 'plugin.data-flows-privacy.data-flow-lifecycle',
                 subjectType: 'privacy-data-flow',
@@ -286,6 +295,7 @@ class DataFlowsPrivacyPlugin implements PluginInterface
     {
         $repository = $context->app()->make(DataFlowsPrivacyRepository::class);
         $artifacts = $context->app()->make(ArtifactServiceInterface::class);
+        $objectAccess = $context->app()->make(ObjectAccessService::class);
         $workflow = $context->app()->make(WorkflowServiceInterface::class);
         $actors = $context->app()->make(FunctionalActorServiceInterface::class);
         $authorization = $context->app()->make(AuthorizationServiceInterface::class);
@@ -320,7 +330,14 @@ class DataFlowsPrivacyPlugin implements PluginInterface
 
         $activities = [];
 
-        foreach ($repository->allProcessingActivities($organizationId, $screenContext->scopeId) as $activity) {
+        foreach ($objectAccess->filterRecords(
+            $repository->allProcessingActivities($organizationId, $screenContext->scopeId),
+            'id',
+            $screenContext->principal?->id,
+            $organizationId,
+            $screenContext->scopeId,
+            'privacy-processing-activity',
+        ) as $activity) {
             $instance = $workflow->instanceFor(
                 workflowKey: 'plugin.data-flows-privacy.processing-activity-lifecycle',
                 subjectType: 'privacy-processing-activity',

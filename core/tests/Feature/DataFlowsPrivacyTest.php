@@ -90,7 +90,7 @@ class DataFlowsPrivacyTest extends TestCase
             'scope_id' => 'scope-eu',
             'linked_asset_id' => 'asset-erp-prod',
             'linked_risk_id' => 'risk-access-drift',
-            'owner_actor_id' => 'actor-compliance-office',
+            'owner_actor_id' => 'actor-ava-mason',
         ])->assertFound();
 
         $this->post('/plugins/privacy/activities', [
@@ -119,7 +119,7 @@ class DataFlowsPrivacyTest extends TestCase
             'scope_id' => 'scope-eu',
             'linked_asset_id' => 'asset-erp-prod',
             'linked_risk_id' => 'risk-access-drift',
-            'owner_actor_id' => 'actor-compliance-office',
+            'owner_actor_id' => 'actor-ava-mason',
         ])->assertFound();
 
         $this->post('/plugins/privacy/activities/processing-activity-hr-onboarding-administration', [
@@ -134,7 +134,7 @@ class DataFlowsPrivacyTest extends TestCase
             'linked_risk_ids' => 'risk-access-drift',
             'linked_policy_id' => 'policy-access-governance',
             'linked_finding_id' => 'finding-access-review-gap',
-            'owner_actor_id' => 'actor-compliance-office',
+            'owner_actor_id' => 'actor-ava-mason',
         ])->assertFound();
 
         $this->get('/app?menu=plugin.data-flows-privacy.root&flow_id=data-flow-hr-onboarding-transfer&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')

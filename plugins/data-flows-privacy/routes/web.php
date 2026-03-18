@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Route;
 use PymeSec\Core\Artifacts\ArtifactUploadData;
 use PymeSec\Core\Artifacts\Contracts\ArtifactServiceInterface;
 use PymeSec\Core\FunctionalActors\Contracts\FunctionalActorServiceInterface;
+use PymeSec\Core\ObjectAccess\ObjectAccessService;
 use PymeSec\Core\Principals\MembershipReference;
 use PymeSec\Core\Principals\PrincipalReference;
 use PymeSec\Core\Workflows\Contracts\WorkflowServiceInterface;
@@ -13,22 +14,34 @@ use PymeSec\Core\Workflows\WorkflowExecutionContext;
 use PymeSec\Plugins\DataFlowsPrivacy\DataFlowsPrivacyRepository;
 use PymeSec\Plugins\DataFlowsPrivacy\PrivacyReferenceData;
 
-Route::get('/plugins/privacy/data-flows', function (Request $request, DataFlowsPrivacyRepository $repository) {
+Route::get('/plugins/privacy/data-flows', function (Request $request, DataFlowsPrivacyRepository $repository, ObjectAccessService $objectAccess) {
+    $organizationId = (string) $request->query('organization_id', 'org-a');
+
     return response()->json([
         'plugin' => 'data-flows-privacy',
-        'data_flows' => $repository->allDataFlows(
-            (string) $request->query('organization_id', 'org-a'),
-            $request->query('scope_id'),
+        'data_flows' => $objectAccess->filterRecords(
+            $repository->allDataFlows($organizationId, $request->query('scope_id')),
+            'id',
+            is_string($request->query('principal_id')) ? (string) $request->query('principal_id') : null,
+            $organizationId,
+            is_string($request->query('scope_id')) ? (string) $request->query('scope_id') : null,
+            'privacy-data-flow',
         ),
     ]);
 })->name('plugin.data-flows-privacy.index');
 
-Route::get('/plugins/privacy/activities', function (Request $request, DataFlowsPrivacyRepository $repository) {
+Route::get('/plugins/privacy/activities', function (Request $request, DataFlowsPrivacyRepository $repository, ObjectAccessService $objectAccess) {
+    $organizationId = (string) $request->query('organization_id', 'org-a');
+
     return response()->json([
         'plugin' => 'data-flows-privacy',
-        'activities' => $repository->allProcessingActivities(
-            (string) $request->query('organization_id', 'org-a'),
-            $request->query('scope_id'),
+        'activities' => $objectAccess->filterRecords(
+            $repository->allProcessingActivities($organizationId, $request->query('scope_id')),
+            'id',
+            is_string($request->query('principal_id')) ? (string) $request->query('principal_id') : null,
+            $organizationId,
+            is_string($request->query('scope_id')) ? (string) $request->query('scope_id') : null,
+            'privacy-processing-activity',
         ),
     ]);
 })->name('plugin.data-flows-privacy.activities');
@@ -84,7 +97,8 @@ Route::post('/plugins/privacy/data-flows/{flowId}', function (
     Request $request,
     string $flowId,
     DataFlowsPrivacyRepository $repository,
-    FunctionalActorServiceInterface $actors
+    FunctionalActorServiceInterface $actors,
+    ObjectAccessService $objectAccess,
 ) {
     $validated = $request->validate([
         'title' => ['required', 'string', 'max:160'],
@@ -99,14 +113,23 @@ Route::post('/plugins/privacy/data-flows/{flowId}', function (
         'owner_actor_id' => ['nullable', 'string', 'max:64'],
     ]);
 
+    $organizationId = (string) $request->input('organization_id', 'org-a');
+    $principalId = (string) $request->input('principal_id', 'principal-org-a');
+    abort_unless($objectAccess->canAccessObject(
+        principalId: $principalId,
+        organizationId: $organizationId,
+        scopeId: is_string($validated['scope_id'] ?? null) && $validated['scope_id'] !== '' ? $validated['scope_id'] : null,
+        domainObjectType: 'privacy-data-flow',
+        domainObjectId: $flowId,
+    ), 403);
+
     $flow = $repository->updateDataFlow($flowId, [
         ...$validated,
-        'organization_id' => (string) $request->input('organization_id', 'org-a'),
+        'organization_id' => $organizationId,
     ]);
 
     abort_if($flow === null, 404);
 
-    $principalId = (string) $request->input('principal_id', 'principal-org-a');
     $membershipId = $request->input('membership_id');
 
     if (is_string($validated['owner_actor_id'] ?? null) && $validated['owner_actor_id'] !== '') {
@@ -137,7 +160,8 @@ Route::post('/plugins/privacy/data-flows/{flowId}/artifacts', function (
     Request $request,
     string $flowId,
     DataFlowsPrivacyRepository $repository,
-    ArtifactServiceInterface $artifacts
+    ArtifactServiceInterface $artifacts,
+    ObjectAccessService $objectAccess,
 ) {
     $flow = $repository->findDataFlow($flowId);
 
@@ -151,6 +175,13 @@ Route::post('/plugins/privacy/data-flows/{flowId}/artifacts', function (
 
     $principalId = (string) $request->input('principal_id', 'principal-org-a');
     $membershipId = $request->input('membership_id');
+    abort_unless($objectAccess->canAccessObject(
+        principalId: $principalId,
+        organizationId: $flow['organization_id'],
+        scopeId: $flow['scope_id'] !== '' ? $flow['scope_id'] : null,
+        domainObjectType: 'privacy-data-flow',
+        domainObjectId: $flowId,
+    ), 403);
 
     $artifacts->store(new ArtifactUploadData(
         ownerComponent: 'data-flows-privacy',
@@ -185,12 +216,20 @@ Route::post('/plugins/privacy/data-flows/{flowId}/transitions/{transitionKey}', 
     Request $request,
     string $flowId,
     string $transitionKey,
-    WorkflowServiceInterface $workflows
+    WorkflowServiceInterface $workflows,
+    ObjectAccessService $objectAccess,
 ) {
     $principalId = (string) $request->input('principal_id', 'principal-org-a');
     $membershipId = $request->input('membership_id');
     $organizationId = (string) $request->input('organization_id', 'org-a');
     $scopeId = $request->input('scope_id');
+    abort_unless($objectAccess->canAccessObject(
+        principalId: $principalId,
+        organizationId: $organizationId,
+        scopeId: is_string($scopeId) && $scopeId !== '' ? $scopeId : null,
+        domainObjectType: 'privacy-data-flow',
+        domainObjectId: $flowId,
+    ), 403);
 
     $workflows->transition(
         workflowKey: 'plugin.data-flows-privacy.data-flow-lifecycle',
@@ -275,7 +314,8 @@ Route::post('/plugins/privacy/activities/{activityId}', function (
     Request $request,
     string $activityId,
     DataFlowsPrivacyRepository $repository,
-    FunctionalActorServiceInterface $actors
+    FunctionalActorServiceInterface $actors,
+    ObjectAccessService $objectAccess,
 ) {
     $validated = $request->validate([
         'title' => ['required', 'string', 'max:160'],
@@ -290,14 +330,23 @@ Route::post('/plugins/privacy/activities/{activityId}', function (
         'owner_actor_id' => ['nullable', 'string', 'max:64'],
     ]);
 
+    $organizationId = (string) $request->input('organization_id', 'org-a');
+    $principalId = (string) $request->input('principal_id', 'principal-org-a');
+    abort_unless($objectAccess->canAccessObject(
+        principalId: $principalId,
+        organizationId: $organizationId,
+        scopeId: is_string($validated['scope_id'] ?? null) && $validated['scope_id'] !== '' ? $validated['scope_id'] : null,
+        domainObjectType: 'privacy-processing-activity',
+        domainObjectId: $activityId,
+    ), 403);
+
     $activity = $repository->updateProcessingActivity($activityId, [
         ...$validated,
-        'organization_id' => (string) $request->input('organization_id', 'org-a'),
+        'organization_id' => $organizationId,
     ]);
 
     abort_if($activity === null, 404);
 
-    $principalId = (string) $request->input('principal_id', 'principal-org-a');
     $membershipId = $request->input('membership_id');
 
     if (is_string($validated['owner_actor_id'] ?? null) && $validated['owner_actor_id'] !== '') {
@@ -328,7 +377,8 @@ Route::post('/plugins/privacy/activities/{activityId}/artifacts', function (
     Request $request,
     string $activityId,
     DataFlowsPrivacyRepository $repository,
-    ArtifactServiceInterface $artifacts
+    ArtifactServiceInterface $artifacts,
+    ObjectAccessService $objectAccess,
 ) {
     $activity = $repository->findProcessingActivity($activityId);
 
@@ -342,6 +392,13 @@ Route::post('/plugins/privacy/activities/{activityId}/artifacts', function (
 
     $principalId = (string) $request->input('principal_id', 'principal-org-a');
     $membershipId = $request->input('membership_id');
+    abort_unless($objectAccess->canAccessObject(
+        principalId: $principalId,
+        organizationId: $activity['organization_id'],
+        scopeId: $activity['scope_id'] !== '' ? $activity['scope_id'] : null,
+        domainObjectType: 'privacy-processing-activity',
+        domainObjectId: $activityId,
+    ), 403);
 
     $artifacts->store(new ArtifactUploadData(
         ownerComponent: 'data-flows-privacy',
@@ -376,12 +433,20 @@ Route::post('/plugins/privacy/activities/{activityId}/transitions/{transitionKey
     Request $request,
     string $activityId,
     string $transitionKey,
-    WorkflowServiceInterface $workflows
+    WorkflowServiceInterface $workflows,
+    ObjectAccessService $objectAccess,
 ) {
     $principalId = (string) $request->input('principal_id', 'principal-org-a');
     $membershipId = $request->input('membership_id');
     $organizationId = (string) $request->input('organization_id', 'org-a');
     $scopeId = $request->input('scope_id');
+    abort_unless($objectAccess->canAccessObject(
+        principalId: $principalId,
+        organizationId: $organizationId,
+        scopeId: is_string($scopeId) && $scopeId !== '' ? $scopeId : null,
+        domainObjectType: 'privacy-processing-activity',
+        domainObjectId: $activityId,
+    ), 403);
 
     $workflows->transition(
         workflowKey: 'plugin.data-flows-privacy.processing-activity-lifecycle',

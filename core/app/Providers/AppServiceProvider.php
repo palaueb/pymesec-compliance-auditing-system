@@ -1345,7 +1345,7 @@ class AppServiceProvider extends ServiceProvider
         $definitions = [
             ['table' => 'assets', 'type' => 'asset', 'label_column' => 'name', 'prefix' => 'Asset'],
             ['table' => 'risks', 'type' => 'risk', 'label_column' => 'title', 'prefix' => 'Risk'],
-            ['table' => 'controls', 'type' => 'control', 'label_column' => 'title', 'prefix' => 'Control'],
+            ['table' => 'controls', 'type' => 'control', 'label_column' => 'name', 'prefix' => 'Control'],
             ['table' => 'findings', 'type' => 'finding', 'label_column' => 'title', 'prefix' => 'Finding'],
             ['table' => 'policies', 'type' => 'policy', 'label_column' => 'title', 'prefix' => 'Policy'],
             ['table' => 'policy_exceptions', 'type' => 'policy-exception', 'label_column' => 'title', 'prefix' => 'Policy exception'],
@@ -1353,7 +1353,7 @@ class AppServiceProvider extends ServiceProvider
             ['table' => 'privacy_processing_activities', 'type' => 'processing-activity', 'label_column' => 'title', 'prefix' => 'Processing activity'],
             ['table' => 'continuity_services', 'type' => 'continuity-service', 'label_column' => 'title', 'prefix' => 'Continuity service'],
             ['table' => 'continuity_plans', 'type' => 'recovery-plan', 'label_column' => 'title', 'prefix' => 'Recovery plan'],
-            ['table' => 'assessments', 'type' => 'assessment', 'label_column' => 'title', 'prefix' => 'Assessment'],
+            ['table' => 'assessment_campaigns', 'type' => 'assessment', 'label_column' => 'title', 'prefix' => 'Assessment'],
         ];
 
         $options = [];

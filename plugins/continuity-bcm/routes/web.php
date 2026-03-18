@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Route;
 use PymeSec\Core\Artifacts\ArtifactUploadData;
 use PymeSec\Core\Artifacts\Contracts\ArtifactServiceInterface;
 use PymeSec\Core\FunctionalActors\Contracts\FunctionalActorServiceInterface;
+use PymeSec\Core\ObjectAccess\ObjectAccessService;
 use PymeSec\Core\Principals\MembershipReference;
 use PymeSec\Core\Principals\PrincipalReference;
 use PymeSec\Core\Workflows\Contracts\WorkflowServiceInterface;
@@ -13,22 +14,34 @@ use PymeSec\Core\Workflows\WorkflowExecutionContext;
 use PymeSec\Plugins\ContinuityBcm\ContinuityReferenceData;
 use PymeSec\Plugins\ContinuityBcm\ContinuityBcmRepository;
 
-Route::get('/plugins/continuity/services', function (Request $request, ContinuityBcmRepository $repository) {
+Route::get('/plugins/continuity/services', function (Request $request, ContinuityBcmRepository $repository, ObjectAccessService $objectAccess) {
+    $organizationId = (string) $request->query('organization_id', 'org-a');
+
     return response()->json([
         'plugin' => 'continuity-bcm',
-        'services' => $repository->allServices(
-            (string) $request->query('organization_id', 'org-a'),
-            $request->query('scope_id'),
+        'services' => $objectAccess->filterRecords(
+            $repository->allServices($organizationId, $request->query('scope_id')),
+            'id',
+            is_string($request->query('principal_id')) ? (string) $request->query('principal_id') : null,
+            $organizationId,
+            is_string($request->query('scope_id')) ? (string) $request->query('scope_id') : null,
+            'continuity-service',
         ),
     ]);
 })->name('plugin.continuity-bcm.index');
 
-Route::get('/plugins/continuity/plans', function (Request $request, ContinuityBcmRepository $repository) {
+Route::get('/plugins/continuity/plans', function (Request $request, ContinuityBcmRepository $repository, ObjectAccessService $objectAccess) {
+    $organizationId = (string) $request->query('organization_id', 'org-a');
+
     return response()->json([
         'plugin' => 'continuity-bcm',
-        'plans' => $repository->allPlans(
-            (string) $request->query('organization_id', 'org-a'),
-            $request->query('scope_id'),
+        'plans' => $objectAccess->filterRecords(
+            $repository->allPlans($organizationId, $request->query('scope_id')),
+            'id',
+            is_string($request->query('principal_id')) ? (string) $request->query('principal_id') : null,
+            $organizationId,
+            is_string($request->query('scope_id')) ? (string) $request->query('scope_id') : null,
+            'continuity-plan',
         ),
     ]);
 })->name('plugin.continuity-bcm.plans');
@@ -81,7 +94,8 @@ Route::post('/plugins/continuity/services', function (
 Route::post('/plugins/continuity/services/{serviceId}/dependencies', function (
     Request $request,
     string $serviceId,
-    ContinuityBcmRepository $repository
+    ContinuityBcmRepository $repository,
+    ObjectAccessService $objectAccess,
 ) {
     $validated = $request->validate([
         'organization_id' => ['required', 'string', 'max:64'],
@@ -93,6 +107,13 @@ Route::post('/plugins/continuity/services/{serviceId}/dependencies', function (
     $principalId = (string) $request->input('principal_id', 'principal-org-a');
     $membershipId = $request->input('membership_id');
     $scopeId = $request->input('scope_id');
+    abort_unless($objectAccess->canAccessObject(
+        principalId: $principalId,
+        organizationId: (string) $validated['organization_id'],
+        scopeId: is_string($scopeId) && $scopeId !== '' ? $scopeId : null,
+        domainObjectType: 'continuity-service',
+        domainObjectId: $serviceId,
+    ), 403);
 
     $repository->addServiceDependency($serviceId, $validated);
 
@@ -111,7 +132,8 @@ Route::post('/plugins/continuity/services/{serviceId}', function (
     Request $request,
     string $serviceId,
     ContinuityBcmRepository $repository,
-    FunctionalActorServiceInterface $actors
+    FunctionalActorServiceInterface $actors,
+    ObjectAccessService $objectAccess,
 ) {
     $validated = $request->validate([
         'title' => ['required', 'string', 'max:160'],
@@ -124,14 +146,23 @@ Route::post('/plugins/continuity/services/{serviceId}', function (
         'owner_actor_id' => ['nullable', 'string', 'max:64'],
     ]);
 
+    $organizationId = (string) $request->input('organization_id', 'org-a');
+    $principalId = (string) $request->input('principal_id', 'principal-org-a');
+    abort_unless($objectAccess->canAccessObject(
+        principalId: $principalId,
+        organizationId: $organizationId,
+        scopeId: is_string($validated['scope_id'] ?? null) && $validated['scope_id'] !== '' ? $validated['scope_id'] : null,
+        domainObjectType: 'continuity-service',
+        domainObjectId: $serviceId,
+    ), 403);
+
     $service = $repository->updateService($serviceId, [
         ...$validated,
-        'organization_id' => (string) $request->input('organization_id', 'org-a'),
+        'organization_id' => $organizationId,
     ]);
 
     abort_if($service === null, 404);
 
-    $principalId = (string) $request->input('principal_id', 'principal-org-a');
     $membershipId = $request->input('membership_id');
 
     if (is_string($validated['owner_actor_id'] ?? null) && $validated['owner_actor_id'] !== '') {
@@ -162,7 +193,8 @@ Route::post('/plugins/continuity/services/{serviceId}/artifacts', function (
     Request $request,
     string $serviceId,
     ContinuityBcmRepository $repository,
-    ArtifactServiceInterface $artifacts
+    ArtifactServiceInterface $artifacts,
+    ObjectAccessService $objectAccess,
 ) {
     $service = $repository->findService($serviceId);
 
@@ -176,6 +208,13 @@ Route::post('/plugins/continuity/services/{serviceId}/artifacts', function (
 
     $principalId = (string) $request->input('principal_id', 'principal-org-a');
     $membershipId = $request->input('membership_id');
+    abort_unless($objectAccess->canAccessObject(
+        principalId: $principalId,
+        organizationId: $service['organization_id'],
+        scopeId: $service['scope_id'] !== '' ? $service['scope_id'] : null,
+        domainObjectType: 'continuity-service',
+        domainObjectId: $serviceId,
+    ), 403);
 
     $artifacts->store(new ArtifactUploadData(
         ownerComponent: 'continuity-bcm',
@@ -211,12 +250,20 @@ Route::post('/plugins/continuity/services/{serviceId}/transitions/{transitionKey
     Request $request,
     string $serviceId,
     string $transitionKey,
-    WorkflowServiceInterface $workflows
+    WorkflowServiceInterface $workflows,
+    ObjectAccessService $objectAccess,
 ) {
     $principalId = (string) $request->input('principal_id', 'principal-org-a');
     $membershipId = $request->input('membership_id');
     $organizationId = (string) $request->input('organization_id', 'org-a');
     $scopeId = $request->input('scope_id');
+    abort_unless($objectAccess->canAccessObject(
+        principalId: $principalId,
+        organizationId: $organizationId,
+        scopeId: is_string($scopeId) && $scopeId !== '' ? $scopeId : null,
+        domainObjectType: 'continuity-service',
+        domainObjectId: $serviceId,
+    ), 403);
 
     $workflows->transition(
         workflowKey: 'plugin.continuity-bcm.service-lifecycle',
@@ -249,7 +296,8 @@ Route::post('/plugins/continuity/services/{serviceId}/plans', function (
     Request $request,
     string $serviceId,
     ContinuityBcmRepository $repository,
-    FunctionalActorServiceInterface $actors
+    FunctionalActorServiceInterface $actors,
+    ObjectAccessService $objectAccess,
 ) {
     $validated = $request->validate([
         'title' => ['required', 'string', 'max:160'],
@@ -262,8 +310,16 @@ Route::post('/plugins/continuity/services/{serviceId}/plans', function (
         'owner_actor_id' => ['nullable', 'string', 'max:64'],
     ]);
 
-    $plan = $repository->createPlan($serviceId, $validated);
     $principalId = (string) $request->input('principal_id', 'principal-org-a');
+    abort_unless($objectAccess->canAccessObject(
+        principalId: $principalId,
+        organizationId: (string) $validated['organization_id'],
+        scopeId: is_string($validated['scope_id'] ?? null) && $validated['scope_id'] !== '' ? $validated['scope_id'] : null,
+        domainObjectType: 'continuity-service',
+        domainObjectId: $serviceId,
+    ), 403);
+
+    $plan = $repository->createPlan($serviceId, $validated);
     $membershipId = $request->input('membership_id');
 
     if (is_string($validated['owner_actor_id'] ?? null) && $validated['owner_actor_id'] !== '') {
@@ -293,7 +349,8 @@ Route::post('/plugins/continuity/services/{serviceId}/plans', function (
 Route::post('/plugins/continuity/plans/{planId}/exercises', function (
     Request $request,
     string $planId,
-    ContinuityBcmRepository $repository
+    ContinuityBcmRepository $repository,
+    ObjectAccessService $objectAccess,
 ) {
     $validated = $request->validate([
         'organization_id' => ['required', 'string', 'max:64'],
@@ -307,6 +364,13 @@ Route::post('/plugins/continuity/plans/{planId}/exercises', function (
     $principalId = (string) $request->input('principal_id', 'principal-org-a');
     $membershipId = $request->input('membership_id');
     $scopeId = $request->input('scope_id');
+    abort_unless($objectAccess->canAccessObject(
+        principalId: $principalId,
+        organizationId: (string) $validated['organization_id'],
+        scopeId: is_string($scopeId) && $scopeId !== '' ? $scopeId : null,
+        domainObjectType: 'continuity-plan',
+        domainObjectId: $planId,
+    ), 403);
 
     $repository->recordExercise($planId, $validated);
 
@@ -324,7 +388,8 @@ Route::post('/plugins/continuity/plans/{planId}/exercises', function (
 Route::post('/plugins/continuity/plans/{planId}/executions', function (
     Request $request,
     string $planId,
-    ContinuityBcmRepository $repository
+    ContinuityBcmRepository $repository,
+    ObjectAccessService $objectAccess,
 ) {
     $validated = $request->validate([
         'organization_id' => ['required', 'string', 'max:64'],
@@ -338,6 +403,13 @@ Route::post('/plugins/continuity/plans/{planId}/executions', function (
     $principalId = (string) $request->input('principal_id', 'principal-org-a');
     $membershipId = $request->input('membership_id');
     $scopeId = $request->input('scope_id');
+    abort_unless($objectAccess->canAccessObject(
+        principalId: $principalId,
+        organizationId: (string) $validated['organization_id'],
+        scopeId: is_string($scopeId) && $scopeId !== '' ? $scopeId : null,
+        domainObjectType: 'continuity-plan',
+        domainObjectId: $planId,
+    ), 403);
 
     $repository->recordTestExecution($planId, $validated);
 
@@ -356,7 +428,8 @@ Route::post('/plugins/continuity/plans/{planId}', function (
     Request $request,
     string $planId,
     ContinuityBcmRepository $repository,
-    FunctionalActorServiceInterface $actors
+    FunctionalActorServiceInterface $actors,
+    ObjectAccessService $objectAccess,
 ) {
     $validated = $request->validate([
         'title' => ['required', 'string', 'max:160'],
@@ -368,14 +441,23 @@ Route::post('/plugins/continuity/plans/{planId}', function (
         'owner_actor_id' => ['nullable', 'string', 'max:64'],
     ]);
 
+    $principalId = (string) $request->input('principal_id', 'principal-org-a');
+    $organizationId = (string) $request->input('organization_id', 'org-a');
+    abort_unless($objectAccess->canAccessObject(
+        principalId: $principalId,
+        organizationId: $organizationId,
+        scopeId: is_string($validated['scope_id'] ?? null) && $validated['scope_id'] !== '' ? $validated['scope_id'] : null,
+        domainObjectType: 'continuity-plan',
+        domainObjectId: $planId,
+    ), 403);
+
     $plan = $repository->updatePlan($planId, [
         ...$validated,
-        'organization_id' => (string) $request->input('organization_id', 'org-a'),
+        'organization_id' => $organizationId,
     ]);
 
     abort_if($plan === null, 404);
 
-    $principalId = (string) $request->input('principal_id', 'principal-org-a');
     $membershipId = $request->input('membership_id');
 
     if (is_string($validated['owner_actor_id'] ?? null) && $validated['owner_actor_id'] !== '') {
@@ -406,7 +488,8 @@ Route::post('/plugins/continuity/plans/{planId}/artifacts', function (
     Request $request,
     string $planId,
     ContinuityBcmRepository $repository,
-    ArtifactServiceInterface $artifacts
+    ArtifactServiceInterface $artifacts,
+    ObjectAccessService $objectAccess,
 ) {
     $plan = $repository->findPlan($planId);
 
@@ -420,6 +503,13 @@ Route::post('/plugins/continuity/plans/{planId}/artifacts', function (
 
     $principalId = (string) $request->input('principal_id', 'principal-org-a');
     $membershipId = $request->input('membership_id');
+    abort_unless($objectAccess->canAccessObject(
+        principalId: $principalId,
+        organizationId: $plan['organization_id'],
+        scopeId: $plan['scope_id'] !== '' ? $plan['scope_id'] : null,
+        domainObjectType: 'continuity-plan',
+        domainObjectId: $planId,
+    ), 403);
 
     $artifacts->store(new ArtifactUploadData(
         ownerComponent: 'continuity-bcm',
@@ -453,12 +543,20 @@ Route::post('/plugins/continuity/plans/{planId}/transitions/{transitionKey}', fu
     Request $request,
     string $planId,
     string $transitionKey,
-    WorkflowServiceInterface $workflows
+    WorkflowServiceInterface $workflows,
+    ObjectAccessService $objectAccess,
 ) {
     $principalId = (string) $request->input('principal_id', 'principal-org-a');
     $membershipId = $request->input('membership_id');
     $organizationId = (string) $request->input('organization_id', 'org-a');
     $scopeId = $request->input('scope_id');
+    abort_unless($objectAccess->canAccessObject(
+        principalId: $principalId,
+        organizationId: $organizationId,
+        scopeId: is_string($scopeId) && $scopeId !== '' ? $scopeId : null,
+        domainObjectType: 'continuity-plan',
+        domainObjectId: $planId,
+    ), 403);
 
     $workflows->transition(
         workflowKey: 'plugin.continuity-bcm.plan-lifecycle',

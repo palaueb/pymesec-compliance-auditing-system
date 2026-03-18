@@ -19,6 +19,7 @@
     .pill-partial        { background: rgba(245,158,11,0.14); color: #92400e; }
     .pill-fail           { background: rgba(239,68,68,0.14);  color: #991b1b; }
     .pill-not-applicable { background: rgba(31,42,34,0.05);   color: var(--muted); }
+    .pill-signed-off     { background: rgba(59,130,246,0.14); color: #1d4ed8; }
 
     .review-summary {
         font-size: 13px;
@@ -153,6 +154,7 @@
                     @php
                         $statusPillClass = match($selectedAssessment['status']) {
                             'active'   => 'pill-pass',
+                            'signed-off' => 'pill-signed-off',
                             'closed'   => 'pill-not-applicable',
                             'archived' => 'pill-not-applicable',
                             default    => '',
@@ -160,6 +162,8 @@
                     @endphp
                     <span class="pill {{ $statusPillClass }}">{{ $status_options[$selectedAssessment['status']] ?? $selectedAssessment['status'] }}</span>
                     <a class="button button-secondary" href="{{ $selectedAssessment['report_route'] }}">Export report</a>
+                    <a class="button button-ghost" href="{{ $selectedAssessment['report_csv_route'] }}">Export CSV</a>
+                    <a class="button button-ghost" href="{{ $selectedAssessment['report_json_route'] }}">Export bundle</a>
                 </div>
             </div>
 
@@ -191,9 +195,74 @@
                 </div>
             </div>
 
+            <div class="overview-grid" style="grid-template-columns:repeat(2, minmax(0, 1fr));">
+                <div class="surface-card" style="padding:14px;">
+                    <div class="metric-label">Sign-off</div>
+                    <div class="table-note" style="margin-top:10px;">Date: {{ $selectedAssessment['signed_off_on'] !== '' ? $selectedAssessment['signed_off_on'] : 'Not signed off yet' }}</div>
+                    <div class="table-note">By: {{ $selectedAssessment['signed_off_by_principal_id'] !== '' ? $selectedAssessment['signed_off_by_principal_id'] : 'n/a' }}</div>
+                    @if ($selectedAssessment['signoff_notes'] !== '')
+                        <div class="review-summary" style="margin-top:10px;">{{ $selectedAssessment['signoff_notes'] }}</div>
+                    @endif
+                </div>
+                <div class="surface-card" style="padding:14px;">
+                    <div class="metric-label">Closure</div>
+                    <div class="table-note" style="margin-top:10px;">Date: {{ $selectedAssessment['closed_on'] !== '' ? $selectedAssessment['closed_on'] : 'Not closed yet' }}</div>
+                    <div class="table-note">By: {{ $selectedAssessment['closed_by_principal_id'] !== '' ? $selectedAssessment['closed_by_principal_id'] : 'n/a' }}</div>
+                    @if ($selectedAssessment['closure_summary'] !== '')
+                        <div class="review-summary" style="margin-top:10px;">{{ $selectedAssessment['closure_summary'] }}</div>
+                    @endif
+                </div>
+            </div>
+
             {{-- Edit assessment (collapsed by default) --}}
             @if ($can_manage_assessments)
                 <hr class="section-divider">
+                @if ($selectedAssessment['transitions'] !== [])
+                    <details>
+                        <summary class="button button-ghost" style="display:inline-flex; width:fit-content;">Workflow and sign-off</summary>
+                        <div class="overview-grid" style="grid-template-columns:repeat(2, minmax(0, 1fr)); margin-top:14px;">
+                            @foreach ($selectedAssessment['transitions'] as $transition)
+                                <div class="surface-card" style="padding:14px;">
+                                    <div class="entity-title" style="font-size:14px;">{{ ucwords(str_replace('-', ' ', $transition)) }}</div>
+                                    <form class="upload-form" method="POST" action="{{ str_replace('__TRANSITION__', $transition, $selectedAssessment['transition_route']) }}" style="margin-top:10px;">
+                                        @csrf
+                                        <input type="hidden" name="principal_id" value="{{ $query['principal_id'] }}">
+                                        <input type="hidden" name="organization_id" value="{{ $selectedAssessment['organization_id'] }}">
+                                        <input type="hidden" name="scope_id" value="{{ $selectedAssessment['scope_id'] }}">
+                                        <input type="hidden" name="locale" value="{{ $query['locale'] }}">
+                                        <input type="hidden" name="menu" value="plugin.assessments-audits.root">
+                                        <input type="hidden" name="membership_id" value="{{ $query['membership_ids'][0] ?? 'membership-org-a-hello' }}">
+                                        @if ($transition === 'sign-off')
+                                            <div class="field">
+                                                <label class="field-label">Signed off on</label>
+                                                <input class="field-input" type="date" name="signed_off_on" value="{{ now()->toDateString() }}">
+                                            </div>
+                                            <div class="field">
+                                                <label class="field-label">Sign-off notes</label>
+                                                <textarea class="field-input" name="signoff_notes" rows="3">{{ $selectedAssessment['signoff_notes'] }}</textarea>
+                                            </div>
+                                        @endif
+                                        @if ($transition === 'close')
+                                            <div class="field">
+                                                <label class="field-label">Closed on</label>
+                                                <input class="field-input" type="date" name="closed_on" value="{{ now()->toDateString() }}">
+                                            </div>
+                                            <div class="field">
+                                                <label class="field-label">Closure summary</label>
+                                                <textarea class="field-input" name="closure_summary" rows="3">{{ $selectedAssessment['closure_summary'] }}</textarea>
+                                            </div>
+                                        @endif
+                                        <div class="action-cluster" style="margin-top:10px;">
+                                            <button class="button {{ in_array($transition, ['sign-off', 'close'], true) ? 'button-primary' : 'button-secondary' }}" type="submit">{{ ucwords(str_replace('-', ' ', $transition)) }}</button>
+                                        </div>
+                                    </form>
+                                </div>
+                            @endforeach
+                        </div>
+                    </details>
+                    <hr class="section-divider">
+                @endif
+
                 <details>
                     <summary class="button button-ghost" style="display:inline-flex; width:fit-content;">Edit assessment details</summary>
                     <form class="upload-form" method="POST" action="{{ $selectedAssessment['update_route'] }}" style="margin-top:14px;">
@@ -537,6 +606,7 @@
                                 @php
                                     $sPill = match($campaign['status']) {
                                         'active'   => 'pill-pass',
+                                        'signed-off' => 'pill-signed-off',
                                         'closed'   => 'pill-not-applicable',
                                         'archived' => 'pill-not-applicable',
                                         default    => '',

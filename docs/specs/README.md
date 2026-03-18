@@ -30,6 +30,7 @@ The following specification documents are available in the [`specs`](./) folder:
 - [assessments-audits-plugin-v1.md](./assessments-audits-plugin-v1.md)
 - [evidence-management-plugin-v1.md](./evidence-management-plugin-v1.md)
 - [object-level-access-v1.md](./object-level-access-v1.md)
+- [object-level-access-v2.md](./object-level-access-v2.md)
 - [governed-reference-data-asset-catalog-v1.md](./governed-reference-data-asset-catalog-v1.md)
 - [governed-reference-data-continuity-privacy-v1.md](./governed-reference-data-continuity-privacy-v1.md)
 - [next-steps-memory-2026-03.md](./next-steps-memory-2026-03.md)

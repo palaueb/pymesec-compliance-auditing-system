@@ -4,6 +4,7 @@ namespace PymeSec\Plugins\AssessmentsAudits;
 
 use PymeSec\Core\Permissions\AuthorizationContext;
 use PymeSec\Core\Permissions\Contracts\AuthorizationServiceInterface;
+use PymeSec\Core\ObjectAccess\ObjectAccessService;
 use PymeSec\Core\Plugins\Contracts\PluginInterface;
 use PymeSec\Core\Plugins\PluginContext;
 use PymeSec\Core\Tenancy\Contracts\TenancyServiceInterface;
@@ -63,9 +64,17 @@ class AssessmentsAuditsPlugin implements PluginInterface
         $repository = $context->app()->make(AssessmentsAuditsRepository::class);
         $controls = $context->app()->make(ControlsCatalogRepository::class);
         $authorization = $context->app()->make(AuthorizationServiceInterface::class);
+        $objectAccess = $context->app()->make(ObjectAccessService::class);
         $tenancy = $context->app()->make(TenancyServiceInterface::class);
         $organizationId = $screenContext->organizationId ?? 'org-a';
-        $campaigns = $repository->all($organizationId, $screenContext->scopeId);
+        $campaigns = $objectAccess->filterRecords(
+            $repository->all($organizationId, $screenContext->scopeId),
+            'id',
+            $screenContext->principal?->id,
+            $organizationId,
+            $screenContext->scopeId,
+            'assessment',
+        );
         $frameworkOptions = $repository->frameworkOptions($organizationId);
         $canManage = $screenContext->principal !== null && $authorization->authorize(new AuthorizationContext(
             principal: $screenContext->principal,
@@ -81,7 +90,7 @@ class AssessmentsAuditsPlugin implements PluginInterface
             requestedMembershipIds: array_map(static fn ($membership): string => $membership->id, $screenContext->memberships),
         );
 
-        $campaignRows = array_map(function (array $campaign) use ($controls, $frameworkOptions, $repository, $screenContext, $scopeContext): array {
+        $campaignRows = array_map(function (array $campaign) use ($canManage, $controls, $frameworkOptions, $repository, $screenContext, $scopeContext): array {
                 $scopeName = 'Organization-wide';
 
                 foreach ($scopeContext->scopes as $scope) {
@@ -133,6 +142,21 @@ class AssessmentsAuditsPlugin implements PluginInterface
                         'assessmentId' => $campaign['id'],
                         ...$this->baseQuery($screenContext),
                     ]),
+                    'report_csv_route' => route('plugin.assessments-audits.report', [
+                        'assessmentId' => $campaign['id'],
+                        'format' => 'csv',
+                        ...$this->baseQuery($screenContext),
+                    ]),
+                    'report_json_route' => route('plugin.assessments-audits.report', [
+                        'assessmentId' => $campaign['id'],
+                        'format' => 'json',
+                        ...$this->baseQuery($screenContext),
+                    ]),
+                    'transitions' => $canManage ? $this->transitionsForStatus($campaign['status']) : [],
+                    'transition_route' => route('plugin.assessments-audits.transition', [
+                        'assessmentId' => $campaign['id'],
+                        'transitionKey' => '__TRANSITION__',
+                    ]),
                 ];
             }, $campaigns);
         $selectedAssessmentId = is_string($screenContext->query['assessment_id'] ?? null) && $screenContext->query['assessment_id'] !== ''
@@ -172,10 +196,25 @@ class AssessmentsAuditsPlugin implements PluginInterface
             'status_options' => [
                 'draft' => 'Draft',
                 'active' => 'Active',
+                'signed-off' => 'Signed off',
                 'closed' => 'Closed',
             ],
             'assessments_list_url' => route('core.shell.index', [...$listQuery, 'menu' => 'plugin.assessments-audits.root']),
         ];
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function transitionsForStatus(string $status): array
+    {
+        return match ($status) {
+            'draft' => ['activate'],
+            'active' => ['sign-off'],
+            'signed-off' => ['close', 'reopen'],
+            'closed' => ['reopen'],
+            default => [],
+        };
     }
 
     /**

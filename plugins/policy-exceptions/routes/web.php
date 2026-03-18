@@ -5,28 +5,41 @@ use Illuminate\Support\Facades\Route;
 use PymeSec\Core\Artifacts\ArtifactUploadData;
 use PymeSec\Core\Artifacts\Contracts\ArtifactServiceInterface;
 use PymeSec\Core\FunctionalActors\Contracts\FunctionalActorServiceInterface;
+use PymeSec\Core\ObjectAccess\ObjectAccessService;
 use PymeSec\Core\Principals\MembershipReference;
 use PymeSec\Core\Principals\PrincipalReference;
 use PymeSec\Core\Workflows\Contracts\WorkflowServiceInterface;
 use PymeSec\Core\Workflows\WorkflowExecutionContext;
 use PymeSec\Plugins\PolicyExceptions\PolicyExceptionsRepository;
 
-Route::get('/plugins/policies', function (Request $request, PolicyExceptionsRepository $repository) {
+Route::get('/plugins/policies', function (Request $request, PolicyExceptionsRepository $repository, ObjectAccessService $objectAccess) {
+    $organizationId = (string) $request->query('organization_id', 'org-a');
+
     return response()->json([
         'plugin' => 'policy-exceptions',
-        'policies' => $repository->allPolicies(
-            (string) $request->query('organization_id', 'org-a'),
-            $request->query('scope_id'),
+        'policies' => $objectAccess->filterRecords(
+            $repository->allPolicies($organizationId, $request->query('scope_id')),
+            'id',
+            is_string($request->query('principal_id')) ? (string) $request->query('principal_id') : null,
+            $organizationId,
+            is_string($request->query('scope_id')) ? (string) $request->query('scope_id') : null,
+            'policy',
         ),
     ]);
 })->name('plugin.policy-exceptions.index');
 
-Route::get('/plugins/policies/exceptions', function (Request $request, PolicyExceptionsRepository $repository) {
+Route::get('/plugins/policies/exceptions', function (Request $request, PolicyExceptionsRepository $repository, ObjectAccessService $objectAccess) {
+    $organizationId = (string) $request->query('organization_id', 'org-a');
+
     return response()->json([
         'plugin' => 'policy-exceptions',
-        'exceptions' => $repository->exceptions(
-            (string) $request->query('organization_id', 'org-a'),
-            $request->query('scope_id'),
+        'exceptions' => $objectAccess->filterRecords(
+            $repository->exceptions($organizationId, $request->query('scope_id')),
+            'id',
+            is_string($request->query('principal_id')) ? (string) $request->query('principal_id') : null,
+            $organizationId,
+            is_string($request->query('scope_id')) ? (string) $request->query('scope_id') : null,
+            'policy-exception',
         ),
     ]);
 })->name('plugin.policy-exceptions.exceptions');
@@ -80,7 +93,8 @@ Route::post('/plugins/policies/{policyId}', function (
     Request $request,
     string $policyId,
     PolicyExceptionsRepository $repository,
-    FunctionalActorServiceInterface $actors
+    FunctionalActorServiceInterface $actors,
+    ObjectAccessService $objectAccess,
 ) {
     $validated = $request->validate([
         'title' => ['required', 'string', 'max:140'],
@@ -93,14 +107,23 @@ Route::post('/plugins/policies/{policyId}', function (
         'owner_actor_id' => ['nullable', 'string', 'max:64'],
     ]);
 
+    $organizationId = (string) $request->input('organization_id', 'org-a');
+    $principalId = (string) $request->input('principal_id', 'principal-org-a');
+    abort_unless($objectAccess->canAccessObject(
+        principalId: $principalId,
+        organizationId: $organizationId,
+        scopeId: is_string($validated['scope_id'] ?? null) && $validated['scope_id'] !== '' ? $validated['scope_id'] : null,
+        domainObjectType: 'policy',
+        domainObjectId: $policyId,
+    ), 403);
+
     $policy = $repository->updatePolicy($policyId, [
         ...$validated,
-        'organization_id' => (string) $request->input('organization_id', 'org-a'),
+        'organization_id' => $organizationId,
     ]);
 
     abort_if($policy === null, 404);
 
-    $principalId = (string) $request->input('principal_id', 'principal-org-a');
     $membershipId = $request->input('membership_id');
 
     if (is_string($validated['owner_actor_id'] ?? null) && $validated['owner_actor_id'] !== '') {
@@ -131,7 +154,8 @@ Route::post('/plugins/policies/{policyId}/exceptions', function (
     Request $request,
     string $policyId,
     PolicyExceptionsRepository $repository,
-    FunctionalActorServiceInterface $actors
+    FunctionalActorServiceInterface $actors,
+    ObjectAccessService $objectAccess,
 ) {
     $policy = $repository->findPolicy($policyId);
 
@@ -146,13 +170,21 @@ Route::post('/plugins/policies/{policyId}/exceptions', function (
         'owner_actor_id' => ['nullable', 'string', 'max:64'],
     ]);
 
+    $principalId = (string) $request->input('principal_id', 'principal-org-a');
+    abort_unless($objectAccess->canAccessObject(
+        principalId: $principalId,
+        organizationId: $policy['organization_id'],
+        scopeId: $policy['scope_id'] !== '' ? $policy['scope_id'] : null,
+        domainObjectType: 'policy',
+        domainObjectId: $policyId,
+    ), 403);
+
     $exception = $repository->createException($policyId, [
         ...$validated,
         'organization_id' => $policy['organization_id'],
         'scope_id' => $policy['scope_id'] !== '' ? $policy['scope_id'] : null,
     ]);
 
-    $principalId = (string) $request->input('principal_id', 'principal-org-a');
     $membershipId = $request->input('membership_id');
 
     if (is_string($validated['owner_actor_id'] ?? null) && $validated['owner_actor_id'] !== '') {
@@ -183,7 +215,8 @@ Route::post('/plugins/policies/exceptions/{exceptionId}', function (
     Request $request,
     string $exceptionId,
     PolicyExceptionsRepository $repository,
-    FunctionalActorServiceInterface $actors
+    FunctionalActorServiceInterface $actors,
+    ObjectAccessService $objectAccess,
 ) {
     $validated = $request->validate([
         'title' => ['required', 'string', 'max:140'],
@@ -203,6 +236,13 @@ Route::post('/plugins/policies/exceptions/{exceptionId}', function (
     abort_if($policy === null, 404);
 
     $principalId = (string) $request->input('principal_id', 'principal-org-a');
+    abort_unless($objectAccess->canAccessObject(
+        principalId: $principalId,
+        organizationId: $exception['organization_id'],
+        scopeId: $exception['scope_id'] !== '' ? $exception['scope_id'] : null,
+        domainObjectType: 'policy-exception',
+        domainObjectId: $exceptionId,
+    ), 403);
     $membershipId = $request->input('membership_id');
 
     if (is_string($validated['owner_actor_id'] ?? null) && $validated['owner_actor_id'] !== '') {
@@ -233,7 +273,8 @@ Route::post('/plugins/policies/{policyId}/artifacts', function (
     Request $request,
     string $policyId,
     PolicyExceptionsRepository $repository,
-    ArtifactServiceInterface $artifacts
+    ArtifactServiceInterface $artifacts,
+    ObjectAccessService $objectAccess,
 ) {
     $policy = $repository->findPolicy($policyId);
 
@@ -247,6 +288,13 @@ Route::post('/plugins/policies/{policyId}/artifacts', function (
 
     $principalId = (string) $request->input('principal_id', 'principal-org-a');
     $membershipId = $request->input('membership_id');
+    abort_unless($objectAccess->canAccessObject(
+        principalId: $principalId,
+        organizationId: $policy['organization_id'],
+        scopeId: $policy['scope_id'] !== '' ? $policy['scope_id'] : null,
+        domainObjectType: 'policy',
+        domainObjectId: $policyId,
+    ), 403);
 
     $artifacts->store(new ArtifactUploadData(
         ownerComponent: 'policy-exceptions',
@@ -280,7 +328,8 @@ Route::post('/plugins/policies/exceptions/{exceptionId}/artifacts', function (
     Request $request,
     string $exceptionId,
     PolicyExceptionsRepository $repository,
-    ArtifactServiceInterface $artifacts
+    ArtifactServiceInterface $artifacts,
+    ObjectAccessService $objectAccess,
 ) {
     $exception = $repository->findException($exceptionId);
 
@@ -294,6 +343,13 @@ Route::post('/plugins/policies/exceptions/{exceptionId}/artifacts', function (
 
     $principalId = (string) $request->input('principal_id', 'principal-org-a');
     $membershipId = $request->input('membership_id');
+    abort_unless($objectAccess->canAccessObject(
+        principalId: $principalId,
+        organizationId: $exception['organization_id'],
+        scopeId: $exception['scope_id'] !== '' ? $exception['scope_id'] : null,
+        domainObjectType: 'policy-exception',
+        domainObjectId: $exceptionId,
+    ), 403);
 
     $artifacts->store(new ArtifactUploadData(
         ownerComponent: 'policy-exceptions',
@@ -327,12 +383,20 @@ Route::post('/plugins/policies/{policyId}/transitions/{transitionKey}', function
     Request $request,
     string $policyId,
     string $transitionKey,
-    WorkflowServiceInterface $workflows
+    WorkflowServiceInterface $workflows,
+    ObjectAccessService $objectAccess,
 ) {
     $principalId = (string) $request->input('principal_id', 'principal-org-a');
     $membershipId = $request->input('membership_id');
     $organizationId = (string) $request->input('organization_id', 'org-a');
     $scopeId = $request->input('scope_id');
+    abort_unless($objectAccess->canAccessObject(
+        principalId: $principalId,
+        organizationId: $organizationId,
+        scopeId: is_string($scopeId) && $scopeId !== '' ? $scopeId : null,
+        domainObjectType: 'policy',
+        domainObjectId: $policyId,
+    ), 403);
 
     $workflows->transition(
         workflowKey: 'plugin.policy-exceptions.policy-lifecycle',
@@ -364,12 +428,20 @@ Route::post('/plugins/policies/exceptions/{exceptionId}/transitions/{transitionK
     Request $request,
     string $exceptionId,
     string $transitionKey,
-    WorkflowServiceInterface $workflows
+    WorkflowServiceInterface $workflows,
+    ObjectAccessService $objectAccess,
 ) {
     $principalId = (string) $request->input('principal_id', 'principal-org-a');
     $membershipId = $request->input('membership_id');
     $organizationId = (string) $request->input('organization_id', 'org-a');
     $scopeId = $request->input('scope_id');
+    abort_unless($objectAccess->canAccessObject(
+        principalId: $principalId,
+        organizationId: $organizationId,
+        scopeId: is_string($scopeId) && $scopeId !== '' ? $scopeId : null,
+        domainObjectType: 'policy-exception',
+        domainObjectId: $exceptionId,
+    ), 403);
 
     $workflows->transition(
         workflowKey: 'plugin.policy-exceptions.exception-lifecycle',

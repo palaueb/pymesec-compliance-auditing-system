@@ -137,4 +137,48 @@ class AssessmentsAuditsTest extends TestCase
             ->assertSee('Restore evidence retention gap')
             ->assertSee('Quarterly Access Review [FAIL]');
     }
+
+    public function test_assessments_support_sign_off_closure_and_export_bundle_formats(): void
+    {
+        $payload = [
+            'principal_id' => 'principal-org-a',
+            'organization_id' => 'org-a',
+            'scope_id' => 'scope-eu',
+            'locale' => 'en',
+            'menu' => 'plugin.assessments-audits.root',
+            'membership_id' => 'membership-org-a-hello',
+        ];
+
+        $this->post('/plugins/assessments/assessment-q2-access-resilience/transitions/sign-off', [
+            ...$payload,
+            'signed_off_on' => '2026-04-25',
+            'signoff_notes' => 'Checklist reviewed and approved for management submission.',
+        ])->assertFound();
+
+        $this->post('/plugins/assessments/assessment-q2-access-resilience/transitions/close', [
+            ...$payload,
+            'closed_on' => '2026-04-28',
+            'closure_summary' => 'Assessment closed after confirming remediation ownership.',
+        ])->assertFound();
+
+        $this->get('/app?menu=plugin.assessments-audits.root&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello&assessment_id=assessment-q2-access-resilience')
+            ->assertOk()
+            ->assertSee('Signed off')
+            ->assertSee('Checklist reviewed and approved for management submission.')
+            ->assertSee('Assessment closed after confirming remediation ownership.');
+
+        $this->get('/plugins/assessments/assessment-q2-access-resilience/report?format=csv&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
+            ->assertOk()
+            ->assertHeader('content-type', 'text/csv; charset=UTF-8')
+            ->assertSee('assessment_id,assessment_title,status')
+            ->assertSee('assessment-q2-access-resilience');
+
+        $this->get('/plugins/assessments/assessment-q2-access-resilience/report?format=json&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
+            ->assertOk()
+            ->assertHeader('content-type', 'application/json')
+            ->assertJsonPath('assessment.id', 'assessment-q2-access-resilience')
+            ->assertJsonPath('assessment.status', 'closed')
+            ->assertJsonPath('assessment.signoff_notes', 'Checklist reviewed and approved for management submission.')
+            ->assertJsonPath('assessment.closure_summary', 'Assessment closed after confirming remediation ownership.');
+    }
 }

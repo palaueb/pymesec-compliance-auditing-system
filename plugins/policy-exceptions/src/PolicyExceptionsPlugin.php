@@ -5,6 +5,7 @@ namespace PymeSec\Plugins\PolicyExceptions;
 use Illuminate\Support\Facades\DB;
 use PymeSec\Core\Artifacts\Contracts\ArtifactServiceInterface;
 use PymeSec\Core\FunctionalActors\Contracts\FunctionalActorServiceInterface;
+use PymeSec\Core\ObjectAccess\ObjectAccessService;
 use PymeSec\Core\Permissions\AuthorizationContext;
 use PymeSec\Core\Permissions\Contracts\AuthorizationServiceInterface;
 use PymeSec\Core\Plugins\Contracts\PluginInterface;
@@ -180,6 +181,7 @@ class PolicyExceptionsPlugin implements PluginInterface
     {
         $repository = $context->app()->make(PolicyExceptionsRepository::class);
         $artifacts = $context->app()->make(ArtifactServiceInterface::class);
+        $objectAccess = $context->app()->make(ObjectAccessService::class);
         $workflow = $context->app()->make(WorkflowServiceInterface::class);
         $actors = $context->app()->make(FunctionalActorServiceInterface::class);
         $authorization = $context->app()->make(AuthorizationServiceInterface::class);
@@ -202,7 +204,14 @@ class PolicyExceptionsPlugin implements PluginInterface
 
         $policies = [];
 
-        foreach ($repository->allPolicies($organizationId, $screenContext->scopeId) as $policy) {
+        foreach ($objectAccess->filterRecords(
+            $repository->allPolicies($organizationId, $screenContext->scopeId),
+            'id',
+            $screenContext->principal?->id,
+            $organizationId,
+            $screenContext->scopeId,
+            'policy',
+        ) as $policy) {
             $instance = $workflow->instanceFor(
                 workflowKey: 'plugin.policy-exceptions.policy-lifecycle',
                 subjectType: 'policy',
@@ -309,6 +318,7 @@ class PolicyExceptionsPlugin implements PluginInterface
     {
         $repository = $context->app()->make(PolicyExceptionsRepository::class);
         $artifacts = $context->app()->make(ArtifactServiceInterface::class);
+        $objectAccess = $context->app()->make(ObjectAccessService::class);
         $workflow = $context->app()->make(WorkflowServiceInterface::class);
         $actors = $context->app()->make(FunctionalActorServiceInterface::class);
         $authorization = $context->app()->make(AuthorizationServiceInterface::class);
@@ -325,7 +335,14 @@ class PolicyExceptionsPlugin implements PluginInterface
 
         $exceptions = [];
 
-        foreach ($repository->exceptions($organizationId, $screenContext->scopeId) as $exception) {
+        foreach ($objectAccess->filterRecords(
+            $repository->exceptions($organizationId, $screenContext->scopeId),
+            'id',
+            $screenContext->principal?->id,
+            $organizationId,
+            $screenContext->scopeId,
+            'policy-exception',
+        ) as $exception) {
             $policy = $repository->findPolicy($exception['policy_id']);
 
             if ($policy === null) {

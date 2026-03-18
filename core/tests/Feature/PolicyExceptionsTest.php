@@ -77,7 +77,7 @@ class PolicyExceptionsTest extends TestCase
             'compensating_control' => 'Weekly manual access export review.',
             'linked_finding_id' => 'finding-access-review-gap',
             'expires_on' => '2026-04-12',
-            'owner_actor_id' => 'actor-compliance-office',
+            'owner_actor_id' => 'actor-ava-mason',
         ])->assertFound();
 
         $this->post('/plugins/policies/exceptions/exception-legacy-supplier-bridge-exception', [

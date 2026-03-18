@@ -56,6 +56,12 @@ class AssessmentsAuditsRepository
             'starts_on' => (string) $data['starts_on'],
             'ends_on' => (string) $data['ends_on'],
             'status' => (string) ($data['status'] ?? 'draft'),
+            'signoff_notes' => null,
+            'signed_off_on' => null,
+            'signed_off_by_principal_id' => null,
+            'closure_summary' => null,
+            'closed_on' => null,
+            'closed_by_principal_id' => null,
             'created_at' => now(),
             'updated_at' => now(),
         ]);
@@ -274,6 +280,75 @@ class AssessmentsAuditsRepository
     }
 
     /**
+     * @return array<string, mixed>|null
+     */
+    public function signOff(string $assessmentId, string $principalId, ?string $notes = null, ?string $signedOffOn = null): ?array
+    {
+        $assessment = $this->find($assessmentId);
+
+        if ($assessment === null) {
+            return null;
+        }
+
+        DB::table('assessment_campaigns')
+            ->where('id', $assessmentId)
+            ->update([
+                'status' => 'signed-off',
+                'signoff_notes' => $this->nullableString($notes),
+                'signed_off_on' => $this->nullableString($signedOffOn ?? now()->toDateString()),
+                'signed_off_by_principal_id' => $principalId,
+                'updated_at' => now(),
+            ]);
+
+        return $this->find($assessmentId);
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    public function close(string $assessmentId, string $principalId, ?string $closureSummary = null, ?string $closedOn = null): ?array
+    {
+        $assessment = $this->find($assessmentId);
+
+        if ($assessment === null) {
+            return null;
+        }
+
+        DB::table('assessment_campaigns')
+            ->where('id', $assessmentId)
+            ->update([
+                'status' => 'closed',
+                'closure_summary' => $this->nullableString($closureSummary),
+                'closed_on' => $this->nullableString($closedOn ?? now()->toDateString()),
+                'closed_by_principal_id' => $principalId,
+                'updated_at' => now(),
+            ]);
+
+        return $this->find($assessmentId);
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    public function reopen(string $assessmentId): ?array
+    {
+        $assessment = $this->find($assessmentId);
+
+        if ($assessment === null) {
+            return null;
+        }
+
+        DB::table('assessment_campaigns')
+            ->where('id', $assessmentId)
+            ->update([
+                'status' => 'active',
+                'updated_at' => now(),
+            ]);
+
+        return $this->find($assessmentId);
+    }
+
+    /**
      * @return array<int, array{id:string,label:string}>
      */
     private function controlsForAssessment(string $assessmentId): array
@@ -378,6 +453,12 @@ class AssessmentsAuditsRepository
             'starts_on' => (string) $campaign->starts_on,
             'ends_on' => (string) $campaign->ends_on,
             'status' => (string) $campaign->status,
+            'signoff_notes' => is_string($campaign->signoff_notes ?? null) ? $campaign->signoff_notes : '',
+            'signed_off_on' => is_string($campaign->signed_off_on ?? null) ? $campaign->signed_off_on : '',
+            'signed_off_by_principal_id' => is_string($campaign->signed_off_by_principal_id ?? null) ? $campaign->signed_off_by_principal_id : '',
+            'closure_summary' => is_string($campaign->closure_summary ?? null) ? $campaign->closure_summary : '',
+            'closed_on' => is_string($campaign->closed_on ?? null) ? $campaign->closed_on : '',
+            'closed_by_principal_id' => is_string($campaign->closed_by_principal_id ?? null) ? $campaign->closed_by_principal_id : '',
             'controls' => $this->controlsForAssessment($assessmentId),
             'review_summary' => $this->reviewSummary($assessmentId),
         ];

@@ -39,7 +39,7 @@ class ContinuityBcmTest extends TestCase
             ->assertSee('Customer Support Operations')
             ->assertSee('Add continuity service')
             ->assertSee('Open')
-            ->assertSee('Backup and Recovery Operations');
+            ->assertDontSee('Backup and Recovery Operations');
 
         $this->get('/app?menu=plugin.continuity-bcm.root&service_id=continuity-service-customer-support&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
             ->assertOk()
@@ -115,7 +115,7 @@ class ContinuityBcmTest extends TestCase
             'linked_asset_id' => 'asset-erp-prod',
             'linked_risk_id' => 'risk-access-drift',
             'scope_id' => 'scope-eu',
-            'owner_actor_id' => 'actor-compliance-office',
+            'owner_actor_id' => 'actor-ava-mason',
         ])->assertFound();
 
         $this->post('/plugins/continuity/services/continuity-service-finance-operations-bridge/plans', [
@@ -140,7 +140,7 @@ class ContinuityBcmTest extends TestCase
             'linked_asset_id' => 'asset-erp-prod',
             'linked_risk_id' => 'risk-access-drift',
             'scope_id' => 'scope-eu',
-            'owner_actor_id' => 'actor-compliance-office',
+            'owner_actor_id' => 'actor-ava-mason',
         ])->assertFound();
 
         $this->post('/plugins/continuity/plans/continuity-plan-finance-bridge-fallback', [
@@ -152,19 +152,19 @@ class ContinuityBcmTest extends TestCase
             'linked_policy_id' => 'policy-access-governance',
             'linked_finding_id' => 'finding-access-review-gap',
             'scope_id' => 'scope-eu',
-            'owner_actor_id' => 'actor-compliance-office',
+            'owner_actor_id' => 'actor-ava-mason',
         ])->assertFound();
 
         $this->get('/app?menu=plugin.continuity-bcm.root&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
             ->assertOk()
             ->assertSee('Finance operations fallback bridge')
-            ->assertSee('Compliance Office');
+            ->assertSee('Ava Mason');
 
         $this->get('/app?menu=plugin.continuity-bcm.plans&plan_id=continuity-plan-finance-bridge-fallback&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
             ->assertOk()
             ->assertSee('Finance approval fallback')
             ->assertSee('backup rota and validate ledgers after restore.')
-            ->assertSee('Compliance Office');
+            ->assertSee('Ava Mason');
     }
 
     public function test_continuity_dependencies_exercises_and_test_runs_can_be_logged_from_the_shell_runtime(): void

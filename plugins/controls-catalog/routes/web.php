@@ -5,28 +5,41 @@ use Illuminate\Support\Facades\Route;
 use PymeSec\Core\Artifacts\ArtifactUploadData;
 use PymeSec\Core\Artifacts\Contracts\ArtifactServiceInterface;
 use PymeSec\Core\FunctionalActors\Contracts\FunctionalActorServiceInterface;
+use PymeSec\Core\ObjectAccess\ObjectAccessService;
 use PymeSec\Core\Workflows\Contracts\WorkflowServiceInterface;
 use PymeSec\Core\Workflows\WorkflowExecutionContext;
 use PymeSec\Core\Principals\MembershipReference;
 use PymeSec\Core\Principals\PrincipalReference;
 use PymeSec\Plugins\ControlsCatalog\ControlsCatalogRepository;
 
-Route::get('/plugins/controls', function (Request $request, ControlsCatalogRepository $repository) {
+Route::get('/plugins/controls', function (Request $request, ControlsCatalogRepository $repository, ObjectAccessService $objectAccess) {
+    $organizationId = (string) $request->query('organization_id', 'org-a');
+
     return response()->json([
         'plugin' => 'controls-catalog',
-        'controls' => $repository->all(
-            (string) $request->query('organization_id', 'org-a'),
-            $request->query('scope_id'),
+        'controls' => $objectAccess->filterRecords(
+            $repository->all($organizationId, $request->query('scope_id')),
+            'id',
+            is_string($request->query('principal_id')) ? (string) $request->query('principal_id') : null,
+            $organizationId,
+            is_string($request->query('scope_id')) ? (string) $request->query('scope_id') : null,
+            'control',
         ),
     ]);
 })->name('plugin.controls-catalog.index');
 
-Route::get('/plugins/controls/reviews', function (Request $request, ControlsCatalogRepository $repository) {
+Route::get('/plugins/controls/reviews', function (Request $request, ControlsCatalogRepository $repository, ObjectAccessService $objectAccess) {
+    $organizationId = (string) $request->query('organization_id', 'org-a');
+
     return response()->json([
         'plugin' => 'controls-catalog',
-        'review_controls' => $repository->all(
-            (string) $request->query('organization_id', 'org-a'),
-            $request->query('scope_id'),
+        'review_controls' => $objectAccess->filterRecords(
+            $repository->all($organizationId, $request->query('scope_id')),
+            'id',
+            is_string($request->query('principal_id')) ? (string) $request->query('principal_id') : null,
+            $organizationId,
+            is_string($request->query('scope_id')) ? (string) $request->query('scope_id') : null,
+            'control',
         ),
     ]);
 })->name('plugin.controls-catalog.reviews');
@@ -135,7 +148,8 @@ Route::post('/plugins/controls/requirements', function (
 Route::post('/plugins/controls/{controlId}/requirements', function (
     Request $request,
     string $controlId,
-    ControlsCatalogRepository $repository
+    ControlsCatalogRepository $repository,
+    ObjectAccessService $objectAccess,
 ) {
     $validated = $request->validate([
         'organization_id' => ['required', 'string', 'max:64'],
@@ -147,6 +161,13 @@ Route::post('/plugins/controls/{controlId}/requirements', function (
     $principalId = (string) $request->input('principal_id', 'principal-org-a');
     $membershipId = $request->input('membership_id');
     $scopeId = $request->input('scope_id');
+    abort_unless($objectAccess->canAccessObject(
+        principalId: $principalId,
+        organizationId: (string) $validated['organization_id'],
+        scopeId: is_string($scopeId) && $scopeId !== '' ? $scopeId : null,
+        domainObjectType: 'control',
+        domainObjectId: $controlId,
+    ), 403);
 
     $repository->attachRequirement(
         controlId: $controlId,
@@ -171,7 +192,8 @@ Route::post('/plugins/controls/{controlId}', function (
     Request $request,
     string $controlId,
     ControlsCatalogRepository $repository,
-    FunctionalActorServiceInterface $actors
+    FunctionalActorServiceInterface $actors,
+    ObjectAccessService $objectAccess,
 ) {
     $validated = $request->validate([
         'name' => ['required', 'string', 'max:120'],
@@ -183,14 +205,23 @@ Route::post('/plugins/controls/{controlId}', function (
         'owner_actor_id' => ['nullable', 'string', 'max:64'],
     ]);
 
+    $organizationId = (string) $request->input('organization_id', 'org-a');
+    $principalId = (string) $request->input('principal_id', 'principal-org-a');
+    abort_unless($objectAccess->canAccessObject(
+        principalId: $principalId,
+        organizationId: $organizationId,
+        scopeId: is_string($validated['scope_id'] ?? null) && $validated['scope_id'] !== '' ? $validated['scope_id'] : null,
+        domainObjectType: 'control',
+        domainObjectId: $controlId,
+    ), 403);
+
     $control = $repository->update($controlId, [
         ...$validated,
-        'organization_id' => (string) $request->input('organization_id', 'org-a'),
+        'organization_id' => $organizationId,
     ]);
 
     abort_if($control === null, 404);
 
-    $principalId = (string) $request->input('principal_id', 'principal-org-a');
     $membershipId = $request->input('membership_id');
 
     if (is_string($validated['owner_actor_id'] ?? null) && $validated['owner_actor_id'] !== '') {
@@ -221,7 +252,8 @@ Route::post('/plugins/controls/{controlId}/artifacts', function (
     Request $request,
     string $controlId,
     ControlsCatalogRepository $repository,
-    ArtifactServiceInterface $artifacts
+    ArtifactServiceInterface $artifacts,
+    ObjectAccessService $objectAccess,
 ) {
     $control = $repository->find($controlId);
 
@@ -236,6 +268,13 @@ Route::post('/plugins/controls/{controlId}/artifacts', function (
     $principalId = (string) $request->input('principal_id', 'principal-org-a');
     $membershipId = $request->input('membership_id');
     $locale = $request->input('locale', 'en');
+    abort_unless($objectAccess->canAccessObject(
+        principalId: $principalId,
+        organizationId: $control['organization_id'],
+        scopeId: $control['scope_id'] !== '' ? $control['scope_id'] : null,
+        domainObjectType: 'control',
+        domainObjectId: $controlId,
+    ), 403);
 
     $artifacts->store(new ArtifactUploadData(
         ownerComponent: 'controls-catalog',
@@ -269,12 +308,20 @@ Route::post('/plugins/controls/{controlId}/transitions/{transitionKey}', functio
     Request $request,
     string $controlId,
     string $transitionKey,
-    WorkflowServiceInterface $workflows
+    WorkflowServiceInterface $workflows,
+    ObjectAccessService $objectAccess,
 ) {
     $principalId = (string) $request->input('principal_id', 'principal-org-a');
     $membershipId = $request->input('membership_id');
     $organizationId = (string) $request->input('organization_id', 'org-a');
     $scopeId = $request->input('scope_id');
+    abort_unless($objectAccess->canAccessObject(
+        principalId: $principalId,
+        organizationId: $organizationId,
+        scopeId: is_string($scopeId) && $scopeId !== '' ? $scopeId : null,
+        domainObjectType: 'control',
+        domainObjectId: $controlId,
+    ), 403);
 
     $workflows->transition(
         workflowKey: 'plugin.controls-catalog.control-lifecycle',
