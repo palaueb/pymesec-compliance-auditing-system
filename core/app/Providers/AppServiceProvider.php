@@ -33,6 +33,7 @@ use PymeSec\Core\Permissions\PermissionRegistry;
 use PymeSec\Core\Plugins\Contracts\PluginManagerInterface;
 use PymeSec\Core\Plugins\PluginLifecycleManager;
 use PymeSec\Core\Plugins\PluginStateStore;
+use PymeSec\Core\ReferenceData\ReferenceCatalogService;
 use PymeSec\Core\Support\Contracts\SupportRegistryInterface;
 use PymeSec\Core\Support\JsonSupportRegistry;
 use PymeSec\Core\Tenancy\Contracts\TenancyServiceInterface;
@@ -155,6 +156,10 @@ class AppServiceProvider extends ServiceProvider
                 store: $app->make(AuthorizationStoreInterface::class),
             );
         });
+
+        $this->app->singleton(ReferenceCatalogService::class, function (): ReferenceCatalogService {
+            return new ReferenceCatalogService;
+        });
     }
 
     /**
@@ -252,6 +257,24 @@ class AppServiceProvider extends ServiceProvider
                 description: 'Archive and reactivate organizations and scopes.',
                 origin: 'core',
                 featureArea: 'tenancy',
+                operation: 'manage',
+                contexts: ['platform'],
+            ),
+            new PermissionDefinition(
+                key: 'core.reference-data.view',
+                label: 'View reference data',
+                description: 'View governed business catalogs and their organization-specific overrides.',
+                origin: 'core',
+                featureArea: 'reference-data',
+                operation: 'view',
+                contexts: ['platform'],
+            ),
+            new PermissionDefinition(
+                key: 'core.reference-data.manage',
+                label: 'Manage reference data',
+                description: 'Create and update governed catalog options used across the application.',
+                origin: 'core',
+                featureArea: 'reference-data',
                 operation: 'manage',
                 contexts: ['platform'],
             ),
@@ -416,6 +439,18 @@ class AppServiceProvider extends ServiceProvider
             icon: 'building',
             order: 30,
             permission: 'core.tenancy.view',
+            area: 'admin',
+        ));
+
+        $menus->registerCore(new MenuDefinition(
+            id: 'core.reference-data',
+            owner: 'core',
+            labelKey: 'core.nav.reference_data',
+            routeName: 'core.reference-data.index',
+            parentId: 'core.platform',
+            icon: 'list',
+            order: 35,
+            permission: 'core.reference-data.view',
             area: 'admin',
         ));
 
@@ -719,6 +754,33 @@ class AppServiceProvider extends ServiceProvider
             subtitleKey: 'core.tenancy.screen.subtitle',
             viewPath: resource_path('views/tenancy.blade.php'),
             dataResolver: fn (ScreenRenderContext $screenContext): array => $this->tenancyScreenData($screenContext),
+        ));
+
+        $screens->register(new ScreenDefinition(
+            menuId: 'core.reference-data',
+            owner: 'core',
+            titleKey: 'core.reference-data.screen.title',
+            subtitleKey: 'core.reference-data.screen.subtitle',
+            viewPath: resource_path('views/reference-catalogs.blade.php'),
+            dataResolver: fn (ScreenRenderContext $screenContext): array => $this->referenceCatalogsScreenData($screenContext),
+            toolbarResolver: function (ScreenRenderContext $screenContext): array {
+                $query = $this->coreScreenQuery($screenContext);
+                $catalogKey = is_string($screenContext->query['catalog_key'] ?? null) && ($screenContext->query['catalog_key'] ?? '') !== ''
+                    ? (string) $screenContext->query['catalog_key']
+                    : null;
+
+                if ($catalogKey === null) {
+                    return [];
+                }
+
+                return [
+                    new ToolbarAction(
+                        label: 'Add option',
+                        url: '#reference-catalog-entry-editor',
+                        variant: 'primary',
+                    ),
+                ];
+            },
         ));
 
         $screens->register(new ScreenDefinition(
@@ -1166,6 +1228,110 @@ class AppServiceProvider extends ServiceProvider
             ],
             'export_jsonl_url' => route('core.audit.export', [...$query, 'format' => 'jsonl']),
             'export_csv_url' => route('core.audit.export', [...$query, 'format' => 'csv']),
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function referenceCatalogsScreenData(ScreenRenderContext $screenContext): array
+    {
+        $catalogs = $this->app->make(ReferenceCatalogService::class);
+        $authorization = $this->app->make(AuthorizationServiceInterface::class);
+        $query = $this->coreScreenQuery($screenContext);
+        $organizationOptions = DB::table('organizations')
+            ->orderBy('name')
+            ->get(['id', 'name'])
+            ->map(static fn ($organization): array => [
+                'id' => (string) $organization->id,
+                'label' => (string) $organization->name,
+            ])->all();
+
+        $selectedOrganizationId = is_string($query['organization_id'] ?? null) && $query['organization_id'] !== ''
+            ? (string) $query['organization_id']
+            : ($organizationOptions[0]['id'] ?? null);
+
+        if (is_string($selectedOrganizationId) && $selectedOrganizationId !== '') {
+            $query['organization_id'] = $selectedOrganizationId;
+        }
+
+        $catalogRows = array_map(function (array $catalog) use ($catalogs, $query, $selectedOrganizationId): array {
+            $effectiveRows = $catalogs->effectiveRows($catalog['key'], $selectedOrganizationId);
+            $managedRows = $catalogs->managedEntries($catalog['key'], $selectedOrganizationId);
+
+            return [
+                ...$catalog,
+                'effective_count' => count($effectiveRows),
+                'managed_count' => count($managedRows),
+                'uses_default' => count($managedRows) === 0,
+                'open_url' => route('core.admin.index', [...$query, 'menu' => 'core.reference-data', 'catalog_key' => $catalog['key']]),
+            ];
+        }, $catalogs->manageableCatalogs());
+
+        $selectedCatalogKey = is_string($screenContext->query['catalog_key'] ?? null) && ($screenContext->query['catalog_key'] ?? '') !== ''
+            ? (string) $screenContext->query['catalog_key']
+            : ($catalogRows[0]['key'] ?? null);
+        $selectedCatalog = null;
+
+        if (is_string($selectedCatalogKey)) {
+            foreach ($catalogRows as $catalog) {
+                if (($catalog['key'] ?? null) === $selectedCatalogKey) {
+                    $selectedCatalog = $catalog;
+                    break;
+                }
+            }
+        }
+
+        $managedEntries = is_array($selectedCatalog)
+            ? $catalogs->managedEntries((string) $selectedCatalog['key'], $selectedOrganizationId)
+            : [];
+        $effectiveEntries = is_array($selectedCatalog)
+            ? $catalogs->effectiveRows((string) $selectedCatalog['key'], $selectedOrganizationId)
+            : [];
+
+        $listQuery = $query;
+        unset($listQuery['catalog_key'], $listQuery['entry_id']);
+
+        $selectedEntryId = is_string($screenContext->query['entry_id'] ?? null) && ($screenContext->query['entry_id'] ?? '') !== ''
+            ? (string) $screenContext->query['entry_id']
+            : null;
+        $selectedEntry = null;
+
+        if (is_string($selectedEntryId)) {
+            foreach ($managedEntries as $entry) {
+                if (($entry['id'] ?? null) === $selectedEntryId) {
+                    $selectedEntry = $entry;
+                    break;
+                }
+            }
+        }
+
+        return [
+            'query' => $query,
+            'list_query' => $listQuery,
+            'catalogs' => $catalogRows,
+            'selected_catalog' => $selectedCatalog,
+            'selected_entry' => $selectedEntry,
+            'effective_entries' => $effectiveEntries,
+            'managed_entries' => $managedEntries,
+            'organization_options' => $organizationOptions,
+            'selected_organization_id' => $selectedOrganizationId,
+            'create_entry_route' => route('core.reference-data.entries.store'),
+            'update_entry_route' => static fn (string $entryId): string => route('core.reference-data.entries.update', ['entryId' => $entryId]),
+            'archive_entry_route' => static fn (string $entryId): string => route('core.reference-data.entries.archive', ['entryId' => $entryId]),
+            'activate_entry_route' => static fn (string $entryId): string => route('core.reference-data.entries.activate', ['entryId' => $entryId]),
+            'can_manage_reference_data' => $screenContext->principal !== null && $authorization->authorize(new AuthorizationContext(
+                principal: $screenContext->principal,
+                permission: 'core.reference-data.manage',
+                memberships: $screenContext->memberships,
+                organizationId: $selectedOrganizationId,
+                scopeId: $screenContext->scopeId,
+            ))->allowed(),
+            'metrics' => [
+                'catalogs' => count($catalogRows),
+                'effective_options' => array_sum(array_map(static fn (array $catalog): int => (int) ($catalog['effective_count'] ?? 0), $catalogRows)),
+                'managed_entries' => array_sum(array_map(static fn (array $catalog): int => (int) ($catalog['managed_count'] ?? 0), $catalogRows)),
+            ],
         ];
     }
 

@@ -136,6 +136,12 @@ class RouteAuthorizationTest extends TestCase
             'coverage' => 'full',
             'notes' => 'Viewer should not link requirements.',
         ])->assertForbidden();
+        $this->post('/plugins/controls/frameworks/framework-gdpr/adoption', [
+            ...$payload,
+            'scope_id' => 'scope-eu',
+            'status' => 'active',
+            'adopted_at' => '2026-03-01',
+        ])->assertForbidden();
 
         $payload['membership_id'] = 'membership-org-a-hello';
 
@@ -159,6 +165,12 @@ class RouteAuthorizationTest extends TestCase
             'requirement_id' => 'requirement-iso-a-5-18',
             'coverage' => 'full',
             'notes' => 'Operator can link requirements.',
+        ])->assertFound();
+        $this->post('/plugins/controls/frameworks/framework-gdpr/adoption', [
+            ...$payload,
+            'scope_id' => 'scope-eu',
+            'status' => 'active',
+            'adopted_at' => '2026-03-01',
         ])->assertFound();
     }
 
@@ -748,6 +760,34 @@ class RouteAuthorizationTest extends TestCase
             'title' => 'Operator recovery update',
             'strategy_summary' => 'Operator can update continuity plans.',
         ])->assertFound();
+    }
+
+    public function test_the_evidence_routes_require_the_expected_permissions(): void
+    {
+        $viewerQuery = '?principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-viewer';
+
+        $this->get('/plugins/evidence/evidence-access-review-pack/download'.$viewerQuery)
+            ->assertNotFound();
+
+        $this->get('/plugins/evidence/evidence-access-review-pack/preview'.$viewerQuery)
+            ->assertNotFound();
+
+        $payload = [
+            'principal_id' => 'principal-org-a',
+            'organization_id' => 'org-a',
+            'scope_id' => 'scope-eu',
+            'locale' => 'en',
+            'menu' => 'plugin.evidence-management.root',
+            'membership_id' => 'membership-org-a-viewer',
+        ];
+
+        $this->post('/plugins/evidence/evidence-access-review-pack/reminders/review-due', $payload)
+            ->assertForbidden();
+
+        $payload['membership_id'] = 'membership-org-a-hello';
+
+        $this->post('/plugins/evidence/evidence-access-review-pack/reminders/review-due', $payload)
+            ->assertFound();
     }
 
     public function test_the_core_role_routes_require_platform_permission(): void

@@ -181,6 +181,7 @@ class FindingsRemediationPlugin implements PluginInterface
             foreach ($actions as $action) {
                 $findingActions[] = [
                     ...$action,
+                    'status_label' => FindingsReferenceData::remediationStatusLabel($action['status']),
                     'owner_assignment' => $this->ownerAssignment($actors, 'remediation-action', $action['id'], $organizationId, $screenContext->scopeId),
                     'update_route' => route('plugin.findings-remediation.actions.update', ['actionId' => $action['id']]),
                 ];
@@ -188,6 +189,7 @@ class FindingsRemediationPlugin implements PluginInterface
 
             $findings[] = [
                 ...$finding,
+                'severity_label' => FindingsReferenceData::severityLabel($finding['severity']),
                 'actions' => $findingActions,
                 'owner_assignment' => $this->ownerAssignment($actors, 'finding', $finding['id'], $organizationId, $screenContext->scopeId),
                 'artifacts' => array_map(
@@ -247,6 +249,8 @@ class FindingsRemediationPlugin implements PluginInterface
             'scope_options' => array_map(static fn ($scope): array => $scope->toArray(), $scopeContext->scopes),
             'control_options' => $controlOptions,
             'risk_options' => $riskOptions,
+            'severity_options' => FindingsReferenceData::optionsFor('severity'),
+            'action_status_options' => FindingsReferenceData::optionsFor('remediation_status'),
             'findings_list_url' => route('core.shell.index', [...$baseQuery, 'menu' => 'plugin.findings-remediation.root']),
         ];
     }
@@ -304,6 +308,7 @@ class FindingsRemediationPlugin implements PluginInterface
 
             $actions[] = [
                 ...$action,
+                'status_label' => FindingsReferenceData::remediationStatusLabel($action['status']),
                 'finding' => $finding,
                 'finding_open_url' => route('core.shell.index', [...$baseQuery, 'menu' => 'plugin.findings-remediation.root', 'finding_id' => $action['finding_id']]),
                 'owner_assignment' => $this->ownerAssignment($actors, 'remediation-action', $action['id'], $organizationId, $screenContext->scopeId),

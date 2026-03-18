@@ -75,7 +75,7 @@ class AssessmentsAuditsPlugin implements PluginInterface
             $screenContext->scopeId,
             'assessment',
         );
-        $frameworkOptions = $repository->frameworkOptions($organizationId);
+        $frameworkOptions = $repository->frameworkOptions($organizationId, $screenContext->scopeId);
         $canManage = $screenContext->principal !== null && $authorization->authorize(new AuthorizationContext(
             principal: $screenContext->principal,
             permission: 'plugin.assessments-audits.assessments.manage',
@@ -133,10 +133,12 @@ class AssessmentsAuditsPlugin implements PluginInterface
 
                 return [
                     ...$campaign,
+                    'status_label' => AssessmentReferenceData::statusLabel($campaign['status']),
                     'open_url' => route('core.shell.index', [...$this->baseQuery($screenContext), 'menu' => 'plugin.assessments-audits.root', 'assessment_id' => $campaign['id']]),
                     'scope_name' => $scopeName,
                     'framework_name' => $frameworkName,
                     'reviews' => $reviews,
+                    'framework_breakdown' => $repository->frameworkBreakdown($campaign['id']),
                     'update_route' => route('plugin.assessments-audits.update', ['assessmentId' => $campaign['id']]),
                     'report_route' => route('plugin.assessments-audits.report', [
                         'assessmentId' => $campaign['id'],
@@ -187,17 +189,10 @@ class AssessmentsAuditsPlugin implements PluginInterface
             'control_options' => $repository->controlOptions($organizationId, $screenContext->scopeId),
             'scope_options' => array_map(static fn ($scope): array => $scope->toArray(), $scopeContext->scopes),
             'result_options' => [
-                'not-tested' => 'Not tested',
-                'pass' => 'Pass',
-                'partial' => 'Partial',
-                'fail' => 'Fail',
-                'not-applicable' => 'Not applicable',
+                ...AssessmentReferenceData::reviewResults(),
             ],
             'status_options' => [
-                'draft' => 'Draft',
-                'active' => 'Active',
-                'signed-off' => 'Signed off',
-                'closed' => 'Closed',
+                ...AssessmentReferenceData::statuses(),
             ],
             'assessments_list_url' => route('core.shell.index', [...$listQuery, 'menu' => 'plugin.assessments-audits.root']),
         ];

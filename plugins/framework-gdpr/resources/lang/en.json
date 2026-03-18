@@ -1,0 +1,22 @@
+{
+  "plugin.framework-gdpr.framework.name": "General Data Protection Regulation",
+  "plugin.framework-gdpr.framework.description": "Starter GDPR pack with key articles for processing principles, records of processing, security, breach notification, and DPIA.",
+
+  "plugin.framework-gdpr.elements.gdpr-domain-principles.title": "Processing principles",
+  "plugin.framework-gdpr.elements.gdpr-domain-principles.description": "Core principles that govern lawful and accountable processing.",
+  "plugin.framework-gdpr.elements.gdpr-domain-governance.title": "Governance and records",
+  "plugin.framework-gdpr.elements.gdpr-domain-governance.description": "Operational governance, records of processing, and security obligations.",
+  "plugin.framework-gdpr.elements.gdpr-domain-incidents.title": "Incident handling and notification",
+  "plugin.framework-gdpr.elements.gdpr-domain-incidents.description": "Notification and response obligations for personal data breaches.",
+
+  "plugin.framework-gdpr.elements.gdpr-article-5.title": "Principles relating to processing of personal data",
+  "plugin.framework-gdpr.elements.gdpr-article-5.description": "Personal data must be processed lawfully, fairly, transparently, for specified purposes, and with data minimisation, integrity, and accountability.",
+  "plugin.framework-gdpr.elements.gdpr-article-30.title": "Records of processing activities",
+  "plugin.framework-gdpr.elements.gdpr-article-30.description": "Controllers and processors maintain records of processing activities and supporting governance evidence.",
+  "plugin.framework-gdpr.elements.gdpr-article-32.title": "Security of processing",
+  "plugin.framework-gdpr.elements.gdpr-article-32.description": "Implement appropriate technical and organisational measures to ensure a level of security appropriate to risk.",
+  "plugin.framework-gdpr.elements.gdpr-article-33.title": "Notification of a personal data breach to the supervisory authority",
+  "plugin.framework-gdpr.elements.gdpr-article-33.description": "Notify relevant supervisory authorities without undue delay when reportable personal data breaches occur.",
+  "plugin.framework-gdpr.elements.gdpr-article-35.title": "Data protection impact assessment",
+  "plugin.framework-gdpr.elements.gdpr-article-35.description": "Perform DPIAs when processing is likely to result in high risk to rights and freedoms."
+}

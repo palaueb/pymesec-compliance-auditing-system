@@ -373,8 +373,16 @@ class ContinuityBcmPlugin implements PluginInterface
                 'update_route' => route('plugin.continuity-bcm.plans.update', ['planId' => $plan['id']]),
                 'exercise_store_route' => route('plugin.continuity-bcm.plans.exercises.store', ['planId' => $plan['id']]),
                 'execution_store_route' => route('plugin.continuity-bcm.plans.executions.store', ['planId' => $plan['id']]),
-                'exercises' => $exercisesByPlan[$plan['id']] ?? [],
-                'executions' => $executionsByPlan[$plan['id']] ?? [],
+                'exercises' => array_map(static fn (array $exercise): array => [
+                    ...$exercise,
+                    'exercise_type_label' => ContinuityReferenceData::exerciseTypeLabel($exercise['exercise_type']),
+                    'outcome_label' => ContinuityReferenceData::exerciseOutcomeLabel($exercise['outcome']),
+                ], $exercisesByPlan[$plan['id']] ?? []),
+                'executions' => array_map(static fn (array $execution): array => [
+                    ...$execution,
+                    'execution_type_label' => ContinuityReferenceData::executionTypeLabel($execution['execution_type']),
+                    'status_label' => ContinuityReferenceData::executionStatusLabel($execution['status']),
+                ], $executionsByPlan[$plan['id']] ?? []),
                 'open_url' => route('core.shell.index', [...$this->baseQuery($screenContext, false), 'menu' => 'plugin.continuity-bcm.plans', 'plan_id' => $plan['id']]),
             ];
         }
@@ -411,6 +419,10 @@ class ContinuityBcmPlugin implements PluginInterface
             'service_options' => $this->linkedOptions('continuity_services', 'id', 'title', $organizationId, $screenContext->scopeId),
             'policy_options' => $this->linkedOptions('policies', 'id', 'title', $organizationId, $screenContext->scopeId),
             'finding_options' => $this->linkedOptions('findings', 'id', 'title', $organizationId, $screenContext->scopeId),
+            'exercise_type_options' => ContinuityReferenceData::optionsFor('exercise_type'),
+            'exercise_outcome_options' => ContinuityReferenceData::optionsFor('exercise_outcome'),
+            'execution_type_options' => ContinuityReferenceData::optionsFor('execution_type'),
+            'execution_status_options' => ContinuityReferenceData::optionsFor('execution_status'),
             'plans_list_url' => route('core.shell.index', [...$this->baseQuery($screenContext, false), 'menu' => 'plugin.continuity-bcm.plans']),
         ];
     }

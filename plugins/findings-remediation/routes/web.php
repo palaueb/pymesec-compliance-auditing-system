@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\Route;
 use PymeSec\Core\Artifacts\ArtifactUploadData;
 use PymeSec\Core\Artifacts\Contracts\ArtifactServiceInterface;
@@ -10,6 +11,7 @@ use PymeSec\Core\Principals\MembershipReference;
 use PymeSec\Core\Principals\PrincipalReference;
 use PymeSec\Core\Workflows\Contracts\WorkflowServiceInterface;
 use PymeSec\Core\Workflows\WorkflowExecutionContext;
+use PymeSec\Plugins\FindingsRemediation\FindingsReferenceData;
 use PymeSec\Plugins\FindingsRemediation\FindingsRemediationRepository;
 
 Route::get('/plugins/findings', function (Request $request, FindingsRemediationRepository $repository, ObjectAccessService $objectAccess) {
@@ -65,7 +67,7 @@ Route::post('/plugins/findings', function (
 ) {
     $validated = $request->validate([
         'title' => ['required', 'string', 'max:140'],
-        'severity' => ['required', 'string', 'max:40'],
+        'severity' => ['required', 'string', Rule::in(FindingsReferenceData::severityKeys())],
         'description' => ['required', 'string', 'max:1000'],
         'linked_control_id' => ['nullable', 'string', 'max:120'],
         'linked_risk_id' => ['nullable', 'string', 'max:120'],
@@ -123,7 +125,7 @@ Route::post('/plugins/findings/{findingId}', function (
 
     $validated = $request->validate([
         'title' => ['required', 'string', 'max:140'],
-        'severity' => ['required', 'string', 'max:40'],
+        'severity' => ['required', 'string', Rule::in(FindingsReferenceData::severityKeys())],
         'description' => ['required', 'string', 'max:1000'],
         'linked_control_id' => ['nullable', 'string', 'max:120'],
         'linked_risk_id' => ['nullable', 'string', 'max:120'],
@@ -186,7 +188,7 @@ Route::post('/plugins/findings/{findingId}/actions', function (
 
     $validated = $request->validate([
         'title' => ['required', 'string', 'max:140'],
-        'status' => ['required', 'string', 'max:40'],
+        'status' => ['required', 'string', Rule::in(FindingsReferenceData::remediationStatusKeys())],
         'notes' => ['nullable', 'string', 'max:1000'],
         'due_on' => ['nullable', 'date'],
         'owner_actor_id' => ['nullable', 'string', 'max:64'],
@@ -257,7 +259,7 @@ Route::post('/plugins/findings/actions/{actionId}', function (
 
     $validated = $request->validate([
         'title' => ['required', 'string', 'max:140'],
-        'status' => ['required', 'string', 'max:40'],
+        'status' => ['required', 'string', Rule::in(FindingsReferenceData::remediationStatusKeys())],
         'notes' => ['nullable', 'string', 'max:1000'],
         'due_on' => ['nullable', 'date'],
         'scope_id' => ['nullable', 'string', 'max:64'],

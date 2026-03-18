@@ -2,6 +2,8 @@
 
 namespace PymeSec\Plugins\DataFlowsPrivacy;
 
+use PymeSec\Core\ReferenceData\ReferenceCatalogService;
+
 class PrivacyReferenceData
 {
     /**
@@ -73,12 +75,9 @@ class PrivacyReferenceData
      */
     private static function group(string $group): array
     {
-        $values = config('reference_data.privacy.'.$group, []);
+        /** @var ReferenceCatalogService $catalogs */
+        $catalogs = app(ReferenceCatalogService::class);
 
-        if (! is_array($values)) {
-            return [];
-        }
-
-        return array_filter($values, static fn ($label, $key): bool => is_string($key) && $key !== '' && is_string($label) && $label !== '', ARRAY_FILTER_USE_BOTH);
+        return $catalogs->options('privacy.'.$group, $catalogs->currentOrganizationId());
     }
 }

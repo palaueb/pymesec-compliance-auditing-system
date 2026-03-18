@@ -34,8 +34,35 @@ class ControlsCatalogTest extends TestCase
             ->assertSee('Quarterly Access Review')
             ->assertDontSee('Backup Governance')
             ->assertSee('A.5.18')
+            ->assertSee('ENS')
+            ->assertSee('GDPR')
+            ->assertSee('Framework adoption')
             ->assertSee('Ava Mason')
             ->assertSee('Create control');
+    }
+
+    public function test_framework_adoption_can_be_managed_from_the_controls_catalog(): void
+    {
+        $payload = [
+            'principal_id' => 'principal-org-a',
+            'organization_id' => 'org-a',
+            'locale' => 'en',
+            'menu' => 'plugin.controls-catalog.root',
+            'membership_id' => 'membership-org-a-hello',
+        ];
+
+        $this->post('/plugins/controls/frameworks/framework-gdpr/adoption', [
+            ...$payload,
+            'scope_id' => 'scope-eu',
+            'status' => 'active',
+            'adopted_at' => '2026-03-01',
+        ])->assertFound();
+
+        $this->get('/app?menu=plugin.controls-catalog.root&principal_id=principal-org-a&organization_id=org-a&scope_id=scope-eu&membership_ids[]=membership-org-a-hello')
+            ->assertOk()
+            ->assertSee('GDPR')
+            ->assertSee('active')
+            ->assertSee('2026-03-01');
     }
 
     public function test_control_review_transition_creates_due_notification_and_scheduler_dispatches_it(): void

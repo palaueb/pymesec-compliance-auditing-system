@@ -1,0 +1,38 @@
+{
+  "plugin": {
+    "id": "framework-gdpr",
+    "name": "GDPR Framework Pack",
+    "version": "2016.1.0",
+    "type": "framework-pack",
+    "description": "Starter framework pack for GDPR / LOPDGDD operations. Seeds key articles for principles, records, security, incident notification, and DPIA.",
+    "vendor": "pymesec",
+    "license": "AGPL-3.0-or-later"
+  },
+  "compatibility": {
+    "core": "^0.1.0",
+    "sdk": "^0.1.0"
+  },
+  "dependencies": [],
+  "permissions": [],
+  "routes": [],
+  "menus": [],
+  "migrations": [],
+  "translations": {
+    "default_locale": "en",
+    "supported_locales": [
+      "en"
+    ],
+    "path": "resources/lang"
+  },
+  "lifecycle": {
+    "seeder": "PymeSec\\Plugins\\FrameworkGdpr\\GdprFrameworkSeeder"
+  },
+  "runtime": {
+    "class": "PymeSec\\Plugins\\FrameworkGdpr\\FrameworkGdprPlugin",
+    "autoload": {
+      "psr-4": {
+        "PymeSec\\Plugins\\FrameworkGdpr\\": "src"
+      }
+    }
+  }
+}

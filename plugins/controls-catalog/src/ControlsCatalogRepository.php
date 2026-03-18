@@ -56,6 +56,97 @@ class ControlsCatalogRepository
     }
 
     /**
+     * Returns the effective framework adoption rows for an organization and optional scope.
+     * Scope-specific rows take precedence over organization-wide rows for the same framework.
+     *
+     * @return array<string, array<string, string>>
+     */
+    public function frameworkAdoptionMap(string $organizationId, ?string $scopeId = null): array
+    {
+        if (! Schema::hasTable('org_framework_adoptions') || ! $this->hasFrameworkTables()) {
+            return [];
+        }
+
+        $query = DB::table('org_framework_adoptions as adoptions')
+            ->join('frameworks', 'frameworks.id', '=', 'adoptions.framework_id')
+            ->where('adoptions.organization_id', $organizationId)
+            ->when(is_string($scopeId) && $scopeId !== '', function ($query) use ($scopeId): void {
+                $query->where(function ($scoped) use ($scopeId): void {
+                    $scoped->whereNull('adoptions.scope_id')
+                        ->orWhere('adoptions.scope_id', $scopeId);
+                });
+            }, function ($query): void {
+                $query->whereNull('adoptions.scope_id');
+            })
+            ->orderBy('frameworks.code');
+
+        if (is_string($scopeId) && $scopeId !== '') {
+            $query->orderByRaw('case when adoptions.scope_id = ? then 0 else 1 end', [$scopeId]);
+        }
+
+        $rows = $query->get([
+                'adoptions.id',
+                'adoptions.organization_id',
+                'adoptions.framework_id',
+                'adoptions.scope_id',
+                'adoptions.target_level',
+                'adoptions.adopted_at',
+                'adoptions.status',
+                'frameworks.code as framework_code',
+                'frameworks.name as framework_name',
+            ]);
+
+        $map = [];
+
+        foreach ($rows as $row) {
+            $frameworkId = (string) $row->framework_id;
+
+            if (isset($map[$frameworkId])) {
+                continue;
+            }
+
+            $map[$frameworkId] = [
+                'id' => (string) $row->id,
+                'organization_id' => (string) $row->organization_id,
+                'framework_id' => $frameworkId,
+                'framework_code' => (string) $row->framework_code,
+                'framework_name' => $this->translateIfKey((string) $row->framework_name),
+                'scope_id' => is_string($row->scope_id) ? $row->scope_id : '',
+                'target_level' => is_string($row->target_level) ? $row->target_level : '',
+                'adopted_at' => is_string($row->adopted_at) ? $row->adopted_at : '',
+                'status' => is_string($row->status) ? $row->status : 'active',
+            ];
+        }
+
+        return $map;
+    }
+
+    /**
+     * @return array<int, array<string, string>>
+     */
+    public function adoptedFrameworkOptions(string $organizationId, ?string $scopeId = null): array
+    {
+        $adoptions = $this->frameworkAdoptionMap($organizationId, $scopeId);
+        $options = [];
+
+        foreach ($this->frameworks($organizationId) as $framework) {
+            $adoption = $adoptions[$framework['id']] ?? null;
+
+            if ($adoption === null || ! in_array($adoption['status'], ['active', 'in-progress'], true)) {
+                continue;
+            }
+
+            $suffix = $adoption['status'] === 'in-progress' ? ' · In progress' : '';
+            $options[] = [
+                'id' => $framework['id'],
+                'label' => sprintf('%s · %s%s', $framework['code'], $framework['name'], $suffix),
+            ];
+        }
+
+        return $options;
+    }
+
+    /**
      * @return array<string, string>|null
      */
     public function findFramework(string $organizationId, string $frameworkId): ?array
@@ -73,6 +164,71 @@ class ControlsCatalogRepository
             ->first();
 
         return $framework !== null ? $this->mapFramework($framework) : null;
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, string>|null
+     */
+    public function upsertFrameworkAdoption(string $organizationId, string $frameworkId, array $data): ?array
+    {
+        if (! Schema::hasTable('org_framework_adoptions') || ! $this->hasFrameworkTables()) {
+            return null;
+        }
+
+        $framework = $this->findFramework($organizationId, $frameworkId);
+
+        if ($framework === null) {
+            throw ValidationException::withMessages([
+                'framework_id' => 'The selected framework is invalid for this organization.',
+            ]);
+        }
+
+        $scopeId = is_string($data['scope_id'] ?? null) && $data['scope_id'] !== '' ? (string) $data['scope_id'] : null;
+        $existing = DB::table('org_framework_adoptions')
+            ->where('organization_id', $organizationId)
+            ->where('framework_id', $frameworkId)
+            ->where(function ($query) use ($scopeId): void {
+                if ($scopeId === null) {
+                    $query->whereNull('scope_id');
+
+                    return;
+                }
+
+                $query->where('scope_id', $scopeId);
+            })
+            ->first(['id']);
+
+        $id = is_string($existing->id ?? null)
+            ? (string) $existing->id
+            : $this->nextId('framework-adoption-'.$frameworkId.'-'.($scopeId ?? 'org'));
+
+        if ($existing === null) {
+            DB::table('org_framework_adoptions')->insert([
+                'id' => $id,
+                'organization_id' => $organizationId,
+                'framework_id' => $frameworkId,
+                'scope_id' => $scopeId,
+                'target_level' => is_string($data['target_level'] ?? null) && $data['target_level'] !== '' ? (string) $data['target_level'] : null,
+                'adopted_at' => is_string($data['adopted_at'] ?? null) && $data['adopted_at'] !== '' ? (string) $data['adopted_at'] : null,
+                'status' => (string) ($data['status'] ?? 'active'),
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        } else {
+            DB::table('org_framework_adoptions')
+                ->where('id', $id)
+                ->update([
+                    'target_level' => is_string($data['target_level'] ?? null) && $data['target_level'] !== '' ? (string) $data['target_level'] : null,
+                    'adopted_at' => is_string($data['adopted_at'] ?? null) && $data['adopted_at'] !== '' ? (string) $data['adopted_at'] : null,
+                    'status' => (string) ($data['status'] ?? 'active'),
+                    'updated_at' => now(),
+                ]);
+        }
+
+        $adoptions = $this->frameworkAdoptionMap($organizationId, $scopeId);
+
+        return $adoptions[$frameworkId] ?? null;
     }
 
     /**
@@ -481,7 +637,9 @@ class ControlsCatalogRepository
             'organization_id' => is_string($framework->organization_id) ? $framework->organization_id : '',
             'code' => (string) $framework->code,
             'name' => $this->translateIfKey((string) $framework->name),
+            'version' => is_string($framework->version) ? $framework->version : '',
             'description' => $this->translateIfKey(is_string($framework->description) ? $framework->description : ''),
+            'kind' => is_string($framework->kind) ? $framework->kind : '',
         ];
     }
 

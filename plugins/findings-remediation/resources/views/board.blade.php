@@ -51,7 +51,7 @@
                                 'done'        => 'pill-done',
                                 default       => '',
                             }; @endphp
-                            <span class="pill {{ $aPill }}">{{ $action['status'] }}</span>
+                            <span class="pill {{ $aPill }}">{{ $action['status_label'] }}</span>
                         </td>
                         <td>
                             @if ($action['owner_assignment'] !== null)

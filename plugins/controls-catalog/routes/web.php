@@ -116,6 +116,38 @@ Route::post('/plugins/controls/frameworks', function (
     ]))->with('status', 'Saved.');
 })->middleware('core.permission:plugin.controls-catalog.controls.manage')->name('plugin.controls-catalog.frameworks.store');
 
+Route::post('/plugins/controls/frameworks/{frameworkId}/adoption', function (
+    Request $request,
+    string $frameworkId,
+    ControlsCatalogRepository $repository
+) {
+    $validated = $request->validate([
+        'organization_id' => ['required', 'string', 'max:64'],
+        'scope_id' => ['nullable', 'string', 'max:64'],
+        'status' => ['required', 'in:active,in-progress,inactive'],
+        'target_level' => ['nullable', 'in:basic,medium,high'],
+        'adopted_at' => ['nullable', 'date'],
+    ]);
+
+    $principalId = (string) $request->input('principal_id', 'principal-org-a');
+    $membershipId = $request->input('membership_id');
+
+    $repository->upsertFrameworkAdoption(
+        organizationId: (string) $validated['organization_id'],
+        frameworkId: $frameworkId,
+        data: $validated,
+    );
+
+    return redirect()->route('core.shell.index', array_filter([
+        'menu' => 'plugin.controls-catalog.root',
+        'principal_id' => $principalId,
+        'organization_id' => $validated['organization_id'],
+        'scope_id' => is_string($validated['scope_id'] ?? null) && $validated['scope_id'] !== '' ? $validated['scope_id'] : null,
+        'locale' => $request->input('locale', 'en'),
+        'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
+    ]))->with('status', 'Framework adoption updated.');
+})->middleware('core.permission:plugin.controls-catalog.controls.manage')->name('plugin.controls-catalog.frameworks.adoption.upsert');
+
 Route::post('/plugins/controls/requirements', function (
     Request $request,
     ControlsCatalogRepository $repository

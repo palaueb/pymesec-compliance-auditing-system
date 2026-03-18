@@ -129,13 +129,13 @@ class AssessmentsAuditsRepository
     /**
      * @return array<int, array<string, string>>
      */
-    public function frameworkOptions(string $organizationId): array
+    public function frameworkOptions(string $organizationId, ?string $scopeId = null): array
     {
         if (! Schema::hasTable('frameworks')) {
             return [];
         }
 
-        return DB::table('frameworks')
+        $frameworks = DB::table('frameworks')
             ->where(function ($q) use ($organizationId): void {
                 $q->whereNull('organization_id')
                     ->orWhere('organization_id', $organizationId);
@@ -147,6 +147,70 @@ class AssessmentsAuditsRepository
                 'label' => sprintf('%s · %s', (string) $framework->code, (string) $framework->name),
             ])
             ->all();
+
+        if (! Schema::hasTable('org_framework_adoptions')) {
+            return $frameworks;
+        }
+
+        $adoptionsQuery = DB::table('org_framework_adoptions')
+            ->where('organization_id', $organizationId)
+            ->when(is_string($scopeId) && $scopeId !== '', function ($query) use ($scopeId): void {
+                $query->where(function ($scoped) use ($scopeId): void {
+                    $scoped->whereNull('scope_id')
+                        ->orWhere('scope_id', $scopeId);
+                });
+            }, function ($query): void {
+                $query->whereNull('scope_id');
+            })
+            ->whereIn('status', ['active', 'in-progress']);
+
+        if (is_string($scopeId) && $scopeId !== '') {
+            $adoptionsQuery->orderByRaw('case when scope_id = ? then 0 else 1 end', [$scopeId]);
+        }
+
+        $adoptions = $adoptionsQuery->get(['framework_id', 'scope_id', 'status']);
+
+        if ($adoptions->isEmpty()) {
+            return $frameworks;
+        }
+
+        $adoptionIds = [];
+
+        foreach ($adoptions as $adoption) {
+            $frameworkId = (string) $adoption->framework_id;
+
+            if (isset($adoptionIds[$frameworkId])) {
+                continue;
+            }
+
+            $adoptionIds[$frameworkId] = [
+                'status' => (string) $adoption->status,
+            ];
+        }
+
+        return array_values(array_filter(array_map(static function (array $framework) use ($adoptionIds): ?array {
+            if (! isset($adoptionIds[$framework['id']])) {
+                return null;
+            }
+
+            $suffix = $adoptionIds[$framework['id']]['status'] === 'in-progress' ? ' · In progress' : '';
+
+            return [
+                'id' => $framework['id'],
+                'label' => $framework['label'].$suffix,
+            ];
+        }, $frameworks)));
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public function frameworkOptionIds(string $organizationId, ?string $scopeId = null): array
+    {
+        return array_map(
+            static fn (array $framework): string => $framework['id'],
+            $this->frameworkOptions($organizationId, $scopeId),
+        );
     }
 
     /**
@@ -276,7 +340,134 @@ class AssessmentsAuditsRepository
             'assessment' => $assessment,
             'reviews' => $reviews,
             'summary' => $assessment['review_summary'],
+            'framework_breakdown' => $this->frameworkBreakdown($assessmentId),
         ];
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    public function frameworkBreakdown(string $assessmentId): array
+    {
+        if (! Schema::hasTable('control_requirement_mappings') || ! Schema::hasTable('framework_elements') || ! Schema::hasTable('frameworks')) {
+            return [];
+        }
+
+        $assessment = $this->find($assessmentId);
+
+        if ($assessment === null) {
+            return [];
+        }
+
+        $reviews = $this->reviews($assessmentId);
+        $reviewByControlId = [];
+
+        foreach ($reviews as $review) {
+            $reviewByControlId[(string) $review['control_id']] = $review;
+        }
+
+        $rows = DB::table('assessment_campaign_controls as links')
+            ->join('control_requirement_mappings as mappings', 'mappings.control_id', '=', 'links.control_id')
+            ->join('framework_elements as elements', 'elements.id', '=', 'mappings.framework_element_id')
+            ->join('frameworks', 'frameworks.id', '=', 'elements.framework_id')
+            ->where('links.assessment_id', $assessmentId)
+            ->orderBy('frameworks.code')
+            ->orderBy('elements.code')
+            ->get([
+                'links.control_id',
+                'mappings.framework_element_id',
+                'frameworks.id as framework_id',
+                'frameworks.code as framework_code',
+                'frameworks.name as framework_name',
+                'frameworks.organization_id as framework_organization_id',
+            ]);
+
+        $breakdown = [];
+
+        foreach ($rows as $row) {
+            $frameworkId = (string) $row->framework_id;
+            $controlId = (string) $row->control_id;
+            $requirementId = (string) $row->framework_element_id;
+
+            if (! isset($breakdown[$frameworkId])) {
+                $frameworkName = (string) $row->framework_name;
+
+                if ($frameworkName === '' || str_starts_with($frameworkName, 'plugin.')) {
+                    $frameworkName = (string) $row->framework_code;
+                }
+
+                $breakdown[$frameworkId] = [
+                    'framework_id' => $frameworkId,
+                    'framework_code' => (string) $row->framework_code,
+                    'framework_name' => $frameworkName,
+                    'source' => is_string($row->framework_organization_id) ? 'custom' : 'global',
+                    'requirement_ids' => [],
+                    'control_ids' => [],
+                    'result_by_control' => [],
+                ];
+            }
+
+            $breakdown[$frameworkId]['requirement_ids'][$requirementId] = true;
+            $breakdown[$frameworkId]['control_ids'][$controlId] = true;
+            $breakdown[$frameworkId]['result_by_control'][$controlId] = (string) ($reviewByControlId[$controlId]['result'] ?? 'not-tested');
+        }
+
+        if ($breakdown === [] && is_string($assessment['framework_id'] ?? null) && $assessment['framework_id'] !== '') {
+            $framework = DB::table('frameworks')
+                ->where('id', $assessment['framework_id'])
+                ->first(['id', 'code', 'name', 'organization_id']);
+
+            if ($framework !== null) {
+                $frameworkName = (string) $framework->name;
+
+                if ($frameworkName === '' || str_starts_with($frameworkName, 'plugin.')) {
+                    $frameworkName = (string) $framework->code;
+                }
+
+                $breakdown[(string) $framework->id] = [
+                    'framework_id' => (string) $framework->id,
+                    'framework_code' => (string) $framework->code,
+                    'framework_name' => $frameworkName,
+                    'source' => is_string($framework->organization_id) ? 'custom' : 'global',
+                    'requirement_ids' => [],
+                    'control_ids' => [],
+                    'result_by_control' => [],
+                ];
+            }
+        }
+
+        $rows = [];
+
+        foreach ($breakdown as $framework) {
+            $resultSummary = [
+                'pass' => 0,
+                'partial' => 0,
+                'fail' => 0,
+                'not-tested' => 0,
+                'not-applicable' => 0,
+            ];
+
+            foreach ($framework['result_by_control'] as $result) {
+                $resultSummary[$result] = ($resultSummary[$result] ?? 0) + 1;
+            }
+
+            $rows[] = [
+                'framework_id' => $framework['framework_id'],
+                'framework_code' => $framework['framework_code'],
+                'framework_name' => $framework['framework_name'],
+                'source' => $framework['source'],
+                'requirement_count' => count($framework['requirement_ids']),
+                'control_count' => count($framework['control_ids']),
+                'result_summary' => $resultSummary,
+            ];
+        }
+
+        usort($rows, static fn (array $left, array $right): int => strcmp(
+            sprintf('%s %s', $left['framework_code'], $left['framework_name']),
+            sprintf('%s %s', $right['framework_code'], $right['framework_name']),
+        ));
+
+        return $rows;
     }
 
     /**

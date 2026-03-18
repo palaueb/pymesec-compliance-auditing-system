@@ -134,6 +134,8 @@ class AssessmentsAuditsTest extends TestCase
             ->assertOk()
             ->assertHeader('content-type', 'text/markdown; charset=UTF-8')
             ->assertSee('Q2 Access and Resilience Review')
+            ->assertSee('Framework coverage')
+            ->assertSee('GDPR')
             ->assertSee('Restore evidence retention gap')
             ->assertSee('Quarterly Access Review [FAIL]');
     }
@@ -180,5 +182,53 @@ class AssessmentsAuditsTest extends TestCase
             ->assertJsonPath('assessment.status', 'closed')
             ->assertJsonPath('assessment.signoff_notes', 'Checklist reviewed and approved for management submission.')
             ->assertJsonPath('assessment.closure_summary', 'Assessment closed after confirming remediation ownership.');
+    }
+
+    public function test_assessments_reject_invalid_governed_reference_values(): void
+    {
+        $payload = [
+            'principal_id' => 'principal-org-a',
+            'organization_id' => 'org-a',
+            'locale' => 'en',
+            'menu' => 'plugin.assessments-audits.root',
+            'membership_id' => 'membership-org-a-hello',
+        ];
+
+        $this->from('/app?menu=plugin.assessments-audits.root')
+            ->post('/plugins/assessments', [
+                ...$payload,
+                'title' => 'Broken assessment',
+                'summary' => 'Invalid status should fail.',
+                'starts_on' => '2026-06-01',
+                'ends_on' => '2026-06-15',
+                'status' => 'reviewing',
+            ])
+            ->assertRedirect('/app?menu=plugin.assessments-audits.root')
+            ->assertSessionHasErrors(['status']);
+
+        $this->from('/app?menu=plugin.assessments-audits.root&assessment_id=assessment-q2-access-resilience')
+            ->post('/plugins/assessments/assessment-q2-access-resilience/reviews/control-access-review', [
+                ...$payload,
+                'result' => 'warning',
+                'test_notes' => 'Invalid result should fail.',
+                'conclusion' => 'Broken option.',
+                'reviewed_on' => '2026-04-22',
+            ])
+            ->assertRedirect('/app?menu=plugin.assessments-audits.root&assessment_id=assessment-q2-access-resilience')
+            ->assertSessionHasErrors(['result']);
+
+        $this->from('/app?menu=plugin.assessments-audits.root')
+            ->post('/plugins/assessments', [
+                ...$payload,
+                'title' => 'Wrong framework assessment',
+                'summary' => 'Framework must be adopted in this scope.',
+                'framework_id' => 'framework-ens',
+                'scope_id' => 'scope-eu',
+                'starts_on' => '2026-06-01',
+                'ends_on' => '2026-06-15',
+                'status' => 'draft',
+            ])
+            ->assertRedirect('/app?menu=plugin.assessments-audits.root')
+            ->assertSessionHasErrors(['framework_id']);
     }
 }

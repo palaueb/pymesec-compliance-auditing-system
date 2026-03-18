@@ -1,0 +1,38 @@
+{
+  "plugin": {
+    "id": "framework-ens",
+    "name": "ENS Framework Pack",
+    "version": "2022.1.0",
+    "type": "framework-pack",
+    "description": "Starter framework pack for the Esquema Nacional de Seguridad (ENS). Seeds key categories and measures for governance, access control, monitoring, backup, and recovery.",
+    "vendor": "pymesec",
+    "license": "AGPL-3.0-or-later"
+  },
+  "compatibility": {
+    "core": "^0.1.0",
+    "sdk": "^0.1.0"
+  },
+  "dependencies": [],
+  "permissions": [],
+  "routes": [],
+  "menus": [],
+  "migrations": [],
+  "translations": {
+    "default_locale": "en",
+    "supported_locales": [
+      "en"
+    ],
+    "path": "resources/lang"
+  },
+  "lifecycle": {
+    "seeder": "PymeSec\\Plugins\\FrameworkEns\\EnsFrameworkSeeder"
+  },
+  "runtime": {
+    "class": "PymeSec\\Plugins\\FrameworkEns\\FrameworkEnsPlugin",
+    "autoload": {
+      "psr-4": {
+        "PymeSec\\Plugins\\FrameworkEns\\": "src"
+      }
+    }
+  }
+}

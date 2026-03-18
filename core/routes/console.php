@@ -16,6 +16,7 @@ use PymeSec\Core\Plugins\PluginLifecycleManager;
 use PymeSec\Core\Plugins\PluginStateStore;
 use PymeSec\Core\Tenancy\Contracts\TenancyServiceInterface;
 use PymeSec\Core\Workflows\Contracts\WorkflowRegistryInterface;
+use PymeSec\Plugins\EvidenceManagement\EvidenceManagementRepository;
 
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
@@ -224,6 +225,17 @@ Artisan::command('notifications:dispatch-due', function (NotificationServiceInte
 
     return 0;
 })->purpose('Dispatch pending notifications whose delivery time is due');
+
+Artisan::command('evidence:queue-reminders {--organization_id=} {--scope_id=}', function (EvidenceManagementRepository $evidence) {
+    $count = $evidence->queueDueReminders(
+        organizationId: is_string($this->option('organization_id')) && $this->option('organization_id') !== '' ? (string) $this->option('organization_id') : null,
+        scopeId: is_string($this->option('scope_id')) && $this->option('scope_id') !== '' ? (string) $this->option('scope_id') : null,
+    );
+
+    $this->info(sprintf('Queued %d evidence reminder(s).', $count));
+
+    return 0;
+})->purpose('Queue due evidence review and expiry reminders');
 
 Artisan::command('artifacts:list {--limit=20} {--owner_component=} {--subject_type=} {--subject_id=} {--artifact_type=} {--organization_id=} {--scope_id=}', function (ArtifactServiceInterface $artifacts) {
     $rows = array_map(static fn ($artifact): array => [

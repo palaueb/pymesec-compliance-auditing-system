@@ -177,6 +177,7 @@ class RiskManagementPlugin implements PluginInterface
 
             $risks[] = [
                 ...$risk,
+                'category_label' => RiskReferenceData::categoryLabel($risk['category']),
                 'owner_assignment' => $this->ownerAssignment($actors, $risk['id'], $organizationId, $screenContext->scopeId),
                 'artifacts' => array_map(
                     static fn ($artifact): array => $artifact->toArray(),
@@ -229,6 +230,7 @@ class RiskManagementPlugin implements PluginInterface
             'list_query' => $baseQuery,
             'create_route' => route('plugin.risk-management.store'),
             'owner_actor_options' => $this->actorOptions($actors, $organizationId, $screenContext->scopeId),
+            'risk_category_options' => RiskReferenceData::options(),
             'scope_options' => array_map(static fn ($scope): array => $scope->toArray(), $scopeContext->scopes),
             'asset_options' => $assetOptions,
             'control_options' => $controlOptions,

@@ -181,6 +181,7 @@ class ControlsCatalogPlugin implements PluginInterface
         $tenancy = $context->app()->make(TenancyServiceInterface::class);
         $organizationId = $screenContext->organizationId ?? 'org-a';
         $frameworks = $repository->frameworks($organizationId);
+        $frameworkAdoptions = $repository->frameworkAdoptionMap($organizationId, $screenContext->scopeId);
         $requirements = $repository->requirements($organizationId);
         $catalog = $objectAccess->filterRecords(
             $repository->all($organizationId, $screenContext->scopeId),
@@ -254,10 +255,40 @@ class ControlsCatalogPlugin implements PluginInterface
             requestedMembershipIds: array_map(static fn ($membership): string => $membership->id, $screenContext->memberships),
         );
 
+        $frameworkRows = array_map(function (array $framework) use ($frameworkAdoptions, $screenContext, $scopeContext): array {
+            $adoption = $frameworkAdoptions[$framework['id']] ?? null;
+            $scopeLabel = 'Not adopted';
+
+            if (is_array($adoption)) {
+                $scopeLabel = 'Organization-wide';
+
+                if (($adoption['scope_id'] ?? '') !== '') {
+                    foreach ($scopeContext->scopes as $scope) {
+                        if ($scope->id === $adoption['scope_id']) {
+                            $scopeLabel = $scope->name;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            return [
+                ...$framework,
+                'adoption_id' => is_array($adoption) ? (string) ($adoption['id'] ?? '') : '',
+                'adoption_status' => is_array($adoption) ? (string) ($adoption['status'] ?? 'not-adopted') : 'not-adopted',
+                'adoption_scope_id' => is_array($adoption) ? (string) ($adoption['scope_id'] ?? '') : '',
+                'adoption_scope_label' => $scopeLabel,
+                'target_level' => is_array($adoption) ? (string) ($adoption['target_level'] ?? '') : '',
+                'adopted_at' => is_array($adoption) ? (string) ($adoption['adopted_at'] ?? '') : '',
+                'adoption_update_route' => route('plugin.controls-catalog.frameworks.adoption.upsert', ['frameworkId' => $framework['id']]),
+            ];
+        }, $frameworks);
+
         return [
             'controls' => $controls,
             'selected_control' => $selectedControl,
-            'frameworks' => $frameworks,
+            'frameworks' => $frameworkRows,
+            'framework_coverage' => $this->frameworkCoverageSummary($frameworkRows, $requirements, $controls),
             'requirements' => $requirements,
             'can_manage_controls' => $canManage,
             'query' => $this->baseQuery($screenContext),
@@ -269,7 +300,18 @@ class ControlsCatalogPlugin implements PluginInterface
             'framework_options' => array_map(static fn (array $framework): array => [
                 'id' => $framework['id'],
                 'label' => sprintf('%s · %s', $framework['code'], $framework['name']),
-            ], $frameworks),
+            ], $frameworkRows),
+            'adopted_framework_options' => $repository->adoptedFrameworkOptions($organizationId, $screenContext->scopeId),
+            'framework_adoption_status_options' => [
+                'active' => 'Active',
+                'in-progress' => 'In progress',
+                'inactive' => 'Inactive',
+            ],
+            'framework_target_level_options' => [
+                'basic' => 'Basic',
+                'medium' => 'Medium',
+                'high' => 'High',
+            ],
             'requirement_options' => array_values(array_map(
                 static fn (array $requirement): array => [
                     'id' => $requirement['id'],
@@ -280,6 +322,73 @@ class ControlsCatalogPlugin implements PluginInterface
             'scope_options' => array_map(static fn ($scope): array => $scope->toArray(), $scopeContext->scopes),
             'controls_list_url' => route('core.shell.index', [...$listQuery, 'menu' => 'plugin.controls-catalog.root']),
         ];
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $frameworks
+     * @param  array<int, array<string, mixed>>  $requirements
+     * @param  array<int, array<string, mixed>>  $controls
+     * @return array<int, array<string, mixed>>
+     */
+    private function frameworkCoverageSummary(array $frameworks, array $requirements, array $controls): array
+    {
+        $requirementCounts = [];
+        $mappedRequirementIds = [];
+        $linkedControlIds = [];
+
+        foreach ($requirements as $requirement) {
+            $frameworkId = (string) ($requirement['framework_id'] ?? '');
+
+            if ($frameworkId === '' || ($requirement['element_type'] ?? '') === 'domain') {
+                continue;
+            }
+
+            $requirementCounts[$frameworkId] = ($requirementCounts[$frameworkId] ?? 0) + 1;
+        }
+
+        foreach ($controls as $control) {
+            $controlId = (string) ($control['id'] ?? '');
+            $controlFrameworkId = (string) ($control['framework_id'] ?? '');
+
+            if ($controlFrameworkId !== '' && $controlId !== '') {
+                $linkedControlIds[$controlFrameworkId][$controlId] = true;
+            }
+
+            foreach (($control['requirements'] ?? []) as $requirement) {
+                $frameworkId = (string) ($requirement['framework_id'] ?? '');
+                $requirementId = (string) ($requirement['requirement_id'] ?? '');
+
+                if ($frameworkId === '' || $requirementId === '') {
+                    continue;
+                }
+
+                $mappedRequirementIds[$frameworkId][$requirementId] = true;
+
+                if ($controlId !== '') {
+                    $linkedControlIds[$frameworkId][$controlId] = true;
+                }
+            }
+        }
+
+        return array_map(static function (array $framework) use ($requirementCounts, $mappedRequirementIds, $linkedControlIds): array {
+            $frameworkId = (string) ($framework['id'] ?? '');
+            $requirementCount = $requirementCounts[$frameworkId] ?? 0;
+            $mappedCount = count($mappedRequirementIds[$frameworkId] ?? []);
+            $linkedControlCount = count($linkedControlIds[$frameworkId] ?? []);
+
+            return [
+                ...$framework,
+                'requirement_count' => $requirementCount,
+                'mapped_requirement_count' => $mappedCount,
+                'linked_control_count' => $linkedControlCount,
+                'coverage_percent' => $requirementCount > 0
+                    ? (int) round(($mappedCount / $requirementCount) * 100)
+                    : 0,
+                'source_label' => (($framework['organization_id'] ?? '') === '')
+                    ? 'Global pack'
+                    : 'Custom framework',
+            ];
+        }, $frameworks);
     }
 
     /**

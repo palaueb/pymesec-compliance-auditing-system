@@ -135,4 +135,35 @@ class FindingsRemediationTest extends TestCase
             ->assertSee('Missing approval note')
             ->assertSee('approval-gap.txt');
     }
+
+    public function test_findings_reject_invalid_governed_reference_values(): void
+    {
+        $payload = [
+            'principal_id' => 'principal-org-a',
+            'organization_id' => 'org-a',
+            'locale' => 'en',
+            'membership_id' => 'membership-org-a-hello',
+        ];
+
+        $this->from('/app?menu=plugin.findings-remediation.root')
+            ->post('/plugins/findings', [
+                ...$payload,
+                'menu' => 'plugin.findings-remediation.root',
+                'title' => 'Broken finding',
+                'severity' => 'urgent',
+                'description' => 'Invalid severity should fail validation.',
+            ])
+            ->assertRedirect('/app?menu=plugin.findings-remediation.root')
+            ->assertSessionHasErrors(['severity']);
+
+        $this->from('/app?menu=plugin.findings-remediation.root&finding_id=finding-access-review-gap')
+            ->post('/plugins/findings/finding-access-review-gap/actions', [
+                ...$payload,
+                'menu' => 'plugin.findings-remediation.root',
+                'title' => 'Broken action',
+                'status' => 'queued',
+            ])
+            ->assertRedirect('/app?menu=plugin.findings-remediation.root&finding_id=finding-access-review-gap')
+            ->assertSessionHasErrors(['status']);
+    }
 }

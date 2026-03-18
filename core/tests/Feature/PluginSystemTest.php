@@ -190,6 +190,8 @@ class PluginSystemTest extends TestCase
                     ['data-flows-privacy', 'domain', 'yes', 'yes', '2', '1', '2', ''],
                     ['evidence-management', 'domain', 'yes', 'yes', '2', '1', '1', ''],
                     ['findings-remediation', 'domain', 'yes', 'yes', '2', '1', '2', ''],
+                    ['framework-ens', 'framework-pack', 'no', 'no', '0', '0', '0', 'plugin_not_enabled'],
+                    ['framework-gdpr', 'framework-pack', 'no', 'no', '0', '0', '0', 'plugin_not_enabled'],
                     ['framework-iso27001', 'framework-pack', 'no', 'no', '0', '0', '0', 'plugin_not_enabled'],
                     ['framework-nis2', 'framework-pack', 'no', 'no', '0', '0', '0', 'plugin_not_enabled'],
                     ['hello-world', 'ui', 'yes', 'yes', '1', '1', '2', ''],

@@ -5,6 +5,7 @@ namespace PymeSec\Plugins\EvidenceManagement;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use PymeSec\Core\Artifacts\ArtifactUploadData;
 use PymeSec\Core\Artifacts\Contracts\ArtifactServiceInterface;
@@ -12,6 +13,7 @@ use PymeSec\Core\Audit\AuditRecordData;
 use PymeSec\Core\Audit\Contracts\AuditTrailInterface;
 use PymeSec\Core\Events\Contracts\EventBusInterface;
 use PymeSec\Core\Events\PublicEvent;
+use PymeSec\Core\Notifications\Contracts\NotificationServiceInterface;
 
 class EvidenceManagementRepository
 {
@@ -19,6 +21,7 @@ class EvidenceManagementRepository
         private readonly ArtifactServiceInterface $artifacts,
         private readonly AuditTrailInterface $audit,
         private readonly EventBusInterface $events,
+        private readonly NotificationServiceInterface $notifications,
     ) {}
 
     /**
@@ -159,6 +162,16 @@ class EvidenceManagementRepository
                 'validated_at' => $this->nullableString($data['validated_at'] ?? null),
                 'validated_by_principal_id' => $this->nullableString($data['validated_by_principal_id'] ?? null),
                 'validation_notes' => $this->nullableString($data['validation_notes'] ?? null),
+                'review_reminder_sent_at' => $this->shouldResetReminderTimestamp(
+                    $existing['review_due_on'] ?? '',
+                    $this->nullableString($data['review_due_on'] ?? null),
+                    $existing['review_reminder_sent_at'] ?? '',
+                ) ? null : $this->nullableString($existing['review_reminder_sent_at'] ?? null),
+                'expiry_reminder_sent_at' => $this->shouldResetReminderTimestamp(
+                    $existing['valid_until'] ?? '',
+                    $this->nullableString($data['valid_until'] ?? null),
+                    $existing['expiry_reminder_sent_at'] ?? '',
+                ) ? null : $this->nullableString($existing['expiry_reminder_sent_at'] ?? null),
                 'updated_by_principal_id' => $principalId,
                 'updated_at' => now(),
             ]);
@@ -199,6 +212,107 @@ class EvidenceManagementRepository
     }
 
     /**
+     * @return array{record: array<string, mixed>, created: bool}|null
+     */
+    public function promoteArtifact(
+        string $artifactId,
+        string $organizationId,
+        ?string $scopeId,
+        ?string $principalId,
+        ?string $membershipId,
+    ): ?array {
+        $existingEvidenceId = $this->evidenceIdForArtifact($artifactId);
+
+        if (is_string($existingEvidenceId)) {
+            $existing = $this->find($existingEvidenceId);
+
+            return $existing !== null ? ['record' => $existing, 'created' => false] : null;
+        }
+
+        $artifact = DB::table('artifacts')
+            ->where('id', $artifactId)
+            ->where('organization_id', $organizationId)
+            ->first();
+
+        if ($artifact === null) {
+            return null;
+        }
+
+        if (is_string($scopeId) && $scopeId !== '' && is_string($artifact->scope_id ?? null) && $artifact->scope_id !== $scopeId) {
+            return null;
+        }
+
+        $title = $this->suggestedTitleForArtifact($artifact);
+        $evidenceId = $this->nextEvidenceId($title);
+        $summary = $this->suggestedSummaryForArtifact($artifact, $organizationId);
+        $kind = $this->normalizeEvidenceKind((string) $artifact->artifact_type);
+        $resolvedScopeId = is_string($artifact->scope_id ?? null) && $artifact->scope_id !== ''
+            ? (string) $artifact->scope_id
+            : $scopeId;
+        $links = $this->inferLinkTargetsFromArtifact($artifact, $organizationId);
+
+        DB::table('evidence_records')->insert([
+            'id' => $evidenceId,
+            'organization_id' => $organizationId,
+            'scope_id' => $resolvedScopeId,
+            'artifact_id' => (string) $artifact->id,
+            'title' => $title,
+            'summary' => $summary,
+            'evidence_kind' => $kind,
+            'status' => 'active',
+            'valid_from' => now()->toDateString(),
+            'valid_until' => null,
+            'review_due_on' => now()->addDays(90)->toDateString(),
+            'validated_at' => null,
+            'validated_by_principal_id' => null,
+            'validation_notes' => null,
+            'created_by_principal_id' => $principalId,
+            'updated_by_principal_id' => $principalId,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->syncLinks($evidenceId, $organizationId, $links);
+
+        $this->audit->record(new AuditRecordData(
+            eventType: 'plugin.evidence-management.evidence.promoted',
+            outcome: 'success',
+            originComponent: 'evidence-management',
+            principalId: $principalId,
+            membershipId: $membershipId,
+            organizationId: $organizationId,
+            scopeId: $resolvedScopeId,
+            targetType: 'evidence_record',
+            targetId: $evidenceId,
+            summary: [
+                'artifact_id' => (string) $artifact->id,
+                'source_owner_component' => (string) $artifact->owner_component,
+                'source_subject_type' => (string) $artifact->subject_type,
+                'source_subject_id' => (string) $artifact->subject_id,
+                'link_count' => count($links),
+            ],
+            executionOrigin: 'evidence-management',
+        ));
+
+        $this->events->publish(new PublicEvent(
+            name: 'plugin.evidence-management.evidence.promoted',
+            originComponent: 'evidence-management',
+            organizationId: $organizationId,
+            scopeId: $resolvedScopeId,
+            payload: [
+                'evidence_id' => $evidenceId,
+                'artifact_id' => (string) $artifact->id,
+                'source_subject_type' => (string) $artifact->subject_type,
+                'source_subject_id' => (string) $artifact->subject_id,
+            ],
+        ));
+
+        $record = $this->find($evidenceId);
+
+        return $record !== null ? ['record' => $record, 'created' => true] : null;
+    }
+
+    /**
      * @return array<int, array<string, string>>
      */
     public function artifactOptions(string $organizationId, ?string $scopeId = null): array
@@ -225,6 +339,240 @@ class EvidenceManagementRepository
                     (string) $artifact->artifact_type
                 ),
             ])->all();
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    public function promotionCandidates(string $organizationId, ?string $scopeId = null, int $limit = 12): array
+    {
+        $query = DB::table('artifacts')
+            ->where('organization_id', $organizationId)
+            ->whereNotExists(function ($nested): void {
+                $nested->select(DB::raw(1))
+                    ->from('evidence_records')
+                    ->whereColumn('evidence_records.artifact_id', 'artifacts.id');
+            })
+            ->orderByDesc('created_at')
+            ->limit(max(1, min($limit, 50)));
+
+        if (is_string($scopeId) && $scopeId !== '') {
+            $query->where(function ($nested) use ($scopeId): void {
+                $nested->whereNull('scope_id')
+                    ->orWhere('scope_id', $scopeId);
+            });
+        }
+
+        return $query->get()->map(function (object $artifact) use ($organizationId): array {
+            $source = $this->mapArtifactSource($artifact, $organizationId);
+            $inferredLinks = $this->inferLinkTargetsFromArtifact($artifact, $organizationId);
+
+            return [
+                'id' => (string) $artifact->id,
+                'label' => (string) $artifact->label,
+                'original_filename' => (string) $artifact->original_filename,
+                'artifact_type' => (string) $artifact->artifact_type,
+                'owner_component' => (string) $artifact->owner_component,
+                'subject_type' => (string) $artifact->subject_type,
+                'subject_id' => (string) $artifact->subject_id,
+                'scope_id' => is_string($artifact->scope_id ?? null) ? $artifact->scope_id : '',
+                'created_at' => (string) $artifact->created_at,
+                'suggested_title' => $this->suggestedTitleForArtifact($artifact),
+                'suggested_summary' => $this->suggestedSummaryForArtifact($artifact, $organizationId),
+                'suggested_kind' => $this->normalizeEvidenceKind((string) $artifact->artifact_type),
+                'source' => $source,
+                'suggested_links' => array_map(
+                    fn (array $link): array => $this->resolveDomainTarget($organizationId, $link['domain_type'], $link['domain_id']) ?? [
+                        'domain_type' => $link['domain_type'],
+                        'domain_id' => $link['domain_id'],
+                        'domain_label' => $link['domain_id'],
+                        'scope_id' => null,
+                    ],
+                    $inferredLinks,
+                ),
+            ];
+        })->all();
+    }
+
+    /**
+     * @return array<int, array<string, mixed>>
+     */
+    public function reviewQueue(string $organizationId, ?string $scopeId = null, int $limit = 12): array
+    {
+        $today = now()->toDateString();
+        $windowEnd = now()->addDays(30)->toDateString();
+
+        $query = DB::table('evidence_records')
+            ->where('organization_id', $organizationId)
+            ->whereIn('status', ['active', 'approved'])
+            ->where(function ($nested) use ($today, $windowEnd): void {
+                $nested->where(function ($query) use ($today, $windowEnd): void {
+                    $query->whereNotNull('review_due_on')
+                        ->where('review_due_on', '<=', $windowEnd);
+                })->orWhere(function ($query) use ($today, $windowEnd): void {
+                    $query->whereNotNull('valid_until')
+                        ->where('valid_until', '<=', $windowEnd)
+                        ->where('valid_until', '>=', $today);
+                });
+            })
+            ->orderBy('review_due_on')
+            ->orderBy('valid_until')
+            ->limit(max(1, min($limit, 50)));
+
+        if (is_string($scopeId) && $scopeId !== '') {
+            $query->where(function ($nested) use ($scopeId): void {
+                $nested->whereNull('scope_id')
+                    ->orWhere('scope_id', $scopeId);
+            });
+        }
+
+        return $query->get()->map(function (object $record): array {
+            $mapped = $this->mapEvidence($record);
+
+            return [
+                'id' => $mapped['id'],
+                'title' => $mapped['title'],
+                'status' => $mapped['status'],
+                'scope_id' => $mapped['scope_id'],
+                'review_due_on' => $mapped['review_due_on'],
+                'valid_until' => $mapped['valid_until'],
+                'review_reminder_sent_at' => $mapped['review_reminder_sent_at'],
+                'expiry_reminder_sent_at' => $mapped['expiry_reminder_sent_at'],
+                'needs_review_reminder' => $mapped['review_due_on'] !== '' && $mapped['review_reminder_sent_at'] === '',
+                'needs_expiry_reminder' => $mapped['valid_until'] !== '' && $mapped['expiry_reminder_sent_at'] === '',
+            ];
+        })->all();
+    }
+
+    public function queueDueReminders(
+        ?string $organizationId = null,
+        ?string $scopeId = null,
+        ?string $principalId = null,
+        ?string $membershipId = null,
+    ): int {
+        $count = 0;
+        $today = now()->toDateString();
+        $windowEnd = now()->addDays(14)->toDateString();
+
+        $reviewQuery = DB::table('evidence_records')
+            ->whereIn('status', ['active', 'approved'])
+            ->whereNotNull('review_due_on')
+            ->where('review_due_on', '<=', $windowEnd)
+            ->whereNull('review_reminder_sent_at');
+
+        if (is_string($organizationId) && $organizationId !== '') {
+            $reviewQuery->where('organization_id', $organizationId);
+        }
+
+        if (is_string($scopeId) && $scopeId !== '') {
+            $reviewQuery->where(function ($nested) use ($scopeId): void {
+                $nested->whereNull('scope_id')
+                    ->orWhere('scope_id', $scopeId);
+            });
+        }
+
+        foreach ($reviewQuery->get() as $record) {
+            if (! $this->queueReminderForRecord($record, 'review-due', $principalId, $membershipId)) {
+                continue;
+            }
+
+            DB::table('evidence_records')
+                ->where('id', (string) $record->id)
+                ->update([
+                    'review_reminder_sent_at' => now()->toDateTimeString(),
+                    'updated_at' => now(),
+                ]);
+
+            $count++;
+        }
+
+        $expiryQuery = DB::table('evidence_records')
+            ->whereIn('status', ['active', 'approved'])
+            ->whereNotNull('valid_until')
+            ->where('valid_until', '>=', $today)
+            ->where('valid_until', '<=', $windowEnd)
+            ->whereNull('expiry_reminder_sent_at');
+
+        if (is_string($organizationId) && $organizationId !== '') {
+            $expiryQuery->where('organization_id', $organizationId);
+        }
+
+        if (is_string($scopeId) && $scopeId !== '') {
+            $expiryQuery->where(function ($nested) use ($scopeId): void {
+                $nested->whereNull('scope_id')
+                    ->orWhere('scope_id', $scopeId);
+            });
+        }
+
+        foreach ($expiryQuery->get() as $record) {
+            if (! $this->queueReminderForRecord($record, 'expiry-soon', $principalId, $membershipId)) {
+                continue;
+            }
+
+            DB::table('evidence_records')
+                ->where('id', (string) $record->id)
+                ->update([
+                    'expiry_reminder_sent_at' => now()->toDateTimeString(),
+                    'updated_at' => now(),
+                ]);
+
+            $count++;
+        }
+
+        return $count;
+    }
+
+    public function queueReminder(
+        string $evidenceId,
+        string $type,
+        ?string $principalId = null,
+        ?string $membershipId = null,
+    ): bool {
+        $record = DB::table('evidence_records')->where('id', $evidenceId)->first();
+
+        if ($record === null) {
+            return false;
+        }
+
+        if ($type === 'review-due') {
+            if (! is_string($record->review_due_on ?? null) || $record->review_due_on === '') {
+                return false;
+            }
+
+            if (! $this->queueReminderForRecord($record, $type, $principalId, $membershipId)) {
+                return false;
+            }
+
+            DB::table('evidence_records')
+                ->where('id', $evidenceId)
+                ->update([
+                    'review_reminder_sent_at' => now()->toDateTimeString(),
+                    'updated_at' => now(),
+                ]);
+
+            return true;
+        }
+
+        if ($type === 'expiry-soon') {
+            if (! is_string($record->valid_until ?? null) || $record->valid_until === '') {
+                return false;
+            }
+
+            if (! $this->queueReminderForRecord($record, $type, $principalId, $membershipId)) {
+                return false;
+            }
+
+            DB::table('evidence_records')
+                ->where('id', $evidenceId)
+                ->update([
+                    'expiry_reminder_sent_at' => now()->toDateTimeString(),
+                    'updated_at' => now(),
+                ]);
+
+            return true;
+        }
+
+        return false;
     }
 
     /**
@@ -279,6 +627,9 @@ class EvidenceManagementRepository
     private function mapEvidence(object $record): array
     {
         $artifact = DB::table('artifacts')->where('id', (string) $record->artifact_id)->first();
+        $artifactExists = $artifact !== null
+            && Storage::disk((string) $artifact->disk)->exists((string) $artifact->storage_path);
+        $artifactPreviewable = $artifactExists && $this->isPreviewableArtifact((string) $artifact->media_type);
 
         return [
             'id' => (string) $record->id,
@@ -293,7 +644,12 @@ class EvidenceManagementRepository
                 'size_bytes' => (int) $artifact->size_bytes,
                 'sha256' => (string) $artifact->sha256,
                 'created_at' => (string) $artifact->created_at,
+                'disk' => (string) $artifact->disk,
+                'storage_path' => (string) $artifact->storage_path,
+                'exists' => $artifactExists,
+                'previewable' => $artifactPreviewable,
             ] : null,
+            'source' => $artifact !== null ? $this->mapArtifactSource($artifact, (string) $record->organization_id) : null,
             'title' => (string) $record->title,
             'summary' => (string) $record->summary,
             'evidence_kind' => (string) $record->evidence_kind,
@@ -301,9 +657,11 @@ class EvidenceManagementRepository
             'valid_from' => is_string($record->valid_from) ? $record->valid_from : '',
             'valid_until' => is_string($record->valid_until) ? $record->valid_until : '',
             'review_due_on' => is_string($record->review_due_on) ? $record->review_due_on : '',
+            'review_reminder_sent_at' => is_string($record->review_reminder_sent_at ?? null) ? $record->review_reminder_sent_at : '',
             'validated_at' => is_string($record->validated_at) ? $record->validated_at : '',
             'validated_by_principal_id' => is_string($record->validated_by_principal_id) ? $record->validated_by_principal_id : '',
             'validation_notes' => is_string($record->validation_notes) ? $record->validation_notes : '',
+            'expiry_reminder_sent_at' => is_string($record->expiry_reminder_sent_at ?? null) ? $record->expiry_reminder_sent_at : '',
             'created_by_principal_id' => is_string($record->created_by_principal_id) ? $record->created_by_principal_id : '',
             'updated_by_principal_id' => is_string($record->updated_by_principal_id) ? $record->updated_by_principal_id : '',
             'created_at' => (string) $record->created_at,
@@ -429,6 +787,15 @@ class EvidenceManagementRepository
         return null;
     }
 
+    private function evidenceIdForArtifact(string $artifactId): ?string
+    {
+        $evidenceId = DB::table('evidence_records')
+            ->where('artifact_id', $artifactId)
+            ->value('id');
+
+        return is_string($evidenceId) && $evidenceId !== '' ? $evidenceId : null;
+    }
+
     /**
      * @param  array<string, mixed>  $data
      * @return array<string, mixed>
@@ -488,6 +855,104 @@ class EvidenceManagementRepository
         return is_string($value) && trim($value) !== '' ? trim($value) : null;
     }
 
+    private function shouldResetReminderTimestamp(mixed $previousDate, ?string $nextDate, mixed $reminderTimestamp): bool
+    {
+        if (! is_string($reminderTimestamp) || $reminderTimestamp === '') {
+            return false;
+        }
+
+        $previous = is_string($previousDate) ? $previousDate : '';
+        $next = is_string($nextDate) ? $nextDate : '';
+
+        return $previous !== $next;
+    }
+
+    private function queueReminderForRecord(
+        object $record,
+        string $type,
+        ?string $principalId = null,
+        ?string $membershipId = null,
+    ): bool {
+        $recipientPrincipalId = is_string($record->updated_by_principal_id ?? null) && $record->updated_by_principal_id !== ''
+            ? (string) $record->updated_by_principal_id
+            : (is_string($record->created_by_principal_id ?? null) && $record->created_by_principal_id !== ''
+                ? (string) $record->created_by_principal_id
+                : null);
+
+        if ($recipientPrincipalId === null) {
+            return false;
+        }
+
+        $reminderDate = $type === 'review-due'
+            ? (string) $record->review_due_on
+            : (string) $record->valid_until;
+
+        $title = $type === 'review-due'
+            ? sprintf('Evidence review due soon: %s', (string) $record->title)
+            : sprintf('Evidence expires soon: %s', (string) $record->title);
+
+        $body = $type === 'review-due'
+            ? sprintf('Review "%s" before %s to keep the evidence current.', (string) $record->title, $reminderDate)
+            : sprintf('Renew or replace "%s" before %s to avoid evidence gaps.', (string) $record->title, $reminderDate);
+
+        $this->notifications->notify(
+            type: 'plugin.evidence-management.'.$type,
+            title: $title,
+            body: $body,
+            principalId: $recipientPrincipalId,
+            functionalActorId: null,
+            organizationId: is_string($record->organization_id ?? null) ? (string) $record->organization_id : null,
+            scopeId: is_string($record->scope_id ?? null) ? (string) $record->scope_id : null,
+            sourceEventName: 'plugin.evidence-management.reminder-queued',
+            metadata: [
+                'evidence_id' => (string) $record->id,
+                'reminder_type' => $type,
+                'due_on' => $reminderDate,
+            ],
+            deliverAt: now()->toDateTimeString(),
+        );
+
+        $this->audit->record(new AuditRecordData(
+            eventType: 'plugin.evidence-management.reminder.queued',
+            outcome: 'success',
+            originComponent: 'evidence-management',
+            principalId: $principalId,
+            membershipId: $membershipId,
+            organizationId: is_string($record->organization_id ?? null) ? (string) $record->organization_id : null,
+            scopeId: is_string($record->scope_id ?? null) ? (string) $record->scope_id : null,
+            targetType: 'evidence_record',
+            targetId: (string) $record->id,
+            summary: [
+                'reminder_type' => $type,
+                'recipient_principal_id' => $recipientPrincipalId,
+                'due_on' => $reminderDate,
+            ],
+            executionOrigin: 'evidence-management',
+        ));
+
+        $this->events->publish(new PublicEvent(
+            name: 'plugin.evidence-management.reminder.queued',
+            originComponent: 'evidence-management',
+            organizationId: is_string($record->organization_id ?? null) ? (string) $record->organization_id : null,
+            scopeId: is_string($record->scope_id ?? null) ? (string) $record->scope_id : null,
+            payload: [
+                'evidence_id' => (string) $record->id,
+                'recipient_principal_id' => $recipientPrincipalId,
+                'reminder_type' => $type,
+            ],
+        ));
+
+        return true;
+    }
+
+    private function isPreviewableArtifact(string $mediaType): bool
+    {
+        return str_starts_with($mediaType, 'text/')
+            || str_starts_with($mediaType, 'image/')
+            || $mediaType === 'application/pdf'
+            || $mediaType === 'application/json';
+    }
+
     private function nextEvidenceId(string $title): string
     {
         $base = 'evidence-'.Str::slug($title);
@@ -498,6 +963,190 @@ class EvidenceManagementRepository
         }
 
         return $candidate;
+    }
+
+    private function normalizeEvidenceKind(string $artifactType): string
+    {
+        return match ($artifactType) {
+            'document',
+            'workpaper',
+            'snapshot',
+            'report',
+            'ticket',
+            'log-export',
+            'statement',
+            'other' => $artifactType,
+            'evidence' => 'document',
+            default => 'document',
+        };
+    }
+
+    private function suggestedTitleForArtifact(object $artifact): string
+    {
+        $label = trim((string) $artifact->label);
+
+        if ($label !== '') {
+            return $label;
+        }
+
+        $filename = pathinfo((string) $artifact->original_filename, PATHINFO_FILENAME);
+
+        return $filename !== '' ? Str::headline((string) $filename) : 'Promoted evidence';
+    }
+
+    private function suggestedSummaryForArtifact(object $artifact, string $organizationId): string
+    {
+        $source = $this->mapArtifactSource($artifact, $organizationId);
+
+        if (($source['label'] ?? '') !== '') {
+            return sprintf(
+                'Promoted from %s in %s.',
+                strtolower((string) ($source['label'] ?? 'the workspace')),
+                str_replace('-', ' ', (string) $artifact->owner_component),
+            );
+        }
+
+        return sprintf(
+            'Promoted from %s artifact %s.',
+            str_replace('-', ' ', (string) $artifact->owner_component),
+            (string) $artifact->original_filename,
+        );
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function mapArtifactSource(object $artifact, string $organizationId): array
+    {
+        $resolved = $this->resolveArtifactSourceTarget($artifact, $organizationId);
+
+        return [
+            'owner_component' => (string) $artifact->owner_component,
+            'subject_type' => (string) $artifact->subject_type,
+            'subject_id' => (string) $artifact->subject_id,
+            'label' => $resolved['domain_label'] ?? (string) $artifact->label,
+            'domain_type' => $resolved['domain_type'] ?? null,
+            'domain_id' => $resolved['domain_id'] ?? null,
+            'scope_id' => $resolved['scope_id'] ?? (is_string($artifact->scope_id ?? null) ? $artifact->scope_id : null),
+        ];
+    }
+
+    /**
+     * @return array<int, array<string, string>>
+     */
+    private function inferLinkTargetsFromArtifact(object $artifact, string $organizationId): array
+    {
+        $subjectType = (string) $artifact->subject_type;
+        $subjectId = (string) $artifact->subject_id;
+        $links = [];
+
+        $direct = $this->resolveArtifactSourceTarget($artifact, $organizationId);
+
+        if ($direct !== null) {
+            $links[] = [
+                'domain_type' => $direct['domain_type'],
+                'domain_id' => $direct['domain_id'],
+            ];
+        }
+
+        if ($subjectType === 'assessment-review' && Schema::hasTable('assessment_control_reviews')) {
+            $review = DB::table('assessment_control_reviews')->where('id', $subjectId)->first();
+
+            if ($review !== null) {
+                $links[] = ['domain_type' => 'assessment', 'domain_id' => (string) $review->assessment_id];
+                $links[] = ['domain_type' => 'control', 'domain_id' => (string) $review->control_id];
+
+                if (is_string($review->linked_finding_id) && $review->linked_finding_id !== '') {
+                    $links[] = ['domain_type' => 'finding', 'domain_id' => $review->linked_finding_id];
+                }
+            }
+        }
+
+        if ($subjectType === 'continuity-service' && Schema::hasTable('continuity_services')) {
+            $service = DB::table('continuity_services')->where('id', $subjectId)->first();
+
+            if ($service !== null) {
+                if (is_string($service->linked_asset_id) && $service->linked_asset_id !== '') {
+                    $links[] = ['domain_type' => 'asset', 'domain_id' => $service->linked_asset_id];
+                }
+
+                if (is_string($service->linked_risk_id) && $service->linked_risk_id !== '') {
+                    $links[] = ['domain_type' => 'risk', 'domain_id' => $service->linked_risk_id];
+                }
+            }
+        }
+
+        if ($subjectType === 'continuity-plan' && Schema::hasTable('continuity_recovery_plans')) {
+            $plan = DB::table('continuity_recovery_plans')->where('id', $subjectId)->first();
+
+            if ($plan !== null) {
+                $links[] = ['domain_type' => 'continuity-service', 'domain_id' => (string) $plan->service_id];
+
+                if (is_string($plan->linked_finding_id) && $plan->linked_finding_id !== '') {
+                    $links[] = ['domain_type' => 'finding', 'domain_id' => $plan->linked_finding_id];
+                }
+
+                if (is_string($plan->linked_policy_id) && $plan->linked_policy_id !== '') {
+                    $links[] = ['domain_type' => 'policy', 'domain_id' => $plan->linked_policy_id];
+                }
+            }
+        }
+
+        return array_values(array_unique($links, SORT_REGULAR));
+    }
+
+    /**
+     * @return array<string, string|null>|null
+     */
+    private function resolveArtifactSourceTarget(object $artifact, string $organizationId): ?array
+    {
+        return match ((string) $artifact->subject_type) {
+            'asset' => $this->resolveDomainTarget($organizationId, 'asset', (string) $artifact->subject_id),
+            'control' => $this->resolveDomainTarget($organizationId, 'control', (string) $artifact->subject_id),
+            'risk' => $this->resolveDomainTarget($organizationId, 'risk', (string) $artifact->subject_id),
+            'finding' => $this->resolveDomainTarget($organizationId, 'finding', (string) $artifact->subject_id),
+            'policy' => $this->resolveDomainTarget($organizationId, 'policy', (string) $artifact->subject_id),
+            'policy-exception' => $this->resolveDomainTarget($organizationId, 'policy-exception', (string) $artifact->subject_id),
+            'privacy-data-flow' => $this->resolveDomainTarget($organizationId, 'data-flow', (string) $artifact->subject_id),
+            'privacy-processing-activity' => $this->resolveDomainTarget($organizationId, 'processing-activity', (string) $artifact->subject_id),
+            'continuity-service' => $this->resolveDomainTarget($organizationId, 'continuity-service', (string) $artifact->subject_id),
+            'continuity-plan',
+            'recovery-plan' => $this->resolveDomainTarget($organizationId, 'recovery-plan', (string) $artifact->subject_id),
+            'assessment' => $this->resolveDomainTarget($organizationId, 'assessment', (string) $artifact->subject_id),
+            'assessment-review' => $this->resolveAssessmentReviewTarget((string) $artifact->subject_id, $organizationId),
+            default => null,
+        };
+    }
+
+    /**
+     * @return array<string, string|null>|null
+     */
+    private function resolveAssessmentReviewTarget(string $reviewId, string $organizationId): ?array
+    {
+        if (! Schema::hasTable('assessment_control_reviews') || ! Schema::hasTable('assessment_campaigns')) {
+            return null;
+        }
+
+        $row = DB::table('assessment_control_reviews as reviews')
+            ->join('assessment_campaigns as assessments', 'assessments.id', '=', 'reviews.assessment_id')
+            ->where('reviews.id', $reviewId)
+            ->where('reviews.organization_id', $organizationId)
+            ->first([
+                'assessments.id as assessment_id',
+                'assessments.title as assessment_title',
+                'reviews.scope_id',
+            ]);
+
+        if ($row === null) {
+            return null;
+        }
+
+        return [
+            'domain_type' => 'assessment',
+            'domain_id' => (string) $row->assessment_id,
+            'domain_label' => (string) $row->assessment_title,
+            'scope_id' => is_string($row->scope_id ?? null) ? $row->scope_id : null,
+        ];
     }
 
     /**

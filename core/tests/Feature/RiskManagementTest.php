@@ -99,7 +99,7 @@ class RiskManagementTest extends TestCase
         $this->post('/plugins/risks', [
             ...$payload,
             'title' => 'Supplier onboarding gap',
-            'category' => 'Third Parties',
+            'category' => 'third-party',
             'inherent_score' => 22,
             'residual_score' => 12,
             'linked_asset_id' => 'asset-erp-prod',
@@ -117,7 +117,7 @@ class RiskManagementTest extends TestCase
         $this->post('/plugins/risks/risk-supplier-onboarding-gap', [
             ...$payload,
             'title' => 'Supplier onboarding coverage gap',
-            'category' => 'Third Parties',
+            'category' => 'third-party',
             'inherent_score' => 24,
             'residual_score' => 11,
             'linked_asset_id' => 'asset-erp-prod',

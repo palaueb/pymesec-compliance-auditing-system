@@ -16,7 +16,7 @@
                     <div class="eyebrow">Risk</div>
                     <h2 class="screen-title" style="font-size:28px;">{{ $selected_risk['title'] }}</h2>
                     <div class="table-note">{{ $selected_risk['id'] }}</div>
-                    <div class="table-note">{{ $selected_risk['category'] }}</div>
+                    <div class="table-note">{{ $selected_risk['category_label'] }}</div>
                 </div>
                 <div class="action-cluster">
                     @php $riskStatePill = match($selected_risk['state']) { 'assessing' => 'pill-assessing', 'accepted' => 'pill-accepted', 'closed' => 'pill-closed', 'archived' => 'pill-archived', default => '' }; @endphp
@@ -114,8 +114,21 @@
                     <div class="data-stack" style="margin-top:10px;">
                         @forelse ($selected_risk['artifacts'] as $artifact)
                             <div class="data-item">
-                                <div class="entity-title">{{ $artifact['label'] }}</div>
-                                <div class="table-note">{{ $artifact['original_filename'] }}</div>
+                                <div class="row-between" style="align-items:flex-start; gap:12px;">
+                                    <div>
+                                        <div class="entity-title">{{ $artifact['label'] }}</div>
+                                        <div class="table-note">{{ $artifact['original_filename'] }}</div>
+                                    </div>
+                                    <form method="POST" action="{{ route('plugin.evidence-management.promote', ['artifactId' => $artifact['id']]) }}">
+                                        @csrf
+                                        <input type="hidden" name="principal_id" value="{{ $query['principal_id'] }}">
+                                        <input type="hidden" name="organization_id" value="{{ $query['organization_id'] }}">
+                                        <input type="hidden" name="scope_id" value="{{ $selected_risk['scope_id'] }}">
+                                        <input type="hidden" name="locale" value="{{ $query['locale'] }}">
+                                        <input type="hidden" name="membership_id" value="{{ $query['membership_ids'][0] ?? 'membership-org-a-hello' }}">
+                                        <button class="button button-ghost" type="submit">Promote to evidence</button>
+                                    </form>
+                                </div>
                             </div>
                         @empty
                             <span class="muted-note">No evidence yet</span>
@@ -143,7 +156,11 @@
                                     </div>
                                     <div class="field">
                                         <label class="field-label">Category</label>
-                                        <input class="field-input" name="category" value="{{ $selected_risk['category'] }}" required>
+                                        <select class="field-select" name="category" required>
+                                            @foreach ($risk_category_options as $option)
+                                                <option value="{{ $option['id'] }}" @selected($selected_risk['category'] === $option['id'])>{{ $option['label'] }}</option>
+                                            @endforeach
+                                        </select>
                                     </div>
                                     <div class="field">
                                         <label class="field-label">Inherent score</label>
@@ -228,7 +245,11 @@
                         </div>
                         <div class="field">
                             <label class="field-label" for="risk-category">Category</label>
-                            <input class="field-input" id="risk-category" name="category" required>
+                            <select class="field-select" id="risk-category" name="category" required>
+                                @foreach ($risk_category_options as $option)
+                                    <option value="{{ $option['id'] }}">{{ $option['label'] }}</option>
+                                @endforeach
+                            </select>
                         </div>
                         <div class="field">
                             <label class="field-label" for="risk-inherent">Inherent score</label>
@@ -320,7 +341,7 @@
                                 <div class="entity-id">{{ $risk['id'] }}</div>
                                 <div class="table-note">{{ $risk['treatment'] }}</div>
                             </td>
-                            <td>{{ $risk['category'] }}</td>
+                            <td>{{ $risk['category_label'] }}</td>
                             <td>
                                 <div><strong style="{{ $risk['inherent_score'] >= 70 ? 'color:#991b1b;' : ($risk['inherent_score'] >= 40 ? 'color:#92400e;' : 'color:#166534;') }}">Inherent:</strong> {{ $risk['inherent_score'] }}</div>
                                 <div><strong style="{{ $risk['residual_score'] >= 70 ? 'color:#991b1b;' : ($risk['residual_score'] >= 40 ? 'color:#92400e;' : 'color:#166534;') }}">Residual:</strong> {{ $risk['residual_score'] }}</div>

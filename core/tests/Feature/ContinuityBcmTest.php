@@ -247,5 +247,28 @@ class ContinuityBcmTest extends TestCase
             ])
             ->assertRedirect('/app?menu=plugin.continuity-bcm.root&service_id=continuity-service-customer-support')
             ->assertSessionHasErrors(['dependency_kind']);
+
+        $this->from('/app?menu=plugin.continuity-bcm.plans&plan_id=continuity-plan-support-fallback')
+            ->post('/plugins/continuity/plans/continuity-plan-support-fallback/exercises', [
+                ...$payload,
+                'menu' => 'plugin.continuity-bcm.plans',
+                'exercise_date' => now()->toDateString(),
+                'exercise_type' => 'game-day',
+                'scenario_summary' => 'Invalid exercise type should fail.',
+                'outcome' => 'partial',
+            ])
+            ->assertRedirect('/app?menu=plugin.continuity-bcm.plans&plan_id=continuity-plan-support-fallback')
+            ->assertSessionHasErrors(['exercise_type']);
+
+        $this->from('/app?menu=plugin.continuity-bcm.plans&plan_id=continuity-plan-support-fallback')
+            ->post('/plugins/continuity/plans/continuity-plan-support-fallback/executions', [
+                ...$payload,
+                'menu' => 'plugin.continuity-bcm.plans',
+                'executed_on' => now()->toDateString(),
+                'execution_type' => 'restore-test',
+                'status' => 'warning',
+            ])
+            ->assertRedirect('/app?menu=plugin.continuity-bcm.plans&plan_id=continuity-plan-support-fallback')
+            ->assertSessionHasErrors(['status']);
     }
 }

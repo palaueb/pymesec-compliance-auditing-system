@@ -107,8 +107,21 @@
                     <div class="data-stack" style="margin-top:10px;">
                         @forelse ($selected_exception['artifacts'] as $artifact)
                             <div class="data-item">
-                                <div class="entity-title">{{ $artifact['label'] }}</div>
-                                <div class="table-note">{{ $artifact['original_filename'] }}</div>
+                                <div class="row-between" style="align-items:flex-start; gap:12px;">
+                                    <div>
+                                        <div class="entity-title">{{ $artifact['label'] }}</div>
+                                        <div class="table-note">{{ $artifact['original_filename'] }}</div>
+                                    </div>
+                                    <form method="POST" action="{{ route('plugin.evidence-management.promote', ['artifactId' => $artifact['id']]) }}">
+                                        @csrf
+                                        <input type="hidden" name="principal_id" value="{{ $query['principal_id'] }}">
+                                        <input type="hidden" name="organization_id" value="{{ $query['organization_id'] }}">
+                                        <input type="hidden" name="scope_id" value="{{ $selected_exception['scope_id'] }}">
+                                        <input type="hidden" name="locale" value="{{ $query['locale'] }}">
+                                        <input type="hidden" name="membership_id" value="{{ $query['membership_ids'][0] ?? 'membership-org-a-hello' }}">
+                                        <button class="button button-ghost" type="submit">Promote to evidence</button>
+                                    </form>
+                                </div>
                             </div>
                         @empty
                             <span class="muted-note">No evidence yet</span>

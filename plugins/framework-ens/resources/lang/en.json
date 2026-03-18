@@ -1,0 +1,24 @@
+{
+  "plugin.framework-ens.framework.name": "Esquema Nacional de Seguridad",
+  "plugin.framework-ens.framework.description": "Starter ENS pack with baseline categories and measures for governance, access control, monitoring, backup, and recovery.",
+
+  "plugin.framework-ens.elements.ens-domain-org.title": "Organizational governance",
+  "plugin.framework-ens.elements.ens-domain-org.description": "Governance, policy ownership, and accountability measures.",
+  "plugin.framework-ens.elements.ens-domain-protect.title": "Protection safeguards",
+  "plugin.framework-ens.elements.ens-domain-protect.description": "Preventive safeguards for access, backup, and system protection.",
+  "plugin.framework-ens.elements.ens-domain-detect.title": "Detection safeguards",
+  "plugin.framework-ens.elements.ens-domain-detect.description": "Monitoring and anomaly detection capabilities.",
+  "plugin.framework-ens.elements.ens-domain-recover.title": "Recovery safeguards",
+  "plugin.framework-ens.elements.ens-domain-recover.description": "Continuity and recovery capabilities after incidents or outages.",
+
+  "plugin.framework-ens.elements.ens-org-governance.title": "Security governance and policy ownership",
+  "plugin.framework-ens.elements.ens-org-governance.description": "Define accountable owners, policy structure, and governance checkpoints for the security model.",
+  "plugin.framework-ens.elements.ens-protect-access.title": "Identity and access protection",
+  "plugin.framework-ens.elements.ens-protect-access.description": "Control access rights, privileged access, and periodic recertification of permissions.",
+  "plugin.framework-ens.elements.ens-protect-backup.title": "Backup protection and integrity",
+  "plugin.framework-ens.elements.ens-protect-backup.description": "Protect backup copies, validate integrity, and ensure restore readiness.",
+  "plugin.framework-ens.elements.ens-detect-monitoring.title": "Security event monitoring",
+  "plugin.framework-ens.elements.ens-detect-monitoring.description": "Monitor relevant systems and record evidence of anomalous activity and response.",
+  "plugin.framework-ens.elements.ens-recover-continuity.title": "Service continuity and recovery",
+  "plugin.framework-ens.elements.ens-recover-continuity.description": "Maintain recovery plans, continuity exercises, and restoration evidence for critical services."
+}

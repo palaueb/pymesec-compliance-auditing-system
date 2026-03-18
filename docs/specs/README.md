@@ -6,6 +6,7 @@ Current notable documents:
 
 The following specification documents are available in the [`specs`](./) folder:
 
+- [project-todo.md](./project-todo.md)
 - [tenancy-model-v1.md](./tenancy-model-v1.md)
 - [audit-trail-v1.md](./audit-trail-v1.md)
 - [artifacts-and-attachments-v1.md](./artifacts-and-attachments-v1.md)
@@ -33,4 +34,10 @@ The following specification documents are available in the [`specs`](./) folder:
 - [object-level-access-v2.md](./object-level-access-v2.md)
 - [governed-reference-data-asset-catalog-v1.md](./governed-reference-data-asset-catalog-v1.md)
 - [governed-reference-data-continuity-privacy-v1.md](./governed-reference-data-continuity-privacy-v1.md)
+- [governed-reference-data-phase-2-v1.md](./governed-reference-data-phase-2-v1.md)
+- [governed-reference-data-phase-3-v1.md](./governed-reference-data-phase-3-v1.md)
+- [framework-packs-and-reporting-depth-v1.md](./framework-packs-and-reporting-depth-v1.md)
+- [framework-adoption-workflows-v1.md](./framework-adoption-workflows-v1.md)
+- [evidence-automation-and-repository-depth-v1.md](./evidence-automation-and-repository-depth-v1.md)
+- [evidence-download-preview-and-reminders-v1.md](./evidence-download-preview-and-reminders-v1.md)
 - [next-steps-memory-2026-03.md](./next-steps-memory-2026-03.md)

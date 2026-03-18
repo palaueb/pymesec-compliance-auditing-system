@@ -2,6 +2,8 @@
 
 namespace PymeSec\Plugins\ContinuityBcm;
 
+use PymeSec\Core\ReferenceData\ReferenceCatalogService;
+
 class ContinuityReferenceData
 {
     /**
@@ -20,6 +22,38 @@ class ContinuityReferenceData
         return self::group('dependency_kind');
     }
 
+    /**
+     * @return array<string, string>
+     */
+    public static function exerciseTypes(): array
+    {
+        return self::group('exercise_type');
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public static function exerciseOutcomes(): array
+    {
+        return self::group('exercise_outcome');
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public static function executionTypes(): array
+    {
+        return self::group('execution_type');
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    public static function executionStatuses(): array
+    {
+        return self::group('execution_status');
+    }
+
     public static function impactTierLabel(string $value): string
     {
         return self::label('impact_tier', $value);
@@ -28,6 +62,26 @@ class ContinuityReferenceData
     public static function dependencyKindLabel(string $value): string
     {
         return self::label('dependency_kind', $value);
+    }
+
+    public static function exerciseTypeLabel(string $value): string
+    {
+        return self::label('exercise_type', $value);
+    }
+
+    public static function exerciseOutcomeLabel(string $value): string
+    {
+        return self::label('exercise_outcome', $value);
+    }
+
+    public static function executionTypeLabel(string $value): string
+    {
+        return self::label('execution_type', $value);
+    }
+
+    public static function executionStatusLabel(string $value): string
+    {
+        return self::label('execution_status', $value);
     }
 
     /**
@@ -44,6 +98,38 @@ class ContinuityReferenceData
     public static function dependencyKindKeys(): array
     {
         return array_keys(self::dependencyKinds());
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public static function exerciseTypeKeys(): array
+    {
+        return array_keys(self::exerciseTypes());
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public static function exerciseOutcomeKeys(): array
+    {
+        return array_keys(self::exerciseOutcomes());
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public static function executionTypeKeys(): array
+    {
+        return array_keys(self::executionTypes());
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    public static function executionStatusKeys(): array
+    {
+        return array_keys(self::executionStatuses());
     }
 
     /**
@@ -73,12 +159,9 @@ class ContinuityReferenceData
      */
     private static function group(string $group): array
     {
-        $values = config('reference_data.continuity.'.$group, []);
+        /** @var ReferenceCatalogService $catalogs */
+        $catalogs = app(ReferenceCatalogService::class);
 
-        if (! is_array($values)) {
-            return [];
-        }
-
-        return array_filter($values, static fn ($label, $key): bool => is_string($key) && $key !== '' && is_string($label) && $label !== '', ARRAY_FILTER_USE_BOTH);
+        return $catalogs->options('continuity.'.$group, $catalogs->currentOrganizationId());
     }
 }

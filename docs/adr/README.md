@@ -24,3 +24,4 @@ Current accepted ADRs:
 - [ADR-018-installation-profiles-and-seeding-strategy.md](./ADR-018-installation-profiles-and-seeding-strategy.md)
 - [ADR-019-plugin-admin-lifecycle-and-settings-entrypoints.md](./ADR-019-plugin-admin-lifecycle-and-settings-entrypoints.md)
 - [ADR-020-framework-packs-as-plugins.md](./ADR-020-framework-packs-as-plugins.md)
+- [ADR-021-managed-reference-catalogs.md](./ADR-021-managed-reference-catalogs.md)

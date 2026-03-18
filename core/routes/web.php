@@ -21,6 +21,7 @@ use PymeSec\Core\Permissions\Contracts\PermissionRegistryInterface;
 use PymeSec\Core\Plugins\Contracts\PluginManagerInterface;
 use PymeSec\Core\Plugins\PluginLifecycleManager;
 use PymeSec\Core\Principals\PrincipalReference;
+use PymeSec\Core\ReferenceData\ReferenceCatalogService;
 use PymeSec\Core\Tenancy\Contracts\TenancyServiceInterface;
 use PymeSec\Core\Tenancy\TenancyContext;
 use PymeSec\Core\UI\Contracts\ScreenRegistryInterface;
@@ -266,10 +267,18 @@ $renderShell = function (
 
     if (is_string($organizationId) && $organizationId !== '') {
         $baseQuery['organization_id'] = $organizationId;
+    } elseif ($area === 'admin' && is_string($requestedOrganizationId) && $requestedOrganizationId !== '') {
+        $baseQuery['organization_id'] = $requestedOrganizationId;
     }
 
     if (is_string($scopeId) && $scopeId !== '') {
         $baseQuery['scope_id'] = $scopeId;
+    } elseif ($area === 'admin') {
+        $requestedScopeId = request()->query('scope_id');
+
+        if (is_string($requestedScopeId) && $requestedScopeId !== '') {
+            $baseQuery['scope_id'] = $requestedScopeId;
+        }
     }
 
     foreach ($memberships as $membership) {
@@ -914,6 +923,146 @@ Route::get('/core/tenancy', function (TenancyServiceInterface $tenancy) {
         'memberships' => array_map(static fn ($membership): array => $membership->toArray(), $context->memberships),
     ]);
 })->middleware('core.permission:core.tenancy.view')->name('core.tenancy.index');
+
+Route::get('/core/reference-data', function (ReferenceCatalogService $catalogs) {
+    $organizationId = request()->query('organization_id');
+
+    return response()->json([
+        'organization_id' => $organizationId,
+        'catalogs' => array_map(function (array $catalog) use ($catalogs, $organizationId): array {
+            return [
+                ...$catalog,
+                'options' => $catalogs->optionRows($catalog['key'], is_string($organizationId) ? $organizationId : null),
+            ];
+        }, $catalogs->manageableCatalogs()),
+    ]);
+})->middleware('core.permission:core.reference-data.view')->name('core.reference-data.index');
+
+Route::post('/core/reference-data/entries', function (ReferenceCatalogService $catalogs) use ($shellRouteNameForMenu) {
+    $catalogKeys = array_map(static fn (array $catalog): string => $catalog['key'], $catalogs->manageableCatalogs());
+
+    $validated = request()->validate([
+        'organization_id' => ['required', 'string', 'max:64', 'exists:organizations,id'],
+        'catalog_key' => ['required', 'string', Rule::in($catalogKeys)],
+        'option_key' => [
+            'required',
+            'string',
+            'max:120',
+            'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/',
+            Rule::unique('reference_catalog_entries', 'option_key')
+                ->where(fn ($query) => $query
+                    ->where('organization_id', request()->input('organization_id'))
+                    ->where('catalog_key', request()->input('catalog_key'))),
+        ],
+        'label' => ['required', 'string', 'max:160'],
+        'description' => ['nullable', 'string', 'max:1000'],
+        'sort_order' => ['required', 'integer', 'min:1', 'max:10000'],
+        'principal_id' => ['nullable', 'string', 'max:120'],
+        'locale' => ['nullable', 'string', 'max:12'],
+        'theme' => ['nullable', 'string', 'max:40'],
+        'menu' => ['nullable', 'string', 'max:80'],
+    ]);
+
+    $entry = $catalogs->createManagedEntry(
+        $validated,
+        is_string($validated['principal_id'] ?? null) && $validated['principal_id'] !== '' ? $validated['principal_id'] : null,
+    );
+
+    $query = array_filter([
+        'menu' => is_string($validated['menu'] ?? null) ? $validated['menu'] : 'core.reference-data',
+        'principal_id' => is_string($validated['principal_id'] ?? null) ? $validated['principal_id'] : null,
+        'organization_id' => $validated['organization_id'],
+        'catalog_key' => $validated['catalog_key'],
+        'entry_id' => $entry['id'] ?? null,
+        'locale' => is_string($validated['locale'] ?? null) ? $validated['locale'] : 'en',
+        'theme' => is_string($validated['theme'] ?? null) ? $validated['theme'] : null,
+    ]);
+
+    return redirect()->route($shellRouteNameForMenu($query['menu'] ?? null), $query)->with('status', 'Catalog option saved.');
+})->middleware('core.permission:core.reference-data.manage')->name('core.reference-data.entries.store');
+
+Route::post('/core/reference-data/entries/{entryId}', function (ReferenceCatalogService $catalogs, string $entryId) use ($shellRouteNameForMenu) {
+    $existing = $catalogs->findManagedEntry($entryId);
+    abort_if($existing === null, 404);
+
+    $catalogKeys = array_map(static fn (array $catalog): string => $catalog['key'], $catalogs->manageableCatalogs());
+
+    $validated = request()->validate([
+        'organization_id' => ['required', 'string', 'max:64', 'exists:organizations,id'],
+        'catalog_key' => ['required', 'string', Rule::in($catalogKeys)],
+        'option_key' => [
+            'required',
+            'string',
+            'max:120',
+            'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/',
+            Rule::unique('reference_catalog_entries', 'option_key')
+                ->ignore($entryId, 'id')
+                ->where(fn ($query) => $query
+                    ->where('organization_id', request()->input('organization_id'))
+                    ->where('catalog_key', request()->input('catalog_key'))),
+        ],
+        'label' => ['required', 'string', 'max:160'],
+        'description' => ['nullable', 'string', 'max:1000'],
+        'sort_order' => ['required', 'integer', 'min:1', 'max:10000'],
+        'principal_id' => ['nullable', 'string', 'max:120'],
+        'locale' => ['nullable', 'string', 'max:12'],
+        'theme' => ['nullable', 'string', 'max:40'],
+        'menu' => ['nullable', 'string', 'max:80'],
+    ]);
+
+    $catalogs->updateManagedEntry(
+        $entryId,
+        $validated,
+        is_string($validated['principal_id'] ?? null) && $validated['principal_id'] !== '' ? $validated['principal_id'] : null,
+    );
+
+    $query = array_filter([
+        'menu' => is_string($validated['menu'] ?? null) ? $validated['menu'] : 'core.reference-data',
+        'principal_id' => is_string($validated['principal_id'] ?? null) ? $validated['principal_id'] : null,
+        'organization_id' => $validated['organization_id'],
+        'catalog_key' => $validated['catalog_key'],
+        'entry_id' => $entryId,
+        'locale' => is_string($validated['locale'] ?? null) ? $validated['locale'] : 'en',
+        'theme' => is_string($validated['theme'] ?? null) ? $validated['theme'] : null,
+    ]);
+
+    return redirect()->route($shellRouteNameForMenu($query['menu'] ?? null), $query)->with('status', 'Catalog option updated.');
+})->middleware('core.permission:core.reference-data.manage')->name('core.reference-data.entries.update');
+
+Route::post('/core/reference-data/entries/{entryId}/archive', function (ReferenceCatalogService $catalogs, string $entryId) use ($shellRouteNameForMenu) {
+    $entry = $catalogs->findManagedEntry($entryId);
+    abort_if($entry === null, 404);
+    abort_unless($catalogs->archiveManagedEntry($entryId, request()->input('principal_id')), 404);
+
+    $query = array_filter([
+        'menu' => request()->input('menu', 'core.reference-data'),
+        'principal_id' => request()->input('principal_id'),
+        'organization_id' => request()->input('organization_id', $entry['organization_id']),
+        'catalog_key' => request()->input('catalog_key', $entry['catalog_key']),
+        'locale' => request()->input('locale', 'en'),
+        'theme' => request()->input('theme'),
+    ]);
+
+    return redirect()->route($shellRouteNameForMenu($query['menu'] ?? null), $query)->with('status', 'Catalog option archived.');
+})->middleware('core.permission:core.reference-data.manage')->name('core.reference-data.entries.archive');
+
+Route::post('/core/reference-data/entries/{entryId}/activate', function (ReferenceCatalogService $catalogs, string $entryId) use ($shellRouteNameForMenu) {
+    $entry = $catalogs->findManagedEntry($entryId);
+    abort_if($entry === null, 404);
+    abort_unless($catalogs->activateManagedEntry($entryId, request()->input('principal_id')), 404);
+
+    $query = array_filter([
+        'menu' => request()->input('menu', 'core.reference-data'),
+        'principal_id' => request()->input('principal_id'),
+        'organization_id' => request()->input('organization_id', $entry['organization_id']),
+        'catalog_key' => request()->input('catalog_key', $entry['catalog_key']),
+        'entry_id' => $entryId,
+        'locale' => request()->input('locale', 'en'),
+        'theme' => request()->input('theme'),
+    ]);
+
+    return redirect()->route($shellRouteNameForMenu($query['menu'] ?? null), $query)->with('status', 'Catalog option reactivated.');
+})->middleware('core.permission:core.reference-data.manage')->name('core.reference-data.entries.activate');
 
 Route::post('/core/tenancy/organizations', function (TenancyServiceInterface $tenancy) use ($shellRouteNameForMenu) {
     $validated = request()->validate([

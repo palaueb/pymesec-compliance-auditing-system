@@ -19,6 +19,8 @@ return [
                 'core.plugins.manage',
                 'core.permissions.view',
                 'core.permissions.manage',
+                'core.reference-data.view',
+                'core.reference-data.manage',
                 'core.roles.view',
                 'core.roles.manage',
                 'core.tenancy.view',

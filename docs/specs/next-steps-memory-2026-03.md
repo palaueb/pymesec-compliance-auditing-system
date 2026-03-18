@@ -6,9 +6,9 @@ This note captures the current recommendation for the next implementation blocks
 
 Priority order:
 
-1. `governed-reference-data phase 2`
-2. `framework-packs and reporting depth`
-3. `evidence automation and repository depth`
+1. `multi-owner and assignment depth`
+2. `framework-specific reporting presets`
+3. `communications and reminder channels`
 
 ## Why This Order
 
@@ -23,48 +23,45 @@ The following roadmap items are now in place:
 - `governed-reference-data v1` extended to `Continuity` and `Privacy`
 - `assessment sign-off and export formats`
 - `object-level-access phase 2` across controls, continuity, privacy, policy, and assessments
+- `governed-reference-data phase 2` across findings, assessments, and continuity exercises/test runs
+- `governed-reference-data phase 3` with admin-managed catalogs and organization overrides
+- `framework adoption workflows` with scope-aware adoption and assessment filtering
+- `framework-packs and reporting depth` with ENS, GDPR, and framework coverage summaries
+- `evidence automation and repository depth` with direct artifact promotion, inferred links, and repository candidates
+- `evidence download, preview, and reminder workflows`
 
-### 1. Governed Reference Data Phase 2
+### 1. Multi-owner and Assignment Depth
 
-The first slice is already in place, but there are still business fields and ownership patterns that need stronger governance.
-
-Next increment:
-
-- controlled values for remaining business enums
-- multiple accountable parties where the domain requires it
-- stronger governed links in controls, findings, policy, and assessment results
-
-### 3. Framework Packs and Reporting Depth
-
-The product vision depends on reusable framework content and stronger management outputs.
+Object-level access and governed vocabularies are stronger now, but accountability is still too single-owner in several domains.
 
 Next increment:
 
-- framework pack plugins with seeded requirements and mappings
-- richer management-facing reports
-- reusable export layouts
+- multi-owner assignments where the domain requires them
+- richer assignment types in operational screens
+- clearer administration of responsibility matrices
 
-### 3. Evidence Automation and Repository Depth
+### 2. Framework-Specific Reporting Presets
 
-The repository is now usable, but evidence still depends too much on manual creation and linking.
+Frameworks are now adopted explicitly, but reporting is still generic.
 
 Next increment:
 
-- stronger evidence states and review cycles
-- automatic evidence creation from operational workflows where it makes sense
-- richer link management between evidence, controls, findings, and assessments
+- framework-specific management views
+- preset exports per adopted framework
+- readiness summaries per scope and framework
+- adoption progress snapshots for leadership
 
-Expected outcome:
+### 3. Communications and Reminder Channels
 
-- less manual repetition during audits
-- a stronger chain from operational work to auditable evidence
+Reminders now exist inside the platform, but outbound delivery and communication administration are still not a product feature.
+
+Next increment:
+
+- mail delivery settings from the admin UI
+- reminder channel control
+- notification templates for operational follow-up
+- evidence and assessment reminder delivery beyond in-app dispatch
 
 ## Immediate Execution Decision
 
-Start with `governed-reference-data phase 2`.
-
-Target for the current implementation slice:
-
-- remove remaining free-text business enums and legacy ownership labels
-- strengthen controlled links for controls, findings, policies, and assessment records
-- prepare the data model for richer reporting and tighter object-scoped governance
+Start with `multi-owner and assignment depth`.

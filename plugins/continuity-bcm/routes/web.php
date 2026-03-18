@@ -355,9 +355,9 @@ Route::post('/plugins/continuity/plans/{planId}/exercises', function (
     $validated = $request->validate([
         'organization_id' => ['required', 'string', 'max:64'],
         'exercise_date' => ['required', 'date'],
-        'exercise_type' => ['required', 'string', 'max:80'],
+        'exercise_type' => ['required', 'string', Rule::in(ContinuityReferenceData::exerciseTypeKeys())],
         'scenario_summary' => ['required', 'string', 'max:255'],
-        'outcome' => ['required', 'string', 'max:40'],
+        'outcome' => ['required', 'string', Rule::in(ContinuityReferenceData::exerciseOutcomeKeys())],
         'follow_up_summary' => ['nullable', 'string', 'max:255'],
     ]);
 
@@ -394,8 +394,8 @@ Route::post('/plugins/continuity/plans/{planId}/executions', function (
     $validated = $request->validate([
         'organization_id' => ['required', 'string', 'max:64'],
         'executed_on' => ['required', 'date'],
-        'execution_type' => ['required', 'string', 'max:80'],
-        'status' => ['required', 'string', 'max:40'],
+        'execution_type' => ['required', 'string', Rule::in(ContinuityReferenceData::executionTypeKeys())],
+        'status' => ['required', 'string', Rule::in(ContinuityReferenceData::executionStatusKeys())],
         'participants' => ['nullable', 'string', 'max:255'],
         'notes' => ['nullable', 'string', 'max:255'],
     ]);

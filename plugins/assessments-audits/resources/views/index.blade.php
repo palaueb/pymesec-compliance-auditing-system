@@ -80,6 +80,7 @@
                                 <option value="{{ $framework['id'] }}">{{ $framework['label'] }}</option>
                             @endforeach
                         </select>
+                        <div class="field-note">Adopt frameworks in Controls Catalog to make them available here for the current scope.</div>
                     </div>
                     <div class="field">
                         <label class="field-label" for="assessment-scope">Scope</label>
@@ -214,6 +215,30 @@
                 </div>
             </div>
 
+            @if ($selectedAssessment['framework_breakdown'] !== [])
+                <div class="surface-card" style="padding:14px;">
+                    <div class="metric-label">Framework coverage</div>
+                    <div class="data-stack" style="margin-top:10px;">
+                        @foreach ($selectedAssessment['framework_breakdown'] as $framework)
+                            <div class="data-item">
+                                <div class="entity-title">{{ $framework['framework_code'] }} · {{ $framework['framework_name'] }}</div>
+                                <div class="table-note">
+                                    {{ $framework['requirement_count'] }} mapped requirements ·
+                                    {{ $framework['control_count'] }} linked controls ·
+                                    {{ $framework['source'] === 'global' ? 'Global pack' : 'Custom framework' }}
+                                </div>
+                                <div class="table-note">
+                                    {{ $framework['result_summary']['pass'] }} pass ·
+                                    {{ $framework['result_summary']['partial'] }} partial ·
+                                    {{ $framework['result_summary']['fail'] }} fail ·
+                                    {{ $framework['result_summary']['not-tested'] }} pending
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+            @endif
+
             {{-- Edit assessment (collapsed by default) --}}
             @if ($can_manage_assessments)
                 <hr class="section-divider">
@@ -285,6 +310,7 @@
                                         <option value="{{ $framework['id'] }}" @selected($selectedAssessment['framework_id'] === $framework['id'])>{{ $framework['label'] }}</option>
                                     @endforeach
                                 </select>
+                                <div class="field-note">Only adopted frameworks are offered here when the workspace already has adoption records.</div>
                             </div>
                             <div class="field">
                                 <label class="field-label">Scope</label>
@@ -414,8 +440,21 @@
                                 <div class="data-stack">
                                     @foreach ($review['artifacts'] as $artifact)
                                         <div class="data-item">
-                                            <div class="entity-title" style="font-size:12px;">{{ $artifact['label'] }}</div>
-                                            <div class="table-note">{{ $artifact['original_filename'] }}</div>
+                                            <div class="row-between" style="align-items:flex-start; gap:12px;">
+                                                <div>
+                                                    <div class="entity-title" style="font-size:12px;">{{ $artifact['label'] }}</div>
+                                                    <div class="table-note">{{ $artifact['original_filename'] }}</div>
+                                                </div>
+                                                <form method="POST" action="{{ route('plugin.evidence-management.promote', ['artifactId' => $artifact['id']]) }}">
+                                                    @csrf
+                                                    <input type="hidden" name="principal_id" value="{{ $query['principal_id'] }}">
+                                                    <input type="hidden" name="organization_id" value="{{ $selectedAssessment['organization_id'] }}">
+                                                    <input type="hidden" name="scope_id" value="{{ $selectedAssessment['scope_id'] }}">
+                                                    <input type="hidden" name="locale" value="{{ $query['locale'] }}">
+                                                    <input type="hidden" name="membership_id" value="{{ $query['membership_ids'][0] ?? 'membership-org-a-hello' }}">
+                                                    <button class="button button-ghost" type="submit">Promote to evidence</button>
+                                                </form>
+                                            </div>
                                         </div>
                                     @endforeach
                                 </div>

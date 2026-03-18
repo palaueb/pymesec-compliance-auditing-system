@@ -26,7 +26,7 @@
                     <div class="eyebrow">Finding</div>
                     <h2 class="screen-title" style="font-size:28px;">{{ $selected_finding['title'] }}</h2>
                     <div class="table-note">{{ $selected_finding['id'] }}</div>
-                    <div class="table-note">{{ ucfirst($selected_finding['severity']) }} severity</div>
+                    <div class="table-note">{{ $selected_finding['severity_label'] }} severity</div>
                 </div>
                 <div class="action-cluster">
                     @php
@@ -34,7 +34,7 @@
                         $severityPill = match($selected_finding['severity']) { 'critical' => 'pill-critical', 'high' => 'pill-high', 'medium' => 'pill-medium', 'low' => 'pill-low', default => '' };
                     @endphp
                     <span class="pill {{ $findingStatePill }}">{{ $selected_finding['state'] }}</span>
-                    <span class="pill {{ $severityPill }}">{{ $selected_finding['severity'] }}</span>
+                    <span class="pill {{ $severityPill }}">{{ $selected_finding['severity_label'] }}</span>
                 </div>
             </div>
 
@@ -129,8 +129,21 @@
                     <div class="data-stack" style="margin-top:10px;">
                         @forelse ($selected_finding['artifacts'] as $artifact)
                             <div class="data-item">
-                                <div class="entity-title">{{ $artifact['label'] }}</div>
-                                <div class="table-note">{{ $artifact['original_filename'] }}</div>
+                                <div class="row-between" style="align-items:flex-start; gap:12px;">
+                                    <div>
+                                        <div class="entity-title">{{ $artifact['label'] }}</div>
+                                        <div class="table-note">{{ $artifact['original_filename'] }}</div>
+                                    </div>
+                                    <form method="POST" action="{{ route('plugin.evidence-management.promote', ['artifactId' => $artifact['id']]) }}">
+                                        @csrf
+                                        <input type="hidden" name="principal_id" value="{{ $query['principal_id'] }}">
+                                        <input type="hidden" name="organization_id" value="{{ $query['organization_id'] }}">
+                                        <input type="hidden" name="scope_id" value="{{ $selected_finding['scope_id'] }}">
+                                        <input type="hidden" name="locale" value="{{ $query['locale'] }}">
+                                        <input type="hidden" name="membership_id" value="{{ $query['membership_ids'][0] ?? 'membership-org-a-hello' }}">
+                                        <button class="button button-ghost" type="submit">Promote to evidence</button>
+                                    </form>
+                                </div>
                             </div>
                         @empty
                             <span class="muted-note">No evidence yet</span>
@@ -159,8 +172,8 @@
                                     <div class="field">
                                         <label class="field-label">Status</label>
                                         <select class="field-select" name="status" required>
-                                            @foreach (['planned', 'in-progress', 'blocked', 'done'] as $status)
-                                                <option value="{{ $status }}">{{ ucfirst($status) }}</option>
+                                            @foreach ($action_status_options as $status)
+                                                <option value="{{ $status['id'] }}">{{ $status['label'] }}</option>
                                             @endforeach
                                         </select>
                                     </div>
@@ -194,14 +207,14 @@
                                 <div class="row-between" style="align-items:flex-start;">
                                     <div>
                                         <div class="entity-title">{{ $action['title'] }}</div>
-                                        <div class="table-note">{{ ucfirst($action['status']) }}{{ $action['due_on'] !== '' ? ' · due '.$action['due_on'] : '' }}</div>
+                                        <div class="table-note">{{ $action['status_label'] }}{{ $action['due_on'] !== '' ? ' · due '.$action['due_on'] : '' }}</div>
                                         <div class="table-note">{{ $action['owner_assignment']['display_name'] ?? 'No owner assigned' }}</div>
                                         @if ($action['notes'] !== '')
                                             <div class="table-note">{{ $action['notes'] }}</div>
                                         @endif
                                     </div>
                                     @php $actionPill = match($action['status']) { 'planned' => 'pill-planned', 'in-progress' => 'pill-in-progress', 'blocked' => 'pill-blocked', 'done' => 'pill-done', default => '' }; @endphp
-                                    <span class="pill {{ $actionPill }}">{{ $action['status'] }}</span>
+                                    <span class="pill {{ $actionPill }}">{{ $action['status_label'] }}</span>
                                 </div>
                                 @if ($can_manage_findings)
                                     <details style="margin-top:10px;">
@@ -221,8 +234,8 @@
                                             <div class="field">
                                                 <label class="field-label">Status</label>
                                                 <select class="field-select" name="status" required>
-                                                    @foreach (['planned', 'in-progress', 'blocked', 'done'] as $status)
-                                                        <option value="{{ $status }}" @selected($action['status'] === $status)>{{ ucfirst($status) }}</option>
+                                                    @foreach ($action_status_options as $status)
+                                                        <option value="{{ $status['id'] }}" @selected($action['status'] === $status['id'])>{{ $status['label'] }}</option>
                                                     @endforeach
                                                 </select>
                                             </div>
@@ -287,8 +300,8 @@
                                 <div class="field">
                                     <label class="field-label">Severity</label>
                                     <select class="field-select" name="severity" required>
-                                        @foreach (['low', 'medium', 'high', 'critical'] as $severity)
-                                            <option value="{{ $severity }}" @selected($selected_finding['severity'] === $severity)>{{ ucfirst($severity) }}</option>
+                                        @foreach ($severity_options as $severity)
+                                            <option value="{{ $severity['id'] }}" @selected($selected_finding['severity'] === $severity['id'])>{{ $severity['label'] }}</option>
                                         @endforeach
                                     </select>
                                 </div>
@@ -371,10 +384,9 @@
                         <div class="field">
                             <label class="field-label" for="finding-severity">Severity</label>
                             <select class="field-select" id="finding-severity" name="severity" required>
-                                <option value="low">Low</option>
-                                <option value="medium" selected>Medium</option>
-                                <option value="high">High</option>
-                                <option value="critical">Critical</option>
+                                @foreach ($severity_options as $severity)
+                                    <option value="{{ $severity['id'] }}" @selected($severity['id'] === 'medium')>{{ $severity['label'] }}</option>
+                                @endforeach
                             </select>
                         </div>
                         <div class="field">
@@ -466,7 +478,7 @@
                             </td>
                             <td>
                                 @php $sSevPill = match($finding['severity']) { 'critical' => 'pill-critical', 'high' => 'pill-high', 'medium' => 'pill-medium', 'low' => 'pill-low', default => '' }; @endphp
-                                <span class="pill {{ $sSevPill }}">{{ $finding['severity'] }}</span>
+                                <span class="pill {{ $sSevPill }}">{{ $finding['severity_label'] }}</span>
                             </td>
                             <td>
                                 @if ($finding['owner_assignment'] !== null)

@@ -19,6 +19,7 @@ class EvidenceManagementPlugin implements PluginInterface
             artifacts: $app->make(\PymeSec\Core\Artifacts\Contracts\ArtifactServiceInterface::class),
             audit: $app->make(\PymeSec\Core\Audit\Contracts\AuditTrailInterface::class),
             events: $app->make(\PymeSec\Core\Events\Contracts\EventBusInterface::class),
+            notifications: $app->make(\PymeSec\Core\Notifications\Contracts\NotificationServiceInterface::class),
         ));
 
         $context->registerScreen(new ScreenDefinition(
@@ -108,12 +109,70 @@ class EvidenceManagementPlugin implements PluginInterface
             }
         }
 
+        if (is_array($selectedEvidence)) {
+            if (is_array($selectedEvidence['source'] ?? null)) {
+                $source = $selectedEvidence['source'];
+                $selectedEvidence['source_open_url'] = is_string($source['domain_type'] ?? null) && is_string($source['domain_id'] ?? null)
+                    ? $this->domainObjectShellUrl(
+                        $screenContext,
+                        (string) $source['domain_type'],
+                        (string) $source['domain_id'],
+                        $organizationId,
+                        is_string($source['scope_id'] ?? null) && $source['scope_id'] !== '' ? (string) $source['scope_id'] : null,
+                    )
+                    : null;
+            }
+
+            $selectedEvidence['download_url'] = is_array($selectedEvidence['artifact'] ?? null) && ($selectedEvidence['artifact']['exists'] ?? false)
+                ? route('plugin.evidence-management.download', ['evidenceId' => $selectedEvidence['id']])
+                : null;
+            $selectedEvidence['preview_url'] = is_array($selectedEvidence['artifact'] ?? null)
+                && ($selectedEvidence['artifact']['exists'] ?? false)
+                && ($selectedEvidence['artifact']['previewable'] ?? false)
+                ? route('plugin.evidence-management.preview', ['evidenceId' => $selectedEvidence['id']])
+                : null;
+            $selectedEvidence['queue_review_reminder_route'] = route('plugin.evidence-management.reminders.queue', [
+                'evidenceId' => $selectedEvidence['id'],
+                'type' => 'review-due',
+            ]);
+            $selectedEvidence['queue_expiry_reminder_route'] = route('plugin.evidence-management.reminders.queue', [
+                'evidenceId' => $selectedEvidence['id'],
+                'type' => 'expiry-soon',
+            ]);
+        }
+
         $listQuery = $this->baseQuery($screenContext);
         unset($listQuery['evidence_id']);
 
         return [
             'records' => $evidenceRows,
             'selected_evidence' => $selectedEvidence,
+            'promotion_candidates' => array_map(function (array $artifact) use ($screenContext): array {
+                $source = $artifact['source'] ?? null;
+                $sourceOpenUrl = null;
+
+                if (is_array($source) && is_string($source['domain_type'] ?? null) && is_string($source['domain_id'] ?? null)) {
+                    $sourceOpenUrl = $this->domainObjectShellUrl(
+                        $screenContext,
+                        (string) $source['domain_type'],
+                        (string) $source['domain_id'],
+                        $screenContext->organizationId ?? 'org-a',
+                        is_string($source['scope_id'] ?? null) && $source['scope_id'] !== '' ? (string) $source['scope_id'] : null,
+                    );
+                }
+
+                return [
+                    ...$artifact,
+                    'promote_route' => route('plugin.evidence-management.promote', ['artifactId' => $artifact['id']]),
+                    'source_open_url' => $sourceOpenUrl,
+                ];
+            }, $repository->promotionCandidates($organizationId, $screenContext->scopeId)),
+            'review_queue' => array_map(function (array $record) use ($screenContext): array {
+                return [
+                    ...$record,
+                    'open_url' => route('core.shell.index', [...$this->baseQuery($screenContext), 'menu' => 'plugin.evidence-management.root', 'evidence_id' => $record['id']]),
+                ];
+            }, $repository->reviewQueue($organizationId, $screenContext->scopeId)),
             'can_manage_evidence' => $canManage,
             'query' => $this->baseQuery($screenContext),
             'list_query' => $listQuery,
@@ -148,6 +207,16 @@ class EvidenceManagementPlugin implements PluginInterface
                     }
 
                     return $record['status'] !== 'expired' && $record['valid_until'] <= now()->addDays(30)->toDateString();
+                })->count(),
+                'review_due' => collect($evidenceRows)->filter(static function (array $record): bool {
+                    if (($record['review_due_on'] ?? '') === '') {
+                        return false;
+                    }
+
+                    return $record['review_due_on'] <= now()->addDays(30)->toDateString();
+                })->count(),
+                'needs_validation' => collect($evidenceRows)->filter(static function (array $record): bool {
+                    return in_array($record['status'], ['active', 'approved'], true) && ($record['validated_at'] ?? '') === '';
                 })->count(),
                 'linked' => collect($evidenceRows)->filter(static fn (array $record): bool => count($record['links']) > 0)->count(),
             ],

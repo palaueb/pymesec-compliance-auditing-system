@@ -2,6 +2,7 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Validation\Rule;
 use PymeSec\Core\Artifacts\ArtifactUploadData;
 use PymeSec\Core\Artifacts\Contracts\ArtifactServiceInterface;
 use PymeSec\Core\FunctionalActors\Contracts\FunctionalActorServiceInterface;
@@ -10,6 +11,7 @@ use PymeSec\Core\Principals\MembershipReference;
 use PymeSec\Core\Principals\PrincipalReference;
 use PymeSec\Core\Workflows\Contracts\WorkflowServiceInterface;
 use PymeSec\Core\Workflows\WorkflowExecutionContext;
+use PymeSec\Plugins\RiskManagement\RiskReferenceData;
 use PymeSec\Plugins\RiskManagement\RiskRepository;
 
 Route::get('/plugins/risks', function (Request $request, RiskRepository $repository, ObjectAccessService $objectAccess) {
@@ -53,7 +55,7 @@ Route::post('/plugins/risks', function (
 ) {
     $validated = $request->validate([
         'title' => ['required', 'string', 'max:140'],
-        'category' => ['required', 'string', 'max:80'],
+        'category' => ['required', 'string', Rule::in(RiskReferenceData::categoryKeys())],
         'inherent_score' => ['required', 'integer', 'min:0', 'max:100'],
         'residual_score' => ['required', 'integer', 'min:0', 'max:100'],
         'linked_asset_id' => ['nullable', 'string', 'max:120', 'exists:assets,id'],
@@ -112,7 +114,7 @@ Route::post('/plugins/risks/{riskId}', function (
 
     $validated = $request->validate([
         'title' => ['required', 'string', 'max:140'],
-        'category' => ['required', 'string', 'max:80'],
+        'category' => ['required', 'string', Rule::in(RiskReferenceData::categoryKeys())],
         'inherent_score' => ['required', 'integer', 'min:0', 'max:100'],
         'residual_score' => ['required', 'integer', 'min:0', 'max:100'],
         'linked_asset_id' => ['nullable', 'string', 'max:120', 'exists:assets,id'],

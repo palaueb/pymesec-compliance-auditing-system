@@ -9,6 +9,12 @@
                 </div>
                 <div class="action-cluster">
                     <a class="button button-ghost" href="{{ $evidence_list_url }}">Back to evidence</a>
+                    @if (($selected_evidence['preview_url'] ?? null) !== null)
+                        <a class="button button-ghost" href="{{ $selected_evidence['preview_url'] }}" target="_blank" rel="noreferrer">Preview artifact</a>
+                    @endif
+                    @if (($selected_evidence['download_url'] ?? null) !== null)
+                        <a class="button button-secondary" href="{{ $selected_evidence['download_url'] }}">Download artifact</a>
+                    @endif
                     <span class="pill">{{ $selected_evidence['status'] }}</span>
                 </div>
             </div>
@@ -20,7 +26,7 @@
                 <div class="metric-card"><div class="metric-label">Artifact</div><div class="metric-value" style="font-size:18px;">{{ $selected_evidence['artifact']['original_filename'] ?? 'Missing' }}</div></div>
             </div>
 
-            <div class="overview-grid" style="grid-template-columns:repeat(2, minmax(0, 1fr));">
+            <div class="overview-grid" style="grid-template-columns:repeat(4, minmax(0, 1fr));">
                 <div class="surface-card" style="padding:14px;">
                     <div class="metric-label">Evidence summary</div>
                     <div class="body-copy" style="margin-top:10px;">{{ $selected_evidence['summary'] !== '' ? $selected_evidence['summary'] : 'No summary yet.' }}</div>
@@ -34,6 +40,59 @@
                             </div>
                         </div>
                     @endif
+                </div>
+
+                <div class="surface-card" style="padding:14px;">
+                    <div class="metric-label">Source</div>
+                    <div class="data-stack" style="margin-top:10px;">
+                        <div class="data-item">
+                            <div class="entity-title">{{ $selected_evidence['source']['label'] ?? 'Uploaded directly to the evidence library' }}</div>
+                            <div class="table-note">{{ is_array($selected_evidence['source'] ?? null) ? ucfirst(str_replace('-', ' ', (string) ($selected_evidence['source']['subject_type'] ?? 'artifact'))) : 'Evidence upload' }}</div>
+                            @if (($selected_evidence['source_open_url'] ?? null) !== null)
+                                <div class="action-cluster" style="margin-top:10px;">
+                                    <a class="button button-ghost" href="{{ $selected_evidence['source_open_url'] }}">Open source record</a>
+                                </div>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+
+                <div class="surface-card" style="padding:14px;">
+                    <div class="metric-label">Reminder state</div>
+                    <div class="data-stack" style="margin-top:10px;">
+                        <div class="data-item">
+                            <div class="entity-title">Review reminder</div>
+                            <div class="table-note">{{ $selected_evidence['review_reminder_sent_at'] !== '' ? $selected_evidence['review_reminder_sent_at'] : 'Not queued yet' }}</div>
+                            @if ($can_manage_evidence && $selected_evidence['review_due_on'] !== '')
+                                <form method="POST" action="{{ $selected_evidence['queue_review_reminder_route'] }}" style="margin-top:10px;">
+                                    @csrf
+                                    <input type="hidden" name="principal_id" value="{{ $query['principal_id'] }}">
+                                    <input type="hidden" name="organization_id" value="{{ $selected_evidence['organization_id'] }}">
+                                    <input type="hidden" name="scope_id" value="{{ $selected_evidence['scope_id'] }}">
+                                    <input type="hidden" name="locale" value="{{ $query['locale'] }}">
+                                    <input type="hidden" name="menu" value="plugin.evidence-management.root">
+                                    <input type="hidden" name="membership_id" value="{{ $query['membership_ids'][0] ?? '' }}">
+                                    <button class="button button-ghost" type="submit">Queue review reminder</button>
+                                </form>
+                            @endif
+                        </div>
+                        <div class="data-item">
+                            <div class="entity-title">Expiry reminder</div>
+                            <div class="table-note">{{ $selected_evidence['expiry_reminder_sent_at'] !== '' ? $selected_evidence['expiry_reminder_sent_at'] : 'Not queued yet' }}</div>
+                            @if ($can_manage_evidence && $selected_evidence['valid_until'] !== '')
+                                <form method="POST" action="{{ $selected_evidence['queue_expiry_reminder_route'] }}" style="margin-top:10px;">
+                                    @csrf
+                                    <input type="hidden" name="principal_id" value="{{ $query['principal_id'] }}">
+                                    <input type="hidden" name="organization_id" value="{{ $selected_evidence['organization_id'] }}">
+                                    <input type="hidden" name="scope_id" value="{{ $selected_evidence['scope_id'] }}">
+                                    <input type="hidden" name="locale" value="{{ $query['locale'] }}">
+                                    <input type="hidden" name="menu" value="plugin.evidence-management.root">
+                                    <input type="hidden" name="membership_id" value="{{ $query['membership_ids'][0] ?? '' }}">
+                                    <button class="button button-ghost" type="submit">Queue expiry reminder</button>
+                                </form>
+                            @endif
+                        </div>
+                    </div>
                 </div>
 
                 <div class="surface-card" style="padding:14px;">
@@ -282,16 +341,55 @@
             </div>
         @endif
 
-        <div class="overview-grid" style="grid-template-columns:repeat(4, minmax(0, 1fr));">
+        <div class="overview-grid" style="grid-template-columns:repeat(6, minmax(0, 1fr));">
             <div class="metric-card"><div class="metric-label">Evidence records</div><div class="metric-value">{{ $metrics['records'] }}</div></div>
             <div class="metric-card"><div class="metric-label">Approved</div><div class="metric-value">{{ $metrics['approved'] }}</div></div>
             <div class="metric-card"><div class="metric-label">Expiring soon</div><div class="metric-value">{{ $metrics['expiring'] }}</div></div>
+            <div class="metric-card"><div class="metric-label">Review due</div><div class="metric-value">{{ $metrics['review_due'] }}</div></div>
+            <div class="metric-card"><div class="metric-label">Needs validation</div><div class="metric-value">{{ $metrics['needs_validation'] }}</div></div>
             <div class="metric-card"><div class="metric-label">Linked</div><div class="metric-value">{{ $metrics['linked'] }}</div></div>
         </div>
 
         <div class="surface-note">
             Use the evidence library to promote uploaded artifacts into governed evidence, set validity windows, and reuse them across assessments, controls, findings, and plans.
         </div>
+
+        @if (count($review_queue) > 0)
+            <div class="surface-card" style="padding:14px;">
+                <div class="metric-label">Review and renewal queue</div>
+                <div class="table-note" style="margin-top:8px;">Evidence records that need follow-up soon for review or renewal.</div>
+                <table class="entity-table" style="margin-top:12px;">
+                    <thead>
+                        <tr>
+                            <th>Evidence</th>
+                            <th>Review due</th>
+                            <th>Validity end</th>
+                            <th>Reminder state</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach ($review_queue as $record)
+                            <tr>
+                                <td>
+                                    <div class="entity-title">{{ $record['title'] }}</div>
+                                    <div class="table-note">{{ ucfirst($record['status']) }}</div>
+                                </td>
+                                <td>{{ $record['review_due_on'] !== '' ? $record['review_due_on'] : 'Not set' }}</td>
+                                <td>{{ $record['valid_until'] !== '' ? $record['valid_until'] : 'Open' }}</td>
+                                <td>
+                                    <div class="data-stack">
+                                        <div class="table-note">Review: {{ $record['review_reminder_sent_at'] !== '' ? 'Queued' : 'Pending' }}</div>
+                                        <div class="table-note">Expiry: {{ $record['expiry_reminder_sent_at'] !== '' ? 'Queued' : 'Pending' }}</div>
+                                    </div>
+                                </td>
+                                <td><a class="button button-secondary" href="{{ $record['open_url'] }}">Edit details</a></td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        @endif
 
         <div class="table-card">
             <table class="entity-table">
@@ -340,5 +438,63 @@
                 </tbody>
             </table>
         </div>
+
+        @if ($can_manage_evidence && count($promotion_candidates) > 0)
+            <div class="surface-card" style="padding:14px;">
+                <div class="metric-label">Recent uploads ready for evidence</div>
+                <div class="table-note" style="margin-top:8px;">Promote recent artifacts into governed evidence and keep the source record linked.</div>
+                <table class="entity-table" style="margin-top:12px;">
+                    <thead>
+                        <tr>
+                            <th>Artifact</th>
+                            <th>Source</th>
+                            <th>Suggested links</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach ($promotion_candidates as $candidate)
+                            <tr>
+                                <td>
+                                    <div class="entity-title">{{ $candidate['label'] }}</div>
+                                    <div class="table-note">{{ $candidate['original_filename'] }} · {{ ucfirst(str_replace('-', ' ', $candidate['artifact_type'])) }}</div>
+                                </td>
+                                <td>
+                                    <div class="entity-title">{{ $candidate['source']['label'] ?? ucfirst(str_replace('-', ' ', $candidate['subject_type'])) }}</div>
+                                    <div class="table-note">{{ ucfirst(str_replace('-', ' ', $candidate['subject_type'])) }}</div>
+                                    @if (($candidate['source_open_url'] ?? null) !== null)
+                                        <div style="margin-top:8px;">
+                                            <a class="button button-ghost" href="{{ $candidate['source_open_url'] }}">Open source</a>
+                                        </div>
+                                    @endif
+                                </td>
+                                <td>
+                                    @if ($candidate['suggested_links'] === [])
+                                        <span class="muted-note">No automatic links</span>
+                                    @else
+                                        <div class="data-stack">
+                                            @foreach ($candidate['suggested_links'] as $link)
+                                                <div class="table-note">{{ $link['domain_label'] }} · {{ ucfirst(str_replace('-', ' ', $link['domain_type'])) }}</div>
+                                            @endforeach
+                                        </div>
+                                    @endif
+                                </td>
+                                <td>
+                                    <form method="POST" action="{{ $candidate['promote_route'] }}">
+                                        @csrf
+                                        <input type="hidden" name="principal_id" value="{{ $query['principal_id'] }}">
+                                        <input type="hidden" name="organization_id" value="{{ $query['organization_id'] }}">
+                                        <input type="hidden" name="scope_id" value="{{ $query['scope_id'] ?? '' }}">
+                                        <input type="hidden" name="locale" value="{{ $query['locale'] }}">
+                                        <input type="hidden" name="membership_id" value="{{ $query['membership_ids'][0] ?? '' }}">
+                                        <button class="button button-secondary" type="submit">Promote to evidence</button>
+                                    </form>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+        @endif
     @endif
 </section>

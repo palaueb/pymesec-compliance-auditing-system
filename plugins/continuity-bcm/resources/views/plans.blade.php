@@ -134,15 +134,15 @@
                                     <input type="hidden" name="membership_id" value="{{ $query['membership_ids'][0] ?? 'membership-org-a-hello' }}">
                                     <input type="date" name="exercise_date" required>
                                     <select class="field-select" name="exercise_type">
-                                        <option value="tabletop">Tabletop</option>
-                                        <option value="simulation">Simulation</option>
-                                        <option value="walkthrough">Walkthrough</option>
+                                        @foreach ($exercise_type_options as $exerciseType)
+                                            <option value="{{ $exerciseType['id'] }}">{{ $exerciseType['label'] }}</option>
+                                        @endforeach
                                     </select>
                                     <input type="text" name="scenario_summary" placeholder="Exercise scenario" required>
                                     <select class="field-select" name="outcome">
-                                        <option value="pass">Pass</option>
-                                        <option value="partial">Partial</option>
-                                        <option value="fail">Fail</option>
+                                        @foreach ($exercise_outcome_options as $outcome)
+                                            <option value="{{ $outcome['id'] }}">{{ $outcome['label'] }}</option>
+                                        @endforeach
                                     </select>
                                     <input type="text" name="follow_up_summary" placeholder="Follow-up">
                                     <button class="button button-secondary" type="submit">Save exercise</button>
@@ -153,8 +153,8 @@
                     <div class="data-stack" style="margin-top:10px;">
                         @forelse ($selected_plan['exercises'] as $exercise)
                             <div class="data-item">
-                                <div class="entity-title">{{ ucfirst($exercise['exercise_type']) }} · {{ $exercise['exercise_date'] }}</div>
-                                <div class="table-note">{{ ucfirst($exercise['outcome']) }} · {{ $exercise['scenario_summary'] }}</div>
+                                <div class="entity-title">{{ $exercise['exercise_type_label'] }} · {{ $exercise['exercise_date'] }}</div>
+                                <div class="table-note">{{ $exercise['outcome_label'] }} · {{ $exercise['scenario_summary'] }}</div>
                                 @if ($exercise['follow_up_summary'] !== '')
                                     <div class="table-note">{{ $exercise['follow_up_summary'] }}</div>
                                 @endif
@@ -181,14 +181,14 @@
                                     <input type="hidden" name="membership_id" value="{{ $query['membership_ids'][0] ?? 'membership-org-a-hello' }}">
                                     <input type="date" name="executed_on" required>
                                     <select class="field-select" name="execution_type">
-                                        <option value="recovery-drill">Recovery drill</option>
-                                        <option value="restore-test">Restore test</option>
-                                        <option value="failover-test">Failover test</option>
+                                        @foreach ($execution_type_options as $executionType)
+                                            <option value="{{ $executionType['id'] }}">{{ $executionType['label'] }}</option>
+                                        @endforeach
                                     </select>
                                     <select class="field-select" name="status">
-                                        <option value="passed">Passed</option>
-                                        <option value="partial">Partial</option>
-                                        <option value="failed">Failed</option>
+                                        @foreach ($execution_status_options as $status)
+                                            <option value="{{ $status['id'] }}">{{ $status['label'] }}</option>
+                                        @endforeach
                                     </select>
                                     <input type="text" name="participants" placeholder="Participants">
                                     <input type="text" name="notes" placeholder="Execution note">
@@ -200,8 +200,8 @@
                     <div class="data-stack" style="margin-top:10px;">
                         @forelse ($selected_plan['executions'] as $execution)
                             <div class="data-item">
-                                <div class="entity-title">{{ ucfirst($execution['execution_type']) }} · {{ $execution['executed_on'] }}</div>
-                                <div class="table-note">{{ ucfirst($execution['status']) }}</div>
+                                <div class="entity-title">{{ $execution['execution_type_label'] }} · {{ $execution['executed_on'] }}</div>
+                                <div class="table-note">{{ $execution['status_label'] }}</div>
                                 @if ($execution['participants'] !== '')
                                     <div class="table-note">{{ $execution['participants'] }}</div>
                                 @endif
@@ -240,8 +240,21 @@
                     <div class="data-stack" style="margin-top:10px;">
                         @forelse ($selected_plan['artifacts'] as $artifact)
                             <div class="data-item">
-                                <div class="entity-title">{{ $artifact['label'] }}</div>
-                                <div class="table-note">{{ $artifact['original_filename'] }}</div>
+                                <div class="row-between" style="align-items:flex-start; gap:12px;">
+                                    <div>
+                                        <div class="entity-title">{{ $artifact['label'] }}</div>
+                                        <div class="table-note">{{ $artifact['original_filename'] }}</div>
+                                    </div>
+                                    <form method="POST" action="{{ route('plugin.evidence-management.promote', ['artifactId' => $artifact['id']]) }}">
+                                        @csrf
+                                        <input type="hidden" name="principal_id" value="{{ $query['principal_id'] }}">
+                                        <input type="hidden" name="organization_id" value="{{ $query['organization_id'] }}">
+                                        <input type="hidden" name="scope_id" value="{{ $selected_plan['scope_id'] }}">
+                                        <input type="hidden" name="locale" value="{{ $query['locale'] }}">
+                                        <input type="hidden" name="membership_id" value="{{ $query['membership_ids'][0] ?? 'membership-org-a-hello' }}">
+                                        <button class="button button-ghost" type="submit">Promote to evidence</button>
+                                    </form>
+                                </div>
                             </div>
                         @empty
                             <span class="muted-note">No evidence yet</span>

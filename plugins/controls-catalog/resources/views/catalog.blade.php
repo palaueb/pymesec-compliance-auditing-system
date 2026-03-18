@@ -10,6 +10,7 @@
 
 @php
     $hasFrameworks = $framework_options !== [];
+    $hasAdoptedFrameworks = $adopted_framework_options !== [];
     $hasRequirements = $requirement_options !== [];
     $selectedControl = is_array($selected_control ?? null) ? $selected_control : null;
 @endphp
@@ -87,10 +88,11 @@
     <div class="overview-grid" style="grid-template-columns:repeat(6, minmax(0, 1fr));">
         <div class="metric-card"><div class="metric-label">Controls</div><div class="metric-value">{{ count($controls) }}</div></div>
         <div class="metric-card"><div class="metric-label">Frameworks</div><div class="metric-value">{{ count($frameworks) }}</div></div>
+        <div class="metric-card"><div class="metric-label">Adopted</div><div class="metric-value">{{ collect($frameworks)->where('adoption_status', 'active')->count() }}</div></div>
+        <div class="metric-card"><div class="metric-label">Onboarding</div><div class="metric-value">{{ collect($frameworks)->where('adoption_status', 'in-progress')->count() }}</div></div>
         <div class="metric-card"><div class="metric-label">Requirements</div><div class="metric-value">{{ count($requirements) }}</div></div>
-        <div class="metric-card"><div class="metric-label">In Review</div><div class="metric-value">{{ collect($controls)->where('state', 'review')->count() }}</div></div>
-        <div class="metric-card"><div class="metric-label">Artifacts</div><div class="metric-value">{{ collect($controls)->sum(fn ($control) => count($control['artifacts'])) }}</div></div>
         <div class="metric-card"><div class="metric-label">Approved</div><div class="metric-value">{{ collect($controls)->where('state', 'approved')->count() }}</div></div>
+        <div class="metric-card"><div class="metric-label">In Review</div><div class="metric-value">{{ collect($controls)->where('state', 'review')->count() }}</div></div>
     </div>
 
     <div class="overview-grid" style="grid-template-columns:repeat(2, minmax(0, 1fr));">
@@ -98,16 +100,105 @@
             <div class="row-between" style="margin-bottom:12px;">
                 <div>
                     <div class="eyebrow">Frameworks</div>
-                    <div class="entity-title" style="font-size:20px;">Reusable frameworks</div>
+                    <div class="entity-title" style="font-size:20px;">Framework adoption</div>
                 </div>
             </div>
 
+            <div class="surface-note" style="margin-bottom:14px;">
+                Adopt the frameworks that apply to this organization and scope before using them in assessments. Packs stay available in the library, but assessments prioritize adopted frameworks in the current workspace.
+            </div>
+
             <div class="data-stack" style="margin-bottom:14px;">
-                @forelse ($frameworks as $framework)
+                @forelse ($framework_coverage as $framework)
+                    @php
+                        $adoptionPill = match($framework['adoption_status']) {
+                            'active' => 'pill-approved',
+                            'in-progress' => 'pill-review',
+                            'inactive' => 'pill-archived',
+                            default => 'pill-draft',
+                        };
+                        $editorId = 'framework-adoption-'.$framework['id'];
+                    @endphp
                     <div class="data-item">
                         <div class="entity-title">{{ $framework['code'] }} · {{ $framework['name'] }}</div>
+                        <div class="table-note">
+                            {{ $framework['source_label'] }}
+                            @if ($framework['version'] !== '')
+                                · v{{ $framework['version'] }}
+                            @endif
+                            @if ($framework['kind'] !== '')
+                                · {{ ucfirst($framework['kind']) }}
+                            @endif
+                        </div>
+                        <div class="table-note">
+                            {{ $framework['mapped_requirement_count'] }} mapped of {{ $framework['requirement_count'] }} requirements
+                            · {{ $framework['linked_control_count'] }} linked controls
+                            @if ($framework['requirement_count'] > 0)
+                                · {{ $framework['coverage_percent'] }}% covered
+                            @endif
+                        </div>
                         @if ($framework['description'] !== '')
                             <div class="table-note">{{ $framework['description'] }}</div>
+                        @endif
+                        <div class="action-cluster" style="margin-top:10px;">
+                            <span class="pill {{ $adoptionPill }}">{{ str_replace('-', ' ', $framework['adoption_status']) }}</span>
+                            <span class="table-note">{{ $framework['adoption_scope_label'] }}</span>
+                            @if ($framework['target_level'] !== '')
+                                <span class="table-note">Target level: {{ ucfirst($framework['target_level']) }}</span>
+                            @endif
+                            @if ($framework['adopted_at'] !== '')
+                                <span class="table-note">Adopted: {{ $framework['adopted_at'] }}</span>
+                            @endif
+                            @if ($can_manage_controls)
+                                <button class="button button-ghost" type="button" data-editor-toggle="{{ $editorId }}">Manage adoption</button>
+                            @endif
+                        </div>
+                        @if ($can_manage_controls)
+                            <div id="{{ $editorId }}" class="editor-panel" hidden style="margin-top:12px;">
+                                <form class="upload-form" method="POST" action="{{ $framework['adoption_update_route'] }}">
+                                    @csrf
+                                    <input type="hidden" name="principal_id" value="{{ $query['principal_id'] }}">
+                                    <input type="hidden" name="organization_id" value="{{ $query['organization_id'] }}">
+                                    <input type="hidden" name="locale" value="{{ $query['locale'] }}">
+                                    <input type="hidden" name="menu" value="plugin.controls-catalog.root">
+                                    <input type="hidden" name="membership_id" value="{{ $query['membership_ids'][0] ?? 'membership-org-a-hello' }}">
+                                    <div class="overview-grid" style="grid-template-columns:repeat(2, minmax(0, 1fr));">
+                                        <div class="field">
+                                            <label class="field-label">Scope</label>
+                                            <select class="field-select" name="scope_id">
+                                                <option value="">Organization-wide</option>
+                                                @foreach ($scope_options as $scope)
+                                                    <option value="{{ $scope['id'] }}" @selected($framework['adoption_scope_id'] === $scope['id'])>{{ $scope['name'] }}</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+                                        <div class="field">
+                                            <label class="field-label">Adoption status</label>
+                                            <select class="field-select" name="status" required>
+                                                @foreach ($framework_adoption_status_options as $statusValue => $statusLabel)
+                                                    <option value="{{ $statusValue }}" @selected($framework['adoption_status'] === $statusValue)>{{ $statusLabel }}</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+                                        <div class="field">
+                                            <label class="field-label">Target level</label>
+                                            <select class="field-select" name="target_level">
+                                                <option value="">Not set</option>
+                                                @foreach ($framework_target_level_options as $levelValue => $levelLabel)
+                                                    <option value="{{ $levelValue }}" @selected($framework['target_level'] === $levelValue)>{{ $levelLabel }}</option>
+                                                @endforeach
+                                            </select>
+                                        </div>
+                                        <div class="field">
+                                            <label class="field-label">Adopted on</label>
+                                            <input class="field-input" type="date" name="adopted_at" value="{{ $framework['adopted_at'] !== '' ? substr($framework['adopted_at'], 0, 10) : '' }}">
+                                        </div>
+                                    </div>
+                                    <div class="action-cluster" style="margin-top:12px;">
+                                        <button class="button button-secondary" type="submit">Save adoption</button>
+                                    </div>
+                                </form>
+                            </div>
                         @endif
                     </div>
                 @empty
@@ -157,6 +248,12 @@
                     <div class="entity-title" style="font-size:20px;">Coverage library</div>
                 </div>
             </div>
+
+            @if (! $hasAdoptedFrameworks)
+                <div class="surface-note" style="margin-bottom:14px;">
+                    No framework has been adopted for this workspace yet. You can still manage the library, but new assessments will stay framework-agnostic until you adopt one.
+                </div>
+            @endif
 
             <details style="margin-bottom:14px;">
                 <summary class="button button-ghost" style="display:inline-flex; margin-bottom:10px;">
@@ -306,8 +403,21 @@
                     <div class="data-stack" style="margin-top:12px;">
                         @forelse ($selectedControl['artifacts'] as $artifact)
                             <div class="data-item">
-                                <div class="entity-title">{{ $artifact['label'] }}</div>
-                                <div class="table-note">{{ $artifact['original_filename'] }} · {{ $artifact['artifact_type'] }}</div>
+                                <div class="row-between" style="align-items:flex-start; gap:12px;">
+                                    <div>
+                                        <div class="entity-title">{{ $artifact['label'] }}</div>
+                                        <div class="table-note">{{ $artifact['original_filename'] }} · {{ $artifact['artifact_type'] }}</div>
+                                    </div>
+                                    <form method="POST" action="{{ route('plugin.evidence-management.promote', ['artifactId' => $artifact['id']]) }}">
+                                        @csrf
+                                        <input type="hidden" name="principal_id" value="{{ $query['principal_id'] }}">
+                                        <input type="hidden" name="organization_id" value="{{ $query['organization_id'] }}">
+                                        <input type="hidden" name="scope_id" value="{{ $selectedControl['scope_id'] }}">
+                                        <input type="hidden" name="locale" value="{{ $query['locale'] }}">
+                                        <input type="hidden" name="membership_id" value="{{ $query['membership_ids'][0] ?? 'membership-org-a-hello' }}">
+                                        <button class="button button-ghost" type="submit">Promote to evidence</button>
+                                    </form>
+                                </div>
                             </div>
                         @empty
                             <span class="muted-note">No artifacts yet.</span>

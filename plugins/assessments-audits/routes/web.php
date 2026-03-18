@@ -2,9 +2,11 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Validation\Rule;
 use PymeSec\Core\Artifacts\ArtifactUploadData;
 use PymeSec\Core\Artifacts\Contracts\ArtifactServiceInterface;
 use PymeSec\Core\ObjectAccess\ObjectAccessService;
+use PymeSec\Plugins\AssessmentsAudits\AssessmentReferenceData;
 use PymeSec\Plugins\AssessmentsAudits\AssessmentsAuditsRepository;
 use PymeSec\Plugins\FindingsRemediation\FindingsRemediationRepository;
 
@@ -45,6 +47,7 @@ Route::get('/plugins/assessments/{assessmentId}/report', function (
     $assessment = $report['assessment'];
     $summary = $report['summary'];
     $reviews = $report['reviews'];
+    $frameworkBreakdown = $report['framework_breakdown'] ?? [];
     $format = (string) $request->query('format', 'md');
 
     if ($format === 'json') {
@@ -130,6 +133,25 @@ Route::get('/plugins/assessments/{assessmentId}/report', function (
         '- Sign-off notes: '.($assessment['signoff_notes'] !== '' ? $assessment['signoff_notes'] : 'n/a'),
         '- Closure summary: '.($assessment['closure_summary'] !== '' ? $assessment['closure_summary'] : 'n/a'),
         '',
+        'Framework coverage',
+    ];
+
+    foreach ($frameworkBreakdown as $framework) {
+        $lines[] = sprintf(
+            '- %s · %s mapped requirements · %s linked controls · %s pass / %s partial / %s fail / %s pending',
+            trim(sprintf('%s %s', $framework['framework_code'], $framework['framework_name'])),
+            $framework['requirement_count'],
+            $framework['control_count'],
+            $framework['result_summary']['pass'],
+            $framework['result_summary']['partial'],
+            $framework['result_summary']['fail'],
+            $framework['result_summary']['not-tested'],
+        );
+    }
+
+    $lines = [
+        ...$lines,
+        '',
         'Checklist',
     ];
 
@@ -171,15 +193,20 @@ Route::get('/plugins/assessments/{assessmentId}/report', function (
 })->middleware('core.permission:plugin.assessments-audits.assessments.view')->name('plugin.assessments-audits.report');
 
 Route::post('/plugins/assessments', function (Request $request, AssessmentsAuditsRepository $repository) {
+    $frameworkIds = $repository->frameworkOptionIds(
+        (string) $request->input('organization_id', 'org-a'),
+        is_string($request->input('scope_id')) ? $request->input('scope_id') : null,
+    );
+
     $validated = $request->validate([
         'organization_id' => ['required', 'string', 'max:64'],
         'scope_id' => ['nullable', 'string', 'max:64'],
-        'framework_id' => ['nullable', 'string', 'max:64'],
+        'framework_id' => ['nullable', 'string', 'max:64', Rule::in($frameworkIds)],
         'title' => ['required', 'string', 'max:160'],
         'summary' => ['required', 'string', 'max:500'],
         'starts_on' => ['required', 'date'],
         'ends_on' => ['required', 'date', 'after_or_equal:starts_on'],
-        'status' => ['nullable', 'in:draft,active,signed-off,closed'],
+        'status' => ['nullable', 'string', Rule::in(AssessmentReferenceData::statusKeys())],
         'control_ids' => ['nullable', 'array'],
         'control_ids.*' => ['string', 'max:64'],
     ]);
@@ -205,15 +232,20 @@ Route::post('/plugins/assessments/{assessmentId}', function (
     AssessmentsAuditsRepository $repository,
     ObjectAccessService $objectAccess,
 ) {
+    $frameworkIds = $repository->frameworkOptionIds(
+        (string) $request->input('organization_id', 'org-a'),
+        is_string($request->input('scope_id')) ? $request->input('scope_id') : null,
+    );
+
     $validated = $request->validate([
         'organization_id' => ['required', 'string', 'max:64'],
         'scope_id' => ['nullable', 'string', 'max:64'],
-        'framework_id' => ['nullable', 'string', 'max:64'],
+        'framework_id' => ['nullable', 'string', 'max:64', Rule::in($frameworkIds)],
         'title' => ['required', 'string', 'max:160'],
         'summary' => ['required', 'string', 'max:500'],
         'starts_on' => ['required', 'date'],
         'ends_on' => ['required', 'date', 'after_or_equal:starts_on'],
-        'status' => ['required', 'in:draft,active,signed-off,closed'],
+        'status' => ['required', 'string', Rule::in(AssessmentReferenceData::statusKeys())],
         'control_ids' => ['nullable', 'array'],
         'control_ids.*' => ['string', 'max:64'],
     ]);
@@ -252,7 +284,7 @@ Route::post('/plugins/assessments/{assessmentId}/reviews/{controlId}', function 
     ObjectAccessService $objectAccess,
 ) {
     $validated = $request->validate([
-        'result' => ['required', 'in:not-tested,pass,partial,fail,not-applicable'],
+        'result' => ['required', 'string', Rule::in(AssessmentReferenceData::reviewResultKeys())],
         'test_notes' => ['nullable', 'string', 'max:5000'],
         'conclusion' => ['nullable', 'string', 'max:5000'],
         'reviewed_on' => ['nullable', 'date'],

@@ -200,7 +200,7 @@ class CoreTenancySeeder extends Seeder
         ]);
 
         // SOC 2 is a custom org-level framework for org-b (demo only — not a global plugin pack).
-        // ISO 27001 and NIS2 are global packs seeded by SystemBootstrapSeeder via their plugins.
+        // ISO 27001, NIS2, ENS, and GDPR are global packs seeded by SystemBootstrapSeeder via their plugins.
         // See ADR-020 for the distinction between global framework packs and custom org frameworks.
         DB::table('frameworks')->insertOrIgnore([
             [
@@ -242,6 +242,53 @@ class CoreTenancySeeder extends Seeder
                 'applicability_level' => null,
                 'sort_order' => 2,
                 'metadata' => null,
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+        ]);
+
+        DB::table('org_framework_adoptions')->insertOrIgnore([
+            [
+                'id' => 'framework-adoption-org-a-iso-eu',
+                'organization_id' => 'org-a',
+                'framework_id' => 'framework-iso-27001',
+                'scope_id' => 'scope-eu',
+                'target_level' => null,
+                'adopted_at' => now()->subDays(120),
+                'status' => 'active',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'id' => 'framework-adoption-org-a-gdpr-eu',
+                'organization_id' => 'org-a',
+                'framework_id' => 'framework-gdpr',
+                'scope_id' => 'scope-eu',
+                'target_level' => null,
+                'adopted_at' => now()->subDays(45),
+                'status' => 'in-progress',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'id' => 'framework-adoption-org-a-ens-it',
+                'organization_id' => 'org-a',
+                'framework_id' => 'framework-ens',
+                'scope_id' => 'scope-it',
+                'target_level' => 'medium',
+                'adopted_at' => now()->subDays(90),
+                'status' => 'active',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'id' => 'framework-adoption-org-b-soc2-ops',
+                'organization_id' => 'org-b',
+                'framework_id' => 'framework-soc-2',
+                'scope_id' => 'scope-ops',
+                'target_level' => null,
+                'adopted_at' => now()->subDays(30),
+                'status' => 'active',
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
@@ -319,6 +366,26 @@ class CoreTenancySeeder extends Seeder
                 'framework_element_id' => 'nis2-21-c',
                 'coverage' => 'full',
                 'notes' => 'Backup governance includes test cadence and recovery readiness evidence.',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'id' => 'mapping-control-access-review-gdpr-32',
+                'organization_id' => 'org-a',
+                'control_id' => 'control-access-review',
+                'framework_element_id' => 'gdpr-article-32',
+                'coverage' => 'partial',
+                'notes' => 'Access review evidence contributes to appropriate security of processing.',
+                'created_at' => now(),
+                'updated_at' => now(),
+            ],
+            [
+                'id' => 'mapping-control-backup-governance-ens-rc1',
+                'organization_id' => 'org-a',
+                'control_id' => 'control-backup-governance',
+                'framework_element_id' => 'ens-recover-continuity',
+                'coverage' => 'full',
+                'notes' => 'Recovery plans and restore evidence support ENS recovery safeguards.',
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
@@ -942,6 +1009,32 @@ class CoreTenancySeeder extends Seeder
                 'metadata' => json_encode([
                     'plugin' => 'continuity-bcm',
                     'plan_id' => 'continuity-plan-restore-bridge',
+                ], JSON_THROW_ON_ERROR),
+                'created_at' => now(),
+            ],
+            [
+                'id' => 'artifact-access-review-follow-up',
+                'owner_component' => 'assessments-audits',
+                'subject_type' => 'assessment-review',
+                'subject_id' => 'review-assessment-q2-access-resilience-control-access-review',
+                'artifact_type' => 'workpaper',
+                'label' => 'Access review follow-up notes',
+                'original_filename' => 'access-review-follow-up-notes.docx',
+                'media_type' => 'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
+                'extension' => 'docx',
+                'size_bytes' => 98304,
+                'sha256' => hash('sha256', 'seed-artifact-access-review-follow-up'),
+                'disk' => 'local',
+                'storage_path' => 'artifacts/assessments-audits/org-a/scope-eu/assessment-review/review-assessment-q2-access-resilience-control-access-review/access-review-follow-up-notes.docx',
+                'principal_id' => 'principal-org-a',
+                'membership_id' => 'membership-org-a-hello',
+                'organization_id' => 'org-a',
+                'scope_id' => 'scope-eu',
+                'metadata' => json_encode([
+                    'plugin' => 'assessments-audits',
+                    'assessment_id' => 'assessment-q2-access-resilience',
+                    'control_id' => 'control-access-review',
+                    'note' => 'Left unpromoted on purpose to seed promotion candidates in the evidence library.',
                 ], JSON_THROW_ON_ERROR),
                 'created_at' => now(),
             ],
