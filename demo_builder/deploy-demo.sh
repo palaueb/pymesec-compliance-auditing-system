@@ -121,13 +121,23 @@ apply_patch_file() {
 apply_demo_patches() {
     [[ -d "$PATCH_DIR" ]] || fail "missing patch directory [$PATCH_DIR]."
 
-    mapfile -t patch_files < <(find "$PATCH_DIR" -type f -name '*.patch' | LC_ALL=C sort)
+    local patch_list
+    local patch_file
+    local found=0
+    patch_list="$(mktemp)"
+    trap 'rm -f "$patch_list"' RETURN
 
-    (( ${#patch_files[@]} > 0 )) || fail "no patch files found under [$PATCH_DIR]."
+    find "$PATCH_DIR" -type f -name '*.patch' | LC_ALL=C sort >"$patch_list"
 
-    for patch_file in "${patch_files[@]}"; do
+    [[ -s "$patch_list" ]] || fail "no patch files found under [$PATCH_DIR]."
+
+    while IFS= read -r patch_file; do
+        [[ -z "$patch_file" ]] && continue
         apply_patch_file "$patch_file"
-    done
+        found=1
+    done <"$patch_list"
+
+    (( found == 1 )) || fail "no patch files found under [$PATCH_DIR]."
 }
 
 ensure_env_file() {
