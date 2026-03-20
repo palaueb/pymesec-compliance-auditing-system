@@ -1,0 +1,27 @@
+diff --git a/core/app/Providers/AppServiceProvider.php b/core/app/Providers/AppServiceProvider.php
+index da5af2aa50db98bc69541fbdbc701af204ff1b07..9d49b6b2e36ab078aab7ec9ee5e42556be9c060a 100644
+--- a/core/app/Providers/AppServiceProvider.php
++++ b/core/app/Providers/AppServiceProvider.php
+@@ -1054,13 +1054,15 @@ private function pluginsScreenData(ScreenRenderContext $screenContext): array
+                 'attention' => collect($plugins)->whereNotNull('reason')->count(),
+                 'overrides' => collect($plugins)->whereNotNull('override_state')->count(),
+             ],
+-            'can_manage_plugins' => $screenContext->principal !== null && $authorization->authorize(new AuthorizationContext(
+-                principal: $screenContext->principal,
+-                permission: 'core.plugins.manage',
+-                memberships: $screenContext->memberships,
+-                organizationId: $screenContext->organizationId,
+-                scopeId: $screenContext->scopeId,
+-            ))->allowed(),
++            'can_manage_plugins' => ! ((bool) config('demo.enabled', false) && (bool) config('demo.lock_plugin_lifecycle', true))
++                && $screenContext->principal !== null
++                && $authorization->authorize(new AuthorizationContext(
++                    principal: $screenContext->principal,
++                    permission: 'core.plugins.manage',
++                    memberships: $screenContext->memberships,
++                    organizationId: $screenContext->organizationId,
++                    scopeId: $screenContext->scopeId,
++                ))->allowed(),
+             'enable_plugin_route' => static fn (string $pluginId): string => route('core.plugins.enable', ['pluginId' => $pluginId]),
+             'disable_plugin_route' => static fn (string $pluginId): string => route('core.plugins.disable', ['pluginId' => $pluginId]),
+             'state_path' => $this->app->make(PluginStateStore::class)->path(),

@@ -1,0 +1,33 @@
+diff --git a/core/database/seeders/DemoIdentityLocalSeeder.php b/core/database/seeders/DemoIdentityLocalSeeder.php
+index cd3e0e565044a49f3a8fa404b309bbee62046341..ab08a8150a8c28daef84509ee247126fe6397cfc 100644
+--- a/core/database/seeders/DemoIdentityLocalSeeder.php
++++ b/core/database/seeders/DemoIdentityLocalSeeder.php
+@@ -4,6 +4,7 @@
+ 
+ use Illuminate\Database\Seeder;
+ use Illuminate\Support\Facades\DB;
++use Illuminate\Support\Facades\Hash;
+ 
+ class DemoIdentityLocalSeeder extends Seeder
+ {
+@@ -44,13 +45,13 @@ public function run(): void
+                 'id' => 'identity-user-platform-admin',
+                 'principal_id' => 'principal-admin',
+                 'organization_id' => 'org-a',
+-                'username' => 'platform.admin',
+-                'display_name' => 'Platform Administrator',
+-                'email' => 'platform.admin@pymesec.test',
+-                'password_hash' => null,
+-                'password_enabled' => false,
+-                'magic_link_enabled' => true,
+-                'job_title' => 'Platform administration',
++                'username' => 'admin',
++                'display_name' => 'Demo Administrator',
++                'email' => 'admin@demo.pymesec.test',
++                'password_hash' => Hash::make('demo'),
++                'password_enabled' => true,
++                'magic_link_enabled' => false,
++                'job_title' => 'Demo workspace administrator',
+                 'is_active' => true,
+                 'created_at' => now(),
+                 'updated_at' => now(),

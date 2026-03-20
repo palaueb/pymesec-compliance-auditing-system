@@ -1,0 +1,65 @@
+diff --git a/core/routes/console.php b/core/routes/console.php
+index 2aab13f1587af7ae1903a4685b4cbbe4168a19de..be0f11bec12dd0e2d074e415aae759c1db66e97a 100644
+--- a/core/routes/console.php
++++ b/core/routes/console.php
+@@ -2,6 +2,7 @@
+ 
+ use Illuminate\Foundation\Inspiring;
+ use Illuminate\Support\Facades\Artisan;
++use Illuminate\Support\Facades\File;
+ use PymeSec\Core\Artifacts\Contracts\ArtifactServiceInterface;
+ use PymeSec\Core\Audit\AuditRecordData;
+ use PymeSec\Core\Audit\Contracts\AuditTrailInterface;
+@@ -17,11 +18,52 @@
+ use PymeSec\Core\Tenancy\Contracts\TenancyServiceInterface;
+ use PymeSec\Core\Workflows\Contracts\WorkflowRegistryInterface;
+ use PymeSec\Plugins\EvidenceManagement\EvidenceManagementRepository;
++use App\Demo\DemoSessionManager;
+ 
+ Artisan::command('inspire', function () {
+     $this->comment(Inspiring::quote());
+ })->purpose('Display an inspiring quote');
+ 
++Artisan::command('demo:build-template', function (DemoSessionManager $demo) {
++    $templatePath = $demo->templateDatabasePath();
++    $templateDirectory = dirname($templatePath);
++
++    File::ensureDirectoryExists($templateDirectory);
++    File::delete($templatePath);
++    File::put($templatePath, '');
++
++    $this->info(sprintf('Building demo template at %s', $templatePath));
++
++    $previousProfile = env('APP_INSTALL_PROFILE', 'system');
++    putenv('APP_INSTALL_PROFILE=demo');
++    $_ENV['APP_INSTALL_PROFILE'] = 'demo';
++    $_SERVER['APP_INSTALL_PROFILE'] = 'demo';
++
++    try {
++        $exitCode = Artisan::call('migrate:fresh', [
++            '--database' => 'demo_template',
++            '--seed' => true,
++            '--seeder' => 'Database\\Seeders\\DemoCompanySeeder',
++            '--force' => true,
++        ]);
++
++        $this->output->write(Artisan::output());
++
++        if ($exitCode !== 0) {
++            return $exitCode;
++        }
++
++        $demo->clearSessionDatabases();
++        $this->info('Demo template ready.');
++
++        return 0;
++    } finally {
++        putenv(sprintf('APP_INSTALL_PROFILE=%s', $previousProfile));
++        $_ENV['APP_INSTALL_PROFILE'] = $previousProfile;
++        $_SERVER['APP_INSTALL_PROFILE'] = $previousProfile;
++    }
++})->purpose('Build the demo SQLite template and clear stale session databases');
++
+ Artisan::command('plugins:list', function (PluginManagerInterface $plugins) {
+     $rows = array_map(static fn (array $plugin): array => [
+         $plugin['id'],

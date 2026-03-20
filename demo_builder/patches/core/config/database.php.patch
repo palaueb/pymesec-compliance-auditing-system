@@ -1,0 +1,44 @@
+diff --git a/core/config/database.php b/core/config/database.php
+index 64709ce5a3de66194ebc80ba108a336c0dfc35a4..b528d5932319adfd56ffd07b4d4c16be9cd42039 100644
+--- a/core/config/database.php
++++ b/core/config/database.php
+@@ -17,7 +17,7 @@
+     |
+     */
+ 
+-    'default' => env('DB_CONNECTION', 'sqlite'),
++    'default' => env('DB_CONNECTION', 'demo_template'),
+ 
+     /*
+     |--------------------------------------------------------------------------
+@@ -44,6 +44,30 @@
+             'transaction_mode' => 'DEFERRED',
+         ],
+ 
++        'demo_template' => [
++            'driver' => 'sqlite',
++            'url' => env('DB_URL'),
++            'database' => env('DEMO_TEMPLATE_DATABASE', storage_path('app/demo/template.sqlite')),
++            'prefix' => '',
++            'foreign_key_constraints' => env('DB_FOREIGN_KEYS', true),
++            'busy_timeout' => null,
++            'journal_mode' => null,
++            'synchronous' => null,
++            'transaction_mode' => 'DEFERRED',
++        ],
++
++        'demo_session' => [
++            'driver' => 'sqlite',
++            'url' => env('DB_URL'),
++            'database' => env('DEMO_SESSION_DATABASE', storage_path('app/demo/template.sqlite')),
++            'prefix' => '',
++            'foreign_key_constraints' => env('DB_FOREIGN_KEYS', true),
++            'busy_timeout' => null,
++            'journal_mode' => null,
++            'synchronous' => null,
++            'transaction_mode' => 'DEFERRED',
++        ],
++
+         'mysql' => [
+             'driver' => 'mysql',
+             'url' => env('DB_URL'),

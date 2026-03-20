@@ -1,0 +1,150 @@
+diff --git a/core/app/Demo/DemoSessionManager.php b/core/app/Demo/DemoSessionManager.php
+new file mode 100644
+index 0000000000000000000000000000000000000000..5125a6f47d9fb7f778c88486a852d519efc3e26a
+--- /dev/null
++++ b/core/app/Demo/DemoSessionManager.php
+@@ -0,0 +1,144 @@
++<?php
++
++namespace App\Demo;
++
++use Illuminate\Http\Request;
++use Illuminate\Support\Facades\DB;
++use Illuminate\Support\Facades\File;
++use Illuminate\Support\Str;
++use RuntimeException;
++
++class DemoSessionManager
++{
++    public function enabled(): bool
++    {
++        return (bool) config('demo.enabled', false);
++    }
++
++    public function templateDatabasePath(): string
++    {
++        return (string) config('demo.template_database');
++    }
++
++    public function sessionDatabaseDirectory(): string
++    {
++        return (string) config('demo.session_database_dir');
++    }
++
++    public function templateAvailable(): bool
++    {
++        $path = $this->templateDatabasePath();
++
++        return $path !== '' && is_file($path);
++    }
++
++    public function requestDatabasePath(Request $request): ?string
++    {
++        if (! $this->enabled()) {
++            return null;
++        }
++
++        $sessionPath = $request->session()->get('demo.database_path');
++
++        if (is_string($sessionPath) && $sessionPath !== '') {
++            return $sessionPath;
++        }
++
++        return $this->templateAvailable() ? $this->templateDatabasePath() : null;
++    }
++
++    public function activateDatabase(?string $databasePath): void
++    {
++        if (! is_string($databasePath) || $databasePath === '') {
++            return;
++        }
++
++        config([
++            'database.default' => 'demo_session',
++            'database.connections.demo_session.database' => $databasePath,
++        ]);
++
++        DB::purge('demo_session');
++        DB::purge('demo_template');
++        DB::reconnect('demo_session');
++    }
++
++    public function credentialsMatch(string $login, string $password): bool
++    {
++        $expectedLogin = Str::lower(trim((string) config('demo.login.username', 'admin')));
++
++        return Str::lower(trim($login)) === $expectedLogin
++            && hash_equals((string) config('demo.login.password', 'demo'), $password);
++    }
++
++    public function startDemoSession(Request $request): string
++    {
++        $templatePath = $this->templateDatabasePath();
++
++        if (! $this->templateAvailable()) {
++            throw new RuntimeException(sprintf(
++                'Demo template database not found at [%s]. Run php artisan demo:build-template first.',
++                $templatePath,
++            ));
++        }
++
++        $sessionDirectory = $this->sessionDatabaseDirectory();
++        File::ensureDirectoryExists($sessionDirectory);
++
++        $sessionId = (string) Str::ulid();
++        $databasePath = rtrim($sessionDirectory, DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR.$sessionId.'.sqlite';
++
++        if (! copy($templatePath, $databasePath)) {
++            throw new RuntimeException(sprintf(
++                'Unable to copy demo template database from [%s] to [%s].',
++                $templatePath,
++                $databasePath,
++            ));
++        }
++
++        $request->session()->put('demo.session_id', $sessionId);
++        $request->session()->put('demo.database_path', $databasePath);
++
++        $this->activateDatabase($databasePath);
++
++        return $databasePath;
++    }
++
++    public function destroyDemoSession(Request $request): void
++    {
++        $databasePath = $request->session()->get('demo.database_path');
++
++        if (is_string($databasePath) && $databasePath !== '' && $this->isManagedSessionDatabase($databasePath)) {
++            File::delete($databasePath);
++        }
++
++        $request->session()->forget(['demo.session_id', 'demo.database_path']);
++    }
++
++    public function clearSessionDatabases(): void
++    {
++        $sessionDirectory = $this->sessionDatabaseDirectory();
++
++        if (! is_dir($sessionDirectory)) {
++            return;
++        }
++
++        foreach (File::glob($sessionDirectory.DIRECTORY_SEPARATOR.'*.sqlite') as $databasePath) {
++            File::delete($databasePath);
++        }
++    }
++
++    private function isManagedSessionDatabase(string $databasePath): bool
++    {
++        $sessionDirectory = realpath($this->sessionDatabaseDirectory());
++        $realDatabasePath = realpath($databasePath);
++
++        if ($sessionDirectory === false || $realDatabasePath === false) {
++            return false;
++        }
++
++        $normalizedDirectory = rtrim($sessionDirectory, DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR;
++
++        return str_starts_with($realDatabasePath, $normalizedDirectory);
++    }
++}

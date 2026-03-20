@@ -1,0 +1,50 @@
+diff --git a/plugins/identity-local/resources/views/login.blade.php b/plugins/identity-local/resources/views/login.blade.php
+index 0c2dc9d4e2bcb85f452d2ef84576e33575701432..8b65e2e7adfdfea17a16e0ae9790e429903d6bc7 100644
+--- a/plugins/identity-local/resources/views/login.blade.php
++++ b/plugins/identity-local/resources/views/login.blade.php
+@@ -89,24 +89,37 @@
+ </head>
+ <body>
+     <main class="login-card">
+-        <div class="eyebrow">Identity</div>
++        <div class="eyebrow">{{ ($demo_enabled ?? false) ? 'Demo edition' : 'Identity' }}</div>
+         <h1>Sign in</h1>
+-        <p>Use your username or work email. Password access sends a verification code by email, and you can switch to a sign-in link when email-based access is enabled.</p>
++        @if (($demo_enabled ?? false) === true)
++            <p>This installation runs as a disposable demo workspace. Each sign-in gets a private SQLite copy of the demo company data.</p>
++            <div class="note">
++                Demo credentials: <strong>{{ $demo_login['username'] ?? 'admin' }}</strong> /
++                <strong>{{ $demo_login['password'] ?? 'demo' }}</strong>
++                @if (($demo_template_ready ?? false) !== true)
++                    <br>The demo template database is missing. Run <code>php artisan demo:build-template</code> on the server.
++                @endif
++            </div>
++        @else
++            <p>Use your username or work email. Password access sends a verification code by email, and you can switch to a sign-in link when email-based access is enabled.</p>
++        @endif
+ 
+         <form method="POST" action="{{ route('plugin.identity-local.auth.request') }}">
+             @csrf
+             <div class="field">
+                 <label class="field-label" for="login-identifier">Username or email</label>
+-                <input class="field-input" id="login-identifier" name="login" required autofocus>
++                <input class="field-input" id="login-identifier" name="login" required autofocus value="{{ ($demo_enabled ?? false) ? ($demo_login['username'] ?? 'admin') : '' }}">
+             </div>
+             <div class="field">
+                 <label class="field-label" for="login-password">Password</label>
+-                <input class="field-input" id="login-password" name="password" type="password">
++                <input class="field-input" id="login-password" name="password" type="password" value="{{ ($demo_enabled ?? false) ? ($demo_login['password'] ?? 'demo') : '' }}">
+             </div>
+-            <label class="field-label" style="display:flex; gap:10px; align-items:center; margin-top:16px;">
+-                <input type="checkbox" name="use_email_link" value="1">
+-                Sign in with email link instead
+-            </label>
++            @if (($demo_enabled ?? false) !== true)
++                <label class="field-label" style="display:flex; gap:10px; align-items:center; margin-top:16px;">
++                    <input type="checkbox" name="use_email_link" value="1">
++                    Sign in with email link instead
++                </label>
++            @endif
+             <button class="button button-primary" type="submit">Continue</button>
+         </form>
+ 

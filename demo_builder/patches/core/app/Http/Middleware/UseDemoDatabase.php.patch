@@ -1,0 +1,28 @@
+diff --git a/core/app/Http/Middleware/UseDemoDatabase.php b/core/app/Http/Middleware/UseDemoDatabase.php
+new file mode 100644
+index 0000000000000000000000000000000000000000..fc01bb7f642477c7b287285bf3955eccfa1f01a7
+--- /dev/null
++++ b/core/app/Http/Middleware/UseDemoDatabase.php
+@@ -0,0 +1,22 @@
++<?php
++
++namespace App\Http\Middleware;
++
++use App\Demo\DemoSessionManager;
++use Closure;
++use Illuminate\Http\Request;
++use Symfony\Component\HttpFoundation\Response;
++
++class UseDemoDatabase
++{
++    public function __construct(
++        private readonly DemoSessionManager $demo,
++    ) {}
++
++    public function handle(Request $request, Closure $next): Response
++    {
++        $this->demo->activateDatabase($this->demo->requestDatabasePath($request));
++
++        return $next($request);
++    }
++}

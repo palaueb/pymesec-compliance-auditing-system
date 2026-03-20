@@ -1,0 +1,118 @@
+diff --git a/plugins/identity-local/routes/web.php b/plugins/identity-local/routes/web.php
+index f0c2bc2c608aae891ee93b5cb2987aad0032123a..bb7c9a7685b5a49c7c1073490095ff9e34f98fe1 100644
+--- a/plugins/identity-local/routes/web.php
++++ b/plugins/identity-local/routes/web.php
+@@ -1,5 +1,6 @@
+ <?php
+ 
++use App\Demo\DemoSessionManager;
+ use Illuminate\Http\Request;
+ use Illuminate\Support\Facades\Route;
+ use Illuminate\Validation\ValidationException;
+@@ -9,6 +10,8 @@ use PymeSec\Plugins\IdentityLocal\IdentityLocalAuthService;
+ use PymeSec\Plugins\IdentityLocal\IdentityLocalRepository;
+ 
+ Route::get('/setup', function (IdentityLocalAuthService $auth) {
++    abort_if((bool) config('demo.enabled', false), 404);
++
+     if (! $auth->requiresBootstrap()) {
+         return redirect()->route('plugin.identity-local.auth.login');
+     }
+@@ -20,6 +23,8 @@ Route::get('/setup', function (IdentityLocalAuthService $auth) {
+ })->name('plugin.identity-local.setup');
+ 
+ Route::post('/setup', function (Request $request, IdentityLocalAuthService $auth) {
++    abort_if((bool) config('demo.enabled', false), 404);
++
+     if (! $auth->requiresBootstrap()) {
+         return redirect()->route('plugin.identity-local.auth.login');
+     }
+@@ -43,7 +48,19 @@ Route::post('/setup', function (Request $request, IdentityLocalAuthService $auth
+         ->with('status', 'The first administrator account is ready. Sign in to continue.');
+ })->name('plugin.identity-local.setup.store');
+ 
+-Route::get('/login', function (IdentityLocalAuthService $auth) {
++Route::get('/login', function (IdentityLocalAuthService $auth, DemoSessionManager $demo) {
++    if ($demo->enabled() && ! $demo->templateAvailable()) {
++        return view()->file(base_path('../plugins/identity-local/resources/views/login.blade.php'), [
++            'locale' => app()->getLocale(),
++            'demo_enabled' => true,
++            'demo_template_ready' => false,
++            'demo_login' => [
++                'username' => (string) config('demo.login.username', 'admin'),
++                'password' => (string) config('demo.login.password', 'demo'),
++            ],
++        ]);
++    }
++
+     if ($auth->requiresBootstrap()) {
+         return redirect()->route('plugin.identity-local.setup');
+     }
+@@ -54,10 +71,21 @@ Route::get('/login', function (IdentityLocalAuthService $auth) {
+ 
+     return view()->file(base_path('../plugins/identity-local/resources/views/login.blade.php'), [
+         'locale' => app()->getLocale(),
++        'demo_enabled' => $demo->enabled(),
++        'demo_template_ready' => $demo->templateAvailable(),
++        'demo_login' => [
++            'username' => (string) config('demo.login.username', 'admin'),
++            'password' => (string) config('demo.login.password', 'demo'),
++        ],
+     ]);
+ })->name('plugin.identity-local.auth.login');
+ 
+-Route::post('/login', function (Request $request, IdentityLocalAuthService $auth) {
++Route::post('/login', function (Request $request, IdentityLocalAuthService $auth, DemoSessionManager $demo) {
++    if ($demo->enabled() && ! $demo->templateAvailable()) {
++        return redirect()->route('plugin.identity-local.auth.login')
++            ->with('error', 'The demo template is not ready yet. Run php artisan demo:build-template on this installation.');
++    }
++
+     if ($auth->requiresBootstrap()) {
+         return redirect()->route('plugin.identity-local.setup');
+     }
+@@ -70,6 +98,33 @@ Route::post('/login', function (Request $request, IdentityLocalAuthService $auth
+ 
+     $login = (string) ($validated['login'] ?? $validated['email'] ?? '');
+ 
++    if ($demo->enabled()) {
++        if (! $demo->templateAvailable()) {
++            return redirect()->route('plugin.identity-local.auth.login')
++                ->with('error', 'The demo template is not ready yet. Run php artisan demo:build-template on this installation.');
++        }
++
++        if ($request->boolean('use_email_link')) {
++            return redirect()->route('plugin.identity-local.auth.login')
++                ->with('error', 'Email-link authentication is disabled in the demo edition.');
++        }
++
++        if (! $demo->credentialsMatch($login, (string) ($validated['password'] ?? ''))) {
++            return redirect()->route('plugin.identity-local.auth.login')
++                ->with('error', 'Use the demo credentials shown on the sign-in screen.');
++        }
++
++        $demo->startDemoSession($request);
++
++        session()->forget(['auth.pending_principal_id', 'auth.pending_provider', 'auth.pending_method']);
++        session()->put('auth.principal_id', (string) config('demo.login.principal_id', 'principal-admin'));
++        session()->put('auth.provider', 'identity-local');
++
++        return redirect()->route('core.shell.index', [
++            'organization_id' => (string) config('demo.login.organization_id', 'org-a'),
++        ])->with('status', 'Demo workspace ready.');
++    }
++
+     if ($request->boolean('use_email_link')) {
+         $auth->issueMagicLink($login, $request);
+ 
+@@ -159,7 +214,9 @@ Route::get('/login/magic/{token}', function (string $token, IdentityLocalAuthSer
+     ]));
+ })->name('plugin.identity-local.auth.consume');
+ 
+-Route::post('/logout', function () {
++Route::post('/logout', function (Request $request, DemoSessionManager $demo) {
++    $demo->destroyDemoSession($request);
++
+     session()->forget(['auth.principal_id', 'auth.provider', 'auth.pending_principal_id', 'auth.pending_provider', 'auth.pending_method']);
+     session()->invalidate();
+     session()->regenerateToken();

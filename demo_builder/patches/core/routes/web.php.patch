@@ -1,0 +1,30 @@
+diff --git a/core/routes/web.php b/core/routes/web.php
+index c31ca299156ada6065a1ae3562bec920108c0adb..831df12845955a54580a7c07d6f8e2f7d26e06f1 100644
+--- a/core/routes/web.php
++++ b/core/routes/web.php
+@@ -501,6 +501,12 @@
+     PluginLifecycleManager $lifecycle,
+     AuditTrailInterface $audit
+ ) use ($shellRouteNameForMenu) {
++    if ((bool) config('demo.enabled', false) && (bool) config('demo.lock_plugin_lifecycle', true)) {
++        return redirect()
++            ->route('core.admin.index', ['menu' => 'core.plugins'])
++            ->with('error', 'Plugin lifecycle is locked in the demo edition.');
++    }
++
+     $validated = request()->validate([
+         'principal_id' => ['nullable', 'string', 'max:80'],
+         'locale' => ['nullable', 'string', 'max:10'],
+@@ -556,6 +562,12 @@
+     PluginLifecycleManager $lifecycle,
+     AuditTrailInterface $audit
+ ) use ($shellRouteNameForMenu) {
++    if ((bool) config('demo.enabled', false) && (bool) config('demo.lock_plugin_lifecycle', true)) {
++        return redirect()
++            ->route('core.admin.index', ['menu' => 'core.plugins'])
++            ->with('error', 'Plugin lifecycle is locked in the demo edition.');
++    }
++
+     $validated = request()->validate([
+         'principal_id' => ['nullable', 'string', 'max:80'],
+         'locale' => ['nullable', 'string', 'max:10'],
