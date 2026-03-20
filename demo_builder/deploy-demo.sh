@@ -45,6 +45,18 @@ log() {
     echo "deploy-demo: $*"
 }
 
+relative_to_repo() {
+    local path="$1"
+    case "$path" in
+        "$REPO_ROOT"/*)
+            printf '%s\n' "${path#"$REPO_ROOT"/}"
+            ;;
+        *)
+            printf '%s\n' "$path"
+            ;;
+    esac
+}
+
 require_cmd() {
     command -v "$1" >/dev/null 2>&1 || fail "required command [$1] is not available."
 }
@@ -106,12 +118,12 @@ apply_patch_file() {
 
     if git -C "$REPO_ROOT" apply --check "$patch_file" >/dev/null 2>&1; then
         git -C "$REPO_ROOT" apply "$patch_file"
-        log "applied $(realpath --relative-to="$REPO_ROOT" "$patch_file")"
+        log "applied $(relative_to_repo "$patch_file")"
         return 0
     fi
 
     if git -C "$REPO_ROOT" apply --check --reverse "$patch_file" >/dev/null 2>&1; then
-        log "already applied $(realpath --relative-to="$REPO_ROOT" "$patch_file")"
+        log "already applied $(relative_to_repo "$patch_file")"
         return 0
     fi
 
@@ -125,17 +137,21 @@ apply_demo_patches() {
     local patch_file
     local found=0
     patch_list="$(mktemp)"
-    trap 'rm -f "$patch_list"' RETURN
 
     find "$PATCH_DIR" -type f -name '*.patch' | LC_ALL=C sort >"$patch_list"
 
-    [[ -s "$patch_list" ]] || fail "no patch files found under [$PATCH_DIR]."
+    if [[ ! -s "$patch_list" ]]; then
+        rm -f "$patch_list"
+        fail "no patch files found under [$PATCH_DIR]."
+    fi
 
     while IFS= read -r patch_file; do
         [[ -z "$patch_file" ]] && continue
         apply_patch_file "$patch_file"
         found=1
     done <"$patch_list"
+
+    rm -f "$patch_list"
 
     (( found == 1 )) || fail "no patch files found under [$PATCH_DIR]."
 }
