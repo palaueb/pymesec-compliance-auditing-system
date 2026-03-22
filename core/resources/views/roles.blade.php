@@ -36,7 +36,7 @@
                     <div class="metric-label">Edit role</div>
                     <form class="upload-form" method="POST" action="{{ $role_store_route }}" style="margin-top:10px;">
                         @csrf
-                        <input type="hidden" name="principal_id" value="{{ $query['principal_id'] }}">
+                        <input type="hidden" name="principal_id" value="{{ $query['principal_id'] ?? '' }}">
                         <input type="hidden" name="locale" value="{{ $query['locale'] }}">
                         <input type="hidden" name="menu" value="core.roles">
                         <input type="hidden" name="role_key" value="{{ $selected_role['key'] }}">
@@ -100,7 +100,7 @@
                 <div class="metric-label">Edit grant</div>
                 <form class="upload-form" method="POST" action="{{ route('core.grants.update', ['grantId' => $selected_grant['id']]) }}" style="margin-top:10px;">
                     @csrf
-                    <input type="hidden" name="principal_id" value="{{ $query['principal_id'] }}">
+                    <input type="hidden" name="principal_id" value="{{ $query['principal_id'] ?? '' }}">
                     <input type="hidden" name="locale" value="{{ $query['locale'] }}">
                     <input type="hidden" name="menu" value="core.roles">
                     <input type="hidden" name="grant_id" value="{{ $selected_grant['id'] }}">
@@ -178,7 +178,7 @@
             </div>
             <form class="upload-form" method="POST" action="{{ $role_store_route }}">
                 @csrf
-                <input type="hidden" name="principal_id" value="{{ $query['principal_id'] }}">
+                <input type="hidden" name="principal_id" value="{{ $query['principal_id'] ?? '' }}">
                 <input type="hidden" name="locale" value="{{ $query['locale'] }}">
                 <input type="hidden" name="menu" value="core.roles">
                 <div class="overview-grid" style="grid-template-columns:repeat(2, minmax(0, 1fr));">
@@ -211,7 +211,7 @@
             </div>
             <form class="upload-form" method="POST" action="{{ $grant_store_route }}">
                 @csrf
-                <input type="hidden" name="principal_id" value="{{ $query['principal_id'] }}">
+                <input type="hidden" name="principal_id" value="{{ $query['principal_id'] ?? '' }}">
                 <input type="hidden" name="locale" value="{{ $query['locale'] }}">
                 <input type="hidden" name="menu" value="core.roles">
                 <div class="overview-grid" style="grid-template-columns:repeat(3, minmax(0, 1fr));">

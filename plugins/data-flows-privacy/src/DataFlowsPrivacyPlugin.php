@@ -452,7 +452,6 @@ class DataFlowsPrivacyPlugin implements PluginInterface
     private function baseQuery(ScreenRenderContext $context, bool $includeSelection = true): array
     {
         $query = $context->query;
-        $query['principal_id'] = $context->principal?->id ?? ($query['principal_id'] ?? 'principal-org-a');
         $query['organization_id'] = $context->organizationId ?? ($query['organization_id'] ?? 'org-a');
         $query['locale'] = $context->locale;
 

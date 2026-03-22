@@ -149,20 +149,12 @@ class IdentityLocalPlugin implements IdentityPluginInterface
             );
 
             $userMemberships = $membershipsByPrincipal[$user['principal_id']] ?? [];
-            $workspaceUrl = $userMemberships !== []
-                ? route('core.shell.index', array_filter([
-                    ...$query,
-                    'principal_id' => $user['principal_id'],
-                    'organization_id' => $organizationId,
-                    'membership_ids' => array_map(static fn (array $membership): string => $membership['id'], $userMemberships),
-                ]))
-                : null;
-
             $rows[] = [
                 'user' => $user,
                 'memberships' => $userMemberships,
                 'linked_actors' => $linkedActors,
-                'workspace_url' => $workspaceUrl,
+                'workspace_ready' => $userMemberships !== [],
+                'workspace_url' => null,
                 'open_url' => route('core.admin.index', [...$listQuery, 'menu' => 'plugin.identity-local.users', 'user_id' => $user['id']]),
             ];
         }
@@ -273,7 +265,6 @@ class IdentityLocalPlugin implements IdentityPluginInterface
     private function baseQuery(ScreenRenderContext $context, bool $includeSelection = true): array
     {
         $query = $context->query;
-        $query['principal_id'] = $context->principal?->id ?? ($query['principal_id'] ?? 'principal-org-a');
         $query['organization_id'] = $context->organizationId ?? ($query['organization_id'] ?? 'org-a');
         $query['locale'] = $context->locale;
 

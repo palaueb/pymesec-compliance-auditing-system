@@ -26,7 +26,7 @@ Route::get('/plugins/policies', function (Request $request, PolicyExceptionsRepo
             'policy',
         ),
     ]);
-})->name('plugin.policy-exceptions.index');
+})->middleware('core.permission:plugin.policy-exceptions.policies.view')->name('plugin.policy-exceptions.index');
 
 Route::get('/plugins/policies/exceptions', function (Request $request, PolicyExceptionsRepository $repository, ObjectAccessService $objectAccess) {
     $organizationId = (string) $request->query('organization_id', 'org-a');
@@ -42,7 +42,7 @@ Route::get('/plugins/policies/exceptions', function (Request $request, PolicyExc
             'policy-exception',
         ),
     ]);
-})->name('plugin.policy-exceptions.exceptions');
+})->middleware('core.permission:plugin.policy-exceptions.policies.view')->name('plugin.policy-exceptions.exceptions');
 
 Route::post('/plugins/policies', function (
     Request $request,

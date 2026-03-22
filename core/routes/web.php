@@ -30,16 +30,18 @@ use PymeSec\Core\Workflows\Contracts\WorkflowRegistryInterface;
 use PymeSec\Plugins\IdentityLocal\IdentityLocalRepository;
 
 $resolvePrincipalId = static function (?string $default = null): ?string {
-    $requested = request()->input('principal_id', request()->query('principal_id'));
-
-    if (is_string($requested) && $requested !== '') {
-        return $requested;
-    }
-
     $sessionPrincipalId = session('auth.principal_id');
 
     if (is_string($sessionPrincipalId) && $sessionPrincipalId !== '') {
         return $sessionPrincipalId;
+    }
+
+    if (app()->environment('testing')) {
+        $requested = request()->input('principal_id', request()->query('principal_id'));
+
+        if (is_string($requested) && $requested !== '') {
+            return $requested;
+        }
     }
 
     return $default;
@@ -260,7 +262,6 @@ $renderShell = function (
     }
 
     $baseQuery = [
-        'principal_id' => $principalId,
         'locale' => $locale,
         'theme' => $themeKey,
     ];
@@ -865,8 +866,9 @@ Route::post('/core/roles/grants/{grantId}', function (
     return redirect()->route($shellRouteNameForMenu($query['menu'] ?? null), $query);
 })->middleware('core.permission:core.roles.manage')->name('core.grants.update');
 
-Route::get('/core/menus', function (MenuRegistryInterface $menus, TenancyServiceInterface $tenancy) {
-    $principalId = request()->query('principal_id', session('auth.principal_id'));
+Route::get('/core/menus', function (MenuRegistryInterface $menus, TenancyServiceInterface $tenancy) use ($resolvePrincipalId) {
+    $principalId = $resolvePrincipalId();
+    abort_unless(is_string($principalId) && $principalId !== '', 403);
     $requestedMembershipIds = request()->query('membership_ids', []);
 
     if (! is_array($requestedMembershipIds)) {
@@ -1574,8 +1576,9 @@ Route::get('/core/audit-logs/export', function (AuditTrailInterface $audit) {
     ]);
 })->middleware('core.permission:core.audit-logs.export')->name('core.audit.export');
 
-Route::get('/core/authorization/check', function (AuthorizationServiceInterface $authorization, TenancyServiceInterface $tenancy) {
-    $principalId = request()->query('principal_id', session('auth.principal_id', 'principal-admin'));
+Route::get('/core/authorization/check', function (AuthorizationServiceInterface $authorization, TenancyServiceInterface $tenancy) use ($resolvePrincipalId) {
+    $principalId = $resolvePrincipalId();
+    abort_unless(is_string($principalId) && $principalId !== '', 403);
     $permission = request()->query('permission', 'core.plugins.view');
     $requestedMembershipIds = request()->query('membership_ids', []);
     $requestedOrganizationId = request()->query('organization_id');

@@ -19,7 +19,7 @@
             <div class="eyebrow" style="margin-bottom:8px;">New asset</div>
             <form class="upload-form" method="POST" action="{{ $create_route }}">
                 @csrf
-                <input type="hidden" name="principal_id"    value="{{ $query['principal_id'] }}">
+                <input type="hidden" name="principal_id"    value="{{ $query['principal_id'] ?? '' }}">
                 <input type="hidden" name="organization_id" value="{{ $query['organization_id'] }}">
                 <input type="hidden" name="locale"          value="{{ $query['locale'] }}">
                 <input type="hidden" name="menu"            value="plugin.asset-catalog.root">
@@ -148,7 +148,7 @@
                         @foreach ($selected_asset['transitions'] as $transition)
                             <form method="POST" action="{{ str_replace('__TRANSITION__', $transition, $selected_asset['transition_route']) }}">
                                 @csrf
-                                <input type="hidden" name="principal_id"    value="{{ $query['principal_id'] }}">
+                                <input type="hidden" name="principal_id"    value="{{ $query['principal_id'] ?? '' }}">
                                 <input type="hidden" name="organization_id" value="{{ $query['organization_id'] }}">
                                 <input type="hidden" name="locale"          value="{{ $query['locale'] }}">
                                 <input type="hidden" name="menu"            value="plugin.asset-catalog.root">
@@ -181,7 +181,7 @@
                     <summary class="button button-ghost" style="display:inline-flex; width:fit-content;">Edit asset details</summary>
                     <form class="upload-form" method="POST" action="{{ $selected_asset['update_route'] }}" style="margin-top:14px;">
                         @csrf
-                        <input type="hidden" name="principal_id"    value="{{ $query['principal_id'] }}">
+                        <input type="hidden" name="principal_id"    value="{{ $query['principal_id'] ?? '' }}">
                         <input type="hidden" name="organization_id" value="{{ $query['organization_id'] }}">
                         <input type="hidden" name="locale"          value="{{ $query['locale'] }}">
                         <input type="hidden" name="menu"            value="plugin.asset-catalog.root">

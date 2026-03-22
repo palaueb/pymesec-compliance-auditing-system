@@ -88,7 +88,7 @@
                     <div class="metric-label">Edit access</div>
                     <form class="upload-form" method="POST" action="{{ route('plugin.identity-local.memberships.update', ['membershipId' => $selectedMembership['id']]) }}" style="margin-top:10px;">
                         @csrf
-                        <input type="hidden" name="principal_id" value="{{ $query['principal_id'] }}">
+                        <input type="hidden" name="principal_id" value="{{ $query['principal_id'] ?? '' }}">
                         <input type="hidden" name="organization_id" value="{{ $organization_id }}">
                         <input type="hidden" name="locale" value="{{ $query['locale'] }}">
                         <input type="hidden" name="menu" value="plugin.identity-local.memberships">
@@ -150,7 +150,7 @@
 
                 <form class="upload-form" method="POST" action="{{ $create_route }}">
                     @csrf
-                    <input type="hidden" name="principal_id" value="{{ $query['principal_id'] }}">
+                    <input type="hidden" name="principal_id" value="{{ $query['principal_id'] ?? '' }}">
                     <input type="hidden" name="organization_id" value="{{ $organization_id }}">
                     <input type="hidden" name="locale" value="{{ $query['locale'] }}">
                     <input type="hidden" name="menu" value="plugin.identity-local.memberships">

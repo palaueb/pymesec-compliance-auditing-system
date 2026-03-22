@@ -28,7 +28,7 @@ Route::get('/plugins/privacy/data-flows', function (Request $request, DataFlowsP
             'privacy-data-flow',
         ),
     ]);
-})->name('plugin.data-flows-privacy.index');
+})->middleware('core.permission:plugin.data-flows-privacy.records.view')->name('plugin.data-flows-privacy.index');
 
 Route::get('/plugins/privacy/activities', function (Request $request, DataFlowsPrivacyRepository $repository, ObjectAccessService $objectAccess) {
     $organizationId = (string) $request->query('organization_id', 'org-a');
@@ -44,7 +44,7 @@ Route::get('/plugins/privacy/activities', function (Request $request, DataFlowsP
             'privacy-processing-activity',
         ),
     ]);
-})->name('plugin.data-flows-privacy.activities');
+})->middleware('core.permission:plugin.data-flows-privacy.records.view')->name('plugin.data-flows-privacy.activities');
 
 Route::post('/plugins/privacy/data-flows', function (
     Request $request,

@@ -106,7 +106,6 @@ class IdentityLdapPlugin implements IdentityPluginInterface
     private function baseQuery(ScreenRenderContext $context): array
     {
         $query = $context->query;
-        $query['principal_id'] = $context->principal?->id ?? ($query['principal_id'] ?? 'principal-org-a');
         $query['organization_id'] = $context->organizationId ?? ($query['organization_id'] ?? 'org-a');
         $query['locale'] = $context->locale;
 

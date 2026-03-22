@@ -43,7 +43,7 @@
                 @if ($connection !== null)
                     <form id="ldap-sync-form" method="POST" action="{{ $sync_route }}">
                         @csrf
-                        <input type="hidden" name="principal_id" value="{{ $query['principal_id'] }}">
+                        <input type="hidden" name="principal_id" value="{{ $query['principal_id'] ?? '' }}">
                         <input type="hidden" name="organization_id" value="{{ $organization_id }}">
                         <input type="hidden" name="locale" value="{{ $query['locale'] }}">
                         @foreach (($query['membership_ids'] ?? []) as $membershipId)
@@ -85,7 +85,7 @@
 
                 <form class="upload-form" method="POST" action="{{ $save_connection_route }}">
                     @csrf
-                    <input type="hidden" name="principal_id" value="{{ $query['principal_id'] }}">
+                    <input type="hidden" name="principal_id" value="{{ $query['principal_id'] ?? '' }}">
                     <input type="hidden" name="organization_id" value="{{ $organization_id }}">
                     <input type="hidden" name="locale" value="{{ $query['locale'] }}">
                     @foreach (($query['membership_ids'] ?? []) as $membershipId)
@@ -191,7 +191,7 @@
 
                     <form class="upload-form" method="POST" action="{{ $save_mapping_route }}">
                         @csrf
-                        <input type="hidden" name="principal_id" value="{{ $query['principal_id'] }}">
+                        <input type="hidden" name="principal_id" value="{{ $query['principal_id'] ?? '' }}">
                         <input type="hidden" name="organization_id" value="{{ $organization_id }}">
                         <input type="hidden" name="locale" value="{{ $query['locale'] }}">
                         @foreach (($query['membership_ids'] ?? []) as $membershipId)

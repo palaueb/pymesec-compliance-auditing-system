@@ -29,7 +29,7 @@ Route::get('/plugins/findings', function (Request $request, FindingsRemediationR
             domainObjectType: 'finding',
         ),
     ]);
-})->name('plugin.findings-remediation.index');
+})->middleware('core.permission:plugin.findings-remediation.findings.view')->name('plugin.findings-remediation.index');
 
 Route::get('/plugins/findings/board', function (Request $request, FindingsRemediationRepository $repository, ObjectAccessService $objectAccess) {
     $organizationId = (string) $request->query('organization_id', 'org-a');
@@ -58,7 +58,7 @@ Route::get('/plugins/findings/board', function (Request $request, FindingsRemedi
         'plugin' => 'findings-remediation',
         'actions' => $actions,
     ]);
-})->name('plugin.findings-remediation.board');
+})->middleware('core.permission:plugin.findings-remediation.findings.view')->name('plugin.findings-remediation.board');
 
 Route::post('/plugins/findings', function (
     Request $request,

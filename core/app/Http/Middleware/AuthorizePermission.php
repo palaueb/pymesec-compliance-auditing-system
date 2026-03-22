@@ -19,11 +19,16 @@ class AuthorizePermission
 
     public function handle(Request $request, Closure $next, string $permission): Response
     {
-        $principalId = $this->stringValue($request, 'principal_id');
+        $principalId = $this->actingPrincipalId($request);
 
         if ($principalId === null) {
             return $this->deny($request, $permission, 'principal_context_required');
         }
+
+        // Once a shell session exists, downstream routes must not be able to impersonate
+        // a different principal via query or form parameters.
+        $request->query->set('principal_id', $principalId);
+        $request->request->set('principal_id', $principalId);
 
         $organizationId = $this->stringValue($request, 'organization_id');
         $scopeId = $this->stringValue($request, 'scope_id');
@@ -81,12 +86,21 @@ class AuthorizePermission
     {
         $value = $request->input($key, $request->query($key));
 
-        if ((! is_string($value) || $value === '') && $key === 'principal_id') {
-            $sessionValue = $request->session()->get('auth.principal_id');
+        return is_string($value) && $value !== '' ? $value : null;
+    }
 
-            return is_string($sessionValue) && $sessionValue !== '' ? $sessionValue : null;
+    private function actingPrincipalId(Request $request): ?string
+    {
+        $sessionValue = $request->session()->get('auth.principal_id');
+
+        if (is_string($sessionValue) && $sessionValue !== '') {
+            return $sessionValue;
         }
 
-        return is_string($value) && $value !== '' ? $value : null;
+        if (app()->environment('testing')) {
+            return $this->stringValue($request, 'principal_id');
+        }
+
+        return null;
     }
 }

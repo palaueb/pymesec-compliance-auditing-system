@@ -75,7 +75,7 @@
                             @foreach ($selected_activity['transitions'] as $transition)
                                 <form method="POST" action="{{ str_replace('__TRANSITION__', $transition, $selected_activity['transition_route']) }}">
                                     @csrf
-                                    <input type="hidden" name="principal_id" value="{{ $query['principal_id'] }}">
+                                    <input type="hidden" name="principal_id" value="{{ $query['principal_id'] ?? '' }}">
                                     <input type="hidden" name="organization_id" value="{{ $query['organization_id'] }}">
                                     <input type="hidden" name="locale" value="{{ $query['locale'] }}">
                                     <input type="hidden" name="menu" value="plugin.data-flows-privacy.activities">
@@ -111,7 +111,7 @@
                                 <summary class="button button-ghost" style="display:inline-flex;">Attach record</summary>
                                 <form class="upload-form" method="POST" action="{{ $selected_activity['artifact_upload_route'] }}" enctype="multipart/form-data" style="margin-top:10px;">
                                     @csrf
-                                    <input type="hidden" name="principal_id" value="{{ $query['principal_id'] }}">
+                                    <input type="hidden" name="principal_id" value="{{ $query['principal_id'] ?? '' }}">
                                     <input type="hidden" name="organization_id" value="{{ $query['organization_id'] }}">
                                     <input type="hidden" name="locale" value="{{ $query['locale'] }}">
                                     <input type="hidden" name="menu" value="plugin.data-flows-privacy.activities">
@@ -135,7 +135,7 @@
                                     </div>
                                     <form method="POST" action="{{ route('plugin.evidence-management.promote', ['artifactId' => $artifact['id']]) }}">
                                         @csrf
-                                        <input type="hidden" name="principal_id" value="{{ $query['principal_id'] }}">
+                                        <input type="hidden" name="principal_id" value="{{ $query['principal_id'] ?? '' }}">
                                         <input type="hidden" name="organization_id" value="{{ $query['organization_id'] }}">
                                         <input type="hidden" name="scope_id" value="{{ $selected_activity['scope_id'] }}">
                                         <input type="hidden" name="locale" value="{{ $query['locale'] }}">
@@ -156,7 +156,7 @@
                         <summary class="button button-ghost" style="display:inline-flex; width:fit-content;">Edit activity details</summary>
                         <form class="upload-form" method="POST" action="{{ $selected_activity['update_route'] }}" style="margin-top:14px;">
                             @csrf
-                            <input type="hidden" name="principal_id" value="{{ $query['principal_id'] }}">
+                            <input type="hidden" name="principal_id" value="{{ $query['principal_id'] ?? '' }}">
                             <input type="hidden" name="organization_id" value="{{ $query['organization_id'] }}">
                             <input type="hidden" name="locale" value="{{ $query['locale'] }}">
                             <input type="hidden" name="menu" value="plugin.data-flows-privacy.activities">
@@ -259,7 +259,7 @@
 
                 <form class="upload-form" method="POST" action="{{ $create_route }}">
                     @csrf
-                    <input type="hidden" name="principal_id" value="{{ $query['principal_id'] }}">
+                    <input type="hidden" name="principal_id" value="{{ $query['principal_id'] ?? '' }}">
                     <input type="hidden" name="organization_id" value="{{ $query['organization_id'] }}">
                     <input type="hidden" name="locale" value="{{ $query['locale'] }}">
                     <input type="hidden" name="menu" value="plugin.data-flows-privacy.activities">

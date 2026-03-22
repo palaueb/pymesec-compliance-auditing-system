@@ -66,7 +66,7 @@
                             @if ($can_manage_evidence && $selected_evidence['review_due_on'] !== '')
                                 <form method="POST" action="{{ $selected_evidence['queue_review_reminder_route'] }}" style="margin-top:10px;">
                                     @csrf
-                                    <input type="hidden" name="principal_id" value="{{ $query['principal_id'] }}">
+                                    <input type="hidden" name="principal_id" value="{{ $query['principal_id'] ?? '' }}">
                                     <input type="hidden" name="organization_id" value="{{ $selected_evidence['organization_id'] }}">
                                     <input type="hidden" name="scope_id" value="{{ $selected_evidence['scope_id'] }}">
                                     <input type="hidden" name="locale" value="{{ $query['locale'] }}">
@@ -82,7 +82,7 @@
                             @if ($can_manage_evidence && $selected_evidence['valid_until'] !== '')
                                 <form method="POST" action="{{ $selected_evidence['queue_expiry_reminder_route'] }}" style="margin-top:10px;">
                                     @csrf
-                                    <input type="hidden" name="principal_id" value="{{ $query['principal_id'] }}">
+                                    <input type="hidden" name="principal_id" value="{{ $query['principal_id'] ?? '' }}">
                                     <input type="hidden" name="organization_id" value="{{ $selected_evidence['organization_id'] }}">
                                     <input type="hidden" name="scope_id" value="{{ $selected_evidence['scope_id'] }}">
                                     <input type="hidden" name="locale" value="{{ $query['locale'] }}">
@@ -136,7 +136,7 @@
                     <div class="metric-label">Update evidence</div>
                     <form class="upload-form" method="POST" action="{{ route('plugin.evidence-management.update', ['evidenceId' => $selected_evidence['id']]) }}" enctype="multipart/form-data" style="margin-top:10px;">
                         @csrf
-                        <input type="hidden" name="principal_id" value="{{ $query['principal_id'] }}">
+                        <input type="hidden" name="principal_id" value="{{ $query['principal_id'] ?? '' }}">
                         <input type="hidden" name="organization_id" value="{{ $selected_evidence['organization_id'] }}">
                         <input type="hidden" name="locale" value="{{ $query['locale'] }}">
                         <input type="hidden" name="menu" value="plugin.evidence-management.root">
@@ -245,7 +245,7 @@
                 </div>
                 <form class="upload-form" method="POST" action="{{ $create_route }}" enctype="multipart/form-data">
                     @csrf
-                    <input type="hidden" name="principal_id" value="{{ $query['principal_id'] }}">
+                    <input type="hidden" name="principal_id" value="{{ $query['principal_id'] ?? '' }}">
                     <input type="hidden" name="organization_id" value="{{ $query['organization_id'] }}">
                     <input type="hidden" name="locale" value="{{ $query['locale'] }}">
                     <input type="hidden" name="menu" value="plugin.evidence-management.root">
@@ -482,7 +482,7 @@
                                 <td>
                                     <form method="POST" action="{{ $candidate['promote_route'] }}">
                                         @csrf
-                                        <input type="hidden" name="principal_id" value="{{ $query['principal_id'] }}">
+                                        <input type="hidden" name="principal_id" value="{{ $query['principal_id'] ?? '' }}">
                                         <input type="hidden" name="organization_id" value="{{ $query['organization_id'] }}">
                                         <input type="hidden" name="scope_id" value="{{ $query['scope_id'] ?? '' }}">
                                         <input type="hidden" name="locale" value="{{ $query['locale'] }}">

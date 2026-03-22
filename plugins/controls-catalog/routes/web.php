@@ -26,7 +26,7 @@ Route::get('/plugins/controls', function (Request $request, ControlsCatalogRepos
             'control',
         ),
     ]);
-})->name('plugin.controls-catalog.index');
+})->middleware('core.permission:plugin.controls-catalog.controls.view')->name('plugin.controls-catalog.index');
 
 Route::get('/plugins/controls/reviews', function (Request $request, ControlsCatalogRepository $repository, ObjectAccessService $objectAccess) {
     $organizationId = (string) $request->query('organization_id', 'org-a');
@@ -42,7 +42,7 @@ Route::get('/plugins/controls/reviews', function (Request $request, ControlsCata
             'control',
         ),
     ]);
-})->name('plugin.controls-catalog.reviews');
+})->middleware('core.permission:plugin.controls-catalog.controls.view')->name('plugin.controls-catalog.reviews');
 
 Route::post('/plugins/controls', function (
     Request $request,

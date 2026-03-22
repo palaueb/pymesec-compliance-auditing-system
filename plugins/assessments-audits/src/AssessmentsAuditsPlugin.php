@@ -218,7 +218,6 @@ class AssessmentsAuditsPlugin implements PluginInterface
     private function baseQuery(ScreenRenderContext $screenContext): array
     {
         $query = [
-            'principal_id' => $screenContext->principal?->id,
             'organization_id' => $screenContext->organizationId,
             'scope_id' => $screenContext->scopeId,
             'locale' => $screenContext->locale,

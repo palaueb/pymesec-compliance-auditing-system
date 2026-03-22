@@ -18,6 +18,66 @@ class ReferenceCatalogsTest extends TestCase
             ->assertSee('Add option');
     }
 
+    public function test_authenticated_shell_ignores_spoofed_principal_id_from_the_url(): void
+    {
+        $response = $this->withSession(['auth.principal_id' => 'principal-org-a'])
+            ->get('/admin?menu=core.reference-data&principal_id=principal-admin&organization_id=org-a&catalog_key=risks.categories');
+
+        $response->assertRedirect();
+        $this->assertStringNotContainsString('principal_id=', $response->headers->get('Location', ''));
+    }
+
+    public function test_authenticated_requests_cannot_borrow_platform_admin_permissions_from_form_input(): void
+    {
+        $this->withSession(['auth.principal_id' => 'principal-org-a'])
+            ->post('/core/reference-data/entries', [
+                'principal_id' => 'principal-admin',
+                'organization_id' => 'org-a',
+                'catalog_key' => 'risks.categories',
+                'option_key' => 'spoofed-admin-write',
+                'label' => 'Spoofed admin write',
+                'description' => 'Should not be created.',
+                'sort_order' => 999,
+                'locale' => 'en',
+                'menu' => 'core.reference-data',
+            ])->assertForbidden();
+
+        $this->assertDatabaseMissing('reference_catalog_entries', [
+            'option_key' => 'spoofed-admin-write',
+            'organization_id' => 'org-a',
+            'catalog_key' => 'risks.categories',
+        ]);
+    }
+
+    public function test_authenticated_shell_links_do_not_expose_principal_id_in_urls(): void
+    {
+        $this->withSession(['auth.principal_id' => 'principal-admin'])
+            ->get('/admin?menu=core.reference-data&organization_id=org-a&catalog_key=risks.categories')
+            ->assertOk()
+            ->assertViewHas('menuApiUrl', fn (string $url): bool => ! str_contains($url, 'principal_id='))
+            ->assertViewHas('dashboardUrl', fn (string $url): bool => ! str_contains($url, 'principal_id='))
+            ->assertViewHas('supportUrl', fn (string $url): bool => ! str_contains($url, 'principal_id='));
+    }
+
+    public function test_authenticated_redirects_strip_principal_id_from_the_location_header(): void
+    {
+        $response = $this->withSession(['auth.principal_id' => 'principal-admin'])
+            ->post('/core/reference-data/entries', [
+                'principal_id' => 'principal-admin',
+                'organization_id' => 'org-a',
+                'catalog_key' => 'risks.categories',
+                'option_key' => 'clean-redirect-check',
+                'label' => 'Clean redirect check',
+                'description' => 'Used to verify canonical redirects.',
+                'sort_order' => 998,
+                'locale' => 'en',
+                'menu' => 'core.reference-data',
+            ]);
+
+        $response->assertFound();
+        $this->assertStringNotContainsString('principal_id=', $response->headers->get('Location', ''));
+    }
+
     public function test_managed_risk_category_can_be_created_and_used(): void
     {
         $this->post('/core/reference-data/entries', [

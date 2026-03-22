@@ -28,7 +28,7 @@ Route::get('/plugins/continuity/services', function (Request $request, Continuit
             'continuity-service',
         ),
     ]);
-})->name('plugin.continuity-bcm.index');
+})->middleware('core.permission:plugin.continuity-bcm.plans.view')->name('plugin.continuity-bcm.index');
 
 Route::get('/plugins/continuity/plans', function (Request $request, ContinuityBcmRepository $repository, ObjectAccessService $objectAccess) {
     $organizationId = (string) $request->query('organization_id', 'org-a');
@@ -44,7 +44,7 @@ Route::get('/plugins/continuity/plans', function (Request $request, ContinuityBc
             'continuity-plan',
         ),
     ]);
-})->name('plugin.continuity-bcm.plans');
+})->middleware('core.permission:plugin.continuity-bcm.plans.view')->name('plugin.continuity-bcm.plans');
 
 Route::post('/plugins/continuity/services', function (
     Request $request,

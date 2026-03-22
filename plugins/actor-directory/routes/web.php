@@ -19,7 +19,7 @@ Route::get('/plugins/actors', function (FunctionalActorServiceInterface $actors)
             ? array_map(static fn ($link): array => $link->toArray(), $actors->linksForPrincipal($principalId, is_string($organizationId) ? $organizationId : null))
             : [],
     ]);
-})->name('plugin.actor-directory.index');
+})->middleware('core.permission:plugin.actor-directory.actors.view')->name('plugin.actor-directory.index');
 
 Route::get('/plugins/actors/assignments', function (FunctionalActorServiceInterface $actors) {
     $organizationId = request()->query('organization_id', 'org-a');
@@ -33,4 +33,4 @@ Route::get('/plugins/actors/assignments', function (FunctionalActorServiceInterf
             $actors->assignments(is_string($organizationId) ? $organizationId : null, is_string($scopeId) ? $scopeId : null),
         ),
     ]);
-})->name('plugin.actor-directory.assignments');
+})->middleware('core.permission:plugin.actor-directory.actors.view')->name('plugin.actor-directory.assignments');

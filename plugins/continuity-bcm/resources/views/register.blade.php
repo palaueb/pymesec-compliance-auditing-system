@@ -48,7 +48,7 @@
                             @foreach ($selected_service['transitions'] as $transition)
                                 <form method="POST" action="{{ str_replace('__TRANSITION__', $transition, $selected_service['transition_route']) }}">
                                     @csrf
-                                    <input type="hidden" name="principal_id" value="{{ $query['principal_id'] }}">
+                                    <input type="hidden" name="principal_id" value="{{ $query['principal_id'] ?? '' }}">
                                     <input type="hidden" name="organization_id" value="{{ $query['organization_id'] }}">
                                     <input type="hidden" name="locale" value="{{ $query['locale'] }}">
                                     <input type="hidden" name="menu" value="plugin.continuity-bcm.root">
@@ -68,7 +68,7 @@
                             <summary class="button button-ghost" style="display:inline-flex;">Edit service</summary>
                             <form class="upload-form" method="POST" action="{{ $selected_service['update_route'] }}" style="margin-top:10px;">
                                 @csrf
-                                <input type="hidden" name="principal_id" value="{{ $query['principal_id'] }}">
+                                <input type="hidden" name="principal_id" value="{{ $query['principal_id'] ?? '' }}">
                                 <input type="hidden" name="organization_id" value="{{ $query['organization_id'] }}">
                                 <input type="hidden" name="locale" value="{{ $query['locale'] }}">
                                 <input type="hidden" name="menu" value="plugin.continuity-bcm.root">
@@ -148,7 +148,7 @@
                                 <summary class="button button-ghost" style="display:inline-flex;">Add recovery plan</summary>
                                 <form class="upload-form" method="POST" action="{{ $selected_service['plan_store_route'] }}" style="margin-top:10px;">
                                     @csrf
-                                    <input type="hidden" name="principal_id" value="{{ $query['principal_id'] }}">
+                                    <input type="hidden" name="principal_id" value="{{ $query['principal_id'] ?? '' }}">
                                     <input type="hidden" name="organization_id" value="{{ $query['organization_id'] }}">
                                     <input type="hidden" name="locale" value="{{ $query['locale'] }}">
                                     <input type="hidden" name="menu" value="plugin.continuity-bcm.root">
@@ -227,7 +227,7 @@
                                 <summary class="button button-ghost" style="display:inline-flex;">Add dependency</summary>
                                 <form class="upload-form" method="POST" action="{{ $selected_service['dependency_store_route'] }}" style="margin-top:10px;">
                                     @csrf
-                                    <input type="hidden" name="principal_id" value="{{ $query['principal_id'] }}">
+                                    <input type="hidden" name="principal_id" value="{{ $query['principal_id'] ?? '' }}">
                                     <input type="hidden" name="organization_id" value="{{ $query['organization_id'] }}">
                                     <input type="hidden" name="locale" value="{{ $query['locale'] }}">
                                     <input type="hidden" name="menu" value="plugin.continuity-bcm.root">
@@ -276,7 +276,7 @@
                                 <summary class="button button-ghost" style="display:inline-flex;">Attach document</summary>
                                 <form class="upload-form" method="POST" action="{{ $selected_service['artifact_upload_route'] }}" enctype="multipart/form-data" style="margin-top:10px;">
                                     @csrf
-                                    <input type="hidden" name="principal_id" value="{{ $query['principal_id'] }}">
+                                    <input type="hidden" name="principal_id" value="{{ $query['principal_id'] ?? '' }}">
                                     <input type="hidden" name="organization_id" value="{{ $query['organization_id'] }}">
                                     <input type="hidden" name="locale" value="{{ $query['locale'] }}">
                                     <input type="hidden" name="menu" value="plugin.continuity-bcm.root">
@@ -301,7 +301,7 @@
                                     </div>
                                     <form method="POST" action="{{ route('plugin.evidence-management.promote', ['artifactId' => $artifact['id']]) }}">
                                         @csrf
-                                        <input type="hidden" name="principal_id" value="{{ $query['principal_id'] }}">
+                                        <input type="hidden" name="principal_id" value="{{ $query['principal_id'] ?? '' }}">
                                         <input type="hidden" name="organization_id" value="{{ $query['organization_id'] }}">
                                         <input type="hidden" name="scope_id" value="{{ $selected_service['scope_id'] }}">
                                         <input type="hidden" name="locale" value="{{ $query['locale'] }}">
@@ -329,7 +329,7 @@
 
                 <form class="upload-form" method="POST" action="{{ $create_route }}">
                     @csrf
-                    <input type="hidden" name="principal_id" value="{{ $query['principal_id'] }}">
+                    <input type="hidden" name="principal_id" value="{{ $query['principal_id'] ?? '' }}">
                     <input type="hidden" name="organization_id" value="{{ $query['organization_id'] }}">
                     <input type="hidden" name="locale" value="{{ $query['locale'] }}">
                     <input type="hidden" name="menu" value="plugin.continuity-bcm.root">

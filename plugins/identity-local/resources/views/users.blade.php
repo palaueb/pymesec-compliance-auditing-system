@@ -77,7 +77,7 @@
                     <div class="metric-label">Edit person</div>
                     <form class="upload-form" method="POST" action="{{ route('plugin.identity-local.users.update', ['userId' => $selectedUser['id']]) }}" style="margin-top:10px;">
                         @csrf
-                        <input type="hidden" name="principal_id" value="{{ $query['principal_id'] }}">
+                        <input type="hidden" name="principal_id" value="{{ $query['principal_id'] ?? '' }}">
                         <input type="hidden" name="organization_id" value="{{ $organization_id }}">
                         <input type="hidden" name="locale" value="{{ $query['locale'] }}">
                         <input type="hidden" name="menu" value="plugin.identity-local.users">
@@ -157,7 +157,7 @@
 
                 <form class="upload-form" method="POST" action="{{ $create_route }}">
                     @csrf
-                    <input type="hidden" name="principal_id" value="{{ $query['principal_id'] }}">
+                    <input type="hidden" name="principal_id" value="{{ $query['principal_id'] ?? '' }}">
                     <input type="hidden" name="organization_id" value="{{ $organization_id }}">
                     <input type="hidden" name="locale" value="{{ $query['locale'] }}">
                     <input type="hidden" name="menu" value="plugin.identity-local.users">
@@ -182,7 +182,7 @@
 
         <div class="overview-grid" style="grid-template-columns:repeat(4, minmax(0, 1fr));">
             <div class="metric-card"><div class="metric-label">People</div><div class="metric-value">{{ count($rows) }}</div></div>
-            <div class="metric-card"><div class="metric-label">Ready for workspace</div><div class="metric-value">{{ collect($rows)->filter(fn ($row) => $row['workspace_url'] !== null)->count() }}</div></div>
+            <div class="metric-card"><div class="metric-label">Ready for workspace</div><div class="metric-value">{{ collect($rows)->filter(fn ($row) => $row['workspace_ready'] ?? false)->count() }}</div></div>
             <div class="metric-card"><div class="metric-label">Responsible profiles</div><div class="metric-value">{{ collect($rows)->sum(fn ($row) => count($row['linked_actors'])) }}</div></div>
             <div class="metric-card"><div class="metric-label">Inactive</div><div class="metric-value">{{ collect($rows)->where('user.is_active', false)->count() }}</div></div>
         </div>

@@ -29,7 +29,7 @@ Route::get('/plugins/risks', function (Request $request, RiskRepository $reposit
             domainObjectType: 'risk',
         ),
     ]);
-})->name('plugin.risk-management.index');
+})->middleware('core.permission:plugin.risk-management.risks.view')->name('plugin.risk-management.index');
 
 Route::get('/plugins/risks/board', function (Request $request, RiskRepository $repository, ObjectAccessService $objectAccess) {
     $organizationId = (string) $request->query('organization_id', 'org-a');
@@ -46,7 +46,7 @@ Route::get('/plugins/risks/board', function (Request $request, RiskRepository $r
             domainObjectType: 'risk',
         ),
     ]);
-})->name('plugin.risk-management.board');
+})->middleware('core.permission:plugin.risk-management.risks.view')->name('plugin.risk-management.board');
 
 Route::post('/plugins/risks', function (
     Request $request,

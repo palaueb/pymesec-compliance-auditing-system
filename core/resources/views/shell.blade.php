@@ -991,7 +991,6 @@
             <div class="topbar-utility">
                 <div class="context-strip">
                     <form class="context-inline-form" method="GET" action="{{ route($currentShellRoute) }}">
-                        <input type="hidden" name="principal_id" value="{{ $principalId }}">
                         <input type="hidden" name="locale" value="{{ $locale }}">
                         <input type="hidden" name="theme" value="{{ $themeKey }}">
                         @if ($selectedMenuId !== null)
@@ -1010,7 +1009,6 @@
                     </form>
 
                     <form class="context-inline-form" method="GET" action="{{ route($currentShellRoute) }}">
-                        <input type="hidden" name="principal_id" value="{{ $principalId }}">
                         <input type="hidden" name="locale" value="{{ $locale }}">
                         <input type="hidden" name="theme" value="{{ $themeKey }}">
                         @if ($selectedMenuId !== null)
@@ -1075,7 +1073,6 @@
                             <section class="user-section">
                                 <div class="rail-label">{{ __('core.shell.language_selector') }}</div>
                                 <form method="GET" action="{{ route($currentShellRoute) }}">
-                                    <input type="hidden" name="principal_id" value="{{ $principalId }}">
                                     <input type="hidden" name="theme" value="{{ $themeKey }}">
                                     @if ($selectedMenuId !== null)
                                         <input type="hidden" name="menu" value="{{ $selectedMenuId }}">

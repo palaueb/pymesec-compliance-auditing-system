@@ -21,7 +21,7 @@ Route::get('/plugins/assets', function (Request $request) {
         'membership_ids' => $request->query('membership_ids', ['membership-org-a-hello']),
         'scope_id' => $request->query('scope_id'),
     ])->with('status', 'Saved.');
-})->name('plugin.asset-catalog.index');
+})->middleware('core.permission:plugin.asset-catalog.assets.view')->name('plugin.asset-catalog.index');
 
 Route::get('/plugins/assets/lifecycle', function (Request $request) {
     return redirect()->route('core.shell.index', [
@@ -32,7 +32,7 @@ Route::get('/plugins/assets/lifecycle', function (Request $request) {
         'membership_ids' => $request->query('membership_ids', ['membership-org-a-hello']),
         'scope_id' => $request->query('scope_id'),
     ])->with('status', 'Saved.');
-})->name('plugin.asset-catalog.lifecycle');
+})->middleware('core.permission:plugin.asset-catalog.assets.view')->name('plugin.asset-catalog.lifecycle');
 
 Route::post('/plugins/assets', function (
     Request $request,
