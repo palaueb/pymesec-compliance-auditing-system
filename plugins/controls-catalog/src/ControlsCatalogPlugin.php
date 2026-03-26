@@ -123,6 +123,11 @@ class ControlsCatalogPlugin implements PluginInterface
                             variant: 'secondary',
                         ),
                         new ToolbarAction(
+                            label: 'Framework adoption',
+                            url: route('core.shell.index', [...$query, 'menu' => 'plugin.controls-catalog.framework-adoption']),
+                            variant: 'secondary',
+                        ),
+                        new ToolbarAction(
                             label: 'Review queue',
                             url: route('core.shell.index', [...$query, 'menu' => 'plugin.controls-catalog.reviews']),
                             variant: 'secondary',
@@ -137,12 +142,38 @@ class ControlsCatalogPlugin implements PluginInterface
                         variant: 'primary',
                     ),
                     new ToolbarAction(
+                        label: 'Framework adoption',
+                        url: route('core.shell.index', [...$query, 'menu' => 'plugin.controls-catalog.framework-adoption']),
+                        variant: 'secondary',
+                    ),
+                    new ToolbarAction(
                         label: 'Review queue',
                         url: route('core.shell.index', [...$query, 'menu' => 'plugin.controls-catalog.reviews']),
                         variant: 'secondary',
                     ),
                 ];
             },
+        ));
+
+        $context->registerScreen(new ScreenDefinition(
+            menuId: 'plugin.controls-catalog.framework-adoption',
+            owner: 'controls-catalog',
+            titleKey: 'plugin.controls-catalog.screen.framework_adoption.title',
+            subtitleKey: 'plugin.controls-catalog.screen.framework_adoption.subtitle',
+            viewPath: $context->path('resources/views/framework-adoption.blade.php'),
+            dataResolver: fn (ScreenRenderContext $screenContext): array => $this->frameworkAdoptionData($context, $screenContext),
+            toolbarResolver: fn (ScreenRenderContext $screenContext): array => [
+                new ToolbarAction(
+                    label: 'Control catalog',
+                    url: route('core.shell.index', [...$this->baseQuery($screenContext), 'menu' => 'plugin.controls-catalog.root']),
+                    variant: 'secondary',
+                ),
+                new ToolbarAction(
+                    label: 'Review queue',
+                    url: route('core.shell.index', [...$this->baseQuery($screenContext), 'menu' => 'plugin.controls-catalog.reviews']),
+                    variant: 'secondary',
+                ),
+            ],
         ));
 
         $context->registerScreen(new ScreenDefinition(
@@ -156,6 +187,11 @@ class ControlsCatalogPlugin implements PluginInterface
                 new ToolbarAction(
                     label: 'Control catalog',
                     url: route('core.shell.index', [...$this->baseQuery($screenContext), 'menu' => 'plugin.controls-catalog.root']),
+                    variant: 'secondary',
+                ),
+                new ToolbarAction(
+                    label: 'Framework adoption',
+                    url: route('core.shell.index', [...$this->baseQuery($screenContext), 'menu' => 'plugin.controls-catalog.framework-adoption']),
                     variant: 'secondary',
                 ),
             ],
@@ -178,11 +214,7 @@ class ControlsCatalogPlugin implements PluginInterface
         $workflow = $context->app()->make(WorkflowServiceInterface::class);
         $actors = $context->app()->make(FunctionalActorServiceInterface::class);
         $authorization = $context->app()->make(AuthorizationServiceInterface::class);
-        $tenancy = $context->app()->make(TenancyServiceInterface::class);
         $organizationId = $screenContext->organizationId ?? 'org-a';
-        $frameworks = $repository->frameworks($organizationId);
-        $frameworkAdoptions = $repository->frameworkAdoptionMap($organizationId, $screenContext->scopeId);
-        $requirements = $repository->requirements($organizationId);
         $catalog = $objectAccess->filterRecords(
             $repository->all($organizationId, $screenContext->scopeId),
             'id',
@@ -247,61 +279,79 @@ class ControlsCatalogPlugin implements PluginInterface
 
         $listQuery = $this->baseQuery($screenContext);
         unset($listQuery['control_id']);
-
-        $scopeContext = $tenancy->resolveContext(
-            principalId: $screenContext->principal?->id,
-            requestedOrganizationId: $organizationId,
-            requestedScopeId: $screenContext->scopeId,
-            requestedMembershipIds: array_map(static fn ($membership): string => $membership->id, $screenContext->memberships),
-        );
-
-        $frameworkRows = array_map(function (array $framework) use ($frameworkAdoptions, $screenContext, $scopeContext): array {
-            $adoption = $frameworkAdoptions[$framework['id']] ?? null;
-            $scopeLabel = 'Not adopted';
-
-            if (is_array($adoption)) {
-                $scopeLabel = 'Organization-wide';
-
-                if (($adoption['scope_id'] ?? '') !== '') {
-                    foreach ($scopeContext->scopes as $scope) {
-                        if ($scope->id === $adoption['scope_id']) {
-                            $scopeLabel = $scope->name;
-                            break;
-                        }
-                    }
-                }
-            }
-
-            return [
-                ...$framework,
-                'adoption_id' => is_array($adoption) ? (string) ($adoption['id'] ?? '') : '',
-                'adoption_status' => is_array($adoption) ? (string) ($adoption['status'] ?? 'not-adopted') : 'not-adopted',
-                'adoption_scope_id' => is_array($adoption) ? (string) ($adoption['scope_id'] ?? '') : '',
-                'adoption_scope_label' => $scopeLabel,
-                'target_level' => is_array($adoption) ? (string) ($adoption['target_level'] ?? '') : '',
-                'adopted_at' => is_array($adoption) ? (string) ($adoption['adopted_at'] ?? '') : '',
-                'adoption_update_route' => route('plugin.controls-catalog.frameworks.adoption.upsert', ['frameworkId' => $framework['id']]),
-            ];
-        }, $frameworks);
+        $frameworkWorkspace = $this->frameworkWorkspaceData($context, $screenContext, $controls);
 
         return [
             'controls' => $controls,
             'selected_control' => $selectedControl,
-            'frameworks' => $frameworkRows,
-            'framework_coverage' => $this->frameworkCoverageSummary($frameworkRows, $requirements, $controls),
-            'requirements' => $requirements,
+            'frameworks' => $frameworkWorkspace['frameworks'],
+            'requirements' => $frameworkWorkspace['requirements'],
             'can_manage_controls' => $canManage,
             'query' => $this->baseQuery($screenContext),
             'list_query' => $listQuery,
             'create_route' => route('plugin.controls-catalog.store'),
-            'create_framework_route' => route('plugin.controls-catalog.frameworks.store'),
-            'create_requirement_route' => route('plugin.controls-catalog.requirements.store'),
             'owner_actor_options' => $this->actorOptions($actors, $organizationId, $screenContext->scopeId),
             'framework_options' => array_map(static fn (array $framework): array => [
                 'id' => $framework['id'],
                 'label' => sprintf('%s · %s', $framework['code'], $framework['name']),
-            ], $frameworkRows),
+            ], $frameworkWorkspace['frameworks']),
             'adopted_framework_options' => $repository->adoptedFrameworkOptions($organizationId, $screenContext->scopeId),
+            'requirement_options' => array_values(array_map(
+                static fn (array $requirement): array => [
+                    'id' => $requirement['id'],
+                    'label' => sprintf('%s · %s · %s', $requirement['framework_code'], $requirement['code'], $requirement['title']),
+                ],
+                array_filter($frameworkWorkspace['requirements'], static fn (array $req): bool => ($req['element_type'] ?? '') !== 'domain'),
+            )),
+            'scope_options' => $frameworkWorkspace['scope_options'],
+            'controls_list_url' => route('core.shell.index', [...$listQuery, 'menu' => 'plugin.controls-catalog.root']),
+            'frameworks_list_url' => route('core.shell.index', [...$listQuery, 'menu' => 'plugin.controls-catalog.framework-adoption']),
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function frameworkAdoptionData(PluginContext $context, ScreenRenderContext $screenContext): array
+    {
+        $repository = $context->app()->make(ControlsCatalogRepository::class);
+        $objectAccess = $context->app()->make(ObjectAccessService::class);
+        $authorization = $context->app()->make(AuthorizationServiceInterface::class);
+        $organizationId = $screenContext->organizationId ?? 'org-a';
+        $catalog = $objectAccess->filterRecords(
+            $repository->all($organizationId, $screenContext->scopeId),
+            'id',
+            $screenContext->principal?->id,
+            $organizationId,
+            $screenContext->scopeId,
+            'control',
+        );
+        $requirementsByControl = $repository->requirementsForControls(array_map(
+            static fn (array $control): string => $control['id'],
+            $catalog,
+        ));
+        $controls = array_map(static function (array $control) use ($requirementsByControl): array {
+            return [
+                ...$control,
+                'requirements' => $requirementsByControl[$control['id']] ?? [],
+            ];
+        }, $catalog);
+        $frameworkWorkspace = $this->frameworkWorkspaceData($context, $screenContext, $controls);
+
+        return [
+            'frameworks' => $frameworkWorkspace['frameworks'],
+            'requirements' => $frameworkWorkspace['requirements'],
+            'scope_options' => $frameworkWorkspace['scope_options'],
+            'query' => $this->baseQuery($screenContext),
+            'can_manage_controls' => $screenContext->principal !== null && $authorization->authorize(new AuthorizationContext(
+                principal: $screenContext->principal,
+                permission: 'plugin.controls-catalog.controls.manage',
+                memberships: $screenContext->memberships,
+                organizationId: $organizationId,
+                scopeId: $screenContext->scopeId,
+            ))->allowed(),
+            'create_framework_route' => route('plugin.controls-catalog.frameworks.store'),
+            'create_requirement_route' => route('plugin.controls-catalog.requirements.store'),
             'framework_adoption_status_options' => [
                 'active' => 'Active',
                 'in-progress' => 'In progress',
@@ -312,15 +362,6 @@ class ControlsCatalogPlugin implements PluginInterface
                 'medium' => 'Medium',
                 'high' => 'High',
             ],
-            'requirement_options' => array_values(array_map(
-                static fn (array $requirement): array => [
-                    'id' => $requirement['id'],
-                    'label' => sprintf('%s · %s · %s', $requirement['framework_code'], $requirement['code'], $requirement['title']),
-                ],
-                array_filter($requirements, static fn (array $req): bool => ($req['element_type'] ?? '') !== 'domain'),
-            )),
-            'scope_options' => array_map(static fn ($scope): array => $scope->toArray(), $scopeContext->scopes),
-            'controls_list_url' => route('core.shell.index', [...$listQuery, 'menu' => 'plugin.controls-catalog.root']),
         ];
     }
 
@@ -437,6 +478,97 @@ class ControlsCatalogPlugin implements PluginInterface
 
         return [
             'rows' => $rows,
+        ];
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $controls
+     * @return array<string, mixed>
+     */
+    private function frameworkWorkspaceData(PluginContext $context, ScreenRenderContext $screenContext, array $controls): array
+    {
+        $repository = $context->app()->make(ControlsCatalogRepository::class);
+        $artifacts = $context->app()->make(ArtifactServiceInterface::class);
+        $tenancy = $context->app()->make(TenancyServiceInterface::class);
+        $organizationId = $screenContext->organizationId ?? 'org-a';
+        $frameworks = $repository->frameworks($organizationId);
+        $frameworkAdoptions = $repository->frameworkAdoptionMap($organizationId, $screenContext->scopeId);
+        $requirements = $repository->requirements($organizationId);
+        $requirementsByFramework = [];
+
+        foreach ($requirements as $requirement) {
+            if (($requirement['element_type'] ?? '') === 'domain') {
+                continue;
+            }
+
+            $frameworkId = (string) ($requirement['framework_id'] ?? '');
+
+            if ($frameworkId === '') {
+                continue;
+            }
+
+            $requirementsByFramework[$frameworkId][] = $requirement;
+        }
+
+        $scopeContext = $tenancy->resolveContext(
+            principalId: $screenContext->principal?->id,
+            requestedOrganizationId: $organizationId,
+            requestedScopeId: $screenContext->scopeId,
+            requestedMembershipIds: array_map(static fn ($membership): string => $membership->id, $screenContext->memberships),
+        );
+
+        $frameworkRows = array_map(function (array $framework) use (
+            $frameworkAdoptions,
+            $scopeContext,
+            $artifacts,
+            $organizationId,
+            $requirementsByFramework
+        ): array {
+            $adoption = $frameworkAdoptions[$framework['id']] ?? null;
+            $scopeLabel = 'Not adopted';
+            $mandateArtifacts = [];
+
+            if (is_array($adoption)) {
+                $scopeLabel = 'Organization-wide';
+
+                if (($adoption['scope_id'] ?? '') !== '') {
+                    foreach ($scopeContext->scopes as $scope) {
+                        if ($scope->id === $adoption['scope_id']) {
+                            $scopeLabel = $scope->name;
+                            break;
+                        }
+                    }
+                }
+
+                $adoptionScopeId = ($adoption['scope_id'] ?? '') !== '' ? (string) $adoption['scope_id'] : null;
+                $mandateArtifacts = array_values(array_filter(
+                    array_map(
+                        static fn ($artifact): array => $artifact->toArray(),
+                        $artifacts->forSubject('framework-adoption', (string) $adoption['id'], $organizationId, $adoptionScopeId, 10),
+                    ),
+                    static fn (array $artifact): bool => ($artifact['artifact_type'] ?? '') === 'mandate-document',
+                ));
+            }
+
+            return [
+                ...$framework,
+                'adoption_id' => is_array($adoption) ? (string) ($adoption['id'] ?? '') : '',
+                'adoption_status' => is_array($adoption) ? (string) ($adoption['status'] ?? 'not-adopted') : 'not-adopted',
+                'adoption_scope_id' => is_array($adoption) ? (string) ($adoption['scope_id'] ?? '') : '',
+                'adoption_scope_label' => $scopeLabel,
+                'target_level' => is_array($adoption) ? (string) ($adoption['target_level'] ?? '') : '',
+                'adopted_at' => is_array($adoption) ? (string) ($adoption['adopted_at'] ?? '') : '',
+                'adoption_update_route' => route('plugin.controls-catalog.frameworks.adoption.upsert', ['frameworkId' => $framework['id']]),
+                'requirements' => $requirementsByFramework[$framework['id']] ?? [],
+                'mandate_document' => $mandateArtifacts[0] ?? null,
+                'mandate_document_count' => count($mandateArtifacts),
+            ];
+        }, $frameworks);
+
+        return [
+            'frameworks' => $this->frameworkCoverageSummary($frameworkRows, $requirements, $controls),
+            'requirements' => $requirements,
+            'scope_options' => array_map(static fn ($scope): array => $scope->toArray(), $scopeContext->scopes),
         ];
     }
 

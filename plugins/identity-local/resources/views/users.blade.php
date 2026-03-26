@@ -1,4 +1,14 @@
 <section class="module-screen">
+    @if ($errors->any())
+        <div class="surface-card">
+            <div class="surface-note error">
+                @foreach ($errors->all() as $error)
+                    <div>{{ $error }}</div>
+                @endforeach
+            </div>
+        </div>
+    @endif
+
     @if (is_array($selected_row))
         @php $selectedUser = $selected_row['user']; @endphp
         <div class="surface-card" style="padding:16px; display:grid; gap:16px;">
@@ -178,6 +188,37 @@
                     <div class="action-cluster" style="margin-top:14px;"><button class="button button-primary" type="submit">Add person</button></div>
                 </form>
             </div>
+
+            <div class="surface-card" id="identity-user-import" hidden>
+                <div class="row-between" style="margin-bottom:14px;">
+                    <div>
+                        <div class="eyebrow">People</div>
+                        <div class="entity-title" style="font-size:24px;">Import people from CSV / TSV</div>
+                    </div>
+                </div>
+
+                <div class="surface-note" style="margin-bottom:14px;">
+                    Required columns: full name and work email. Username is optional and will be generated safely when missing. Team or department is optional and maps to the local role field. The import stays blocked until every row is valid.
+                </div>
+
+                <form class="upload-form" method="POST" action="{{ $import_upload_route }}" enctype="multipart/form-data">
+                    @csrf
+                    <input type="hidden" name="principal_id" value="{{ $query['principal_id'] ?? '' }}">
+                    <input type="hidden" name="organization_id" value="{{ $organization_id }}">
+                    <input type="hidden" name="locale" value="{{ $query['locale'] }}">
+                    <input type="hidden" name="menu" value="plugin.identity-local.users">
+                    <input type="hidden" name="membership_id" value="{{ $query['membership_ids'][0] ?? 'membership-org-a-hello' }}">
+
+                    <div class="field">
+                        <label class="field-label" for="identity-import-file">CSV or TSV file</label>
+                        <input class="field-input" id="identity-import-file" name="import_file" type="file" accept=".csv,.tsv,.txt,text/csv,text/tab-separated-values" required>
+                    </div>
+
+                    <div class="action-cluster" style="margin-top:14px;">
+                        <button class="button button-primary" type="submit">Upload file</button>
+                    </div>
+                </form>
+            </div>
         @endif
 
         <div class="overview-grid" style="grid-template-columns:repeat(4, minmax(0, 1fr));">
@@ -186,6 +227,184 @@
             <div class="metric-card"><div class="metric-label">Responsible profiles</div><div class="metric-value">{{ collect($rows)->sum(fn ($row) => count($row['linked_actors'])) }}</div></div>
             <div class="metric-card"><div class="metric-label">Inactive</div><div class="metric-value">{{ collect($rows)->where('user.is_active', false)->count() }}</div></div>
         </div>
+
+        @if ($can_manage_users && is_array($import_upload))
+            @php $currentMapping = is_array($import_review['mapping'] ?? null) ? $import_review['mapping'] : ($import_upload['default_mapping'] ?? []); @endphp
+            <div class="surface-card">
+                <div class="row-between" style="margin-bottom:12px; gap:12px;">
+                    <div>
+                        <div class="eyebrow">Import</div>
+                        <div class="entity-title" style="font-size:20px;">Map uploaded columns</div>
+                    </div>
+                    <div class="action-cluster">
+                        <div class="table-note">{{ $import_upload['file_name'] }} · {{ $import_upload['delimiter_label'] }} · {{ $import_upload['row_count'] }} rows</div>
+                        <form method="POST" action="{{ $import_reset_route }}">
+                            @csrf
+                            <input type="hidden" name="principal_id" value="{{ $query['principal_id'] ?? '' }}">
+                            <input type="hidden" name="organization_id" value="{{ $organization_id }}">
+                            <input type="hidden" name="locale" value="{{ $query['locale'] }}">
+                            <input type="hidden" name="menu" value="plugin.identity-local.users">
+                            <input type="hidden" name="membership_id" value="{{ $query['membership_ids'][0] ?? 'membership-org-a-hello' }}">
+                            <button class="button button-ghost" type="submit">Reset import</button>
+                        </form>
+                    </div>
+                </div>
+
+                <form class="upload-form" method="POST" action="{{ $import_review_route }}">
+                    @csrf
+                    <input type="hidden" name="principal_id" value="{{ $query['principal_id'] ?? '' }}">
+                    <input type="hidden" name="organization_id" value="{{ $organization_id }}">
+                    <input type="hidden" name="locale" value="{{ $query['locale'] }}">
+                    <input type="hidden" name="menu" value="plugin.identity-local.users">
+                    <input type="hidden" name="membership_id" value="{{ $query['membership_ids'][0] ?? 'membership-org-a-hello' }}">
+
+                    <div class="overview-grid" style="grid-template-columns:repeat(2, minmax(0, 1fr));">
+                        <div class="field">
+                            <label class="field-label">Full name</label>
+                            <select class="field-select" name="mapping[display_name]" required>
+                                <option value="">Select a column</option>
+                                @foreach ($import_upload['headers'] as $header)
+                                    <option value="{{ $header }}" @selected(($currentMapping['display_name'] ?? '') === $header)>{{ $header }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="field">
+                            <label class="field-label">Work email</label>
+                            <select class="field-select" name="mapping[email]" required>
+                                <option value="">Select a column</option>
+                                @foreach ($import_upload['headers'] as $header)
+                                    <option value="{{ $header }}" @selected(($currentMapping['email'] ?? '') === $header)>{{ $header }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="field">
+                            <label class="field-label">Username</label>
+                            <select class="field-select" name="mapping[username]">
+                                <option value="">Generate automatically</option>
+                                @foreach ($import_upload['headers'] as $header)
+                                    <option value="{{ $header }}" @selected(($currentMapping['username'] ?? '') === $header)>{{ $header }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="field">
+                            <label class="field-label">Team / department</label>
+                            <select class="field-select" name="mapping[job_title]">
+                                <option value="">Do not import</option>
+                                @foreach ($import_upload['headers'] as $header)
+                                    <option value="{{ $header }}" @selected(($currentMapping['job_title'] ?? '') === $header)>{{ $header }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+
+                    <details style="margin-top:12px;">
+                        <summary class="button button-ghost" style="display:inline-flex;">Preview raw rows</summary>
+                        <div class="table-card" style="margin-top:12px;">
+                            <table class="entity-table">
+                                <thead>
+                                    <tr>
+                                        @foreach ($import_upload['headers'] as $header)
+                                            <th>{{ $header }}</th>
+                                        @endforeach
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach ($import_upload['sample_rows'] as $sampleRow)
+                                        <tr>
+                                            @foreach ($import_upload['headers'] as $header)
+                                                <td>{{ $sampleRow[$header] ?? '' }}</td>
+                                            @endforeach
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div>
+                    </details>
+
+                    <div class="action-cluster" style="margin-top:14px;">
+                        <button class="button button-secondary" type="submit">Validate import</button>
+                    </div>
+                </form>
+            </div>
+        @endif
+
+        @if ($can_manage_users && is_array($import_review))
+            <div class="surface-card">
+                <div class="row-between" style="margin-bottom:12px; gap:12px;">
+                    <div>
+                        <div class="eyebrow">Import review</div>
+                        <div class="entity-title" style="font-size:20px;">Validation results</div>
+                    </div>
+                    <div class="action-cluster">
+                        <div class="table-note">
+                            {{ $import_review['summary']['valid_count'] ?? 0 }} valid · {{ $import_review['summary']['invalid_count'] ?? 0 }} invalid
+                        </div>
+                        <form method="POST" action="{{ $import_reset_route }}">
+                            @csrf
+                            <input type="hidden" name="principal_id" value="{{ $query['principal_id'] ?? '' }}">
+                            <input type="hidden" name="organization_id" value="{{ $organization_id }}">
+                            <input type="hidden" name="locale" value="{{ $query['locale'] }}">
+                            <input type="hidden" name="menu" value="plugin.identity-local.users">
+                            <input type="hidden" name="membership_id" value="{{ $query['membership_ids'][0] ?? 'membership-org-a-hello' }}">
+                            <button class="button button-ghost" type="submit">Reset import</button>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="surface-note" style="margin-bottom:12px;">
+                    Usernames are normalized to lowercase. Generated usernames are shown below before you confirm the import.
+                </div>
+
+                <div class="table-card">
+                    <table class="entity-table">
+                        <thead>
+                            <tr>
+                                <th>Row</th>
+                                <th>Full name</th>
+                                <th>Email</th>
+                                <th>Username</th>
+                                <th>Team / department</th>
+                                <th>Validation</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach ($import_review['rows'] as $row)
+                                <tr>
+                                    <td>{{ $row['row_number'] }}</td>
+                                    <td>{{ $row['normalized']['display_name'] }}</td>
+                                    <td>{{ $row['normalized']['email'] }}</td>
+                                    <td>{{ $row['normalized']['username'] }}</td>
+                                    <td>{{ $row['normalized']['job_title'] !== '' ? $row['normalized']['job_title'] : 'Not imported' }}</td>
+                                    <td>
+                                        @if ($row['errors'] === [])
+                                            <span class="pill">ready</span>
+                                        @else
+                                            <div class="data-stack">
+                                                @foreach ($row['errors'] as $error)
+                                                    <div class="data-item">{{ $error }}</div>
+                                                @endforeach
+                                            </div>
+                                        @endif
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
+
+                @if (($import_review['summary']['invalid_count'] ?? 0) === 0)
+                    <form method="POST" action="{{ $import_commit_route }}" style="margin-top:14px;">
+                        @csrf
+                        <input type="hidden" name="principal_id" value="{{ $query['principal_id'] ?? '' }}">
+                        <input type="hidden" name="organization_id" value="{{ $organization_id }}">
+                        <input type="hidden" name="locale" value="{{ $query['locale'] }}">
+                        <input type="hidden" name="menu" value="plugin.identity-local.users">
+                        <input type="hidden" name="membership_id" value="{{ $query['membership_ids'][0] ?? 'membership-org-a-hello' }}">
+                        <button class="button button-primary" type="submit">Create {{ $import_review['summary']['valid_count'] }} people</button>
+                    </form>
+                @endif
+            </div>
+        @endif
 
         <div class="table-card">
             <table class="entity-table">

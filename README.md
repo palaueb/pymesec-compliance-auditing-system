@@ -113,6 +113,11 @@ docker compose exec app php artisan plugins:enable identity-local
 docker compose exec app php artisan plugins:enable identity-ldap
 docker compose exec app php artisan plugins:disable hello-world
 ```
+## Email login on test
+
+If you are on development you can check for code and email magic link at command:
+
+``` # /core$ docker compose exec app tail -f storage/logs/laravel.log ```
 
 ## LDAP Demo
 

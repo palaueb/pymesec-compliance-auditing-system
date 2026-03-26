@@ -1,8 +1,11 @@
 {
   "plugin.controls-catalog.nav.root": "Controls",
+  "plugin.controls-catalog.nav.framework_adoption": "Framework Adoption",
   "plugin.controls-catalog.nav.reviews": "Reviews",
   "plugin.controls-catalog.screen.catalog.title": "Controls Catalog",
-  "plugin.controls-catalog.screen.catalog.subtitle": "Shared controls, framework coverage, owners and evidence in one place.",
+  "plugin.controls-catalog.screen.catalog.subtitle": "Shared controls, owners, workflow state and evidence in one place.",
+  "plugin.controls-catalog.screen.framework_adoption.title": "Framework Adoption",
+  "plugin.controls-catalog.screen.framework_adoption.subtitle": "Adopt frameworks per workspace, capture the signed mandate, and review their requirements in context.",
   "plugin.controls-catalog.screen.reviews.title": "Control Reviews",
   "plugin.controls-catalog.screen.reviews.subtitle": "Review queue for pending control approvals and follow-up."
 }

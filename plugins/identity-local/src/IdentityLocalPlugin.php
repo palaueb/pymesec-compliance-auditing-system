@@ -38,6 +38,12 @@ class IdentityLocalPlugin implements IdentityPluginInterface
             tenancy: $app->make(TenancyServiceInterface::class),
         ));
 
+        $context->app()->singleton(IdentityUserImportService::class, fn ($app) => new IdentityUserImportService(
+            users: $app->make(IdentityLocalRepository::class),
+            audit: $app->make(AuditTrailInterface::class),
+            events: $app->make(EventBusInterface::class),
+        ));
+
         $context->registerScreen(new ScreenDefinition(
             menuId: 'plugin.identity-local.users',
             owner: 'identity-local',
@@ -68,6 +74,11 @@ class IdentityLocalPlugin implements IdentityPluginInterface
                         label: 'Add person',
                         url: '#identity-user-editor',
                         variant: 'primary',
+                    ),
+                    new ToolbarAction(
+                        label: 'Import CSV/TSV',
+                        url: '#identity-user-import',
+                        variant: 'secondary',
                     ),
                     new ToolbarAction(
                         label: 'Access',
@@ -173,6 +184,17 @@ class IdentityLocalPlugin implements IdentityPluginInterface
             }
         }
 
+        $importUpload = session('identity_local_user_import_upload');
+        $importReview = session('identity_local_user_import_review');
+
+        if (! is_array($importUpload) || (($importUpload['organization_id'] ?? null) !== $organizationId)) {
+            $importUpload = null;
+        }
+
+        if (! is_array($importReview) || (($importReview['organization_id'] ?? null) !== $organizationId)) {
+            $importReview = null;
+        }
+
         return [
             'rows' => $rows,
             'selected_row' => $selectedRow,
@@ -183,6 +205,12 @@ class IdentityLocalPlugin implements IdentityPluginInterface
             'owner_actor_options' => $this->actorOptions($actors, $organizationId, $screenContext->scopeId),
             'can_manage_users' => $this->can($authorization, $screenContext, 'plugin.identity-local.users.manage', $organizationId),
             'users_list_url' => route('core.admin.index', [...$listQuery, 'menu' => 'plugin.identity-local.users']),
+            'import_upload_route' => route('plugin.identity-local.users.import.upload'),
+            'import_review_route' => route('plugin.identity-local.users.import.review'),
+            'import_commit_route' => route('plugin.identity-local.users.import.commit'),
+            'import_reset_route' => route('plugin.identity-local.users.import.reset'),
+            'import_upload' => $importUpload,
+            'import_review' => $importReview,
         ];
     }
 

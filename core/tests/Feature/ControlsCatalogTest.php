@@ -33,21 +33,30 @@ class ControlsCatalogTest extends TestCase
             ->assertSee('Controls Catalog')
             ->assertSee('Quarterly Access Review')
             ->assertDontSee('Backup Governance')
-            ->assertSee('A.5.18')
-            ->assertSee('ENS')
-            ->assertSee('GDPR')
-            ->assertSee('Framework adoption')
+            ->assertSee('Open framework adoption')
             ->assertSee('Ava Mason')
             ->assertSee('Create control');
     }
 
-    public function test_framework_adoption_can_be_managed_from_the_controls_catalog(): void
+    public function test_framework_adoption_screen_renders_inside_the_shell(): void
     {
+        $this->get('/app?menu=plugin.controls-catalog.framework-adoption&principal_id=principal-org-a&organization_id=org-a&scope_id=scope-eu&membership_ids[]=membership-org-a-hello')
+            ->assertOk()
+            ->assertSee('Framework Adoption')
+            ->assertSee('ISO 27001')
+            ->assertSee('GDPR')
+            ->assertSee('Signed mandate document');
+    }
+
+    public function test_framework_adoption_can_be_managed_with_a_signed_mandate_document(): void
+    {
+        Storage::fake('local');
+
         $payload = [
             'principal_id' => 'principal-org-a',
             'organization_id' => 'org-a',
             'locale' => 'en',
-            'menu' => 'plugin.controls-catalog.root',
+            'menu' => 'plugin.controls-catalog.framework-adoption',
             'membership_id' => 'membership-org-a-hello',
         ];
 
@@ -56,13 +65,35 @@ class ControlsCatalogTest extends TestCase
             'scope_id' => 'scope-eu',
             'status' => 'active',
             'adopted_at' => '2026-03-01',
+            'mandate_document' => UploadedFile::fake()->createWithContent('gdpr-mandate.pdf', 'signed-by-management'),
         ])->assertFound();
 
-        $this->get('/app?menu=plugin.controls-catalog.root&principal_id=principal-org-a&organization_id=org-a&scope_id=scope-eu&membership_ids[]=membership-org-a-hello')
+        $this->get('/app?menu=plugin.controls-catalog.framework-adoption&principal_id=principal-org-a&organization_id=org-a&scope_id=scope-eu&membership_ids[]=membership-org-a-hello')
             ->assertOk()
             ->assertSee('GDPR')
             ->assertSee('active')
-            ->assertSee('2026-03-01');
+            ->assertSee('2026-03-01')
+            ->assertSee('gdpr-mandate.pdf');
+    }
+
+    public function test_framework_adoption_requires_a_signed_mandate_document_before_activation(): void
+    {
+        $payload = [
+            'principal_id' => 'principal-org-a',
+            'organization_id' => 'org-a',
+            'locale' => 'en',
+            'menu' => 'plugin.controls-catalog.framework-adoption',
+            'membership_id' => 'membership-org-a-hello',
+        ];
+
+        $this->from('/app?menu=plugin.controls-catalog.framework-adoption&principal_id=principal-org-a&organization_id=org-a&scope_id=scope-eu&membership_ids[]=membership-org-a-hello')
+            ->post('/plugins/controls/frameworks/framework-gdpr/adoption', [
+                ...$payload,
+                'scope_id' => 'scope-eu',
+                'status' => 'active',
+                'adopted_at' => '2026-03-01',
+            ])
+            ->assertSessionHasErrors('mandate_document');
     }
 
     public function test_control_review_transition_creates_due_notification_and_scheduler_dispatches_it(): void

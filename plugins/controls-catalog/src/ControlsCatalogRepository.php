@@ -149,6 +149,57 @@ class ControlsCatalogRepository
     /**
      * @return array<string, string>|null
      */
+    public function findFrameworkAdoption(string $organizationId, string $frameworkId, ?string $scopeId = null): ?array
+    {
+        if (! Schema::hasTable('org_framework_adoptions') || ! $this->hasFrameworkTables()) {
+            return null;
+        }
+
+        $row = DB::table('org_framework_adoptions as adoptions')
+            ->join('frameworks', 'frameworks.id', '=', 'adoptions.framework_id')
+            ->where('adoptions.organization_id', $organizationId)
+            ->where('adoptions.framework_id', $frameworkId)
+            ->where(function ($query) use ($scopeId): void {
+                if ($scopeId === null || $scopeId === '') {
+                    $query->whereNull('adoptions.scope_id');
+
+                    return;
+                }
+
+                $query->where('adoptions.scope_id', $scopeId);
+            })
+            ->first([
+                'adoptions.id',
+                'adoptions.organization_id',
+                'adoptions.framework_id',
+                'adoptions.scope_id',
+                'adoptions.target_level',
+                'adoptions.adopted_at',
+                'adoptions.status',
+                'frameworks.code as framework_code',
+                'frameworks.name as framework_name',
+            ]);
+
+        if ($row === null) {
+            return null;
+        }
+
+        return [
+            'id' => (string) $row->id,
+            'organization_id' => (string) $row->organization_id,
+            'framework_id' => (string) $row->framework_id,
+            'framework_code' => (string) $row->framework_code,
+            'framework_name' => $this->translateIfKey((string) $row->framework_name),
+            'scope_id' => is_string($row->scope_id) ? $row->scope_id : '',
+            'target_level' => is_string($row->target_level) ? $row->target_level : '',
+            'adopted_at' => is_string($row->adopted_at) ? $row->adopted_at : '',
+            'status' => is_string($row->status) ? $row->status : 'active',
+        ];
+    }
+
+    /**
+     * @return array<string, string>|null
+     */
     public function findFramework(string $organizationId, string $frameworkId): ?array
     {
         if (! $this->hasFrameworkTables()) {

@@ -58,6 +58,15 @@
       "permission": "plugin.controls-catalog.controls.view"
     },
     {
+      "id": "plugin.controls-catalog.framework-adoption",
+      "label_key": "plugin.controls-catalog.nav.framework_adoption",
+      "route": "plugin.controls-catalog.framework-adoption",
+      "parent_id": "plugin.controls-catalog.root",
+      "icon": "layers",
+      "order": 5,
+      "permission": "plugin.controls-catalog.controls.view"
+    },
+    {
       "id": "plugin.controls-catalog.reviews",
       "label_key": "plugin.controls-catalog.nav.reviews",
       "route": "plugin.controls-catalog.reviews",

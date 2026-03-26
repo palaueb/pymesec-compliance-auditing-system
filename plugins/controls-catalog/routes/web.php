@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Http\Request;
+use Illuminate\Validation\ValidationException;
 use Illuminate\Support\Facades\Route;
 use PymeSec\Core\Artifacts\ArtifactUploadData;
 use PymeSec\Core\Artifacts\Contracts\ArtifactServiceInterface;
@@ -43,6 +44,18 @@ Route::get('/plugins/controls/reviews', function (Request $request, ControlsCata
         ),
     ]);
 })->middleware('core.permission:plugin.controls-catalog.controls.view')->name('plugin.controls-catalog.reviews');
+
+Route::get('/plugins/controls/framework-adoption', function (Request $request, ControlsCatalogRepository $repository) {
+    $organizationId = (string) $request->query('organization_id', 'org-a');
+    $scopeId = is_string($request->query('scope_id')) ? (string) $request->query('scope_id') : null;
+
+    return response()->json([
+        'plugin' => 'controls-catalog',
+        'frameworks' => $repository->frameworks($organizationId),
+        'adoptions' => array_values($repository->frameworkAdoptionMap($organizationId, $scopeId)),
+        'requirements' => $repository->requirements($organizationId),
+    ]);
+})->middleware('core.permission:plugin.controls-catalog.controls.view')->name('plugin.controls-catalog.framework-adoption');
 
 Route::post('/plugins/controls', function (
     Request $request,
@@ -102,11 +115,14 @@ Route::post('/plugins/controls/frameworks', function (
     $principalId = (string) $request->input('principal_id', 'principal-org-a');
     $membershipId = $request->input('membership_id');
     $scopeId = $request->input('scope_id');
+    $menu = is_string($request->input('menu')) && $request->input('menu') !== ''
+        ? (string) $request->input('menu')
+        : 'plugin.controls-catalog.root';
 
     $repository->createFramework($validated);
 
     return redirect()->route('core.shell.index', array_filter([
-        'menu' => 'plugin.controls-catalog.root',
+        'menu' => $menu,
         'principal_id' => $principalId,
         'organization_id' => $validated['organization_id'],
         'control_id' => is_string($request->input('control_id')) && $request->input('control_id') !== '' ? (string) $request->input('control_id') : null,
@@ -119,7 +135,8 @@ Route::post('/plugins/controls/frameworks', function (
 Route::post('/plugins/controls/frameworks/{frameworkId}/adoption', function (
     Request $request,
     string $frameworkId,
-    ControlsCatalogRepository $repository
+    ControlsCatalogRepository $repository,
+    ArtifactServiceInterface $artifacts,
 ) {
     $validated = $request->validate([
         'organization_id' => ['required', 'string', 'max:64'],
@@ -127,22 +144,74 @@ Route::post('/plugins/controls/frameworks/{frameworkId}/adoption', function (
         'status' => ['required', 'in:active,in-progress,inactive'],
         'target_level' => ['nullable', 'in:basic,medium,high'],
         'adopted_at' => ['nullable', 'date'],
+        'mandate_document' => ['nullable', 'file', 'max:10240'],
     ]);
 
     $principalId = (string) $request->input('principal_id', 'principal-org-a');
     $membershipId = $request->input('membership_id');
+    $menu = is_string($request->input('menu')) && $request->input('menu') !== ''
+        ? (string) $request->input('menu')
+        : 'plugin.controls-catalog.framework-adoption';
+    $scopeId = is_string($validated['scope_id'] ?? null) && $validated['scope_id'] !== ''
+        ? (string) $validated['scope_id']
+        : null;
+    $existingAdoption = $repository->findFrameworkAdoption(
+        organizationId: (string) $validated['organization_id'],
+        frameworkId: $frameworkId,
+        scopeId: $scopeId,
+    );
+    $hasExistingMandate = false;
 
-    $repository->upsertFrameworkAdoption(
+    if ($existingAdoption !== null) {
+        $hasExistingMandate = $artifacts->latest(1, array_filter([
+            'subject_type' => 'framework-adoption',
+            'subject_id' => $existingAdoption['id'],
+            'artifact_type' => 'mandate-document',
+            'organization_id' => (string) $validated['organization_id'],
+            'scope_id' => $scopeId,
+        ], static fn (mixed $value): bool => is_string($value) && $value !== '')) !== [];
+    }
+
+    if (($validated['status'] ?? null) === 'active' && ! $request->hasFile('mandate_document') && ! $hasExistingMandate) {
+        throw ValidationException::withMessages([
+            'mandate_document' => 'Upload the signed mandate document before activating framework adoption.',
+        ]);
+    }
+
+    $adoption = $repository->upsertFrameworkAdoption(
         organizationId: (string) $validated['organization_id'],
         frameworkId: $frameworkId,
         data: $validated,
     );
 
+    if ($request->hasFile('mandate_document') && $adoption !== null) {
+        $framework = $repository->findFramework((string) $validated['organization_id'], $frameworkId);
+
+        $artifacts->store(new ArtifactUploadData(
+            ownerComponent: 'controls-catalog',
+            subjectType: 'framework-adoption',
+            subjectId: $adoption['id'],
+            artifactType: 'mandate-document',
+            label: 'Signed mandate document',
+            file: $validated['mandate_document'],
+            principalId: $principalId,
+            membershipId: is_string($membershipId) && $membershipId !== '' ? $membershipId : null,
+            organizationId: (string) $validated['organization_id'],
+            scopeId: $scopeId,
+            metadata: [
+                'plugin' => 'controls-catalog',
+                'framework_id' => $frameworkId,
+                'framework_name' => $framework['name'] ?? $frameworkId,
+                'adoption_status' => $validated['status'],
+            ],
+        ));
+    }
+
     return redirect()->route('core.shell.index', array_filter([
-        'menu' => 'plugin.controls-catalog.root',
+        'menu' => $menu,
         'principal_id' => $principalId,
         'organization_id' => $validated['organization_id'],
-        'scope_id' => is_string($validated['scope_id'] ?? null) && $validated['scope_id'] !== '' ? $validated['scope_id'] : null,
+        'scope_id' => $scopeId,
         'locale' => $request->input('locale', 'en'),
         'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
     ]))->with('status', 'Framework adoption updated.');
@@ -163,11 +232,14 @@ Route::post('/plugins/controls/requirements', function (
     $principalId = (string) $request->input('principal_id', 'principal-org-a');
     $membershipId = $request->input('membership_id');
     $scopeId = $request->input('scope_id');
+    $menu = is_string($request->input('menu')) && $request->input('menu') !== ''
+        ? (string) $request->input('menu')
+        : 'plugin.controls-catalog.root';
 
     $repository->createRequirement($validated);
 
     return redirect()->route('core.shell.index', array_filter([
-        'menu' => 'plugin.controls-catalog.root',
+        'menu' => $menu,
         'principal_id' => $principalId,
         'organization_id' => $validated['organization_id'],
         'control_id' => is_string($request->input('control_id')) && $request->input('control_id') !== '' ? (string) $request->input('control_id') : null,

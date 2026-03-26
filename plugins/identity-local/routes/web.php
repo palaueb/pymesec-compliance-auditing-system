@@ -7,6 +7,7 @@ use Illuminate\Validation\Rule;
 use PymeSec\Core\FunctionalActors\Contracts\FunctionalActorServiceInterface;
 use PymeSec\Plugins\IdentityLocal\IdentityLocalAuthService;
 use PymeSec\Plugins\IdentityLocal\IdentityLocalRepository;
+use PymeSec\Plugins\IdentityLocal\IdentityUserImportService;
 
 Route::get('/setup', function (IdentityLocalAuthService $auth) {
     if (! $auth->requiresBootstrap()) {
@@ -173,6 +174,136 @@ Route::get('/plugins/identity/users', function (Request $request, IdentityLocalR
         'users' => $repository->usersForOrganization((string) $request->query('organization_id', 'org-a')),
     ]);
 })->middleware('core.permission:plugin.identity-local.users.view')->name('plugin.identity-local.users.index');
+
+Route::post('/plugins/identity/users/import/upload', function (
+    Request $request,
+    IdentityUserImportService $imports,
+) {
+    $validated = $request->validate([
+        'import_file' => ['required', 'file', 'max:1024'],
+        'organization_id' => ['required', 'string', 'max:64'],
+    ]);
+
+    $requesterPrincipalId = (string) $request->input('principal_id', 'principal-org-a');
+    $requesterMembershipId = $request->input('membership_id');
+    $upload = $imports->beginImport($validated['import_file'], (string) $validated['organization_id'], $requesterPrincipalId);
+
+    session()->put('identity_local_user_import_upload', [
+        ...$upload,
+        'organization_id' => (string) $validated['organization_id'],
+    ]);
+    session()->forget('identity_local_user_import_review');
+
+    return redirect()->route('core.admin.index', array_filter([
+        'menu' => 'plugin.identity-local.users',
+        'principal_id' => $requesterPrincipalId,
+        'organization_id' => (string) $validated['organization_id'],
+        'locale' => $request->input('locale', 'en'),
+        'membership_ids' => is_string($requesterMembershipId) && $requesterMembershipId !== '' ? [$requesterMembershipId] : null,
+    ]))->with('status', 'Map the uploaded columns before validating the import.');
+})->middleware('core.permission:plugin.identity-local.users.manage')->name('plugin.identity-local.users.import.upload');
+
+Route::post('/plugins/identity/users/import/reset', function (Request $request) {
+    $validated = $request->validate([
+        'organization_id' => ['required', 'string', 'max:64'],
+    ]);
+
+    $requesterPrincipalId = (string) $request->input('principal_id', 'principal-org-a');
+    $requesterMembershipId = $request->input('membership_id');
+
+    session()->forget(['identity_local_user_import_upload', 'identity_local_user_import_review']);
+
+    return redirect()->route('core.admin.index', array_filter([
+        'menu' => 'plugin.identity-local.users',
+        'principal_id' => $requesterPrincipalId,
+        'organization_id' => (string) $validated['organization_id'],
+        'locale' => $request->input('locale', 'en'),
+        'membership_ids' => is_string($requesterMembershipId) && $requesterMembershipId !== '' ? [$requesterMembershipId] : null,
+    ]))->with('status', 'The user import wizard has been reset.');
+})->middleware('core.permission:plugin.identity-local.users.manage')->name('plugin.identity-local.users.import.reset');
+
+Route::post('/plugins/identity/users/import/review', function (
+    Request $request,
+    IdentityUserImportService $imports,
+) {
+    $validated = $request->validate([
+        'organization_id' => ['required', 'string', 'max:64'],
+        'mapping' => ['required', 'array'],
+        'mapping.display_name' => ['required', 'string', 'max:190'],
+        'mapping.email' => ['required', 'string', 'max:190'],
+        'mapping.username' => ['nullable', 'string', 'max:190'],
+        'mapping.job_title' => ['nullable', 'string', 'max:190'],
+    ]);
+
+    $requesterPrincipalId = (string) $request->input('principal_id', 'principal-org-a');
+    $requesterMembershipId = $request->input('membership_id');
+    $uploadState = session('identity_local_user_import_upload');
+
+    if (! is_array($uploadState) || (($uploadState['organization_id'] ?? null) !== (string) $validated['organization_id'])) {
+        return redirect()->route('core.admin.index', array_filter([
+            'menu' => 'plugin.identity-local.users',
+            'principal_id' => $requesterPrincipalId,
+            'organization_id' => (string) $validated['organization_id'],
+            'locale' => $request->input('locale', 'en'),
+            'membership_ids' => is_string($requesterMembershipId) && $requesterMembershipId !== '' ? [$requesterMembershipId] : null,
+        ]))->with('error', 'Upload the CSV or TSV file again before validating the import.');
+    }
+
+    $review = $imports->reviewImport($uploadState, $validated['mapping'], (string) $validated['organization_id'], $requesterPrincipalId);
+
+    session()->put('identity_local_user_import_review', [
+        ...$review,
+        'organization_id' => (string) $validated['organization_id'],
+    ]);
+
+    return redirect()->route('core.admin.index', array_filter([
+        'menu' => 'plugin.identity-local.users',
+        'principal_id' => $requesterPrincipalId,
+        'organization_id' => (string) $validated['organization_id'],
+        'locale' => $request->input('locale', 'en'),
+        'membership_ids' => is_string($requesterMembershipId) && $requesterMembershipId !== '' ? [$requesterMembershipId] : null,
+    ]))->with(
+        ($review['summary']['invalid_count'] ?? 0) > 0 ? 'error' : 'status',
+        ($review['summary']['invalid_count'] ?? 0) > 0
+            ? 'The import is blocked until every invalid row is fixed.'
+            : sprintf('Validated %d people. Confirm to create them.', (int) ($review['summary']['valid_count'] ?? 0)),
+    );
+})->middleware('core.permission:plugin.identity-local.users.manage')->name('plugin.identity-local.users.import.review');
+
+Route::post('/plugins/identity/users/import/commit', function (
+    Request $request,
+    IdentityUserImportService $imports,
+) {
+    $validated = $request->validate([
+        'organization_id' => ['required', 'string', 'max:64'],
+    ]);
+
+    $requesterPrincipalId = (string) $request->input('principal_id', 'principal-org-a');
+    $requesterMembershipId = $request->input('membership_id');
+    $reviewState = session('identity_local_user_import_review');
+
+    if (! is_array($reviewState) || (($reviewState['organization_id'] ?? null) !== (string) $validated['organization_id'])) {
+        return redirect()->route('core.admin.index', array_filter([
+            'menu' => 'plugin.identity-local.users',
+            'principal_id' => $requesterPrincipalId,
+            'organization_id' => (string) $validated['organization_id'],
+            'locale' => $request->input('locale', 'en'),
+            'membership_ids' => is_string($requesterMembershipId) && $requesterMembershipId !== '' ? [$requesterMembershipId] : null,
+        ]))->with('error', 'Validate the import again before confirming it.');
+    }
+
+    $result = $imports->importUsers($reviewState, (string) $validated['organization_id'], $requesterPrincipalId);
+
+    session()->forget(['identity_local_user_import_upload', 'identity_local_user_import_review']);
+
+    return redirect()->route('core.admin.index', array_filter([
+        'menu' => 'plugin.identity-local.users',
+        'principal_id' => $requesterPrincipalId,
+        'organization_id' => (string) $validated['organization_id'],
+        'locale' => $request->input('locale', 'en'),
+        'membership_ids' => is_string($requesterMembershipId) && $requesterMembershipId !== '' ? [$requesterMembershipId] : null,
+    ]))->with('status', sprintf('Imported %d people into the local directory.', (int) ($result['created_count'] ?? 0)));
+})->middleware('core.permission:plugin.identity-local.users.manage')->name('plugin.identity-local.users.import.commit');
 
 Route::get('/plugins/identity/memberships', function (Request $request, IdentityLocalRepository $repository) {
     return response()->json([

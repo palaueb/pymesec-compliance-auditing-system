@@ -6,6 +6,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Http\UploadedFile;
 use PymeSec\Plugins\IdentityLocal\IdentityLocalAuthService;
 use Tests\TestCase;
 
@@ -40,6 +41,7 @@ class IdentityLocalTest extends TestCase
             ->assertSee('People & Access')
             ->assertSee('Ava Mason')
             ->assertSee('Add person')
+            ->assertSee('Import people from CSV / TSV')
             ->assertSee('Open');
 
         $this->get('/app?menu=plugin.identity-local.memberships&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
@@ -167,6 +169,134 @@ class IdentityLocalTest extends TestCase
             ->assertSee($subjectPrincipalId)
             ->assertSee('control-viewer')
             ->assertSee('scope-it');
+    }
+
+    public function test_people_can_be_imported_from_a_tsv_after_mapping_headers(): void
+    {
+        $payload = [
+            'principal_id' => 'principal-org-a',
+            'organization_id' => 'org-a',
+            'locale' => 'en',
+            'membership_id' => 'membership-org-a-hello',
+            'menu' => 'plugin.identity-local.users',
+        ];
+
+        $this->post('/plugins/identity/users/import/upload', [
+            ...$payload,
+            'import_file' => UploadedFile::fake()->createWithContent('people.tsv', implode("\n", [
+                "Employee Name\tEmail Address\tDepartment",
+                "Marc Ferrer\tmarc.ferrer@northwind.test\tSecurity",
+                "Nina Patel\tnina.patel@northwind.test\tOperations",
+            ])),
+        ])->assertFound();
+
+        $uploadState = session('identity_local_user_import_upload');
+
+        $this->assertIsArray($uploadState);
+        $this->assertSame(2, $uploadState['row_count']);
+        $this->assertSame("\t", $uploadState['delimiter']);
+
+        $this->post('/plugins/identity/users/import/review', [
+            ...$payload,
+            'mapping' => [
+                'display_name' => 'Employee Name',
+                'email' => 'Email Address',
+                'username' => '',
+                'job_title' => 'Department',
+            ],
+        ])->assertFound();
+
+        $reviewState = session('identity_local_user_import_review');
+
+        $this->assertIsArray($reviewState);
+        $this->assertSame(2, $reviewState['summary']['valid_count']);
+        $this->assertSame(0, $reviewState['summary']['invalid_count']);
+        $this->assertSame('marc.ferrer', $reviewState['valid_rows'][0]['username']);
+
+        $this->post('/plugins/identity/users/import/commit', $payload)
+            ->assertFound();
+
+        $this->assertDatabaseHas('identity_local_users', [
+            'organization_id' => 'org-a',
+            'display_name' => 'Marc Ferrer',
+            'username' => 'marc.ferrer',
+            'email' => 'marc.ferrer@northwind.test',
+            'job_title' => 'Security',
+            'password_enabled' => false,
+            'magic_link_enabled' => true,
+        ]);
+
+        $this->assertDatabaseHas('identity_local_users', [
+            'organization_id' => 'org-a',
+            'display_name' => 'Nina Patel',
+            'username' => 'nina.patel',
+            'email' => 'nina.patel@northwind.test',
+            'job_title' => 'Operations',
+        ]);
+
+        $this->get('/admin?menu=plugin.identity-local.users&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
+            ->assertOk()
+            ->assertSee('Marc Ferrer')
+            ->assertSee('Nina Patel');
+    }
+
+    public function test_people_import_review_blocks_duplicate_and_existing_emails(): void
+    {
+        $payload = [
+            'principal_id' => 'principal-org-a',
+            'organization_id' => 'org-a',
+            'locale' => 'en',
+            'membership_id' => 'membership-org-a-hello',
+            'menu' => 'plugin.identity-local.users',
+        ];
+
+        $this->post('/plugins/identity/users/import/upload', [
+            ...$payload,
+            'import_file' => UploadedFile::fake()->createWithContent('people.csv', implode("\n", [
+                'Name,Email,Department',
+                'Ava Mason,ava.mason@northwind.test,Security',
+                'Another Ava,ava.mason@northwind.test,Operations',
+            ])),
+        ])->assertFound();
+
+        $this->post('/plugins/identity/users/import/review', [
+            ...$payload,
+            'mapping' => [
+                'display_name' => 'Name',
+                'email' => 'Email',
+                'username' => '',
+                'job_title' => 'Department',
+            ],
+        ])->assertFound();
+
+        $reviewState = session('identity_local_user_import_review');
+
+        $this->assertIsArray($reviewState);
+        $this->assertSame(0, $reviewState['summary']['valid_count']);
+        $this->assertSame(2, $reviewState['summary']['invalid_count']);
+        $this->assertContains('Duplicate email inside the uploaded file.', $reviewState['rows'][0]['errors']);
+        $this->assertContains('Email already exists in the local directory.', $reviewState['rows'][0]['errors']);
+
+        $this->post('/plugins/identity/users/import/commit', $payload)
+            ->assertSessionHasErrors('import_file');
+
+        $this->assertDatabaseMissing('identity_local_users', [
+            'display_name' => 'Another Ava',
+            'email' => 'ava.mason@northwind.test',
+            'job_title' => 'Operations',
+        ]);
+    }
+
+    public function test_people_import_upload_rejects_binary_input(): void
+    {
+        $this->post('/plugins/identity/users/import/upload', [
+            'principal_id' => 'principal-org-a',
+            'organization_id' => 'org-a',
+            'locale' => 'en',
+            'membership_id' => 'membership-org-a-hello',
+            'menu' => 'plugin.identity-local.users',
+            'import_file' => UploadedFile::fake()->createWithContent('people.csv', "Name,Email\nMarc,\0bad@northwind.test"),
+        ])->assertSessionHasErrors('import_file');
     }
 
     public function test_local_people_can_be_deleted_from_the_people_screen(): void
