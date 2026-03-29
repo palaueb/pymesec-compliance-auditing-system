@@ -26,6 +26,14 @@ The public demo is a maintained product surface, not a disposable side branch.
 - Treat `demo_builder/state/` as local metadata only; the reviewable source of truth for the demo delta is `demo_builder/patches/`.
 - If `demo_builder/demo-builder.sh drift` reports drift on touched files, reconcile the demo branch before considering the work complete.
 
+## Delivery Workflow
+
+Every feature, fix, refactor, or new slice must close with these three checks inside the normal delivery flow:
+
+1. tests: create, update, or repair the tests needed to prove the worked area behaves correctly and still enforces ownership, authorization, and mutation boundaries
+2. demo: check whether the demo branch or exported patch pack must be refreshed, and refresh it when the touched work affects the demo surface
+3. documentation: update existing docs or add new docs/spec notes so the implemented behavior, workflow, or product surface does not drift from the documented state
+
 ## Key Architecture Rules
 
 These come from accepted ADRs in `docs/adr/` — never work against them:
@@ -93,7 +101,41 @@ php artisan workflows:list
 - Integration tests must hit a real database, never mock it
 - Every product or core change that introduces or touches request parameters, linked IDs, ownership fields, authorization context, or mutable state must ship with tests that prove unauthorized users cannot spoof or modify those parameters outside their real permissions, memberships, roles, scopes, ownership, or quota boundaries.
 - Treat parameter ownership and authorization guarantees as part of the feature definition, not optional hardening after the fact.
+- Do not treat documentation as optional cleanup. If the implemented behavior changed, the relevant spec, README, TODO state, or workflow note must change in the same slice.
 - Run `make test` from repo root
+
+### Test Quality Policy
+
+Coverage target is **behavior coverage, not line coverage**. Do not add tests solely to raise a percentage. Every test must assert an observable outcome that would catch a real regression.
+
+**Priority tiers — test all three when touching a feature:**
+
+1. **Authorization boundary tests** — the most critical tier. For every action, prove that:
+   - An unauthenticated request is rejected (401/403)
+   - A user from a different organization cannot access or mutate the resource
+   - A user without the required permission is rejected even within the same org
+   - Ownership/scope fields cannot be spoofed via request parameters
+
+2. **Behavior contract tests** — prove the feature does what the spec says:
+   - Happy path: valid input produces the expected state change or output
+   - Rejection path: invalid input is rejected with a meaningful error, not a 500
+   - State transitions: workflow guards reject invalid transitions; valid ones succeed
+
+3. **Plugin contract tests** — for every plugin, prove the integration with core:
+   - Permissions are registered correctly and checked via the core engine
+   - Routes are scoped to the plugin and require the expected permission
+   - Events/hooks fire when expected; the plugin does not bypass the core contract
+
+**What NOT to test:**
+- Trivial getters, config arrays, or Eloquent attribute casts — no regression value
+- Framework internals (Laravel validation, Eloquent save) — trust the framework
+- Implementation details that can change without breaking behavior
+
+**When writing or reviewing tests with AI assistance:**
+- Write the test description first (what behavior is being proved), then the implementation
+- After generating a test, verify the assertion would *fail* if the production code were broken — if it passes vacuously, it is not a test
+- Prefer one clear assertion per test over multiple loosely related assertions
+- If a test is hard to write, it is usually a signal that the production code has too many responsibilities
 
 ## Current State (March 2026)
 

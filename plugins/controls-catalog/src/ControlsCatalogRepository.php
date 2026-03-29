@@ -147,6 +147,173 @@ class ControlsCatalogRepository
     }
 
     /**
+     * Returns lightweight assessment snapshots grouped by framework so framework adoption
+     * screens can surface readiness without depending on the assessments plugin runtime.
+     *
+     * @return array<string, array<string, mixed>>
+     */
+    public function frameworkAssessmentSnapshots(string $organizationId, ?string $scopeId = null): array
+    {
+        if (! Schema::hasTable('assessment_campaigns')) {
+            return [];
+        }
+
+        $campaigns = DB::table('assessment_campaigns')
+            ->where('organization_id', $organizationId)
+            ->when(is_string($scopeId) && $scopeId !== '', function ($query) use ($scopeId): void {
+                $query->where(function ($scoped) use ($scopeId): void {
+                    $scoped->whereNull('scope_id')
+                        ->orWhere('scope_id', $scopeId);
+                });
+            }, function ($query): void {
+                $query->whereNull('scope_id');
+            })
+            ->orderByDesc('starts_on')
+            ->orderByDesc('updated_at')
+            ->get([
+                'id',
+                'framework_id',
+                'title',
+                'status',
+                'starts_on',
+                'ends_on',
+            ]);
+
+        if ($campaigns->isEmpty()) {
+            return [];
+        }
+
+        $campaignIds = [];
+        $campaignById = [];
+        $frameworkAssessmentIds = [];
+
+        foreach ($campaigns as $campaign) {
+            $campaignId = (string) $campaign->id;
+            $campaignIds[] = $campaignId;
+            $campaignById[$campaignId] = [
+                'id' => $campaignId,
+                'framework_id' => is_string($campaign->framework_id) ? $campaign->framework_id : '',
+                'title' => (string) $campaign->title,
+                'status' => (string) $campaign->status,
+                'starts_on' => (string) $campaign->starts_on,
+                'ends_on' => (string) $campaign->ends_on,
+            ];
+
+            $frameworkId = is_string($campaign->framework_id) ? $campaign->framework_id : '';
+
+            if ($frameworkId !== '') {
+                $frameworkAssessmentIds[$frameworkId][$campaignId] = true;
+            }
+        }
+
+        if (
+            Schema::hasTable('assessment_campaign_controls')
+            && Schema::hasTable('control_requirement_mappings')
+            && Schema::hasTable('framework_elements')
+        ) {
+            $mappedRows = DB::table('assessment_campaign_controls as links')
+                ->join('assessment_campaigns as campaigns', 'campaigns.id', '=', 'links.assessment_id')
+                ->join('control_requirement_mappings as mappings', 'mappings.control_id', '=', 'links.control_id')
+                ->join('framework_elements as elements', 'elements.id', '=', 'mappings.framework_element_id')
+                ->where('campaigns.organization_id', $organizationId)
+                ->when(is_string($scopeId) && $scopeId !== '', function ($query) use ($scopeId): void {
+                    $query->where(function ($scoped) use ($scopeId): void {
+                        $scoped->whereNull('campaigns.scope_id')
+                            ->orWhere('campaigns.scope_id', $scopeId);
+                    });
+                }, function ($query): void {
+                    $query->whereNull('campaigns.scope_id');
+                })
+                ->distinct()
+                ->get([
+                    'links.assessment_id',
+                    'elements.framework_id',
+                ]);
+
+            foreach ($mappedRows as $row) {
+                $frameworkId = (string) $row->framework_id;
+                $assessmentId = (string) $row->assessment_id;
+
+                if ($frameworkId === '' || $assessmentId === '') {
+                    continue;
+                }
+
+                $frameworkAssessmentIds[$frameworkId][$assessmentId] = true;
+            }
+        }
+
+        $reviewSummaryByAssessment = [];
+
+        foreach ($campaignIds as $campaignId) {
+            $reviewSummaryByAssessment[$campaignId] = [
+                'pass' => 0,
+                'partial' => 0,
+                'fail' => 0,
+                'not-tested' => 0,
+                'not-applicable' => 0,
+            ];
+        }
+
+        if (Schema::hasTable('assessment_control_reviews')) {
+            $reviewRows = DB::table('assessment_control_reviews')
+                ->whereIn('assessment_id', $campaignIds)
+                ->select('assessment_id', 'result', DB::raw('count(*) as aggregate_count'))
+                ->groupBy('assessment_id', 'result')
+                ->get();
+
+            foreach ($reviewRows as $row) {
+                $assessmentId = (string) $row->assessment_id;
+                $result = is_string($row->result) ? $row->result : 'not-tested';
+
+                $reviewSummaryByAssessment[$assessmentId][$result] = (int) $row->aggregate_count;
+            }
+        }
+
+        $snapshots = [];
+
+        foreach ($frameworkAssessmentIds as $frameworkId => $assessmentIds) {
+            $latestCampaign = null;
+
+            foreach (array_keys($assessmentIds) as $assessmentId) {
+                if (! isset($campaignById[$assessmentId])) {
+                    continue;
+                }
+
+                $latestCampaign = $campaignById[$assessmentId];
+                break;
+            }
+
+            if ($latestCampaign === null) {
+                continue;
+            }
+
+            $reviewSummary = $reviewSummaryByAssessment[$latestCampaign['id']] ?? [
+                'pass' => 0,
+                'partial' => 0,
+                'fail' => 0,
+                'not-tested' => 0,
+                'not-applicable' => 0,
+            ];
+
+            $reviewedControlCount = array_sum($reviewSummary);
+
+            $snapshots[$frameworkId] = [
+                'framework_id' => $frameworkId,
+                'assessment_count' => count($assessmentIds),
+                'latest_assessment_id' => $latestCampaign['id'],
+                'latest_assessment_title' => $latestCampaign['title'],
+                'latest_assessment_status' => $latestCampaign['status'],
+                'latest_assessment_starts_on' => $latestCampaign['starts_on'],
+                'latest_assessment_ends_on' => $latestCampaign['ends_on'],
+                'reviewed_control_count' => $reviewedControlCount,
+                'review_summary' => $reviewSummary,
+            ];
+        }
+
+        return $snapshots;
+    }
+
+    /**
      * @return array<string, string>|null
      */
     public function findFrameworkAdoption(string $organizationId, string $frameworkId, ?string $scopeId = null): ?array

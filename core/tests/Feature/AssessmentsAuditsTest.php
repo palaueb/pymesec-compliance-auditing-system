@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -230,5 +231,77 @@ class AssessmentsAuditsTest extends TestCase
             ])
             ->assertRedirect('/app?menu=plugin.assessments-audits.root')
             ->assertSessionHasErrors(['framework_id']);
+    }
+
+    public function test_assessments_support_multiple_owner_assignments_and_owner_removal(): void
+    {
+        $payload = [
+            'principal_id' => 'principal-org-a',
+            'organization_id' => 'org-a',
+            'locale' => 'en',
+            'menu' => 'plugin.assessments-audits.root',
+            'membership_id' => 'membership-org-a-hello',
+        ];
+
+        $this->post('/plugins/assessments/assessment-q2-access-resilience', [
+            ...$payload,
+            'title' => 'Q2 Access and Resilience Review',
+            'summary' => 'Quarterly assessment focused on access governance and backup resilience.',
+            'framework_id' => 'framework-gdpr',
+            'scope_id' => 'scope-eu',
+            'starts_on' => DB::table('assessment_campaigns')->where('id', 'assessment-q2-access-resilience')->value('starts_on'),
+            'ends_on' => DB::table('assessment_campaigns')->where('id', 'assessment-q2-access-resilience')->value('ends_on'),
+            'status' => DB::table('assessment_campaigns')->where('id', 'assessment-q2-access-resilience')->value('status'),
+            'control_ids' => ['control-access-review', 'control-backup-governance'],
+            'owner_actor_id' => 'actor-compliance-office',
+        ])->assertFound();
+
+        $this->post('/plugins/assessments/assessment-q2-access-resilience', [
+            ...$payload,
+            'title' => 'Q2 Access and Resilience Review',
+            'summary' => 'Quarterly assessment focused on access governance and backup resilience.',
+            'framework_id' => 'framework-gdpr',
+            'scope_id' => 'scope-eu',
+            'starts_on' => DB::table('assessment_campaigns')->where('id', 'assessment-q2-access-resilience')->value('starts_on'),
+            'ends_on' => DB::table('assessment_campaigns')->where('id', 'assessment-q2-access-resilience')->value('ends_on'),
+            'status' => DB::table('assessment_campaigns')->where('id', 'assessment-q2-access-resilience')->value('status'),
+            'control_ids' => ['control-access-review', 'control-backup-governance'],
+            'owner_actor_id' => 'actor-ava-mason',
+        ])->assertFound();
+
+        $this->assertSame(['actor-ava-mason', 'actor-compliance-office'], DB::table('functional_assignments')
+            ->where('domain_object_type', 'assessment')
+            ->where('domain_object_id', 'assessment-q2-access-resilience')
+            ->where('assignment_type', 'owner')
+            ->where('is_active', true)
+            ->orderBy('functional_actor_id')
+            ->pluck('functional_actor_id')
+            ->all());
+
+        $this->get('/app?menu=plugin.assessments-audits.root&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello&assessment_id=assessment-q2-access-resilience')
+            ->assertOk()
+            ->assertSee('Owners')
+            ->assertSee('Owners: 2')
+            ->assertSee('Ava Mason')
+            ->assertSee('Compliance Office');
+
+        $assignmentId = (string) DB::table('functional_assignments')
+            ->where('domain_object_type', 'assessment')
+            ->where('domain_object_id', 'assessment-q2-access-resilience')
+            ->where('assignment_type', 'owner')
+            ->where('functional_actor_id', 'actor-compliance-office')
+            ->value('id');
+
+        $this->post("/plugins/assessments/assessment-q2-access-resilience/owners/{$assignmentId}/remove", [
+            ...$payload,
+        ])->assertFound();
+
+        $this->assertSame(['actor-ava-mason'], DB::table('functional_assignments')
+            ->where('domain_object_type', 'assessment')
+            ->where('domain_object_id', 'assessment-q2-access-resilience')
+            ->where('assignment_type', 'owner')
+            ->where('is_active', true)
+            ->pluck('functional_actor_id')
+            ->all());
     }
 }

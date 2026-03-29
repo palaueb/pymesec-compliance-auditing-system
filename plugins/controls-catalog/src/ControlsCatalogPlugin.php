@@ -2,6 +2,7 @@
 
 namespace PymeSec\Plugins\ControlsCatalog;
 
+use Illuminate\Routing\Router;
 use PymeSec\Core\Artifacts\Contracts\ArtifactServiceInterface;
 use PymeSec\Core\Events\PublicEvent;
 use PymeSec\Core\FunctionalActors\Contracts\FunctionalActorServiceInterface;
@@ -19,6 +20,7 @@ use PymeSec\Core\Workflows\Contracts\WorkflowRegistryInterface;
 use PymeSec\Core\Workflows\Contracts\WorkflowServiceInterface;
 use PymeSec\Core\Workflows\WorkflowDefinition;
 use PymeSec\Core\Workflows\WorkflowTransitionDefinition;
+use PymeSec\Plugins\AssessmentsAudits\AssessmentReferenceData;
 
 class ControlsCatalogPlugin implements PluginInterface
 {
@@ -338,12 +340,17 @@ class ControlsCatalogPlugin implements PluginInterface
             ];
         }, $catalog);
         $frameworkWorkspace = $this->frameworkWorkspaceData($context, $screenContext, $controls);
+        $frameworks = array_map(
+            fn (array $framework): array => $this->decorateFrameworkReadiness($framework, $repository, $screenContext),
+            $frameworkWorkspace['frameworks'],
+        );
 
         return [
-            'frameworks' => $frameworkWorkspace['frameworks'],
+            'frameworks' => $frameworks,
             'requirements' => $frameworkWorkspace['requirements'],
             'scope_options' => $frameworkWorkspace['scope_options'],
             'query' => $this->baseQuery($screenContext),
+            'leadership_snapshot' => $this->leadershipSnapshot($frameworks),
             'can_manage_controls' => $screenContext->principal !== null && $authorization->authorize(new AuthorizationContext(
                 principal: $screenContext->principal,
                 permission: 'plugin.controls-catalog.controls.manage',
@@ -494,6 +501,7 @@ class ControlsCatalogPlugin implements PluginInterface
         $organizationId = $screenContext->organizationId ?? 'org-a';
         $frameworks = $repository->frameworks($organizationId);
         $frameworkAdoptions = $repository->frameworkAdoptionMap($organizationId, $screenContext->scopeId);
+        $frameworkAssessmentSnapshots = $repository->frameworkAssessmentSnapshots($organizationId, $screenContext->scopeId);
         $requirements = $repository->requirements($organizationId);
         $requirementsByFramework = [];
 
@@ -523,7 +531,8 @@ class ControlsCatalogPlugin implements PluginInterface
             $scopeContext,
             $artifacts,
             $organizationId,
-            $requirementsByFramework
+            $requirementsByFramework,
+            $frameworkAssessmentSnapshots
         ): array {
             $adoption = $frameworkAdoptions[$framework['id']] ?? null;
             $scopeLabel = 'Not adopted';
@@ -563,6 +572,7 @@ class ControlsCatalogPlugin implements PluginInterface
                 'requirements' => $requirementsByFramework[$framework['id']] ?? [],
                 'mandate_document' => $mandateArtifacts[0] ?? null,
                 'mandate_document_count' => count($mandateArtifacts),
+                'assessment_snapshot' => $frameworkAssessmentSnapshots[$framework['id']] ?? null,
             ];
         }, $frameworks);
 
@@ -605,6 +615,139 @@ class ControlsCatalogPlugin implements PluginInterface
         }
 
         return $query;
+    }
+
+    /**
+     * @param  array<string, mixed>  $framework
+     * @return array<string, mixed>
+     */
+    private function decorateFrameworkReadiness(array $framework, ControlsCatalogRepository $repository, ScreenRenderContext $screenContext): array
+    {
+        $snapshot = is_array($framework['assessment_snapshot'] ?? null) ? $framework['assessment_snapshot'] : null;
+        $gaps = [];
+        $state = 'inactive';
+        $label = 'Not adopted';
+
+        if (($framework['adoption_status'] ?? 'not-adopted') === 'in-progress') {
+            $state = 'onboarding';
+            $label = 'Onboarding';
+
+            if (($framework['mandate_document_count'] ?? 0) === 0) {
+                $gaps[] = 'Signed mandate document still missing.';
+            }
+
+            if ($snapshot === null) {
+                $gaps[] = 'No assessment report is linked to this framework yet.';
+            }
+        } elseif (($framework['adoption_status'] ?? 'not-adopted') === 'active') {
+            $state = 'ready';
+            $label = 'Ready';
+
+            if (($framework['mandate_document_count'] ?? 0) === 0) {
+                $gaps[] = 'Signed mandate document still missing.';
+            }
+
+            if (($framework['coverage_percent'] ?? 0) < 60) {
+                $gaps[] = 'Coverage is still below the current readiness threshold.';
+            }
+
+            if ($snapshot === null) {
+                $gaps[] = 'No assessment report is linked to this framework yet.';
+            } elseif (($snapshot['review_summary']['fail'] ?? 0) > 0) {
+                $gaps[] = 'The latest assessment still contains failed control reviews.';
+            }
+
+            if ($gaps !== []) {
+                $state = 'attention';
+                $label = 'Needs attention';
+            }
+        } elseif (($framework['adoption_status'] ?? 'not-adopted') === 'inactive') {
+            $state = 'inactive';
+            $label = 'Inactive';
+        }
+
+        $reviewSummary = is_array($snapshot['review_summary'] ?? null) ? $snapshot['review_summary'] : [
+            'pass' => 0,
+            'partial' => 0,
+            'fail' => 0,
+            'not-tested' => 0,
+            'not-applicable' => 0,
+        ];
+
+        return [
+            ...$framework,
+            'readiness' => [
+                'state' => $state,
+                'label' => $label,
+                'gaps' => $gaps,
+                'has_assessment' => $snapshot !== null,
+                'latest_assessment' => $snapshot,
+                'latest_assessment_status_label' => $snapshot !== null
+                    ? AssessmentReferenceData::statusLabel((string) ($snapshot['latest_assessment_status'] ?? ''))
+                    : null,
+                'review_summary' => $reviewSummary,
+                'reviewed_control_count' => (int) ($snapshot['reviewed_control_count'] ?? 0),
+                'report_presets' => $this->assessmentReportPresets($snapshot, $screenContext),
+            ],
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>|null  $snapshot
+     * @return array<string, string>
+     */
+    private function assessmentReportPresets(?array $snapshot, ScreenRenderContext $screenContext): array
+    {
+        if ($snapshot === null || ! is_string($snapshot['latest_assessment_id'] ?? null) || ($snapshot['latest_assessment_id'] ?? '') === '') {
+            return [];
+        }
+
+        /** @var Router $router */
+        $router = app('router');
+
+        if (! $router->getRoutes()->hasNamedRoute('plugin.assessments-audits.report')) {
+            return [];
+        }
+
+        $assessmentId = (string) $snapshot['latest_assessment_id'];
+        $query = $this->baseQuery($screenContext);
+
+        return [
+            'markdown' => route('plugin.assessments-audits.report', [
+                'assessmentId' => $assessmentId,
+                ...$query,
+            ]),
+            'csv' => route('plugin.assessments-audits.report', [
+                'assessmentId' => $assessmentId,
+                'format' => 'csv',
+                ...$query,
+            ]),
+            'json' => route('plugin.assessments-audits.report', [
+                'assessmentId' => $assessmentId,
+                'format' => 'json',
+                ...$query,
+            ]),
+        ];
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $frameworks
+     * @return array<string, int>
+     */
+    private function leadershipSnapshot(array $frameworks): array
+    {
+        $adopted = array_filter($frameworks, static fn (array $framework): bool => in_array($framework['adoption_status'] ?? '', ['active', 'in-progress'], true));
+        $coverageTotal = array_sum(array_map(static fn (array $framework): int => (int) ($framework['coverage_percent'] ?? 0), $adopted));
+        $adoptedCount = count($adopted);
+
+        return [
+            'adopted_count' => $adoptedCount,
+            'ready_count' => count(array_filter($frameworks, static fn (array $framework): bool => ($framework['readiness']['state'] ?? null) === 'ready')),
+            'attention_count' => count(array_filter($frameworks, static fn (array $framework): bool => ($framework['readiness']['state'] ?? null) === 'attention')),
+            'onboarding_count' => count(array_filter($frameworks, static fn (array $framework): bool => ($framework['readiness']['state'] ?? null) === 'onboarding')),
+            'missing_assessment_count' => count(array_filter($frameworks, static fn (array $framework): bool => ! (bool) ($framework['readiness']['has_assessment'] ?? false) && in_array($framework['adoption_status'] ?? '', ['active', 'in-progress'], true))),
+            'average_coverage_percent' => $adoptedCount > 0 ? (int) round($coverageTotal / $adoptedCount) : 0,
+        ];
     }
 
     /**

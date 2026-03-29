@@ -14,6 +14,9 @@ use PymeSec\Core\Menus\Contracts\MenuRegistryInterface;
 use PymeSec\Core\Menus\MenuLabelResolver;
 use PymeSec\Core\Menus\MenuVisibilityContext;
 use PymeSec\Core\Notifications\Contracts\NotificationServiceInterface;
+use PymeSec\Core\Notifications\NotificationMailSettingsRepository;
+use PymeSec\Core\Notifications\NotificationTemplateRepository;
+use PymeSec\Core\Notifications\OutboundNotificationMailer;
 use PymeSec\Core\Permissions\AuthorizationContext;
 use PymeSec\Core\Permissions\Contracts\AuthorizationServiceInterface;
 use PymeSec\Core\Permissions\Contracts\AuthorizationStoreInterface;
@@ -1405,6 +1408,114 @@ Route::post('/core/functional-actors/assignments', function (FunctionalActorServ
     ]))->with('status', 'Responsibility assigned.');
 })->middleware('core.permission:core.functional-actors.manage')->name('core.functional-actors.assignments.store');
 
+Route::post('/core/object-access/assignments', function (FunctionalActorServiceInterface $actors) use ($shellRouteNameForMenu) {
+    $validated = request()->validate([
+        'actor_id' => ['required', 'string', 'max:120'],
+        'subject_key' => ['required', 'string', 'max:255'],
+        'assignment_type' => ['required', 'string', 'max:40'],
+        'organization_id' => ['required', 'string', 'max:64', 'exists:organizations,id'],
+        'scope_id' => ['nullable', 'string', 'max:64'],
+        'subject_principal_id' => ['nullable', 'string', 'max:120'],
+        'principal_id' => ['nullable', 'string', 'max:120'],
+        'locale' => ['nullable', 'string', 'max:12'],
+        'theme' => ['nullable', 'string', 'max:40'],
+        'menu' => ['nullable', 'string', 'max:80'],
+    ]);
+
+    abort_if($actors->findActor($validated['actor_id']) === null, 404);
+
+    [$domainObjectType, $domainObjectId] = array_pad(explode('::', $validated['subject_key'], 2), 2, null);
+
+    if (! is_string($domainObjectType) || $domainObjectType === '' || ! is_string($domainObjectId) || $domainObjectId === '') {
+        return back()->withErrors(['subject_key' => 'Choose a valid workspace item.'])->withInput();
+    }
+
+    if ($validated['assignment_type'] === 'owner') {
+        $actors->syncSingleAssignment(
+            actorId: $validated['actor_id'],
+            domainObjectType: $domainObjectType,
+            domainObjectId: $domainObjectId,
+            assignmentType: $validated['assignment_type'],
+            organizationId: $validated['organization_id'],
+            scopeId: is_string($validated['scope_id'] ?? null) && $validated['scope_id'] !== '' ? $validated['scope_id'] : null,
+            metadata: ['source' => 'object-access-admin'],
+            assignedByPrincipalId: is_string($validated['principal_id'] ?? null) && $validated['principal_id'] !== '' ? $validated['principal_id'] : null,
+        );
+    } else {
+        $actors->assignActor(
+            actorId: $validated['actor_id'],
+            domainObjectType: $domainObjectType,
+            domainObjectId: $domainObjectId,
+            assignmentType: $validated['assignment_type'],
+            organizationId: $validated['organization_id'],
+            scopeId: is_string($validated['scope_id'] ?? null) && $validated['scope_id'] !== '' ? $validated['scope_id'] : null,
+            metadata: ['source' => 'object-access-admin'],
+            assignedByPrincipalId: is_string($validated['principal_id'] ?? null) && $validated['principal_id'] !== '' ? $validated['principal_id'] : null,
+        );
+    }
+
+    $query = array_filter([
+        'menu' => is_string($validated['menu'] ?? null) ? $validated['menu'] : 'core.object-access',
+        'subject_principal_id' => is_string($validated['subject_principal_id'] ?? null) && $validated['subject_principal_id'] !== ''
+            ? $validated['subject_principal_id']
+            : null,
+        'subject_key' => $validated['subject_key'],
+        'principal_id' => $validated['principal_id'] ?? null,
+        'organization_id' => $validated['organization_id'],
+        'scope_id' => $validated['scope_id'] ?? null,
+        'locale' => $validated['locale'] ?? 'en',
+        'theme' => $validated['theme'] ?? null,
+        'membership_ids' => request()->input('membership_ids', []),
+    ]);
+
+    return redirect()->route($shellRouteNameForMenu($query['menu'] ?? null), $query)
+        ->with('status', 'Object access assignment updated.');
+})->middleware('core.permission:core.functional-actors.manage')->name('core.object-access.assignments.store');
+
+Route::post('/core/object-access/assignments/{assignmentId}/deactivate', function (
+    FunctionalActorServiceInterface $actors,
+    string $assignmentId
+) use ($shellRouteNameForMenu) {
+    $validated = request()->validate([
+        'organization_id' => ['required', 'string', 'max:64', 'exists:organizations,id'],
+        'scope_id' => ['nullable', 'string', 'max:64'],
+        'subject_key' => ['nullable', 'string', 'max:255'],
+        'subject_principal_id' => ['nullable', 'string', 'max:120'],
+        'principal_id' => ['nullable', 'string', 'max:120'],
+        'locale' => ['nullable', 'string', 'max:12'],
+        'theme' => ['nullable', 'string', 'max:40'],
+        'menu' => ['nullable', 'string', 'max:80'],
+    ]);
+
+    $record = DB::table('functional_assignments')->where('id', $assignmentId)->first();
+    abort_if($record === null, 404);
+    abort_if((string) ($record->organization_id ?? '') !== $validated['organization_id'], 404);
+
+    $actors->deactivateAssignment(
+        assignmentId: $assignmentId,
+        deactivatedByPrincipalId: is_string($validated['principal_id'] ?? null) && $validated['principal_id'] !== '' ? $validated['principal_id'] : null,
+    );
+
+    $query = array_filter([
+        'menu' => is_string($validated['menu'] ?? null) ? $validated['menu'] : 'core.object-access',
+        'subject_principal_id' => is_string($validated['subject_principal_id'] ?? null) && $validated['subject_principal_id'] !== ''
+            ? $validated['subject_principal_id']
+            : null,
+        'subject_key' => is_string($validated['subject_key'] ?? null) && $validated['subject_key'] !== ''
+            ? $validated['subject_key']
+            : null,
+        'principal_id' => $validated['principal_id'] ?? null,
+        'organization_id' => $validated['organization_id'],
+        'scope_id' => $validated['scope_id'] ?? null,
+        'locale' => $validated['locale'] ?? 'en',
+        'theme' => $validated['theme'] ?? null,
+        'membership_ids' => request()->input('membership_ids', []),
+    ]);
+
+    return redirect()->route($shellRouteNameForMenu($query['menu'] ?? null), $query)
+        ->with('status', 'Object access assignment removed.');
+})->middleware('core.permission:core.functional-actors.manage')->name('core.object-access.assignments.deactivate');
+
 Route::get('/core/events', function (EventBusInterface $events) {
     $limit = request()->integer('limit', 50);
     $filters = array_filter([
@@ -1441,6 +1552,252 @@ Route::get('/core/notifications', function (NotificationServiceInterface $notifi
         ),
     ]);
 })->middleware('core.permission:core.notifications.view')->name('core.notifications.index');
+
+Route::post('/core/notifications/settings', function (
+    NotificationMailSettingsRepository $settings,
+    AuditTrailInterface $audit,
+    EventBusInterface $events
+) use ($shellRouteNameForMenu) {
+    $validated = request()->validate([
+        'organization_id' => ['required', 'string', 'max:64', 'exists:organizations,id'],
+        'email_enabled' => ['nullable', 'boolean'],
+        'smtp_host' => ['nullable', 'string', 'max:190', 'required_if:email_enabled,1'],
+        'smtp_port' => ['nullable', 'integer', 'min:1', 'max:65535', 'required_if:email_enabled,1'],
+        'smtp_encryption' => ['nullable', 'string', Rule::in(['tls', 'ssl', 'none'])],
+        'smtp_username' => ['nullable', 'string', 'max:190'],
+        'smtp_password' => ['nullable', 'string', 'max:500'],
+        'from_address' => ['nullable', 'email:rfc', 'max:190', 'required_if:email_enabled,1'],
+        'from_name' => ['nullable', 'string', 'max:190'],
+        'reply_to_address' => ['nullable', 'email:rfc', 'max:190'],
+        'principal_id' => ['nullable', 'string', 'max:120'],
+        'scope_id' => ['nullable', 'string', 'max:64'],
+        'locale' => ['nullable', 'string', 'max:12'],
+        'theme' => ['nullable', 'string', 'max:40'],
+        'menu' => ['nullable', 'string', 'max:80'],
+    ]);
+
+    $principalId = is_string($validated['principal_id'] ?? null) && $validated['principal_id'] !== ''
+        ? $validated['principal_id']
+        : null;
+    $organizationId = $validated['organization_id'];
+    $scopeId = is_string($validated['scope_id'] ?? null) && $validated['scope_id'] !== ''
+        ? $validated['scope_id']
+        : null;
+
+    $saved = $settings->upsert($organizationId, $validated, $principalId);
+
+    $audit->record(new AuditRecordData(
+        eventType: 'core.notifications.mail-settings.updated',
+        outcome: 'success',
+        originComponent: 'core',
+        principalId: $principalId,
+        organizationId: $organizationId,
+        scopeId: $scopeId,
+        targetType: 'notification-mail-settings',
+        targetId: (string) ($saved['id'] ?? $organizationId),
+        summary: [
+            'email_enabled' => (bool) ($saved['email_enabled'] ?? false),
+            'smtp_host' => is_string($saved['smtp_host'] ?? null) && $saved['smtp_host'] !== '' ? $saved['smtp_host'] : null,
+            'smtp_port' => $saved['smtp_port'] ?? null,
+            'smtp_encryption' => is_string($saved['smtp_encryption'] ?? null) && $saved['smtp_encryption'] !== '' ? $saved['smtp_encryption'] : 'none',
+            'has_password' => (bool) ($saved['has_password'] ?? false),
+        ],
+        executionOrigin: 'web',
+    ));
+
+    $events->publish(new PublicEvent(
+        name: 'core.notifications.mail-settings.updated',
+        originComponent: 'core',
+        organizationId: $organizationId,
+        scopeId: $scopeId,
+        payload: [
+            'email_enabled' => (bool) ($saved['email_enabled'] ?? false),
+            'has_password' => (bool) ($saved['has_password'] ?? false),
+        ],
+    ));
+
+    $query = array_filter([
+        'menu' => is_string($validated['menu'] ?? null) ? $validated['menu'] : 'core.notifications',
+        'principal_id' => $principalId,
+        'organization_id' => $organizationId,
+        'scope_id' => $scopeId,
+        'locale' => is_string($validated['locale'] ?? null) ? $validated['locale'] : 'en',
+        'theme' => is_string($validated['theme'] ?? null) ? $validated['theme'] : null,
+        'membership_ids' => request()->input('membership_ids', []),
+    ]);
+
+    return redirect()->route($shellRouteNameForMenu($query['menu'] ?? null), $query)
+        ->with('status', 'Notification delivery settings saved.');
+})->middleware('core.permission:core.notifications.manage')->name('core.notifications.settings.update');
+
+Route::post('/core/notifications/test-email', function (
+    NotificationMailSettingsRepository $settings,
+    OutboundNotificationMailer $mailer,
+    AuditTrailInterface $audit,
+    EventBusInterface $events
+) use ($shellRouteNameForMenu) {
+    $validated = request()->validate([
+        'organization_id' => ['required', 'string', 'max:64', 'exists:organizations,id'],
+        'recipient_principal_id' => [
+            'required',
+            'string',
+            'max:120',
+            Rule::exists('identity_local_users', 'principal_id')->where(
+                fn ($query) => $query->where('organization_id', request()->input('organization_id'))->where('is_active', true)
+            ),
+        ],
+        'principal_id' => ['nullable', 'string', 'max:120'],
+        'scope_id' => ['nullable', 'string', 'max:64'],
+        'locale' => ['nullable', 'string', 'max:12'],
+        'theme' => ['nullable', 'string', 'max:40'],
+        'menu' => ['nullable', 'string', 'max:80'],
+    ]);
+
+    $organizationId = $validated['organization_id'];
+    $principalId = is_string($validated['principal_id'] ?? null) && $validated['principal_id'] !== ''
+        ? $validated['principal_id']
+        : null;
+    $scopeId = is_string($validated['scope_id'] ?? null) && $validated['scope_id'] !== ''
+        ? $validated['scope_id']
+        : null;
+
+    $deliveryConfig = $settings->deliveryConfigForOrganization($organizationId);
+
+    if ($deliveryConfig === null) {
+        return back()->withErrors([
+            'recipient_principal_id' => 'Enable and save outbound email before sending a test message.',
+        ])->withInput();
+    }
+
+    $recipientEmail = DB::table('identity_local_users')
+        ->where('principal_id', $validated['recipient_principal_id'])
+        ->where('organization_id', $organizationId)
+        ->where('is_active', true)
+        ->value('email');
+
+    if (! is_string($recipientEmail) || trim($recipientEmail) === '') {
+        return back()->withErrors([
+            'recipient_principal_id' => 'The selected person does not have an email address.',
+        ])->withInput();
+    }
+
+    $mailer->sendTestMessage($deliveryConfig, trim($recipientEmail), $organizationId);
+    $settings->markTested($organizationId);
+
+    $audit->record(new AuditRecordData(
+        eventType: 'core.notifications.test-email.sent',
+        outcome: 'success',
+        originComponent: 'core',
+        principalId: $principalId,
+        organizationId: $organizationId,
+        scopeId: $scopeId,
+        targetType: 'notification-mail-settings',
+        targetId: $organizationId,
+        summary: [
+            'recipient_principal_id' => $validated['recipient_principal_id'],
+        ],
+        executionOrigin: 'web',
+    ));
+
+    $events->publish(new PublicEvent(
+        name: 'core.notifications.test-email.sent',
+        originComponent: 'core',
+        organizationId: $organizationId,
+        scopeId: $scopeId,
+        payload: [
+            'recipient_principal_id' => $validated['recipient_principal_id'],
+        ],
+    ));
+
+    $query = array_filter([
+        'menu' => is_string($validated['menu'] ?? null) ? $validated['menu'] : 'core.notifications',
+        'principal_id' => $principalId,
+        'organization_id' => $organizationId,
+        'scope_id' => $scopeId,
+        'locale' => is_string($validated['locale'] ?? null) ? $validated['locale'] : 'en',
+        'theme' => is_string($validated['theme'] ?? null) ? $validated['theme'] : null,
+        'membership_ids' => request()->input('membership_ids', []),
+    ]);
+
+    return redirect()->route($shellRouteNameForMenu($query['menu'] ?? null), $query)
+        ->with('status', 'Test email sent.');
+})->middleware('core.permission:core.notifications.manage')->name('core.notifications.test.send');
+
+Route::post('/core/notifications/templates', function (
+    NotificationTemplateRepository $templates,
+    AuditTrailInterface $audit,
+    EventBusInterface $events
+) use ($shellRouteNameForMenu) {
+    $validated = request()->validate([
+        'organization_id' => ['required', 'string', 'max:64', 'exists:organizations,id'],
+        'notification_type' => ['required', 'string', 'max:190'],
+        'is_active' => ['nullable', 'boolean'],
+        'title_template' => ['nullable', 'string', 'max:1000'],
+        'body_template' => ['nullable', 'string', 'max:10000'],
+        'principal_id' => ['nullable', 'string', 'max:120'],
+        'scope_id' => ['nullable', 'string', 'max:64'],
+        'locale' => ['nullable', 'string', 'max:12'],
+        'theme' => ['nullable', 'string', 'max:40'],
+        'menu' => ['nullable', 'string', 'max:80'],
+    ]);
+
+    $organizationId = $validated['organization_id'];
+    $notificationType = $validated['notification_type'];
+    $principalId = is_string($validated['principal_id'] ?? null) && $validated['principal_id'] !== ''
+        ? $validated['principal_id']
+        : null;
+    $scopeId = is_string($validated['scope_id'] ?? null) && $validated['scope_id'] !== ''
+        ? $validated['scope_id']
+        : null;
+
+    $saved = $templates->upsert(
+        organizationId: $organizationId,
+        notificationType: $notificationType,
+        data: $validated,
+        updatedByPrincipalId: $principalId,
+    );
+
+    $audit->record(new AuditRecordData(
+        eventType: 'core.notifications.templates.updated',
+        outcome: 'success',
+        originComponent: 'core',
+        principalId: $principalId,
+        organizationId: $organizationId,
+        scopeId: $scopeId,
+        targetType: 'notification-template',
+        targetId: (string) ($saved['id'] ?? $notificationType),
+        summary: [
+            'notification_type' => $notificationType,
+            'is_active' => (bool) ($saved['is_active'] ?? false),
+        ],
+        executionOrigin: 'web',
+    ));
+
+    $events->publish(new PublicEvent(
+        name: 'core.notifications.templates.updated',
+        originComponent: 'core',
+        organizationId: $organizationId,
+        scopeId: $scopeId,
+        payload: [
+            'notification_type' => $notificationType,
+            'is_active' => (bool) ($saved['is_active'] ?? false),
+        ],
+    ));
+
+    $query = array_filter([
+        'menu' => is_string($validated['menu'] ?? null) ? $validated['menu'] : 'core.notifications',
+        'principal_id' => $principalId,
+        'organization_id' => $organizationId,
+        'scope_id' => $scopeId,
+        'locale' => is_string($validated['locale'] ?? null) ? $validated['locale'] : 'en',
+        'theme' => is_string($validated['theme'] ?? null) ? $validated['theme'] : null,
+        'template_type' => $notificationType,
+        'membership_ids' => request()->input('membership_ids', []),
+    ]);
+
+    return redirect()->route($shellRouteNameForMenu($query['menu'] ?? null), $query)
+        ->with('status', 'Notification template saved.');
+})->middleware('core.permission:core.notifications.manage')->name('core.notifications.templates.update');
 
 Route::get('/core/workflows', function (WorkflowRegistryInterface $workflows) {
     return response()->json([

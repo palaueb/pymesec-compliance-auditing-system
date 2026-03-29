@@ -3,6 +3,10 @@
     .pill-review   { background: rgba(245,158,11,0.14); color: #92400e; }
     .pill-approved { background: rgba(34,197,94,0.14);  color: #166534; }
     .pill-archived { background: rgba(31,42,34,0.06);   color: var(--muted); }
+    .pill-ready { background: rgba(34,197,94,0.14); color: #166534; }
+    .pill-attention { background: rgba(239,68,68,0.14); color: #991b1b; }
+    .pill-onboarding { background: rgba(245,158,11,0.14); color: #92400e; }
+    .pill-inactive { background: rgba(31,42,34,0.06); color: var(--muted); }
 
     details > summary { cursor: pointer; list-style: none; }
     details > summary::-webkit-details-marker { display: none; }
@@ -26,6 +30,14 @@
         <div class="surface-note">
             Activate each framework from its own card. When adoption becomes active, upload the signed mandate document from company leadership so the request is traceable by framework, date, and scope.
         </div>
+    </div>
+
+    <div class="overview-grid" style="grid-template-columns:repeat(5, minmax(0, 1fr));">
+        <div class="metric-card"><div class="metric-label">Ready now</div><div class="metric-value">{{ $leadership_snapshot['ready_count'] }}</div></div>
+        <div class="metric-card"><div class="metric-label">Needs attention</div><div class="metric-value">{{ $leadership_snapshot['attention_count'] }}</div></div>
+        <div class="metric-card"><div class="metric-label">Onboarding</div><div class="metric-value">{{ $leadership_snapshot['onboarding_count'] }}</div></div>
+        <div class="metric-card"><div class="metric-label">Missing assessment</div><div class="metric-value">{{ $leadership_snapshot['missing_assessment_count'] }}</div></div>
+        <div class="metric-card"><div class="metric-label">Avg coverage</div><div class="metric-value">{{ $leadership_snapshot['average_coverage_percent'] }}%</div></div>
     </div>
 
     @if ($can_manage_controls)
@@ -125,6 +137,15 @@
                     default => 'pill-draft',
                 };
                 $mandateDocument = is_array($framework['mandate_document'] ?? null) ? $framework['mandate_document'] : null;
+                $readinessPill = match($framework['readiness']['state'] ?? 'inactive') {
+                    'ready' => 'pill-ready',
+                    'attention' => 'pill-attention',
+                    'onboarding' => 'pill-onboarding',
+                    default => 'pill-inactive',
+                };
+                $latestAssessment = is_array($framework['readiness']['latest_assessment'] ?? null) ? $framework['readiness']['latest_assessment'] : null;
+                $reportPresets = is_array($framework['readiness']['report_presets'] ?? null) ? $framework['readiness']['report_presets'] : [];
+                $reviewSummary = is_array($framework['readiness']['review_summary'] ?? null) ? $framework['readiness']['review_summary'] : [];
             @endphp
             <div class="surface-card">
                 <div class="screen-header">
@@ -156,6 +177,70 @@
                 @if ($framework['description'] !== '')
                     <div class="surface-note" style="margin-top:12px;">{{ $framework['description'] }}</div>
                 @endif
+
+                <div class="overview-grid" style="grid-template-columns:repeat(2, minmax(0, 1fr)); margin-top:16px;">
+                    <div class="surface-card" style="padding:16px;">
+                        <div class="row-between">
+                            <div class="field-label">Readiness snapshot</div>
+                            <span class="pill {{ $readinessPill }}">{{ $framework['readiness']['label'] }}</span>
+                        </div>
+
+                        <div class="data-stack" style="margin-top:12px;">
+                            <div class="data-item">
+                                <div class="entity-title">Coverage baseline</div>
+                                <div class="table-note">{{ $framework['coverage_percent'] }}% mapped requirement coverage across {{ $framework['linked_control_count'] }} linked controls.</div>
+                            </div>
+                            @if ($latestAssessment !== null)
+                                <div class="data-item">
+                                    <div class="entity-title">Latest assessment</div>
+                                    <div class="table-note">{{ $latestAssessment['latest_assessment_title'] }}</div>
+                                    <div class="table-note">{{ $framework['readiness']['latest_assessment_status_label'] }} · starts {{ $latestAssessment['latest_assessment_starts_on'] }}</div>
+                                    <div class="table-note">
+                                        {{ $framework['readiness']['reviewed_control_count'] }} controls reviewed ·
+                                        {{ $reviewSummary['pass'] ?? 0 }} pass ·
+                                        {{ $reviewSummary['partial'] ?? 0 }} partial ·
+                                        {{ $reviewSummary['fail'] ?? 0 }} fail
+                                    </div>
+                                </div>
+                            @else
+                                <div class="data-item">
+                                    <div class="entity-title">Latest assessment</div>
+                                    <div class="table-note">No assessment report linked to this framework yet.</div>
+                                </div>
+                            @endif
+                        </div>
+
+                        @if (($framework['readiness']['gaps'] ?? []) !== [])
+                            <div class="data-stack" style="margin-top:12px;">
+                                @foreach ($framework['readiness']['gaps'] as $gap)
+                                    <div class="surface-note">{{ $gap }}</div>
+                                @endforeach
+                            </div>
+                        @endif
+                    </div>
+
+                    <div class="surface-card" style="padding:16px;">
+                        <div class="field-label">Reporting presets</div>
+                        <div class="table-note" style="margin-top:6px;">
+                            Jump directly to the latest framework-linked assessment report without rebuilding filters manually.
+                        </div>
+
+                        @if ($reportPresets !== [])
+                            <div class="action-cluster" style="margin-top:12px;">
+                                <a class="button button-secondary" href="{{ $reportPresets['markdown'] }}">Open report</a>
+                                <a class="button button-ghost" href="{{ $reportPresets['csv'] }}">Export CSV</a>
+                                <a class="button button-ghost" href="{{ $reportPresets['json'] }}">Export JSON</a>
+                            </div>
+                            <div class="table-note" style="margin-top:12px;">
+                                Preset linked to {{ $latestAssessment['latest_assessment_title'] ?? 'the latest assessment' }}.
+                            </div>
+                        @else
+                            <div class="surface-note" style="margin-top:12px;">
+                                Reporting presets will appear once an assessment is linked to this framework.
+                            </div>
+                        @endif
+                    </div>
+                </div>
 
                 <div class="overview-grid" style="grid-template-columns:repeat(2, minmax(0, 1fr)); margin-top:16px;">
                     <div class="surface-card" style="padding:16px;">

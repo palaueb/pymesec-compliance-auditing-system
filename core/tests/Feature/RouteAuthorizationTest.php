@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 class RouteAuthorizationTest extends TestCase
@@ -77,6 +78,51 @@ class RouteAuthorizationTest extends TestCase
 
         $this->get('/plugins/actors?principal_id=principal-admin&organization_id=org-a')
             ->assertForbidden();
+    }
+
+    public function test_the_notifications_management_routes_require_manage_permission(): void
+    {
+        $viewerPayload = [
+            'principal_id' => 'principal-org-a',
+            'organization_id' => 'org-a',
+            'locale' => 'en',
+            'menu' => 'core.notifications',
+            'email_enabled' => '1',
+            'smtp_host' => 'smtp.example.test',
+            'smtp_port' => '2525',
+            'smtp_encryption' => 'tls',
+            'from_address' => 'mailer@pymesec.test',
+            'recipient_principal_id' => 'principal-org-a',
+        ];
+
+        $this->post('/core/notifications/settings', $viewerPayload)
+            ->assertForbidden();
+
+        $this->post('/core/notifications/test-email', $viewerPayload)
+            ->assertForbidden();
+
+        $this->post('/core/notifications/templates', [
+            ...$viewerPayload,
+            'notification_type' => 'plugin.evidence-management.review-due',
+            'title_template' => '[Reminder] {{notification_title}}',
+            'body_template' => '{{notification_body}}',
+        ])->assertForbidden();
+
+        $this->post('/core/notifications/settings', [
+            ...$viewerPayload,
+            'principal_id' => 'principal-admin',
+            'from_name' => 'PymeSec Mailer',
+        ])->assertFound();
+
+        $this->post('/core/object-access/assignments', [
+            'principal_id' => 'principal-org-a',
+            'organization_id' => 'org-a',
+            'locale' => 'en',
+            'menu' => 'core.object-access',
+            'subject_key' => 'asset::asset-erp-prod',
+            'actor_id' => 'actor-it-services',
+            'assignment_type' => 'reviewer',
+        ])->assertForbidden();
     }
 
     public function test_the_controls_artifact_upload_route_requires_manage_permission(): void
@@ -760,6 +806,126 @@ class RouteAuthorizationTest extends TestCase
             'title' => 'Operator recovery update',
             'strategy_summary' => 'Operator can update continuity plans.',
         ])->assertFound();
+    }
+
+    public function test_the_assessment_routes_require_manage_permission(): void
+    {
+        DB::table('functional_assignments')->insert([
+            'id' => 'assignment-route-auth-assessment-owner',
+            'functional_actor_id' => 'actor-ava-mason',
+            'domain_object_type' => 'assessment',
+            'domain_object_id' => 'assessment-q2-access-resilience',
+            'assignment_type' => 'owner',
+            'organization_id' => 'org-a',
+            'scope_id' => 'scope-eu',
+            'metadata' => json_encode(['source' => 'test'], JSON_THROW_ON_ERROR),
+            'is_active' => true,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $payload = [
+            'principal_id' => 'principal-org-a',
+            'organization_id' => 'org-a',
+            'scope_id' => 'scope-eu',
+            'locale' => 'en',
+            'menu' => 'plugin.assessments-audits.root',
+            'membership_id' => 'membership-org-a-viewer',
+        ];
+
+        $this->post('/plugins/assessments', [
+            ...$payload,
+            'title' => 'Viewer assessment',
+            'summary' => 'Viewer should not create assessments.',
+            'framework_id' => 'framework-gdpr',
+            'starts_on' => '2026-06-01',
+            'ends_on' => '2026-06-15',
+            'status' => 'draft',
+        ])->assertForbidden();
+
+        $this->post('/plugins/assessments/assessment-q2-access-resilience', [
+            ...$payload,
+            'title' => 'Viewer assessment update',
+            'summary' => 'Viewer should not update assessments.',
+            'framework_id' => 'framework-gdpr',
+            'starts_on' => DB::table('assessment_campaigns')->where('id', 'assessment-q2-access-resilience')->value('starts_on'),
+            'ends_on' => DB::table('assessment_campaigns')->where('id', 'assessment-q2-access-resilience')->value('ends_on'),
+            'status' => DB::table('assessment_campaigns')->where('id', 'assessment-q2-access-resilience')->value('status'),
+            'control_ids' => ['control-access-review'],
+        ])->assertForbidden();
+
+        $this->post('/plugins/assessments/assessment-q2-access-resilience/reviews/control-access-review', [
+            ...$payload,
+            'result' => 'pass',
+        ])->assertForbidden();
+
+        $this->post('/plugins/assessments/assessment-q2-access-resilience/reviews/control-access-review/artifacts', [
+            ...$payload,
+            'label' => 'Viewer workpaper',
+            'artifact_type' => 'workpaper',
+            'artifact' => UploadedFile::fake()->createWithContent('viewer-assessment.txt', 'viewer'),
+        ])->assertForbidden();
+
+        $this->post('/plugins/assessments/assessment-q2-access-resilience/reviews/control-access-review/findings', [
+            ...$payload,
+            'title' => 'Viewer finding',
+            'severity' => 'medium',
+            'description' => 'Viewer should not create findings from assessments.',
+        ])->assertForbidden();
+
+        $this->post('/plugins/assessments/assessment-q2-access-resilience/transitions/activate', $payload)
+            ->assertForbidden();
+
+        $this->post('/plugins/assessments/assessment-q2-access-resilience/owners/assignment-route-auth-assessment-owner/remove', $payload)
+            ->assertForbidden();
+
+        $payload['membership_id'] = 'membership-org-a-hello';
+
+        $this->post('/plugins/assessments', [
+            ...$payload,
+            'title' => 'Operator assessment',
+            'summary' => 'Operator can create assessments.',
+            'framework_id' => 'framework-gdpr',
+            'starts_on' => '2026-06-01',
+            'ends_on' => '2026-06-15',
+            'status' => 'draft',
+        ])->assertFound();
+
+        $this->post('/plugins/assessments/assessment-q2-access-resilience', [
+            ...$payload,
+            'title' => 'Operator assessment update',
+            'summary' => 'Operator can update assessments.',
+            'framework_id' => 'framework-gdpr',
+            'starts_on' => DB::table('assessment_campaigns')->where('id', 'assessment-q2-access-resilience')->value('starts_on'),
+            'ends_on' => DB::table('assessment_campaigns')->where('id', 'assessment-q2-access-resilience')->value('ends_on'),
+            'status' => DB::table('assessment_campaigns')->where('id', 'assessment-q2-access-resilience')->value('status'),
+            'control_ids' => ['control-access-review'],
+        ])->assertFound();
+
+        $this->post('/plugins/assessments/assessment-q2-access-resilience/reviews/control-access-review', [
+            ...$payload,
+            'result' => 'pass',
+        ])->assertFound();
+
+        $this->post('/plugins/assessments/assessment-q2-access-resilience/reviews/control-access-review/artifacts', [
+            ...$payload,
+            'label' => 'Operator workpaper',
+            'artifact_type' => 'workpaper',
+            'artifact' => UploadedFile::fake()->createWithContent('operator-assessment.txt', 'operator'),
+        ])->assertFound();
+
+        $this->post('/plugins/assessments/assessment-q2-access-resilience/reviews/control-access-review/findings', [
+            ...$payload,
+            'title' => 'Operator finding',
+            'severity' => 'medium',
+            'description' => 'Operator can create findings from assessments.',
+        ])->assertFound();
+
+        $this->post('/plugins/assessments/assessment-q2-access-resilience/transitions/activate', $payload)
+            ->assertFound();
+
+        $this->post('/plugins/assessments/assessment-q2-access-resilience/owners/assignment-route-auth-assessment-owner/remove', $payload)
+            ->assertFound();
     }
 
     public function test_the_evidence_routes_require_the_expected_permissions(): void

@@ -10,12 +10,17 @@ use PymeSec\Core\Audit\Contracts\AuditTrailInterface;
 use PymeSec\Core\Events\Contracts\EventBusInterface;
 use PymeSec\Core\Events\PublicEvent;
 use PymeSec\Core\Notifications\Contracts\NotificationServiceInterface;
+use Throwable;
 
 class DatabaseNotificationService implements NotificationServiceInterface
 {
     public function __construct(
         private readonly AuditTrailInterface $audit,
         private readonly EventBusInterface $events,
+        private readonly NotificationMailSettingsRepository $mailSettings,
+        private readonly OutboundNotificationMailer $mailer,
+        private readonly NotificationTemplateRepository $templates,
+        private readonly NotificationTemplateRenderer $templateRenderer,
     ) {}
 
     public function notify(
@@ -34,12 +39,22 @@ class DatabaseNotificationService implements NotificationServiceInterface
         $normalizedDeliverAt = $this->normalizeTimestamp($deliverAt);
         $status = $normalizedDeliverAt === null ? 'dispatched' : 'pending';
         $dispatchedAt = $status === 'dispatched' ? now()->toDateTimeString() : null;
+        [$resolvedTitle, $resolvedBody, $resolvedMetadata] = $this->resolveNotificationPresentation(
+            type: $type,
+            title: $title,
+            body: $body,
+            principalId: $principalId,
+            organizationId: $organizationId,
+            scopeId: $scopeId,
+            deliverAt: $normalizedDeliverAt,
+            metadata: $metadata,
+        );
 
         DB::table('notifications')->insert([
             'id' => $id,
             'type' => $type,
-            'title' => $title,
-            'body' => $body,
+            'title' => $resolvedTitle,
+            'body' => $resolvedBody,
             'status' => $status,
             'principal_id' => $principalId,
             'functional_actor_id' => $functionalActorId,
@@ -48,7 +63,7 @@ class DatabaseNotificationService implements NotificationServiceInterface
             'source_event_name' => $sourceEventName,
             'deliver_at' => $normalizedDeliverAt,
             'dispatched_at' => $dispatchedAt,
-            'metadata' => $this->encodeJson($metadata),
+            'metadata' => $this->encodeJson($resolvedMetadata),
             'created_at' => now(),
             'updated_at' => now(),
         ]);
@@ -56,8 +71,8 @@ class DatabaseNotificationService implements NotificationServiceInterface
         $notification = new NotificationMessage(
             id: $id,
             type: $type,
-            title: $title,
-            body: $body,
+            title: $resolvedTitle,
+            body: $resolvedBody,
             status: $status,
             principalId: $principalId,
             functionalActorId: $functionalActorId,
@@ -66,7 +81,7 @@ class DatabaseNotificationService implements NotificationServiceInterface
             sourceEventName: $sourceEventName,
             deliverAt: $normalizedDeliverAt,
             dispatchedAt: $dispatchedAt,
-            metadata: $metadata,
+            metadata: $resolvedMetadata,
         );
 
         $this->events->publish(new PublicEvent(
@@ -124,11 +139,16 @@ class DatabaseNotificationService implements NotificationServiceInterface
             ->get();
 
         foreach ($due as $record) {
+            $metadata = $this->decodeJson($record->metadata ?? null);
+            $emailDelivery = $this->deliverEmailIfPossible($record, $metadata);
+            $metadata['channels']['email'] = $emailDelivery;
+
             DB::table('notifications')
                 ->where('id', $record->id)
                 ->update([
                     'status' => 'dispatched',
                     'dispatched_at' => now(),
+                    'metadata' => $this->encodeJson($metadata),
                     'updated_at' => now(),
                 ]);
 
@@ -143,6 +163,7 @@ class DatabaseNotificationService implements NotificationServiceInterface
                 targetId: (string) $record->id,
                 summary: [
                     'type' => (string) $record->type,
+                    'email_delivery_status' => $emailDelivery['status'] ?? 'not-attempted',
                 ],
                 executionOrigin: 'scheduler',
             ));
@@ -156,6 +177,7 @@ class DatabaseNotificationService implements NotificationServiceInterface
                     'notification_id' => (string) $record->id,
                     'type' => (string) $record->type,
                     'principal_id' => is_string($record->principal_id) ? $record->principal_id : null,
+                    'email_delivery_status' => $emailDelivery['status'] ?? 'not-attempted',
                 ],
             ));
         }
@@ -211,5 +233,129 @@ class DatabaseNotificationService implements NotificationServiceInterface
         $decoded = json_decode($value, true);
 
         return is_array($decoded) ? $decoded : [];
+    }
+
+    /**
+     * @param  array<string, mixed>  $metadata
+     * @return array<string, mixed>
+     */
+    private function deliverEmailIfPossible(object $record, array $metadata): array
+    {
+        $organizationId = is_string($record->organization_id ?? null) ? $record->organization_id : null;
+        $principalId = is_string($record->principal_id ?? null) ? $record->principal_id : null;
+
+        if (! is_string($organizationId) || $organizationId === '') {
+            return $this->emailDeliveryMetadata('skipped', null, 'missing-organization');
+        }
+
+        if (! is_string($principalId) || $principalId === '') {
+            return $this->emailDeliveryMetadata('skipped', null, 'missing-principal');
+        }
+
+        $settings = $this->mailSettings->deliveryConfigForOrganization($organizationId);
+
+        if ($settings === null) {
+            return $this->emailDeliveryMetadata('skipped', $principalId, 'email-disabled');
+        }
+
+        $recipientEmail = $this->resolvePrincipalEmail($principalId, $organizationId);
+
+        if (! is_string($recipientEmail) || $recipientEmail === '') {
+            return $this->emailDeliveryMetadata('skipped', $principalId, 'missing-recipient-email');
+        }
+
+        try {
+            $this->mailer->sendNotification(new NotificationMessage(
+                id: (string) $record->id,
+                type: (string) $record->type,
+                title: (string) $record->title,
+                body: (string) $record->body,
+                status: 'dispatched',
+                principalId: $principalId,
+                functionalActorId: is_string($record->functional_actor_id ?? null) ? $record->functional_actor_id : null,
+                organizationId: $organizationId,
+                scopeId: is_string($record->scope_id ?? null) ? $record->scope_id : null,
+                sourceEventName: is_string($record->source_event_name ?? null) ? $record->source_event_name : null,
+                deliverAt: is_string($record->deliver_at ?? null) ? $record->deliver_at : null,
+                dispatchedAt: now()->toDateTimeString(),
+                metadata: $metadata,
+            ), $settings, $recipientEmail);
+
+            return $this->emailDeliveryMetadata('sent', $principalId);
+        } catch (Throwable $exception) {
+            return $this->emailDeliveryMetadata('failed', $principalId, Str::limit($exception->getMessage(), 120, ''));
+        }
+    }
+
+    private function resolvePrincipalEmail(string $principalId, string $organizationId): ?string
+    {
+        $email = DB::table('identity_local_users')
+            ->where('principal_id', $principalId)
+            ->where('organization_id', $organizationId)
+            ->where('is_active', true)
+            ->value('email');
+
+        return is_string($email) && trim($email) !== '' ? trim($email) : null;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function emailDeliveryMetadata(string $status, ?string $principalId = null, ?string $reason = null): array
+    {
+        return array_filter([
+            'status' => $status,
+            'recipient_principal_id' => $principalId,
+            'reason' => $reason,
+            'attempted_at' => now()->toDateTimeString(),
+        ], static fn (mixed $value): bool => $value !== null && $value !== '');
+    }
+
+    /**
+     * @param  array<string, mixed>  $metadata
+     * @return array{0: string, 1: string, 2: array<string, mixed>}
+     */
+    private function resolveNotificationPresentation(
+        string $type,
+        string $title,
+        string $body,
+        ?string $principalId,
+        ?string $organizationId,
+        ?string $scopeId,
+        ?string $deliverAt,
+        array $metadata,
+    ): array {
+        if (! is_string($organizationId) || $organizationId === '') {
+            return [$title, $body, $metadata];
+        }
+
+        $template = $this->templates->activeTemplateForOrganizationAndType($organizationId, $type);
+
+        if ($template === null) {
+            return [$title, $body, $metadata];
+        }
+
+        $rendered = $this->templateRenderer->render(
+            template: $template,
+            notificationType: $type,
+            title: $title,
+            body: $body,
+            principalId: $principalId,
+            organizationId: $organizationId,
+            scopeId: $scopeId,
+            deliverAt: $deliverAt,
+            metadata: $metadata,
+        );
+
+        $metadata['template'] = [
+            'template_id' => $template['id'] ?? null,
+            'notification_type' => $type,
+        ];
+
+        return [
+            $rendered['title'],
+            $rendered['body'],
+            $metadata,
+        ];
     }
 }

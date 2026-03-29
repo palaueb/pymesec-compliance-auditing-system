@@ -79,6 +79,10 @@ The following screens now reflect object-scoped visibility when the current prin
 - `Exceptions Board`
 - `Assessment Campaigns`
 
+The administration area now also exposes a dedicated governance screen:
+
+- `Object Access Matrix`
+
 When a selected record is outside the visible set, the screen keeps the workspace but does not resolve that detail record.
 
 ## Current Limitations

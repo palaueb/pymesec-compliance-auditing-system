@@ -46,7 +46,26 @@ class ControlsCatalogTest extends TestCase
             ->assertSee('Framework Adoption')
             ->assertSee('ISO 27001')
             ->assertSee('GDPR')
-            ->assertSee('Signed mandate document');
+            ->assertSee('Signed mandate document')
+            ->assertSee('Ready now')
+            ->assertSee('Needs attention')
+            ->assertSee('Readiness snapshot')
+            ->assertSee('Reporting presets');
+    }
+
+    public function test_framework_adoption_screen_surfaces_framework_readiness_and_latest_report_presets(): void
+    {
+        $this->get('/app?menu=plugin.controls-catalog.framework-adoption&principal_id=principal-org-a&organization_id=org-a&scope_id=scope-eu&membership_ids[]=membership-org-a-hello')
+            ->assertOk()
+            ->assertSee('Q2 Access and Resilience Review')
+            ->assertSee('Needs attention')
+            ->assertSee('1 pass')
+            ->assertSee('1 fail')
+            ->assertSee('Open report')
+            ->assertSee('Export CSV')
+            ->assertSee('Export JSON')
+            ->assertSee('Signed mandate document still missing.')
+            ->assertSee('Onboarding');
     }
 
     public function test_framework_adoption_can_be_managed_with_a_signed_mandate_document(): void

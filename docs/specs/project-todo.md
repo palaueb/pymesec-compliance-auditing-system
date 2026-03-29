@@ -8,22 +8,24 @@ Simple list of the main pending items.
 - [x] For every feature change, explicitly check whether the `demo` branch and `demo_builder/patches/` need to be refreshed.
 - [x] If product changes affect demo-specific behavior or files already represented in the patch pack, regenerate the affected demo patches before closing the work.
 - [x] Require tests for every new or changed mutable parameter so ownership, permission, role, scope, and quota boundaries are enforced and cannot be spoofed by unauthorized users.
+- [x] Require documentation updates for every completed slice so specs, workflow notes, and product-facing docs stay aligned with the implemented behavior.
+- [x] Treat `tests + demo check + documentation update` as the minimum closeout checklist for every code change.
 
 ## Product
 
-- [ ] Finish multi-owner and assignment depth for assessments and any remaining surfaces still outside the shared assignment model.
-- [ ] Framework-specific reporting presets and readiness views.
-- [ ] Communications and reminder channels from the admin UI.
-- [ ] SMTP and outbound mail configuration from the web admin.
-- [ ] Notification templates for reminders and operational follow-up.
-- [ ] Reminder delivery beyond in-app dispatch.
-- [ ] Framework-specific exports for adopted frameworks.
-- [ ] Leadership snapshots per framework and scope.
+- [x] Finish multi-owner and assignment depth for assessments and any remaining surfaces still outside the shared assignment model.
+- [x] Framework-specific reporting presets and readiness views.
+- [x] Communications and reminder channels from the admin UI.
+- [x] SMTP and outbound mail configuration from the web admin.
+- [x] Notification templates for reminders and operational follow-up.
+- [x] Reminder delivery beyond in-app dispatch.
+- [x] Framework-specific exports for adopted frameworks.
+- [x] Leadership snapshots per framework and scope.
 
 ## Identity and Access
 
 - [ ] LDAP login mode completion on top of the current sync connector.
-- [ ] Clear web UI for governing object access matrices.
+- [x] Clear web UI for governing object access matrices.
 - [ ] Better separation between platform administration and delegated access governance where still rough.
 - [ ] Extend parameter-level authorization coverage until every GET/POST mutation path that changes governed data has an explicit ownership and authorization regression test.
 
@@ -45,7 +47,7 @@ Simple list of the main pending items.
 
 - [ ] More framework packs beyond the current baseline.
 - [ ] Deeper management reporting across assessments, evidence, risks, and findings.
-- [ ] Readiness summaries by organization, scope, and adopted framework.
+- [x] Readiness summaries by organization, scope, and adopted framework.
 
 ## Longer-Term
 

@@ -6,6 +6,7 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Validation\Rule;
 use PymeSec\Core\Artifacts\ArtifactUploadData;
 use PymeSec\Core\Artifacts\Contracts\ArtifactServiceInterface;
+use PymeSec\Core\FunctionalActors\Contracts\FunctionalActorServiceInterface;
 use PymeSec\Core\ObjectAccess\ObjectAccessService;
 use PymeSec\Plugins\AssessmentsAudits\AssessmentReferenceData;
 use PymeSec\Plugins\AssessmentsAudits\AssessmentsAuditsRepository;
@@ -193,7 +194,11 @@ Route::get('/plugins/assessments/{assessmentId}/report', function (
     );
 })->middleware('core.permission:plugin.assessments-audits.assessments.view')->name('plugin.assessments-audits.report');
 
-Route::post('/plugins/assessments', function (Request $request, AssessmentsAuditsRepository $repository) {
+Route::post('/plugins/assessments', function (
+    Request $request,
+    AssessmentsAuditsRepository $repository,
+    FunctionalActorServiceInterface $actors,
+) {
     $frameworkIds = $repository->frameworkOptionIds(
         (string) $request->input('organization_id', 'org-a'),
         is_string($request->input('scope_id')) ? $request->input('scope_id') : null,
@@ -210,11 +215,25 @@ Route::post('/plugins/assessments', function (Request $request, AssessmentsAudit
         'status' => ['nullable', 'string', Rule::in(AssessmentReferenceData::statusKeys())],
         'control_ids' => ['nullable', 'array'],
         'control_ids.*' => ['string', 'max:64'],
+        'owner_actor_id' => ['nullable', 'string', 'max:64'],
     ]);
 
     $assessment = $repository->create($validated);
     $principalId = (string) $request->input('principal_id', 'principal-org-a');
     $membershipId = $request->input('membership_id');
+
+    if (is_string($validated['owner_actor_id'] ?? null) && $validated['owner_actor_id'] !== '') {
+        $actors->assignActor(
+            actorId: $validated['owner_actor_id'],
+            domainObjectType: 'assessment',
+            domainObjectId: $assessment['id'],
+            assignmentType: 'owner',
+            organizationId: $assessment['organization_id'],
+            scopeId: $assessment['scope_id'] !== '' ? $assessment['scope_id'] : null,
+            metadata: ['source' => 'assessments-audits'],
+            assignedByPrincipalId: $principalId,
+        );
+    }
 
     return redirect()->route('core.shell.index', array_filter([
         'menu' => 'plugin.assessments-audits.root',
@@ -231,6 +250,7 @@ Route::post('/plugins/assessments/{assessmentId}', function (
     Request $request,
     string $assessmentId,
     AssessmentsAuditsRepository $repository,
+    FunctionalActorServiceInterface $actors,
     ObjectAccessService $objectAccess,
 ) {
     $frameworkIds = $repository->frameworkOptionIds(
@@ -249,6 +269,7 @@ Route::post('/plugins/assessments/{assessmentId}', function (
         'status' => ['required', 'string', Rule::in(AssessmentReferenceData::statusKeys())],
         'control_ids' => ['nullable', 'array'],
         'control_ids.*' => ['string', 'max:64'],
+        'owner_actor_id' => ['nullable', 'string', 'max:64'],
     ]);
 
     $principalId = (string) $request->input('principal_id', 'principal-org-a');
@@ -266,6 +287,29 @@ Route::post('/plugins/assessments/{assessmentId}', function (
 
     $membershipId = $request->input('membership_id');
 
+    if (is_string($validated['owner_actor_id'] ?? null) && $validated['owner_actor_id'] !== '') {
+        $actors->assignActor(
+            actorId: $validated['owner_actor_id'],
+            domainObjectType: 'assessment',
+            domainObjectId: $assessment['id'],
+            assignmentType: 'owner',
+            organizationId: $assessment['organization_id'],
+            scopeId: $assessment['scope_id'] !== '' ? $assessment['scope_id'] : null,
+            metadata: ['source' => 'assessments-audits'],
+            assignedByPrincipalId: $principalId,
+        );
+    }
+
+    DB::table('functional_assignments')
+        ->where('domain_object_type', 'assessment')
+        ->where('domain_object_id', $assessment['id'])
+        ->where('organization_id', $assessment['organization_id'])
+        ->where('is_active', true)
+        ->update([
+            'scope_id' => $assessment['scope_id'] !== '' ? $assessment['scope_id'] : null,
+            'updated_at' => now(),
+        ]);
+
     return redirect()->route('core.shell.index', array_filter([
         'menu' => 'plugin.assessments-audits.root',
         'principal_id' => $principalId,
@@ -276,6 +320,53 @@ Route::post('/plugins/assessments/{assessmentId}', function (
         'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
     ]))->with('status', 'Saved.');
 })->middleware('core.permission:plugin.assessments-audits.assessments.manage')->name('plugin.assessments-audits.update');
+
+Route::post('/plugins/assessments/{assessmentId}/owners/{assignmentId}/remove', function (
+    Request $request,
+    string $assessmentId,
+    string $assignmentId,
+    AssessmentsAuditsRepository $repository,
+    FunctionalActorServiceInterface $actors,
+    ObjectAccessService $objectAccess,
+) {
+    $assessment = $repository->find($assessmentId);
+
+    abort_if($assessment === null, 404);
+    abort_unless($objectAccess->canAccessObject(
+        principalId: (string) $request->input('principal_id', 'principal-org-a'),
+        organizationId: $assessment['organization_id'],
+        scopeId: $assessment['scope_id'] !== '' ? $assessment['scope_id'] : null,
+        domainObjectType: 'assessment',
+        domainObjectId: $assessment['id'],
+    ), 403);
+
+    $assignment = collect($actors->assignmentsFor(
+        domainObjectType: 'assessment',
+        domainObjectId: $assessment['id'],
+        organizationId: $assessment['organization_id'],
+        scopeId: $assessment['scope_id'] !== '' ? $assessment['scope_id'] : null,
+    ))->first(fn ($candidate) => $candidate->id === $assignmentId && $candidate->assignmentType === 'owner');
+
+    abort_if($assignment === null, 404);
+
+    $principalId = (string) $request->input('principal_id', 'principal-org-a');
+    $membershipId = $request->input('membership_id');
+
+    $actors->deactivateAssignment(
+        assignmentId: $assignmentId,
+        deactivatedByPrincipalId: $principalId,
+    );
+
+    return redirect()->route('core.shell.index', array_filter([
+        'menu' => 'plugin.assessments-audits.root',
+        'principal_id' => $principalId,
+        'organization_id' => $assessment['organization_id'],
+        'assessment_id' => $assessment['id'],
+        'scope_id' => $assessment['scope_id'] !== '' ? $assessment['scope_id'] : null,
+        'locale' => $request->input('locale', 'en'),
+        'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
+    ]))->with('status', 'Owner removed.');
+})->middleware('core.permission:plugin.assessments-audits.assessments.manage')->name('plugin.assessments-audits.owners.destroy');
 
 Route::post('/plugins/assessments/{assessmentId}/reviews/{controlId}', function (
     Request $request,

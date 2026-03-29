@@ -2,6 +2,7 @@
 
 namespace PymeSec\Plugins\AssessmentsAudits;
 
+use PymeSec\Core\FunctionalActors\Contracts\FunctionalActorServiceInterface;
 use PymeSec\Core\Permissions\AuthorizationContext;
 use PymeSec\Core\Permissions\Contracts\AuthorizationServiceInterface;
 use PymeSec\Core\ObjectAccess\ObjectAccessService;
@@ -65,6 +66,7 @@ class AssessmentsAuditsPlugin implements PluginInterface
     {
         $repository = $context->app()->make(AssessmentsAuditsRepository::class);
         $controls = $context->app()->make(ControlsCatalogRepository::class);
+        $actors = $context->app()->make(FunctionalActorServiceInterface::class);
         $authorization = $context->app()->make(AuthorizationServiceInterface::class);
         $objectAccess = $context->app()->make(ObjectAccessService::class);
         $tenancy = $context->app()->make(TenancyServiceInterface::class);
@@ -92,7 +94,7 @@ class AssessmentsAuditsPlugin implements PluginInterface
             requestedMembershipIds: array_map(static fn ($membership): string => $membership->id, $screenContext->memberships),
         );
 
-        $campaignRows = array_map(function (array $campaign) use ($canManage, $controls, $frameworkOptions, $repository, $screenContext, $scopeContext): array {
+        $campaignRows = array_map(function (array $campaign) use ($actors, $canManage, $controls, $frameworkOptions, $organizationId, $repository, $screenContext, $scopeContext): array {
                 $scopeName = 'Organization-wide';
 
                 foreach ($scopeContext->scopes as $scope) {
@@ -136,6 +138,7 @@ class AssessmentsAuditsPlugin implements PluginInterface
                 return [
                     ...$campaign,
                     'status_label' => AssessmentReferenceData::statusLabel($campaign['status']),
+                    'owner_assignments' => $this->ownerAssignments($actors, $campaign['id'], $organizationId, $screenContext->scopeId),
                     'open_url' => route('core.shell.index', [...$this->baseQuery($screenContext), 'menu' => 'plugin.assessments-audits.root', 'assessment_id' => $campaign['id']]),
                     'scope_name' => $scopeName,
                     'framework_name' => $frameworkName,
@@ -156,6 +159,7 @@ class AssessmentsAuditsPlugin implements PluginInterface
                         'format' => 'json',
                         ...$this->baseQuery($screenContext),
                     ]),
+                    'owner_remove_route' => route('plugin.assessments-audits.owners.destroy', ['assessmentId' => $campaign['id'], 'assignmentId' => '__ASSIGNMENT__']),
                     'transitions' => $canManage ? $this->transitionsForStatus($campaign['status']) : [],
                     'transition_route' => route('plugin.assessments-audits.transition', [
                         'assessmentId' => $campaign['id'],
@@ -187,6 +191,7 @@ class AssessmentsAuditsPlugin implements PluginInterface
             'query' => $this->baseQuery($screenContext),
             'list_query' => $listQuery,
             'create_route' => route('plugin.assessments-audits.store'),
+            'owner_actor_options' => $this->actorOptions($actors, $organizationId, $screenContext->scopeId),
             'framework_options' => $frameworkOptions,
             'control_options' => $repository->controlOptions($organizationId, $screenContext->scopeId),
             'scope_options' => array_map(static fn ($scope): array => $scope->toArray(), $scopeContext->scopes),
@@ -230,5 +235,52 @@ class AssessmentsAuditsPlugin implements PluginInterface
         }
 
         return array_filter($query, static fn ($value): bool => $value !== null && $value !== '');
+    }
+
+    /**
+     * @return array<int, array{id: string, assignment_id: string, display_name: string, kind: string}>
+     */
+    private function ownerAssignments(
+        FunctionalActorServiceInterface $actors,
+        string $assessmentId,
+        string $organizationId,
+        ?string $scopeId,
+    ): array {
+        $owners = [];
+
+        foreach ($actors->assignmentsFor('assessment', $assessmentId, $organizationId, $scopeId) as $assignment) {
+            if ($assignment->assignmentType !== 'owner') {
+                continue;
+            }
+
+            $actor = $actors->findActor($assignment->functionalActorId);
+
+            if ($actor === null) {
+                continue;
+            }
+
+            $owners[] = [
+                'id' => $actor->id,
+                'assignment_id' => $assignment->id,
+                'display_name' => $actor->displayName,
+                'kind' => $actor->kind,
+            ];
+        }
+
+        return $owners;
+    }
+
+    /**
+     * @return array<int, array{id: string, label: string}>
+     */
+    private function actorOptions(
+        FunctionalActorServiceInterface $actors,
+        string $organizationId,
+        ?string $scopeId,
+    ): array {
+        return array_map(static fn ($actor): array => [
+            'id' => $actor->id,
+            'label' => sprintf('%s (%s)', $actor->displayName, $actor->kind),
+        ], $actors->actors($organizationId, $scopeId));
     }
 }

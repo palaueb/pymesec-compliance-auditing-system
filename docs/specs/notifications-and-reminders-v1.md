@@ -37,12 +37,14 @@ In v1, the core notification subsystem should provide:
 - immediate notification creation
 - scheduled notification creation through a `deliver_at` timestamp
 - due-dispatch processing through a scheduler-safe command
+- optional outbound email delivery for due notifications when organization-scoped SMTP settings exist
+- organization-scoped SMTP configuration from the web administration area
+- organization-scoped title and body template overrides per notification type
 - event publication for created and dispatched notifications
 - audit records for sensitive dispatch actions
 
 The core does not yet provide:
 
-- email delivery
 - SMS or chat delivery
 - per-user notification preferences
 - digesting, batching, or escalation policies
@@ -105,6 +107,8 @@ Rules:
 - the command must be safe to run repeatedly
 - dispatch processing must only affect `pending` notifications whose `deliver_at` is due
 - dispatch processing should preserve tenancy context where present
+- outbound email is best-effort and must not prevent the in-app dispatch state from being recorded
+- external delivery state should be written back into notification metadata when attempted
 
 The platform may later invoke this command from cron, a queue worker, or a dedicated scheduler service.
 
@@ -149,7 +153,8 @@ This v1 specification does not yet define:
 
 - user inbox UX beyond simple shell-backed screens
 - notification dismissal or read-state semantics
-- channel adapters
+- channel adapters beyond SMTP-backed outbound email
+- conditional template logic or per-channel branching
 - throttling and anti-spam rules
 - SLA-driven escalations
 
@@ -158,4 +163,5 @@ This v1 specification does not yet define:
 - The platform gets one shared primitive for reminders and in-app notifications.
 - Workflow and plugin automation can build on one scheduler-safe dispatch model.
 - Events and audit stay consistent with the rest of the core runtime.
-- Future channel delivery can extend the subsystem without changing plugin-facing intent.
+- Organization admins can enable outbound email without moving reminder ownership into plugins.
+- Future channel delivery can still extend the subsystem without changing plugin-facing intent.

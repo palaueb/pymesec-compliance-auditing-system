@@ -119,6 +119,15 @@
                             @endforeach
                         </select>
                     </div>
+                    <div class="field" style="grid-column:1 / -1;">
+                        <label class="field-label" for="assessment-owner-actor">Initial owner actor</label>
+                        <select class="field-select" id="assessment-owner-actor" name="owner_actor_id">
+                            <option value="">No owner</option>
+                            @foreach ($owner_actor_options as $actor)
+                                <option value="{{ $actor['id'] }}">{{ $actor['label'] }}</option>
+                            @endforeach
+                        </select>
+                    </div>
                 </div>
                 <div class="action-cluster" style="margin-top:14px;">
                     <button class="button button-primary" type="submit">Create assessment</button>
@@ -169,7 +178,7 @@
             </div>
 
             {{-- Context metrics --}}
-            <div class="overview-grid" style="grid-template-columns:repeat(4, minmax(0, 1fr));">
+            <div class="overview-grid" style="grid-template-columns:repeat(5, minmax(0, 1fr));">
                 <div class="metric-card">
                     <div class="metric-label">Scope</div>
                     <div class="metric-value" style="font-size:18px;">{{ $selectedAssessment['scope_name'] ?: 'Org-wide' }}</div>
@@ -194,6 +203,13 @@
                     <div class="metric-value">{{ $selectedAssessment['review_summary']['artifacts'] }}</div>
                     <div class="meta-copy">{{ $selectedAssessment['review_summary']['linked_findings'] }} findings linked</div>
                 </div>
+                <div class="metric-card">
+                    <div class="metric-label">Owners</div>
+                    <div class="metric-value">{{ count($selectedAssessment['owner_assignments']) }}</div>
+                    <div class="meta-copy">
+                        {{ count($selectedAssessment['owner_assignments']) > 0 ? $selectedAssessment['owner_assignments'][0]['display_name'] : 'No owner assigned' }}
+                    </div>
+                </div>
             </div>
 
             <div class="overview-grid" style="grid-template-columns:repeat(2, minmax(0, 1fr));">
@@ -212,6 +228,31 @@
                     @if ($selectedAssessment['closure_summary'] !== '')
                         <div class="review-summary" style="margin-top:10px;">{{ $selectedAssessment['closure_summary'] }}</div>
                     @endif
+                </div>
+                <div class="surface-card" style="padding:14px;">
+                    <div class="metric-label">Ownership</div>
+                    <div class="table-note" style="margin-top:10px;">Owners: {{ count($selectedAssessment['owner_assignments']) }}</div>
+                    <div class="data-stack" style="margin-top:10px;">
+                        @forelse ($selectedAssessment['owner_assignments'] as $owner)
+                            <div class="data-item">
+                                <div class="entity-title">{{ $owner['display_name'] }}</div>
+                                <div class="table-note">{{ $owner['kind'] }}</div>
+                                @if ($can_manage_assessments)
+                                    <form method="POST" action="{{ str_replace('__ASSIGNMENT__', $owner['assignment_id'], $selectedAssessment['owner_remove_route']) }}" style="margin-top:8px;">
+                                        @csrf
+                                        <input type="hidden" name="principal_id" value="{{ $query['principal_id'] ?? '' }}">
+                                        <input type="hidden" name="organization_id" value="{{ $selectedAssessment['organization_id'] }}">
+                                        <input type="hidden" name="locale" value="{{ $query['locale'] }}">
+                                        <input type="hidden" name="menu" value="plugin.assessments-audits.root">
+                                        <input type="hidden" name="membership_id" value="{{ $query['membership_ids'][0] ?? 'membership-org-a-hello' }}">
+                                        <button class="button button-ghost" type="submit">Remove owner</button>
+                                    </form>
+                                @endif
+                            </div>
+                        @empty
+                            <span class="muted-note">No owner assigned</span>
+                        @endforelse
+                    </div>
                 </div>
             </div>
 
@@ -349,6 +390,38 @@
                                     @endforeach
                                 </select>
                             </div>
+                            <div class="field" style="grid-column:1 / -1;">
+                                <label class="field-label">Add owner actor</label>
+                                <select class="field-select" name="owner_actor_id">
+                                    <option value="">Do not add owner</option>
+                                    @foreach ($owner_actor_options as $actor)
+                                        <option value="{{ $actor['id'] }}">{{ $actor['label'] }}</option>
+                                    @endforeach
+                                </select>
+                                <div class="field-note">Selecting an actor adds another owner instead of replacing the current set.</div>
+                            </div>
+                            @if (($selectedAssessment['owner_assignments'] ?? []) !== [])
+                                <div class="field" style="grid-column:1 / -1;">
+                                    <label class="field-label">Current owners</label>
+                                    <div class="data-stack">
+                                        @foreach ($selectedAssessment['owner_assignments'] as $owner)
+                                            <div class="data-item">
+                                                <div class="entity-title">{{ $owner['display_name'] }}</div>
+                                                <div class="table-note">{{ $owner['kind'] }}</div>
+                                                <form method="POST" action="{{ str_replace('__ASSIGNMENT__', $owner['assignment_id'], $selectedAssessment['owner_remove_route']) }}" style="margin-top:8px;">
+                                                    @csrf
+                                                    <input type="hidden" name="principal_id" value="{{ $query['principal_id'] ?? '' }}">
+                                                    <input type="hidden" name="organization_id" value="{{ $selectedAssessment['organization_id'] }}">
+                                                    <input type="hidden" name="locale" value="{{ $query['locale'] }}">
+                                                    <input type="hidden" name="menu" value="plugin.assessments-audits.root">
+                                                    <input type="hidden" name="membership_id" value="{{ $query['membership_ids'][0] ?? 'membership-org-a-hello' }}">
+                                                    <button class="button button-ghost" type="submit">Remove owner</button>
+                                                </form>
+                                            </div>
+                                        @endforeach
+                                    </div>
+                                </div>
+                            @endif
                         </div>
                         <div class="action-cluster" style="margin-top:12px;">
                             <button class="button button-secondary" type="submit">Save changes</button>
@@ -631,6 +704,7 @@
                                 <div>{{ $campaign['scope_name'] ?: 'Org-wide' }}</div>
                                 <div class="table-note">{{ $campaign['framework_name'] ?: '—' }}</div>
                                 <div class="table-note">{{ $campaign['starts_on'] }} – {{ $campaign['ends_on'] }}</div>
+                                <div class="table-note">Owners: {{ count($campaign['owner_assignments']) }}</div>
                             </td>
                             <td>
                                 @php $total = count($campaign['reviews']); @endphp
