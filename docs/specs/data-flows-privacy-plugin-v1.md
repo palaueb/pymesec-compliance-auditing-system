@@ -59,8 +59,9 @@ Ownership must use functional actors from the core.
 
 In v1:
 
-- data flows may have one active owner assignment
-- processing activities may have one active owner assignment
+- data flows may have multiple active owner assignments
+- processing activities may have multiple active owner assignments
+- owner removal is explicit and auditable
 
 ## 4. Workflow Model
 

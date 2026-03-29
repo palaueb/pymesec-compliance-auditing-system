@@ -52,7 +52,6 @@ class AssetCatalogRepository
             'type' => $data['type'],
             'criticality' => $data['criticality'],
             'classification' => $data['classification'],
-            'owner_label' => ($data['owner_label'] ?? null) ?: null,
             'created_at' => now(),
             'updated_at' => now(),
         ]);
@@ -77,10 +76,6 @@ class AssetCatalogRepository
             'classification' => $data['classification'],
             'updated_at' => now(),
         ];
-
-        if (array_key_exists('owner_label', $data)) {
-            $update['owner_label'] = ($data['owner_label'] ?? null) ?: null;
-        }
 
         $updated = DB::table('assets')
             ->where('id', $assetId)

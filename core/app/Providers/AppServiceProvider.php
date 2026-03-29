@@ -410,6 +410,17 @@ class AppServiceProvider extends ServiceProvider
         ));
 
         $menus->registerCore(new MenuDefinition(
+            id: 'core.governance',
+            owner: 'core',
+            labelKey: 'core.nav.governance',
+            routeName: 'core.shell.index',
+            icon: 'shield',
+            order: 9,
+            permission: 'core.functional-actors.view',
+            area: 'app',
+        ));
+
+        $menus->registerCore(new MenuDefinition(
             id: 'core.platform',
             owner: 'core',
             labelKey: 'core.nav.platform',
@@ -506,24 +517,24 @@ class AppServiceProvider extends ServiceProvider
             id: 'core.functional-actors',
             owner: 'core',
             labelKey: 'core.nav.functional_actors',
-            routeName: 'core.functional-actors.index',
-            parentId: 'core.platform',
+            routeName: 'core.shell.index',
+            parentId: 'core.governance',
             icon: 'users',
-            order: 50,
+            order: 10,
             permission: 'core.functional-actors.view',
-            area: 'admin',
+            area: 'app',
         ));
 
         $menus->registerCore(new MenuDefinition(
             id: 'core.object-access',
             owner: 'core',
             labelKey: 'core.nav.object_access',
-            routeName: 'core.admin.index',
-            parentId: 'core.platform',
+            routeName: 'core.shell.index',
+            parentId: 'core.governance',
             icon: 'grid',
-            order: 55,
+            order: 20,
             permission: 'core.functional-actors.view',
-            area: 'admin',
+            area: 'app',
         ));
 
         $screens = $this->app->make(ScreenRegistryInterface::class);
@@ -544,6 +555,27 @@ class AppServiceProvider extends ServiceProvider
             subtitleKey: 'core.support.screen.subtitle',
             viewPath: resource_path('views/support.blade.php'),
             dataResolver: fn (ScreenRenderContext $screenContext): array => $this->supportScreenData($screenContext),
+        ));
+
+        $screens->register(new ScreenDefinition(
+            menuId: 'core.governance',
+            owner: 'core',
+            titleKey: 'core.governance.screen.title',
+            subtitleKey: 'core.governance.screen.subtitle',
+            viewPath: resource_path('views/governance-overview.blade.php'),
+            dataResolver: fn (ScreenRenderContext $screenContext): array => $this->governanceOverviewData($screenContext),
+            toolbarResolver: fn (ScreenRenderContext $screenContext): array => [
+                new ToolbarAction(
+                    label: 'Functional directory',
+                    url: route('core.shell.index', [...$this->coreScreenQuery($screenContext), 'menu' => 'core.functional-actors']),
+                    variant: 'primary',
+                ),
+                new ToolbarAction(
+                    label: 'Object access matrix',
+                    url: route('core.shell.index', [...$this->coreScreenQuery($screenContext), 'menu' => 'core.object-access']),
+                    variant: 'secondary',
+                ),
+            ],
         ));
 
         $screens->register(new ScreenDefinition(
@@ -878,7 +910,7 @@ class AppServiceProvider extends ServiceProvider
                     return [
                         new ToolbarAction(
                             label: 'Back to directory',
-                            url: route('core.admin.index', [...$query, 'menu' => 'core.functional-actors']),
+                            url: route('core.shell.index', [...$query, 'menu' => 'core.functional-actors']),
                             variant: 'secondary',
                         ),
                         new ToolbarAction(
@@ -966,6 +998,84 @@ class AppServiceProvider extends ServiceProvider
                 ],
             ],
             'recent_audit' => array_map(static fn ($record): array => $record->toArray(), $audit),
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function governanceOverviewData(ScreenRenderContext $screenContext): array
+    {
+        $query = $this->coreScreenQuery($screenContext);
+        $organizationId = $screenContext->organizationId;
+        $scopeId = $screenContext->scopeId;
+        $assignmentsQuery = DB::table('functional_assignments')
+            ->where('is_active', true);
+
+        if (is_string($organizationId) && $organizationId !== '') {
+            $assignmentsQuery->where('organization_id', $organizationId);
+        }
+
+        if (is_string($scopeId) && $scopeId !== '') {
+            $assignmentsQuery->where(function ($inner) use ($scopeId): void {
+                $inner->whereNull('scope_id')->orWhere('scope_id', $scopeId);
+            });
+        }
+
+        $assignments = $assignmentsQuery->get([
+            'id',
+            'functional_actor_id',
+            'assignment_type',
+            'domain_object_type',
+            'domain_object_id',
+        ]);
+
+        $principalLinksQuery = DB::table('principal_functional_actor_links');
+
+        if (is_string($organizationId) && $organizationId !== '') {
+            $principalLinksQuery->where('organization_id', $organizationId);
+        }
+
+        $principalLinks = $principalLinksQuery->get(['principal_id', 'functional_actor_id']);
+
+        return [
+            'query' => $query,
+            'organization_id' => $organizationId,
+            'scope_id' => $scopeId,
+            'has_organization_context' => is_string($organizationId) && $organizationId !== '',
+            'metrics' => [
+                'linked_principals' => $principalLinks->pluck('principal_id')->filter()->unique()->count(),
+                'functional_actors' => $principalLinks->pluck('functional_actor_id')->filter()->unique()->count(),
+                'active_assignments' => $assignments->count(),
+                'governed_objects' => $assignments
+                    ->map(static fn ($assignment): string => (string) $assignment->domain_object_type.'::'.(string) $assignment->domain_object_id)
+                    ->unique()
+                    ->count(),
+            ],
+            'quick_links' => [
+                [
+                    'label' => 'Functional directory',
+                    'copy' => 'Link people to functional profiles and keep accountability independent from login roles.',
+                    'url' => route('core.shell.index', [...$query, 'menu' => 'core.functional-actors']),
+                ],
+                [
+                    'label' => 'Object access matrix',
+                    'copy' => 'Inspect who can still see governed records once actor links and scoped assignments are applied.',
+                    'url' => route('core.shell.index', [...$query, 'menu' => 'core.object-access']),
+                ],
+            ],
+            'boundaries' => [
+                [
+                    'title' => 'Platform administration',
+                    'copy' => 'Keep roles, tenancy, SMTP, modules, and audit tooling in /admin for platform operators.',
+                    'items' => ['Roles and grants', 'Tenancy and memberships', 'Notifications and SMTP', 'Reference catalogs', 'Audit and modules'],
+                ],
+                [
+                    'title' => 'Delegated governance',
+                    'copy' => 'Handle accountability, linked actors, and object-scoped visibility in the organization workspace.',
+                    'items' => ['Functional profiles', 'Principal-to-actor links', 'Object-scoped assignments', 'Ownership and review matrices'],
+                ],
+            ],
         ];
     }
 
@@ -1646,7 +1756,7 @@ class AppServiceProvider extends ServiceProvider
 
         $actorRows = array_map(function ($actor) use ($listQuery): array {
             $row = $actor->toArray();
-            $row['open_url'] = route('core.admin.index', [...$listQuery, 'menu' => 'core.functional-actors', 'actor_id' => $row['id']]);
+            $row['open_url'] = route('core.shell.index', [...$listQuery, 'menu' => 'core.functional-actors', 'actor_id' => $row['id']]);
 
             return $row;
         }, $actors);
@@ -1728,7 +1838,7 @@ class AppServiceProvider extends ServiceProvider
                 'assignments' => count($assignments),
                 'organizations' => collect($actors)->pluck('organization_id')->filter()->unique()->count(),
             ],
-            'actors_list_url' => route('core.admin.index', [...$listQuery, 'menu' => 'core.functional-actors']),
+            'actors_list_url' => route('core.shell.index', [...$listQuery, 'menu' => 'core.functional-actors']),
             'create_actor_route' => route('core.functional-actors.store'),
             'link_principal_route' => route('core.functional-actors.links.store'),
             'assign_actor_route' => route('core.functional-actors.assignments.store'),
@@ -1887,7 +1997,10 @@ class AppServiceProvider extends ServiceProvider
                 ])->all();
         }
 
-        $linksByActor = collect($principalLinks)->groupBy('functional_actor_id')->all();
+        $linksByActor = collect($principalLinks)
+            ->groupBy('functional_actor_id')
+            ->map(static fn ($group): array => $group->values()->all())
+            ->all();
         $linkedActors = $selectedPrincipalId !== null
             ? array_map(static fn ($actor): array => $actor->toArray(), $service->actorsForPrincipal($selectedPrincipalId, $organizationId))
             : [];

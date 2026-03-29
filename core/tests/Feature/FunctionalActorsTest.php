@@ -48,7 +48,7 @@ class FunctionalActorsTest extends TestCase
 
     public function test_the_actor_directory_screen_renders_inside_the_shell(): void
     {
-        $this->get('/admin?menu=core.functional-actors&principal_id=principal-admin&actor_id=actor-ava-mason')
+        $this->get('/app?menu=core.functional-actors&principal_id=principal-admin&organization_id=org-a&actor_id=actor-ava-mason')
             ->assertOk()
             ->assertSee('Functional Directory')
             ->assertSee('Ava Mason')
@@ -107,16 +107,20 @@ class FunctionalActorsTest extends TestCase
             ]);
     }
 
-    public function test_functional_profiles_can_be_created_linked_and_assigned_from_the_admin_ui(): void
+    public function test_functional_profiles_can_be_created_linked_and_assigned_from_the_workspace_governance_ui(): void
     {
-        $this->post('/core/functional-actors', [
+        $createResponse = $this->post('/core/functional-actors', [
             'principal_id' => 'principal-admin',
             'organization_id' => 'org-a',
             'locale' => 'en',
+            'menu' => 'core.functional-actors',
             'display_name' => 'IT Team',
             'kind' => 'team',
             'subject_principal_id' => 'principal-ldap-org-a-dirkkoch',
-        ])->assertFound();
+        ]);
+
+        $createResponse->assertFound();
+        $this->assertStringContainsString('/app?', (string) $createResponse->headers->get('Location'));
 
         $actorId = (string) DB::table('functional_actors')
             ->where('display_name', 'IT Team')
@@ -124,24 +128,32 @@ class FunctionalActorsTest extends TestCase
 
         $this->assertNotSame('', $actorId);
 
-        $this->post('/core/functional-actors/links', [
+        $linkResponse = $this->post('/core/functional-actors/links', [
             'principal_id' => 'principal-admin',
             'organization_id' => 'org-a',
             'locale' => 'en',
+            'menu' => 'core.functional-actors',
             'actor_id' => $actorId,
             'subject_principal_id' => 'principal-ldap-org-a-dirkkoch',
-        ])->assertFound();
+        ]);
 
-        $this->post('/core/functional-actors/assignments', [
+        $linkResponse->assertFound();
+        $this->assertStringContainsString('/app?', (string) $linkResponse->headers->get('Location'));
+
+        $assignResponse = $this->post('/core/functional-actors/assignments', [
             'principal_id' => 'principal-admin',
             'organization_id' => 'org-a',
             'locale' => 'en',
+            'menu' => 'core.functional-actors',
             'actor_id' => $actorId,
             'assignment_type' => 'owner',
             'subject_key' => 'asset::asset-erp-prod',
-        ])->assertFound();
+        ]);
 
-        $this->get('/admin?menu=core.functional-actors&principal_id=principal-admin&organization_id=org-a&actor_id='.$actorId)
+        $assignResponse->assertFound();
+        $this->assertStringContainsString('/app?', (string) $assignResponse->headers->get('Location'));
+
+        $this->get('/app?menu=core.functional-actors&principal_id=principal-admin&organization_id=org-a&actor_id='.$actorId)
             ->assertOk()
             ->assertSee('IT Team')
             ->assertSee('principal-ldap-org-a-dirkkoch')

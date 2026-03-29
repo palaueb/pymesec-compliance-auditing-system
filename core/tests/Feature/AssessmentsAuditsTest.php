@@ -31,6 +31,7 @@ class AssessmentsAuditsTest extends TestCase
         $this->get('/app?menu=plugin.assessments-audits.root&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello&assessment_id=assessment-q2-access-resilience')
             ->assertOk()
             ->assertSee('Assessment Campaigns')
+            ->assertSee('Assessment status and review results are system-controlled values')
             ->assertSee('Q2 Access and Resilience Review')
             ->assertSee('Quarterly Access Review')
             ->assertSee('Access rights')

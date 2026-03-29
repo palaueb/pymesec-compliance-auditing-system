@@ -12,6 +12,9 @@
     <div class="surface-note">
         Reference catalogs keep business labels consistent across the workspace. Defaults are available immediately; organization-specific overrides let admins add, rename, or retire options without editing code.
     </div>
+    <div class="surface-note">
+        These catalogs are for business-managed vocabularies such as risk categories or policy areas. System workflow states and fixed platform enums are governed in code and are not edited here.
+    </div>
 
     <div class="table-card">
         <table class="entity-table">

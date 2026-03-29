@@ -1,6 +1,6 @@
 # Title
 
-Object Access Admin UI v1
+Object Access Governance UI v1
 
 # Status
 
@@ -8,7 +8,7 @@ Draft
 
 # Context
 
-The runtime already enforces object-level visibility through functional actor assignments. What was still missing was a dedicated administrative surface to inspect and govern those matrices without jumping across multiple plugin screens or relying on implicit knowledge of functional-actor internals.
+The runtime already enforces object-level visibility through functional actor assignments. What was still missing was a dedicated governance surface to inspect and govern those matrices without jumping across multiple plugin screens or relying on implicit knowledge of functional-actor internals.
 
 # Specification
 
@@ -16,13 +16,13 @@ The runtime already enforces object-level visibility through functional actor as
 
 This slice defines:
 
-- a dedicated admin screen for object access governance
+- a dedicated governance screen for object access inspection and correction
 - a clear read path from principal to linked actors to governed objects
 - direct assignment and removal flows for object-scoped access
 
 ## 2. Scope
 
-The screen lives under `core.object-access` and uses the existing functional assignment model.
+The screen lives under `core.object-access` inside the delegated governance workspace area and uses the existing functional assignment model.
 
 It provides:
 
@@ -35,7 +35,7 @@ It does not introduce a separate authorization model.
 
 ## 3. Governance Model
 
-The admin UI continues to rely on:
+The governance UI continues to rely on:
 
 - `principal_functional_actor_links`
 - `functional_assignments`
@@ -62,6 +62,6 @@ The screen should keep the assign/remove workflow close to the inspection workfl
 
 # Consequences
 
-- object-level access becomes governable from a single admin surface
+- object-level access becomes governable from a single workspace governance surface
 - platform operators no longer need to infer visibility only from plugin detail screens
 - the product moves closer to a fully explicit access-governance story without touching LDAP yet

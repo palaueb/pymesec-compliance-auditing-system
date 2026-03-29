@@ -95,6 +95,16 @@ return [
             'operations' => 'Operations',
         ],
     ],
+    'policies' => [
+        'areas' => [
+            'identity' => 'Identity',
+            'resilience' => 'Resilience',
+            'operations' => 'Operations',
+            'third-parties' => 'Third parties',
+            'governance' => 'Governance',
+            'privacy' => 'Privacy',
+        ],
+    ],
     'assessments' => [
         'review_result' => [
             'not-tested' => 'Not tested',

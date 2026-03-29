@@ -1,8 +1,8 @@
 diff --git a/core/routes/web.php b/core/routes/web.php
-index 9a25f2cffaa055885642d9a8d14cac97f8818058..dbd8d3376e839ffdae3bcbf12ac84ad702205340 100644
+index 7bfe4f5926bcb6bd1bee8cfbd24bbe5eb6f3260a..1fcf696ff953bdc5a4293e13a6a5db55130615fd 100644
 --- a/core/routes/web.php
 +++ b/core/routes/web.php
-@@ -502,6 +502,12 @@
+@@ -505,6 +505,12 @@
      PluginLifecycleManager $lifecycle,
      AuditTrailInterface $audit
  ) use ($shellRouteNameForMenu) {
@@ -15,7 +15,7 @@ index 9a25f2cffaa055885642d9a8d14cac97f8818058..dbd8d3376e839ffdae3bcbf12ac84ad7
      $validated = request()->validate([
          'principal_id' => ['nullable', 'string', 'max:80'],
          'locale' => ['nullable', 'string', 'max:10'],
-@@ -557,6 +563,12 @@
+@@ -560,6 +566,12 @@
      PluginLifecycleManager $lifecycle,
      AuditTrailInterface $audit
  ) use ($shellRouteNameForMenu) {

@@ -254,6 +254,7 @@ class PolicyExceptionsPlugin implements PluginInterface
 
             $policies[] = [
                 ...$policy,
+                'area_label' => PolicyReferenceData::areaLabel($policy['area']),
                 'exceptions' => $policyExceptions,
                 'owner_assignments' => $this->ownerAssignments($actors, 'policy', $policy['id'], $organizationId, $screenContext->scopeId),
                 'artifacts' => array_map(
@@ -309,6 +310,7 @@ class PolicyExceptionsPlugin implements PluginInterface
             'owner_actor_options' => $this->actorOptions($actors, $organizationId, $screenContext->scopeId),
             'scope_options' => array_map(static fn ($scope): array => $scope->toArray(), $scopeContext->scopes),
             'control_options' => $controlOptions,
+            'area_options' => PolicyReferenceData::options(),
             'finding_options' => $findingOptions,
             'policies_list_url' => route('core.shell.index', [...$baseQuery, 'menu' => 'plugin.policy-exceptions.root']),
             'exceptions_list_url' => route('core.shell.index', [...$baseQuery, 'menu' => 'plugin.policy-exceptions.exceptions']),

@@ -60,8 +60,9 @@ Ownership must use functional actors from the core.
 
 In v1:
 
-- continuity services may have one active owner assignment
-- recovery plans may have one active owner assignment
+- continuity services may have multiple active owner assignments
+- recovery plans may have multiple active owner assignments
+- owner removal is explicit and auditable
 
 ## 4. Workflow Model
 
@@ -101,6 +102,12 @@ The first usable UI should provide:
 - simple create and edit forms
 - evidence attachments
 - workflow transitions
+
+Recovery plans now follow a master-detail pattern:
+
+- the register stays focused on summaries and `Open`
+- one selected recovery plan becomes the operational detail workspace
+- evidence, exercises, test runs, linked records, ownership, and workflow stay in detail
 
 ## 8. Out of Scope for v1
 

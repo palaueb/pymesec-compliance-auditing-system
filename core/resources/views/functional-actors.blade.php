@@ -1,5 +1,9 @@
 @php
     $selectedActor = is_array($selected_actor ?? null) ? $selected_actor : null;
+    $memberships = $query['membership_ids'] ?? [];
+    if (! is_array($memberships)) {
+        $memberships = [];
+    }
 @endphp
 
 <section class="module-screen compact">
@@ -44,7 +48,11 @@
                     <input type="hidden" name="scope_id" value="{{ $query['scope_id'] ?? '' }}">
                     <input type="hidden" name="locale" value="{{ $query['locale'] ?? 'en' }}">
                     <input type="hidden" name="theme" value="{{ $query['theme'] ?? '' }}">
+                    <input type="hidden" name="menu" value="core.functional-actors">
                     <input type="hidden" name="subject_principal_id" value="{{ $selected_principal_id }}">
+                    @foreach ($memberships as $membershipId)
+                        <input type="hidden" name="membership_ids[]" value="{{ $membershipId }}">
+                    @endforeach
                     <div class="field">
                         <label class="field-label">Display name</label>
                         <input class="field-input" name="display_name" required>
@@ -71,6 +79,10 @@
                     <input type="hidden" name="organization_id" value="{{ $query['organization_id'] ?? '' }}">
                     <input type="hidden" name="locale" value="{{ $query['locale'] ?? 'en' }}">
                     <input type="hidden" name="theme" value="{{ $query['theme'] ?? '' }}">
+                    <input type="hidden" name="menu" value="core.functional-actors">
+                    @foreach ($memberships as $membershipId)
+                        <input type="hidden" name="membership_ids[]" value="{{ $membershipId }}">
+                    @endforeach
                     <div class="field">
                         <label class="field-label">Person</label>
                         <select class="field-select" name="subject_principal_id" required>
@@ -152,7 +164,11 @@
                                 <input type="hidden" name="organization_id" value="{{ $query['organization_id'] ?? '' }}">
                                 <input type="hidden" name="locale" value="{{ $query['locale'] ?? 'en' }}">
                                 <input type="hidden" name="theme" value="{{ $query['theme'] ?? '' }}">
+                                <input type="hidden" name="menu" value="core.functional-actors">
                                 <input type="hidden" name="actor_id" value="{{ $selectedActor['id'] }}">
+                                @foreach ($memberships as $membershipId)
+                                    <input type="hidden" name="membership_ids[]" value="{{ $membershipId }}">
+                                @endforeach
                                 <div class="field">
                                     <label class="field-label">Person</label>
                                     <select class="field-select" name="subject_principal_id" required>
@@ -196,7 +212,11 @@
                                 <input type="hidden" name="scope_id" value="{{ $query['scope_id'] ?? '' }}">
                                 <input type="hidden" name="locale" value="{{ $query['locale'] ?? 'en' }}">
                                 <input type="hidden" name="theme" value="{{ $query['theme'] ?? '' }}">
+                                <input type="hidden" name="menu" value="core.functional-actors">
                                 <input type="hidden" name="actor_id" value="{{ $selectedActor['id'] }}">
+                                @foreach ($memberships as $membershipId)
+                                    <input type="hidden" name="membership_ids[]" value="{{ $membershipId }}">
+                                @endforeach
                                 <div class="field">
                                     <label class="field-label">Responsibility type</label>
                                     <select class="field-select" name="assignment_type" required>

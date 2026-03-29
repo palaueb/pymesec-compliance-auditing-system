@@ -15,7 +15,9 @@ class ReferenceCatalogsTest extends TestCase
             ->assertOk()
             ->assertSee('Reference catalogs')
             ->assertSee('Catalogs')
-            ->assertSee('Add option');
+            ->assertSee('Add option')
+            ->assertSee('business-managed vocabularies')
+            ->assertSee('Policy areas');
     }
 
     public function test_authenticated_shell_ignores_spoofed_principal_id_from_the_url(): void

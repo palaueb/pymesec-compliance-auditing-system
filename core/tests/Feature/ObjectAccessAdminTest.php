@@ -11,18 +11,18 @@ class ObjectAccessAdminTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_object_access_admin_screen_renders_matrix_for_a_selected_principal(): void
+    public function test_object_access_screen_renders_inside_the_workspace_governance_area(): void
     {
         $this->linkPrincipalToActor('principal-it-owner', 'actor-it-services');
 
-        $this->get('/admin?menu=core.object-access&principal_id=principal-admin&organization_id=org-a&subject_principal_id=principal-it-owner')
+        $this->get('/app?menu=core.object-access&principal_id=principal-admin&organization_id=org-a&subject_principal_id=principal-it-owner')
             ->assertOk()
             ->assertSee('Object Access Matrix');
     }
 
-    public function test_object_access_assignments_can_be_created_and_removed_from_the_admin_ui(): void
+    public function test_object_access_assignments_redirect_back_to_the_workspace_shell(): void
     {
-        $this->post('/core/object-access/assignments', [
+        $createResponse = $this->post('/core/object-access/assignments', [
             'principal_id' => 'principal-admin',
             'organization_id' => 'org-a',
             'locale' => 'en',
@@ -30,7 +30,11 @@ class ObjectAccessAdminTest extends TestCase
             'subject_key' => 'asset::asset-erp-prod',
             'actor_id' => 'actor-it-services',
             'assignment_type' => 'reviewer',
-        ])->assertFound()->assertSessionHas('status');
+        ]);
+
+        $createResponse->assertFound()->assertSessionHas('status');
+        $this->assertStringContainsString('/app?', (string) $createResponse->headers->get('Location'));
+        $this->assertStringContainsString('menu=core.object-access', (string) $createResponse->headers->get('Location'));
 
         $assignmentId = DB::table('functional_assignments')
             ->where('functional_actor_id', 'actor-it-services')
@@ -47,13 +51,17 @@ class ObjectAccessAdminTest extends TestCase
             'is_active' => true,
         ]);
 
-        $this->post(sprintf('/core/object-access/assignments/%s/deactivate', $assignmentId), [
+        $removeResponse = $this->post(sprintf('/core/object-access/assignments/%s/deactivate', $assignmentId), [
             'principal_id' => 'principal-admin',
             'organization_id' => 'org-a',
             'locale' => 'en',
             'menu' => 'core.object-access',
             'subject_key' => 'asset::asset-erp-prod',
-        ])->assertFound()->assertSessionHas('status');
+        ]);
+
+        $removeResponse->assertFound()->assertSessionHas('status');
+        $this->assertStringContainsString('/app?', (string) $removeResponse->headers->get('Location'));
+        $this->assertStringContainsString('menu=core.object-access', (string) $removeResponse->headers->get('Location'));
 
         $this->assertDatabaseHas('functional_assignments', [
             'id' => $assignmentId,

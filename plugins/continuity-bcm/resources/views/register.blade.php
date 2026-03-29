@@ -9,6 +9,10 @@
 </style>
 
 <section class="module-screen">
+    <div class="surface-note">
+        Impact tiers and dependency kinds are business-managed catalog values from `Reference catalogs`. Continuity workflow states are system-controlled.
+    </div>
+
     @if (is_array($selected_service))
         <div class="surface-card" style="padding:16px; display:grid; gap:16px;">
             <div class="row-between" style="align-items:flex-start;">

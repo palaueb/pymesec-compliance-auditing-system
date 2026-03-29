@@ -31,7 +31,7 @@
                     </div>
                 </div>
 
-                <form class="upload-form" method="GET" action="{{ route('core.admin.index') }}">
+                <form class="upload-form" method="GET" action="{{ route('core.shell.index') }}">
                     <input type="hidden" name="menu" value="core.object-access">
                     <input type="hidden" name="principal_id" value="{{ $query['principal_id'] ?? '' }}">
                     <input type="hidden" name="organization_id" value="{{ $organization_id ?? '' }}">
@@ -107,7 +107,7 @@
                                         <td>{{ implode(', ', $row['actors']) }}</td>
                                         <td>
                                             <div class="action-cluster">
-                                                <a class="button button-ghost" href="{{ route('core.admin.index', [...$query, 'menu' => 'core.object-access', 'subject_principal_id' => $selected_principal_id, 'subject_key' => $row['subject_key']]) }}">Open matrix</a>
+                                                <a class="button button-ghost" href="{{ route('core.shell.index', [...$query, 'menu' => 'core.object-access', 'subject_principal_id' => $selected_principal_id, 'subject_key' => $row['subject_key']]) }}">Open matrix</a>
                                                 @if (is_string($row['open_url'] ?? null))
                                                     <a class="button button-ghost" href="{{ $row['open_url'] }}">Open record</a>
                                                 @endif

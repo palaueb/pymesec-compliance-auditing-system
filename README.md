@@ -164,6 +164,7 @@ Connector values:
 - Local cache defaults to `file` and the queue defaults to `sync`, so Redis is not required in development.
 - The base tests run on in-memory SQLite to keep them fast and isolated.
 - The repository now includes local identity bootstrap plus optional LDAP sync as plugins, while the core remains provider-agnostic.
+- The Docker PHP image now ships `docker/php/zz-pymesec.ini` with `memory_limit=512M` plus conservative request-size limits so large route bootstraps and admin screens do not fail under the previous `128M` default.
 
 ## Documented Temporary Assumptions
 

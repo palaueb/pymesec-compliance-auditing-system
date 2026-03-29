@@ -19,6 +19,10 @@
 </style>
 
 <section class="module-screen">
+    <div class="surface-note">
+        Finding severity is a business-managed catalog value from `Reference catalogs`. Finding workflow states and remediation action statuses remain system-controlled.
+    </div>
+
     @if (is_array($selected_finding))
         <div class="surface-card" style="padding:16px; display:grid; gap:16px;">
             <div class="row-between" style="align-items:flex-start;">

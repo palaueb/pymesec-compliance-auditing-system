@@ -4,7 +4,7 @@ Policies and Exceptions Plugin Specification v1
 
 # Status
 
-Draft
+Implemented in iterative slices.
 
 # Context
 
@@ -32,7 +32,7 @@ Minimum fields in v1:
 - stable policy identifier
 - organization and optional scope
 - title
-- area
+- area from the governed `policies.areas` business catalog
 - version label
 - statement text
 - optional linked control identifier
@@ -55,12 +55,13 @@ Minimum fields in v1:
 
 ## 3. Ownership Model
 
-Ownership must use the core functional actor system.
+Ownership uses the core functional actor assignment system.
 
-In v1:
+Current runtime:
 
-- policies may have one active owner assignment
-- policy exceptions may have one active owner assignment
+- policies may have multiple active owner assignments
+- policy exceptions may have multiple active owner assignments
+- owner removal is explicit and auditable
 
 ## 4. Workflow Model
 
@@ -118,6 +119,8 @@ Permissions:
 - `plugin.policy-exceptions.policies.manage`
 
 All write operations must be enforced by the core authorization middleware.
+
+Mutable governed fields such as `area`, linked references, scope, and owner assignments must carry regression tests proving unauthorized actors cannot spoof or mutate them outside their allowed context.
 
 ## 8. Out of Scope for v1
 

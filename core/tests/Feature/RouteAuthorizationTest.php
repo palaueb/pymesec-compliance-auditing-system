@@ -57,7 +57,6 @@ class RouteAuthorizationTest extends TestCase
         $this->post('/plugins/assets/asset-erp-prod', $payload)->assertForbidden();
 
         $payload['membership_id'] = 'membership-org-a-hello';
-        $payload['owner_label'] = 'Compliance Office';
 
         $this->post('/plugins/assets', $payload)->assertFound();
         $this->post('/plugins/assets/asset-erp-prod', $payload)->assertFound();
@@ -410,7 +409,7 @@ class RouteAuthorizationTest extends TestCase
         $this->post('/plugins/policies', [
             ...$payload,
             'title' => 'Viewer policy',
-            'area' => 'Governance',
+            'area' => 'governance',
             'version_label' => 'v0',
             'statement' => 'Viewer should not create policies.',
         ])->assertForbidden();
@@ -418,7 +417,7 @@ class RouteAuthorizationTest extends TestCase
         $this->post('/plugins/policies/policy-access-governance', [
             ...$payload,
             'title' => 'Viewer update',
-            'area' => 'Governance',
+            'area' => 'governance',
             'version_label' => 'v0',
             'statement' => 'Viewer should not update policies.',
         ])->assertForbidden();
@@ -465,7 +464,7 @@ class RouteAuthorizationTest extends TestCase
         $this->post('/plugins/policies', [
             ...$payload,
             'title' => 'Operator policy',
-            'area' => 'Governance',
+            'area' => 'governance',
             'version_label' => 'v1',
             'statement' => 'Operator can create policies.',
         ])->assertFound();
@@ -473,7 +472,7 @@ class RouteAuthorizationTest extends TestCase
         $this->post('/plugins/policies/policy-access-governance', [
             ...$payload,
             'title' => 'Operator updated policy',
-            'area' => 'Governance',
+            'area' => 'governance',
             'version_label' => 'v2',
             'statement' => 'Operator can update policies.',
         ])->assertFound();
@@ -984,5 +983,270 @@ class RouteAuthorizationTest extends TestCase
 
         $this->get('/core/roles?principal_id=principal-admin')
             ->assertOk();
+    }
+
+    public function test_the_plugin_lifecycle_routes_require_platform_permission(): void
+    {
+        $viewerPayload = [
+            'principal_id' => 'principal-org-a',
+            'locale' => 'en',
+            'menu' => 'core.plugins',
+        ];
+
+        $this->post('/core/plugins/hello-world/disable', $viewerPayload)
+            ->assertForbidden();
+
+        $this->post('/core/plugins/hello-world/enable', $viewerPayload)
+            ->assertForbidden();
+
+        $this->post('/core/plugins/hello-world/disable', [
+            ...$viewerPayload,
+            'principal_id' => 'principal-admin',
+        ])->assertFound();
+    }
+
+    public function test_the_reference_data_routes_require_platform_permission(): void
+    {
+        $this->get('/core/reference-data?principal_id=principal-org-a&organization_id=org-a')
+            ->assertForbidden();
+
+        $viewerPayload = [
+            'principal_id' => 'principal-org-a',
+            'organization_id' => 'org-a',
+            'catalog_key' => 'risks.categories',
+            'locale' => 'en',
+            'menu' => 'core.reference-data',
+        ];
+
+        $this->post('/core/reference-data/entries', [
+            ...$viewerPayload,
+            'option_key' => 'viewer-created-category',
+            'label' => 'Viewer created category',
+            'description' => 'Should be blocked.',
+            'sort_order' => 210,
+        ])->assertForbidden();
+
+        $this->post('/core/reference-data/entries', [
+            ...$viewerPayload,
+            'principal_id' => 'principal-admin',
+            'option_key' => 'admin-created-category',
+            'label' => 'Admin created category',
+            'description' => 'Used to verify archive authorization.',
+            'sort_order' => 220,
+        ])->assertFound();
+
+        $entryId = DB::table('reference_catalog_entries')
+            ->where('organization_id', 'org-a')
+            ->where('catalog_key', 'risks.categories')
+            ->where('option_key', 'admin-created-category')
+            ->value('id');
+
+        $this->assertIsString($entryId);
+
+        $this->post(sprintf('/core/reference-data/entries/%s/archive', $entryId), $viewerPayload)
+            ->assertForbidden();
+
+        $this->get('/core/reference-data?principal_id=principal-admin&organization_id=org-a')
+            ->assertOk();
+    }
+
+    public function test_the_tenancy_routes_require_platform_permission(): void
+    {
+        $this->get('/core/tenancy?principal_id=principal-org-a&organization_id=org-a')
+            ->assertForbidden();
+
+        $viewerPayload = [
+            'principal_id' => 'principal-org-a',
+            'locale' => 'en',
+            'menu' => 'core.tenancy',
+        ];
+
+        $this->post('/core/tenancy/organizations', [
+            ...$viewerPayload,
+            'name' => 'Viewer Org',
+            'slug' => 'viewer-org',
+            'default_locale' => 'en',
+            'default_timezone' => 'Europe/Madrid',
+        ])->assertForbidden();
+
+        $this->post('/core/tenancy/organizations/org-a/archive', $viewerPayload)
+            ->assertForbidden();
+
+        $this->post('/core/tenancy/scopes', [
+            ...$viewerPayload,
+            'organization_id' => 'org-a',
+            'name' => 'Viewer Scope',
+            'slug' => 'viewer-scope',
+            'description' => 'Should be blocked.',
+        ])->assertForbidden();
+
+        $this->get('/core/tenancy?principal_id=principal-admin&organization_id=org-a')
+            ->assertOk();
+    }
+
+    public function test_the_functional_actor_routes_require_the_expected_permissions(): void
+    {
+        $this->get('/core/functional-actors?principal_id=principal-org-a&organization_id=org-a')
+            ->assertForbidden();
+
+        $viewerPayload = [
+            'principal_id' => 'principal-org-a',
+            'organization_id' => 'org-a',
+            'locale' => 'en',
+            'menu' => 'core.functional-actors',
+        ];
+
+        $this->post('/core/functional-actors', [
+            ...$viewerPayload,
+            'display_name' => 'Viewer Team',
+            'kind' => 'team',
+        ])->assertForbidden();
+
+        $this->post('/core/functional-actors/links', [
+            ...$viewerPayload,
+            'actor_id' => 'actor-it-services',
+            'subject_principal_id' => 'principal-org-a',
+        ])->assertForbidden();
+
+        $this->post('/core/functional-actors/assignments', [
+            ...$viewerPayload,
+            'actor_id' => 'actor-it-services',
+            'subject_key' => 'asset::asset-erp-prod',
+            'assignment_type' => 'reviewer',
+        ])->assertForbidden();
+
+        $createResponse = $this->post('/core/functional-actors', [
+            ...$viewerPayload,
+            'principal_id' => 'principal-admin',
+            'display_name' => 'Admin Team',
+            'kind' => 'team',
+        ]);
+
+        $createResponse->assertFound();
+        $this->assertStringContainsString('/app?', (string) $createResponse->headers->get('Location'));
+        $this->assertStringContainsString('menu=core.functional-actors', (string) $createResponse->headers->get('Location'));
+    }
+
+    public function test_the_identity_local_manage_routes_require_the_expected_permissions(): void
+    {
+        $viewerPayload = [
+            'principal_id' => 'principal-org-a',
+            'organization_id' => 'org-a',
+            'locale' => 'en',
+            'membership_id' => 'membership-org-a-viewer',
+        ];
+
+        $this->post('/plugins/identity/users', [
+            ...$viewerPayload,
+            'menu' => 'plugin.identity-local.users',
+            'display_name' => 'Viewer User',
+            'username' => 'viewer.user',
+            'email' => 'viewer.user@northwind.test',
+            'job_title' => 'Blocked user',
+            'magic_link_enabled' => '1',
+        ])->assertForbidden();
+
+        $this->post('/plugins/identity/memberships', [
+            ...$viewerPayload,
+            'menu' => 'plugin.identity-local.memberships',
+            'subject_principal_id' => 'principal-org-a',
+            'role_keys' => ['asset-viewer'],
+            'scope_ids' => ['scope-eu'],
+        ])->assertForbidden();
+
+        $this->post('/plugins/identity/users/import/upload', [
+            ...$viewerPayload,
+            'menu' => 'plugin.identity-local.users',
+            'import_file' => UploadedFile::fake()->createWithContent('people.csv', "Name,Email\nViewer User,viewer.user@northwind.test"),
+        ])->assertForbidden();
+
+        $userCreateResponse = $this->post('/plugins/identity/users', [
+            ...$viewerPayload,
+            'principal_id' => 'principal-org-a',
+            'membership_id' => 'membership-org-a-hello',
+            'menu' => 'plugin.identity-local.users',
+            'display_name' => 'Managed User',
+            'username' => 'managed.user',
+            'email' => 'managed.user@northwind.test',
+            'job_title' => 'Identity operator',
+            'magic_link_enabled' => '1',
+        ]);
+
+        $userCreateResponse->assertFound();
+        $this->assertStringContainsString('/admin?', (string) $userCreateResponse->headers->get('Location'));
+        $this->assertStringContainsString('menu=plugin.identity-local.users', (string) $userCreateResponse->headers->get('Location'));
+
+        $subjectPrincipalId = DB::table('identity_local_users')
+            ->where('email', 'managed.user@northwind.test')
+            ->value('principal_id');
+
+        $this->assertIsString($subjectPrincipalId);
+
+        $membershipCreateResponse = $this->post('/plugins/identity/memberships', [
+            ...$viewerPayload,
+            'principal_id' => 'principal-org-a',
+            'membership_id' => 'membership-org-a-hello',
+            'menu' => 'plugin.identity-local.memberships',
+            'subject_principal_id' => $subjectPrincipalId,
+            'role_keys' => ['asset-viewer'],
+            'scope_ids' => ['scope-eu'],
+        ]);
+
+        $membershipCreateResponse->assertFound();
+        $this->assertStringContainsString('/app?', (string) $membershipCreateResponse->headers->get('Location'));
+        $this->assertStringContainsString('menu=plugin.identity-local.memberships', (string) $membershipCreateResponse->headers->get('Location'));
+    }
+
+    public function test_the_identity_ldap_routes_require_the_expected_permissions(): void
+    {
+        $this->get('/plugins/identity/ldap?principal_id=principal-admin&organization_id=org-a')
+            ->assertForbidden();
+
+        $viewerPayload = [
+            'principal_id' => 'principal-org-a',
+            'organization_id' => 'org-a',
+            'locale' => 'en',
+            'membership_id' => 'membership-org-a-viewer',
+        ];
+
+        $this->post('/plugins/identity/ldap/connection', [
+            ...$viewerPayload,
+            'name' => 'Viewer LDAP',
+            'host' => 'ldap.example.test',
+            'port' => 389,
+            'base_dn' => 'ou=People,dc=northwind,dc=test',
+            'bind_dn' => 'cn=admin,dc=northwind,dc=test',
+            'bind_password' => 'admin',
+            'login_mode' => 'username',
+            'sync_interval_minutes' => 60,
+        ])->assertForbidden();
+
+        $this->post('/plugins/identity/ldap/mappings', [
+            ...$viewerPayload,
+            'ldap_group' => 'cn=it-services,ou=Groups,dc=northwind,dc=test',
+            'role_keys' => ['asset-viewer'],
+            'scope_ids' => ['scope-it'],
+        ])->assertForbidden();
+
+        $this->post('/plugins/identity/ldap/sync', $viewerPayload)
+            ->assertForbidden();
+
+        $connectionResponse = $this->post('/plugins/identity/ldap/connection', [
+            ...$viewerPayload,
+            'principal_id' => 'principal-org-a',
+            'membership_id' => 'membership-org-a-hello',
+            'name' => 'Managed LDAP',
+            'host' => 'ldap.example.test',
+            'port' => 389,
+            'base_dn' => 'ou=People,dc=northwind,dc=test',
+            'bind_dn' => 'cn=admin,dc=northwind,dc=test',
+            'bind_password' => 'admin',
+            'login_mode' => 'username',
+            'sync_interval_minutes' => 60,
+        ]);
+
+        $connectionResponse->assertFound();
+        $this->assertStringContainsString('/admin?', (string) $connectionResponse->headers->get('Location'));
+        $this->assertStringContainsString('menu=plugin.identity-ldap.directory', (string) $connectionResponse->headers->get('Location'));
     }
 }

@@ -30,6 +30,7 @@ class RiskManagementTest extends TestCase
         $this->get('/app?menu=plugin.risk-management.root&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
             ->assertOk()
             ->assertSee('Risk Register')
+            ->assertSee('Risk categories are business-managed catalog values')
             ->assertSee('Privileged access drift')
             ->assertSee('Ava Mason')
             ->assertSee('Add risk')

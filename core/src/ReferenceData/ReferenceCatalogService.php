@@ -286,6 +286,11 @@ class ReferenceCatalogService
                 'label' => 'Risk categories',
                 'description' => 'Define the controlled categories used in the risk register.',
             ],
+            'policies.areas' => [
+                'key' => 'policies.areas',
+                'label' => 'Policy areas',
+                'description' => 'Define the business areas used to classify policies and governance statements.',
+            ],
         ];
     }
 

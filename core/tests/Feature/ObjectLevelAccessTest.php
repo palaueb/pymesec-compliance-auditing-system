@@ -70,7 +70,6 @@ class ObjectLevelAccessTest extends TestCase
             'criticality' => 'critical',
             'classification' => 'restricted',
             'scope_id' => 'scope-eu',
-            'owner_label' => 'Finance Operations',
             'owner_actor_id' => 'actor-finance-ops',
         ])->assertForbidden();
 

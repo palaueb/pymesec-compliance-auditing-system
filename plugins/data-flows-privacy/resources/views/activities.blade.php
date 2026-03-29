@@ -9,6 +9,10 @@
 </style>
 
 <section class="module-screen">
+    <div class="surface-note">
+        Lawful bases are business-managed catalog values from `Reference catalogs`. Processing activity workflow states are system-controlled.
+    </div>
+
     @if (is_array($selected_activity))
         <div class="surface-card" style="padding:16px; display:grid; gap:16px;">
             <div class="row-between" style="align-items:flex-start;">

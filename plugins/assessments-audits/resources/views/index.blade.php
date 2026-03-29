@@ -54,6 +54,9 @@
 </style>
 
 <section class="module-screen">
+    <div class="surface-note">
+        Framework choices follow the adopted framework catalog for the current scope. Assessment status and review results are system-controlled values enforced by the application.
+    </div>
 
     {{-- ── Creation form (only shown via toolbar toggle, hidden by default) ─── --}}
     @if ($can_manage_assessments && $selectedAssessment === null)

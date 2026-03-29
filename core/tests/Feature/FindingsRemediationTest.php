@@ -30,6 +30,7 @@ class FindingsRemediationTest extends TestCase
         $this->get('/app?menu=plugin.findings-remediation.root&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
             ->assertOk()
             ->assertSee('Findings Register')
+            ->assertSee('Finding severity is a business-managed catalog value')
             ->assertSee('Access review evidence gap')
             ->assertSee('1 remediation actions')
             ->assertSee('Add finding')

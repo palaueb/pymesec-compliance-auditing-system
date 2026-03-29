@@ -617,9 +617,17 @@
         }
 
         .context-breadcrumb {
+            display: flex;
+            align-items: center;
+            gap: 10px;
             padding: 0 0 12px;
-            border-bottom: 1px solid var(--border);
+            border-bottom: 1px solid var(--line);
             margin-bottom: 16px;
+        }
+
+        .context-breadcrumb-copy {
+            color: var(--muted);
+            font-size: 13px;
         }
 
         .rail-list,
@@ -991,11 +999,15 @@
             <div class="topbar-utility">
                 <div class="context-strip">
                     <form class="context-inline-form" method="GET" action="{{ route($currentShellRoute) }}">
-                        <input type="hidden" name="locale" value="{{ $locale }}">
-                        <input type="hidden" name="theme" value="{{ $themeKey }}">
-                        @if ($selectedMenuId !== null)
-                            <input type="hidden" name="menu" value="{{ $selectedMenuId }}">
-                        @endif
+                        @foreach ($organizationSelectorQuery as $queryName => $queryValue)
+                            @if (is_array($queryValue))
+                                @foreach ($queryValue as $queryItem)
+                                    <input type="hidden" name="{{ $queryName }}[]" value="{{ $queryItem }}">
+                                @endforeach
+                            @else
+                                <input type="hidden" name="{{ $queryName }}" value="{{ $queryValue }}">
+                            @endif
+                        @endforeach
                         <div class="context-chip">
                             <label class="field-label" for="organization_id">{{ __('core.shell.organization_selector') }}</label>
                             <select class="context-select" id="organization_id" name="organization_id" onchange="this.form.submit()">
@@ -1009,14 +1021,15 @@
                     </form>
 
                     <form class="context-inline-form" method="GET" action="{{ route($currentShellRoute) }}">
-                        <input type="hidden" name="locale" value="{{ $locale }}">
-                        <input type="hidden" name="theme" value="{{ $themeKey }}">
-                        @if ($selectedMenuId !== null)
-                            <input type="hidden" name="menu" value="{{ $selectedMenuId }}">
-                        @endif
-                        @if ($organizationId !== null)
-                            <input type="hidden" name="organization_id" value="{{ $organizationId }}">
-                        @endif
+                        @foreach ($scopeSelectorQuery as $queryName => $queryValue)
+                            @if (is_array($queryValue))
+                                @foreach ($queryValue as $queryItem)
+                                    <input type="hidden" name="{{ $queryName }}[]" value="{{ $queryItem }}">
+                                @endforeach
+                            @else
+                                <input type="hidden" name="{{ $queryName }}" value="{{ $queryValue }}">
+                            @endif
+                        @endforeach
                         <div class="context-chip">
                             <label class="field-label" for="scope_id">{{ __('core.shell.scope_selector') }}</label>
                             <select class="context-select" id="scope_id" name="scope_id" onchange="this.form.submit()">
@@ -1073,18 +1086,14 @@
                             <section class="user-section">
                                 <div class="rail-label">{{ __('core.shell.language_selector') }}</div>
                                 <form method="GET" action="{{ route($currentShellRoute) }}">
-                                    <input type="hidden" name="theme" value="{{ $themeKey }}">
-                                    @if ($selectedMenuId !== null)
-                                        <input type="hidden" name="menu" value="{{ $selectedMenuId }}">
-                                    @endif
-                                    @if ($organizationId !== null)
-                                        <input type="hidden" name="organization_id" value="{{ $organizationId }}">
-                                    @endif
-                                    @if ($scopeId !== null)
-                                        <input type="hidden" name="scope_id" value="{{ $scopeId }}">
-                                    @endif
-                                    @foreach ($memberships ?? [] as $membership)
-                                        <input type="hidden" name="membership_ids[]" value="{{ is_array($membership) ? ($membership['id'] ?? '') : $membership->id }}">
+                                    @foreach ($localeSelectorQuery as $queryName => $queryValue)
+                                        @if (is_array($queryValue))
+                                            @foreach ($queryValue as $queryItem)
+                                                <input type="hidden" name="{{ $queryName }}[]" value="{{ $queryItem }}">
+                                            @endforeach
+                                        @else
+                                            <input type="hidden" name="{{ $queryName }}" value="{{ $queryValue }}">
+                                        @endif
                                     @endforeach
                                     <select class="field-select" name="locale" onchange="this.form.submit()">
                                         @foreach ($localeOptions as $localeCode => $localeLabel)
@@ -1158,6 +1167,13 @@
                         {{ $shellError['message'] }}
                     </div>
                 @elseif ($selectedMenu !== null)
+                    @if ($screen !== null && $contextBackUrl !== null)
+                        <nav class="context-breadcrumb" aria-label="Context navigation">
+                            <a class="button button-ghost" href="{{ $contextBackUrl }}">← {{ $contextLabel ?? 'Back' }}</a>
+                            <span class="context-breadcrumb-copy">This page is open in detail context and returns to its parent list.</span>
+                        </nav>
+                    @endif
+
                     @if ($screen !== null && $screen->toolbarActions !== [])
                         <div class="toolbar" style="justify-content:flex-end;">
                             @foreach ($screen->toolbarActions as $action)
@@ -1180,11 +1196,6 @@
                     @endif
 
                     @if ($screen !== null)
-                        @if ($contextBackUrl !== null)
-                            <nav class="context-breadcrumb">
-                                <a class="button button-ghost" href="{{ $contextBackUrl }}">← {{ $contextLabel ?? 'Back' }}</a>
-                            </nav>
-                        @endif
                         <div class="screen-body">
                             {!! $screen->content !!}
                         </div>

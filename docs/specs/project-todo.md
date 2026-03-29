@@ -26,21 +26,21 @@ Simple list of the main pending items.
 
 - [ ] LDAP login mode completion on top of the current sync connector.
 - [x] Clear web UI for governing object access matrices.
-- [ ] Better separation between platform administration and delegated access governance where still rough.
-- [ ] Extend parameter-level authorization coverage until every GET/POST mutation path that changes governed data has an explicit ownership and authorization regression test.
+- [x] Better separation between platform administration and delegated access governance where still rough.
+- [x] Extend parameter-level authorization coverage until every GET/POST mutation path that changes governed data has an explicit ownership and authorization regression test.
 
 ## Data Governance
 
 - [x] Support multiple accountable parties for assets.
-- [ ] Replace remaining single-owner semantics with assignment-based ownership where needed.
-- [ ] Finish governed business catalogues where free text still exists.
-- [ ] Distinguish clearly between system enums and business-managed catalogues in all affected screens.
+- [x] Replace remaining single-owner semantics with assignment-based ownership where needed.
+- [x] Finish governed business catalogues where free text still exists.
+- [x] Distinguish clearly between system enums and business-managed catalogues in all affected screens.
 
 ## UI and Usability
 
 - [ ] Finish the remaining UI cleanup batches from `ui-review-and-refactor-todo-2026-03.md`.
 - [ ] Define and apply a reusable governance-page interaction pattern for admin-heavy screens.
-- [ ] Finish shell support for cleaner contextual `index -> detail` navigation.
+- [x] Finish shell support for cleaner contextual `index -> detail` navigation.
 - [ ] Keep updating help/support content as screens and workflows change.
 
 ## Reporting and Compliance Content

@@ -37,6 +37,7 @@ class ContinuityBcmTest extends TestCase
         $this->get('/app?menu=plugin.continuity-bcm.root&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
             ->assertOk()
             ->assertSee('Continuity Services')
+            ->assertSee('Impact tiers and dependency kinds are business-managed catalog values')
             ->assertSee('Customer Support Operations')
             ->assertSee('Add continuity service')
             ->assertSee('Open')
@@ -52,14 +53,23 @@ class ContinuityBcmTest extends TestCase
         $this->get('/app?menu=plugin.continuity-bcm.plans&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
             ->assertOk()
             ->assertSee('Recovery Plans')
+            ->assertSee('system-controlled continuity values')
             ->assertSee('Support fallback rota')
             ->assertSee('Choose service')
-            ->assertSee('Open');
+            ->assertSee('This list stays summary-only.')
+            ->assertSee('Open')
+            ->assertDontSee('Attach evidence')
+            ->assertDontSee('Log exercise')
+            ->assertDontSee('Log test run');
 
         $this->get('/app?menu=plugin.continuity-bcm.plans&plan_id=continuity-plan-support-fallback&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
             ->assertOk()
             ->assertSee('Support fallback rota')
             ->assertSee('Back to plans')
+            ->assertSee('Recovery Plan Detail keeps workflow, linked records, ownership, evidence, exercises, and test runs in one record workspace.')
+            ->assertSee('Linked records')
+            ->assertSee('Open continuity service')
+            ->assertSee('Governance actions')
             ->assertSee('Exercises')
             ->assertSee('Evidence');
     }

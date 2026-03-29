@@ -15,6 +15,7 @@ class AssetCatalogTest extends TestCase
         $this->get('/app?menu=plugin.asset-catalog.root&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
             ->assertOk()
             ->assertSee('Asset Catalog')
+            ->assertSee('business-managed catalog values')
             ->assertSee('ERP Production')
             ->assertSee('Add asset')
             ->assertSee('Open');

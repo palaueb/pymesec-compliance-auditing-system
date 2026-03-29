@@ -35,6 +35,40 @@ class ShellNavigationTest extends TestCase
             ->assertSee('plugin.asset-catalog.root');
     }
 
+    public function test_delegated_governance_screens_render_in_the_workspace_shell(): void
+    {
+        $this->get('/app?menu=core.governance&principal_id=principal-admin&organization_id=org-a')
+            ->assertOk()
+            ->assertSee('Delegated Access Governance')
+            ->assertSee('Workspace governance entrypoint');
+
+        $this->get('/app?menu=core.functional-actors&principal_id=principal-admin&organization_id=org-a')
+            ->assertOk()
+            ->assertSee('Functional Directory');
+
+        $this->get('/app?menu=core.object-access&principal_id=principal-admin&organization_id=org-a')
+            ->assertOk()
+            ->assertSee('Object Access Matrix');
+    }
+
+    public function test_the_admin_shell_rejects_delegated_governance_menus(): void
+    {
+        $this->get('/admin?menu=core.governance&principal_id=principal-admin&organization_id=org-a')
+            ->assertOk()
+            ->assertSee('Screen unavailable')
+            ->assertSee('core.governance');
+
+        $this->get('/admin?menu=core.functional-actors&principal_id=principal-admin&organization_id=org-a')
+            ->assertOk()
+            ->assertSee('Screen unavailable')
+            ->assertSee('core.functional-actors');
+
+        $this->get('/admin?menu=core.object-access&principal_id=principal-admin&organization_id=org-a')
+            ->assertOk()
+            ->assertSee('Screen unavailable')
+            ->assertSee('core.object-access');
+    }
+
     public function test_platform_admin_bootstraps_workspace_access_and_lands_in_the_app(): void
     {
         DB::table('identity_local_users')->insert([
@@ -182,5 +216,30 @@ class ShellNavigationTest extends TestCase
             'context_type' => 'organization',
             'organization_id' => 'org-a',
         ]);
+    }
+
+    public function test_shell_detail_pages_render_a_contextual_back_link_and_preserve_detail_query_in_shell_utilities(): void
+    {
+        $response = $this->get('/app?menu=plugin.continuity-bcm.plans&plan_id=continuity-plan-support-fallback&context_label=Recovery%20Plans&context_back_url=%2Fapp%3Fmenu%3Dplugin.continuity-bcm.plans&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello');
+
+        $response
+            ->assertOk()
+            ->assertSee('Support fallback rota')
+            ->assertSee('This page is open in detail context and returns to its parent list.')
+            ->assertSee('href="/app?menu=plugin.continuity-bcm.plans"', false)
+            ->assertSee('name="plan_id" value="continuity-plan-support-fallback"', false)
+            ->assertSee('name="context_back_url" value="/app?menu=plugin.continuity-bcm.plans"', false)
+            ->assertSee('name="context_label" value="Recovery Plans"', false);
+    }
+
+    public function test_shell_rejects_external_context_back_links(): void
+    {
+        $this->get('/app?menu=plugin.continuity-bcm.plans&plan_id=continuity-plan-support-fallback&context_label=External%20List&context_back_url=https%3A%2F%2Fevil.example%2Fsteal&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
+            ->assertOk()
+            ->assertSee('Support fallback rota')
+            ->assertDontSee('This page is open in detail context and returns to its parent list.')
+            ->assertDontSee('href="https://evil.example/steal"', false)
+            ->assertDontSee('name="context_back_url" value="https://evil.example/steal"', false)
+            ->assertDontSee('External List');
     }
 }

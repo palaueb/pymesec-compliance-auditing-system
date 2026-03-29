@@ -3,10 +3,10 @@
 namespace Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
-use Illuminate\Http\UploadedFile;
 use PymeSec\Plugins\IdentityLocal\IdentityLocalAuthService;
 use Tests\TestCase;
 

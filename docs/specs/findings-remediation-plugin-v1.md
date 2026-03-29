@@ -57,8 +57,9 @@ Ownership must use the core functional actor system.
 
 In v1:
 
-- findings may have one active owner assignment
-- remediation actions may have one active owner assignment
+- findings may have multiple active owner assignments
+- remediation actions may have multiple active owner assignments
+- owner removal is explicit and auditable
 
 ## 4. Workflow Model
 

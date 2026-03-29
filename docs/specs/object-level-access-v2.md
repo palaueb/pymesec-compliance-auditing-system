@@ -79,7 +79,7 @@ The following screens now reflect object-scoped visibility when the current prin
 - `Exceptions Board`
 - `Assessment Campaigns`
 
-The administration area now also exposes a dedicated governance screen:
+The workspace governance area now also exposes a dedicated governance screen:
 
 - `Object Access Matrix`
 

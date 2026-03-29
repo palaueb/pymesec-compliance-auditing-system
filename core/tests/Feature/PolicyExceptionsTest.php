@@ -30,6 +30,7 @@ class PolicyExceptionsTest extends TestCase
         $this->get('/app?menu=plugin.policy-exceptions.root&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
             ->assertOk()
             ->assertSee('Policies Register')
+            ->assertSee('Policy areas are business-managed catalog values')
             ->assertSee('Access Governance Policy')
             ->assertSee('1 exceptions')
             ->assertSee('Add policy')
@@ -49,7 +50,7 @@ class PolicyExceptionsTest extends TestCase
         $this->post('/plugins/policies', [
             ...$payload,
             'title' => 'Supplier Governance Policy',
-            'area' => 'Third Parties',
+            'area' => 'third-parties',
             'version_label' => 'v1.0',
             'statement' => 'Suppliers with privileged integration access must be reviewed every quarter.',
             'linked_control_id' => 'control-access-review',
@@ -61,7 +62,7 @@ class PolicyExceptionsTest extends TestCase
         $this->post('/plugins/policies/policy-supplier-governance-policy', [
             ...$payload,
             'title' => 'Supplier Access Governance Policy',
-            'area' => 'Third Parties',
+            'area' => 'third-parties',
             'version_label' => 'v1.1',
             'statement' => 'Privileged supplier access must be reviewed quarterly with signed approver evidence.',
             'linked_control_id' => 'control-access-review',
@@ -179,7 +180,7 @@ class PolicyExceptionsTest extends TestCase
             ...$payload,
             'menu' => 'plugin.policy-exceptions.root',
             'title' => 'Access Governance Policy',
-            'area' => 'Identity',
+            'area' => 'identity',
             'version_label' => 'v1.4',
             'statement' => 'Privileged access must be reviewed quarterly and emergency entitlements must be justified and logged.',
             'linked_control_id' => 'control-access-review',
@@ -201,7 +202,8 @@ class PolicyExceptionsTest extends TestCase
             ->assertOk()
             ->assertSee('Owners: 2')
             ->assertSee('Ava Mason')
-            ->assertSee('Compliance Office');
+            ->assertSee('Compliance Office')
+            ->assertSee('Identity');
 
         $policyAssignmentId = (string) DB::table('functional_assignments')
             ->where('domain_object_type', 'policy')
@@ -269,5 +271,47 @@ class PolicyExceptionsTest extends TestCase
             ->where('is_active', true)
             ->pluck('functional_actor_id')
             ->all());
+    }
+
+    public function test_policy_area_uses_the_governed_catalog_and_rejects_unknown_values(): void
+    {
+        $payload = [
+            'principal_id' => 'principal-org-a',
+            'organization_id' => 'org-a',
+            'locale' => 'en',
+            'menu' => 'plugin.policy-exceptions.root',
+            'membership_id' => 'membership-org-a-hello',
+            'title' => 'Policy Area Validation',
+            'version_label' => 'v1.0',
+            'statement' => 'Area must come from the governed catalog.',
+            'linked_control_id' => 'control-access-review',
+        ];
+
+        $this->post('/plugins/policies', [
+            ...$payload,
+            'area' => 'Not A Governed Area',
+        ])->assertSessionHasErrors(['area']);
+
+        $this->post('/core/reference-data/entries', [
+            'principal_id' => 'principal-admin',
+            'organization_id' => 'org-a',
+            'catalog_key' => 'policies.areas',
+            'option_key' => 'supplier-assurance',
+            'label' => 'Supplier assurance',
+            'description' => 'Managed policy area for supplier governance.',
+            'sort_order' => 180,
+            'locale' => 'en',
+            'menu' => 'core.reference-data',
+        ])->assertFound();
+
+        $this->post('/plugins/policies', [
+            ...$payload,
+            'title' => 'Supplier Assurance Policy',
+            'area' => 'supplier-assurance',
+        ])->assertFound();
+
+        $this->get('/app?menu=plugin.policy-exceptions.root&policy_id=policy-supplier-assurance-policy&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
+            ->assertOk()
+            ->assertSee('Supplier assurance');
     }
 }

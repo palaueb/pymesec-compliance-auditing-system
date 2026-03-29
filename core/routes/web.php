@@ -333,6 +333,117 @@ $renderShell = function (
         ));
     }
 
+    $contextBackUrl = request()->query('context_back_url');
+    $contextLabel = request()->query('context_label');
+    $sanitizeShellContextBackUrl = static function (mixed $candidate): ?string {
+        if (! is_string($candidate)) {
+            return null;
+        }
+
+        $candidate = trim($candidate);
+
+        if ($candidate === '' || str_starts_with($candidate, '//') || preg_match('/[\x00-\x1F\x7F]/', $candidate) === 1) {
+            return null;
+        }
+
+        if (str_starts_with($candidate, '/')) {
+            return preg_match('~^/(app|admin)(?:[/?#]|$)~', $candidate) === 1
+                ? $candidate
+                : null;
+        }
+
+        $parts = parse_url($candidate);
+
+        if ($parts === false) {
+            return null;
+        }
+
+        $path = $parts['path'] ?? null;
+
+        if (! is_string($path) || preg_match('~^/(app|admin)(?:[/?#]|$)~', $path) !== 1) {
+            return null;
+        }
+
+        $host = $parts['host'] ?? null;
+        $scheme = $parts['scheme'] ?? null;
+
+        if (is_string($host) && strcasecmp($host, request()->getHost()) !== 0) {
+            return null;
+        }
+
+        if (is_string($scheme) && strcasecmp($scheme, request()->getScheme()) !== 0) {
+            return null;
+        }
+
+        $normalized = $path;
+
+        if (is_string($parts['query'] ?? null) && $parts['query'] !== '') {
+            $normalized .= '?' . $parts['query'];
+        }
+
+        if (is_string($parts['fragment'] ?? null) && $parts['fragment'] !== '') {
+            $normalized .= '#' . $parts['fragment'];
+        }
+
+        return $normalized;
+    };
+    $contextBackUrl = $sanitizeShellContextBackUrl($contextBackUrl);
+    $contextLabel = is_string($contextLabel) && trim($contextLabel) !== ''
+        ? trim($contextLabel)
+        : null;
+
+    if ($contextBackUrl === null) {
+        $contextLabel = null;
+    }
+
+    $shellUtilityQuery = $screenQuery;
+
+    if (is_string($selectedMenuId) && $selectedMenuId !== '') {
+        $shellUtilityQuery['menu'] = $selectedMenuId;
+    } else {
+        unset($shellUtilityQuery['menu']);
+    }
+
+    $shellUtilityQuery['theme'] = $themeKey;
+    $shellUtilityQuery['locale'] = $locale;
+
+    if (is_string($organizationId) && $organizationId !== '') {
+        $shellUtilityQuery['organization_id'] = $organizationId;
+    } else {
+        unset($shellUtilityQuery['organization_id']);
+    }
+
+    if (is_string($scopeId) && $scopeId !== '') {
+        $shellUtilityQuery['scope_id'] = $scopeId;
+    } else {
+        unset($shellUtilityQuery['scope_id']);
+    }
+
+    unset($shellUtilityQuery['membership_ids']);
+
+    foreach ($memberships as $membership) {
+        $shellUtilityQuery['membership_ids'][] = $membership->id;
+    }
+
+    if ($contextBackUrl !== null) {
+        $shellUtilityQuery['context_back_url'] = $contextBackUrl;
+    } else {
+        unset($shellUtilityQuery['context_back_url']);
+    }
+
+    if ($contextLabel !== null) {
+        $shellUtilityQuery['context_label'] = $contextLabel;
+    } else {
+        unset($shellUtilityQuery['context_label']);
+    }
+
+    $organizationSelectorQuery = $shellUtilityQuery;
+    unset($organizationSelectorQuery['organization_id']);
+    $scopeSelectorQuery = $shellUtilityQuery;
+    unset($scopeSelectorQuery['scope_id']);
+    $localeSelectorQuery = $shellUtilityQuery;
+    unset($localeSelectorQuery['locale']);
+
     $themeOptions = [];
 
     foreach ($availableThemes as $key => $definition) {
@@ -343,7 +454,7 @@ $renderShell = function (
         $themeOptions[] = [
             'label' => (string) ($definition['label'] ?? $key),
             'active' => $key === $themeKey,
-            'url' => route($currentShellRoute, [...$baseQuery, 'theme' => $key, 'menu' => $selectedMenuId]),
+            'url' => route($currentShellRoute, [...$shellUtilityQuery, 'theme' => $key]),
         ];
     }
 
@@ -415,9 +526,6 @@ $renderShell = function (
         'query' => $baseQuery,
     ];
 
-    $contextBackUrl = request()->query('context_back_url');
-    $contextLabel = request()->query('context_label');
-
     return response()->view('shell', [
         'locale' => $locale,
         'theme' => $theme,
@@ -438,6 +546,9 @@ $renderShell = function (
         'organizationId' => $organizationId,
         'scopeId' => $scopeId,
         'localeOptions' => $localeOptions,
+        'organizationSelectorQuery' => $organizationSelectorQuery,
+        'scopeSelectorQuery' => $scopeSelectorQuery,
+        'localeSelectorQuery' => $localeSelectorQuery,
         'organizations' => array_map(static fn ($organization): array => $organization->toArray(), $tenancyContext->organizations),
         'scopes' => array_map(static fn ($scope): array => $scope->toArray(), $tenancyContext->scopes),
         'selectedOrganization' => $tenancyContext->organization?->toArray(),
@@ -454,8 +565,8 @@ $renderShell = function (
         'tenancyShellUrl' => isset($adminMenuMap['core.tenancy'])
             ? route('core.admin.index', [...$baseQuery, 'menu' => 'core.tenancy'])
             : null,
-        'contextBackUrl' => is_string($contextBackUrl) && $contextBackUrl !== '' ? $contextBackUrl : null,
-        'contextLabel' => is_string($contextLabel) && $contextLabel !== '' ? $contextLabel : null,
+        'contextBackUrl' => $contextBackUrl,
+        'contextLabel' => $contextLabel,
     ]);
 };
 
@@ -1289,7 +1400,7 @@ Route::get('/core/functional-actors', function (FunctionalActorServiceInterface 
     ]);
 })->middleware('core.permission:core.functional-actors.view')->name('core.functional-actors.index');
 
-Route::post('/core/functional-actors', function (FunctionalActorServiceInterface $actors) {
+Route::post('/core/functional-actors', function (FunctionalActorServiceInterface $actors) use ($shellRouteNameForMenu) {
     $validated = request()->validate([
         'display_name' => ['required', 'string', 'max:160'],
         'kind' => ['required', 'string', 'max:40'],
@@ -1298,6 +1409,7 @@ Route::post('/core/functional-actors', function (FunctionalActorServiceInterface
         'principal_id' => ['nullable', 'string', 'max:120'],
         'locale' => ['nullable', 'string', 'max:12'],
         'theme' => ['nullable', 'string', 'max:40'],
+        'menu' => ['nullable', 'string', 'max:80'],
         'subject_principal_id' => ['nullable', 'string', 'max:120'],
     ]);
 
@@ -1311,8 +1423,8 @@ Route::post('/core/functional-actors', function (FunctionalActorServiceInterface
         createdByPrincipalId: is_string($validated['principal_id'] ?? null) && $validated['principal_id'] !== '' ? $validated['principal_id'] : null,
     );
 
-    return redirect()->route('core.admin.index', array_filter([
-        'menu' => 'core.functional-actors',
+    $query = array_filter([
+        'menu' => is_string($validated['menu'] ?? null) ? $validated['menu'] : 'core.functional-actors',
         'actor_id' => $actor->id,
         'subject_principal_id' => $validated['subject_principal_id'] ?? null,
         'principal_id' => $validated['principal_id'] ?? null,
@@ -1320,10 +1432,13 @@ Route::post('/core/functional-actors', function (FunctionalActorServiceInterface
         'scope_id' => $validated['scope_id'] ?? null,
         'locale' => $validated['locale'] ?? 'en',
         'theme' => $validated['theme'] ?? null,
-    ]))->with('status', 'Functional profile created.');
+        'membership_ids' => request()->input('membership_ids', []),
+    ]);
+
+    return redirect()->route($shellRouteNameForMenu($query['menu'] ?? null), $query)->with('status', 'Functional profile created.');
 })->middleware('core.permission:core.functional-actors.manage')->name('core.functional-actors.store');
 
-Route::post('/core/functional-actors/links', function (FunctionalActorServiceInterface $actors) {
+Route::post('/core/functional-actors/links', function (FunctionalActorServiceInterface $actors) use ($shellRouteNameForMenu) {
     $validated = request()->validate([
         'actor_id' => ['required', 'string', 'max:120'],
         'subject_principal_id' => ['required', 'string', 'max:120'],
@@ -1331,6 +1446,7 @@ Route::post('/core/functional-actors/links', function (FunctionalActorServiceInt
         'principal_id' => ['nullable', 'string', 'max:120'],
         'locale' => ['nullable', 'string', 'max:12'],
         'theme' => ['nullable', 'string', 'max:40'],
+        'menu' => ['nullable', 'string', 'max:80'],
     ]);
 
     abort_if($actors->findActor($validated['actor_id']) === null, 404);
@@ -1342,18 +1458,21 @@ Route::post('/core/functional-actors/links', function (FunctionalActorServiceInt
         linkedByPrincipalId: is_string($validated['principal_id'] ?? null) && $validated['principal_id'] !== '' ? $validated['principal_id'] : null,
     );
 
-    return redirect()->route('core.admin.index', array_filter([
-        'menu' => 'core.functional-actors',
+    $query = array_filter([
+        'menu' => is_string($validated['menu'] ?? null) ? $validated['menu'] : 'core.functional-actors',
         'actor_id' => $validated['actor_id'],
         'subject_principal_id' => $validated['subject_principal_id'],
         'principal_id' => $validated['principal_id'] ?? null,
         'organization_id' => $validated['organization_id'],
         'locale' => $validated['locale'] ?? 'en',
         'theme' => $validated['theme'] ?? null,
-    ]))->with('status', 'Person linked to functional profile.');
+        'membership_ids' => request()->input('membership_ids', []),
+    ]);
+
+    return redirect()->route($shellRouteNameForMenu($query['menu'] ?? null), $query)->with('status', 'Person linked to functional profile.');
 })->middleware('core.permission:core.functional-actors.manage')->name('core.functional-actors.links.store');
 
-Route::post('/core/functional-actors/assignments', function (FunctionalActorServiceInterface $actors) {
+Route::post('/core/functional-actors/assignments', function (FunctionalActorServiceInterface $actors) use ($shellRouteNameForMenu) {
     $validated = request()->validate([
         'actor_id' => ['required', 'string', 'max:120'],
         'subject_key' => ['required', 'string', 'max:255'],
@@ -1363,6 +1482,7 @@ Route::post('/core/functional-actors/assignments', function (FunctionalActorServ
         'principal_id' => ['nullable', 'string', 'max:120'],
         'locale' => ['nullable', 'string', 'max:12'],
         'theme' => ['nullable', 'string', 'max:40'],
+        'menu' => ['nullable', 'string', 'max:80'],
     ]);
 
     abort_if($actors->findActor($validated['actor_id']) === null, 404);
@@ -1397,15 +1517,18 @@ Route::post('/core/functional-actors/assignments', function (FunctionalActorServ
         );
     }
 
-    return redirect()->route('core.admin.index', array_filter([
-        'menu' => 'core.functional-actors',
+    $query = array_filter([
+        'menu' => is_string($validated['menu'] ?? null) ? $validated['menu'] : 'core.functional-actors',
         'actor_id' => $validated['actor_id'],
         'principal_id' => $validated['principal_id'] ?? null,
         'organization_id' => $validated['organization_id'],
         'scope_id' => $validated['scope_id'] ?? null,
         'locale' => $validated['locale'] ?? 'en',
         'theme' => $validated['theme'] ?? null,
-    ]))->with('status', 'Responsibility assigned.');
+        'membership_ids' => request()->input('membership_ids', []),
+    ]);
+
+    return redirect()->route($shellRouteNameForMenu($query['menu'] ?? null), $query)->with('status', 'Responsibility assigned.');
 })->middleware('core.permission:core.functional-actors.manage')->name('core.functional-actors.assignments.store');
 
 Route::post('/core/object-access/assignments', function (FunctionalActorServiceInterface $actors) use ($shellRouteNameForMenu) {

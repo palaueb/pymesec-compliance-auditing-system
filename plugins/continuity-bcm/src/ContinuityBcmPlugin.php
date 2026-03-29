@@ -10,6 +10,7 @@ use PymeSec\Core\Permissions\AuthorizationContext;
 use PymeSec\Core\Permissions\Contracts\AuthorizationServiceInterface;
 use PymeSec\Core\Plugins\Contracts\PluginInterface;
 use PymeSec\Core\Plugins\PluginContext;
+use PymeSec\Core\Security\ContextualReferenceValidator;
 use PymeSec\Core\Tenancy\Contracts\TenancyServiceInterface;
 use PymeSec\Core\UI\ScreenDefinition;
 use PymeSec\Core\UI\ScreenRenderContext;
@@ -24,7 +25,7 @@ class ContinuityBcmPlugin implements PluginInterface
     public function register(PluginContext $context): void
     {
         $context->app()->singleton(ContinuityBcmRepository::class, fn ($app) => new ContinuityBcmRepository(
-            $app->make(\PymeSec\Core\Security\ContextualReferenceValidator::class),
+            $app->make(ContextualReferenceValidator::class),
         ));
 
         $context->app()->make(WorkflowRegistryInterface::class)->register(new WorkflowDefinition(
@@ -328,6 +329,7 @@ class ContinuityBcmPlugin implements PluginInterface
         $tenancy = $context->app()->make(TenancyServiceInterface::class);
         $organizationId = $screenContext->organizationId ?? 'org-a';
         $canManage = $this->canManage($authorization, $screenContext, $organizationId);
+        $baseQuery = $this->baseQuery($screenContext, false);
         $planCatalog = $objectAccess->filterRecords(
             $repository->allPlans($organizationId, $screenContext->scopeId),
             'id',
@@ -344,6 +346,25 @@ class ContinuityBcmPlugin implements PluginInterface
             static fn (array $plan): string => $plan['id'],
             $planCatalog,
         ));
+        $serviceOptions = $this->linkedOptions('continuity_services', 'id', 'title', $organizationId, $screenContext->scopeId);
+        $policyOptions = $this->linkedOptions('policies', 'id', 'title', $organizationId, $screenContext->scopeId);
+        $findingOptions = $this->linkedOptions('findings', 'id', 'title', $organizationId, $screenContext->scopeId);
+        $serviceLabels = [];
+        $policyLabels = [];
+        $findingLabels = [];
+
+        foreach ($serviceOptions as $option) {
+            $serviceLabels[$option['id']] = $option['label'];
+        }
+
+        foreach ($policyOptions as $option) {
+            $policyLabels[$option['id']] = $option['label'];
+        }
+
+        foreach ($findingOptions as $option) {
+            $findingLabels[$option['id']] = $option['label'];
+        }
+
         $plans = [];
 
         foreach ($planCatalog as $plan) {
@@ -387,6 +408,20 @@ class ContinuityBcmPlugin implements PluginInterface
                     'execution_type_label' => ContinuityReferenceData::executionTypeLabel($execution['execution_type']),
                     'status_label' => ContinuityReferenceData::executionStatusLabel($execution['status']),
                 ], $executionsByPlan[$plan['id']] ?? []),
+                'service_link' => [
+                    'label' => $service['title'],
+                    'url' => route('core.shell.index', [...$baseQuery, 'menu' => 'plugin.continuity-bcm.root', 'service_id' => $service['id']]),
+                ],
+                'linked_policy' => $plan['linked_policy_id'] !== '' ? [
+                    'id' => $plan['linked_policy_id'],
+                    'label' => $policyLabels[$plan['linked_policy_id']] ?? $plan['linked_policy_id'],
+                    'url' => route('core.shell.index', [...$baseQuery, 'menu' => 'plugin.policy-exceptions.root', 'policy_id' => $plan['linked_policy_id']]),
+                ] : null,
+                'linked_finding' => $plan['linked_finding_id'] !== '' ? [
+                    'id' => $plan['linked_finding_id'],
+                    'label' => $findingLabels[$plan['linked_finding_id']] ?? $plan['linked_finding_id'],
+                    'url' => route('core.shell.index', [...$baseQuery, 'menu' => 'plugin.findings-remediation.root', 'finding_id' => $plan['linked_finding_id']]),
+                ] : null,
                 'open_url' => route('core.shell.index', [...$this->baseQuery($screenContext, false), 'menu' => 'plugin.continuity-bcm.plans', 'plan_id' => $plan['id']]),
             ];
         }
@@ -420,9 +455,9 @@ class ContinuityBcmPlugin implements PluginInterface
             'list_query' => $this->baseQuery($screenContext, false),
             'owner_actor_options' => $this->actorOptions($actors, $organizationId, $screenContext->scopeId),
             'scope_options' => array_map(static fn ($scope): array => $scope->toArray(), $scopeContext->scopes),
-            'service_options' => $this->linkedOptions('continuity_services', 'id', 'title', $organizationId, $screenContext->scopeId),
-            'policy_options' => $this->linkedOptions('policies', 'id', 'title', $organizationId, $screenContext->scopeId),
-            'finding_options' => $this->linkedOptions('findings', 'id', 'title', $organizationId, $screenContext->scopeId),
+            'service_options' => $serviceOptions,
+            'policy_options' => $policyOptions,
+            'finding_options' => $findingOptions,
             'exercise_type_options' => ContinuityReferenceData::optionsFor('exercise_type'),
             'exercise_outcome_options' => ContinuityReferenceData::optionsFor('exercise_outcome'),
             'execution_type_options' => ContinuityReferenceData::optionsFor('execution_type'),

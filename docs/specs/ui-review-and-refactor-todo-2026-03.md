@@ -24,7 +24,7 @@ Each page and object must be checked against these questions:
 
 ## Cross-Cutting TODO
 
-- [ ] Add first-class support in the shell for contextual detail pages without polluting the main sidebar navigation.
+- [x] Add first-class support in the shell for contextual detail pages without polluting the main sidebar navigation.
 - [ ] Define a reusable page contract for `index`, `detail`, and `governance` screens.
 - [ ] Standardize `Open` / `View details` as the main action from list pages.
 - [ ] Remove child collection maintenance from list rows across the product.
@@ -70,10 +70,10 @@ Each page and object must be checked against these questions:
 
 ### Batch 1: Highest Pain / Highest Leverage
 
-- [ ] `plugins/continuity-bcm/resources/views/plans.blade.php`
+- [x] `plugins/continuity-bcm/resources/views/plans.blade.php`
 - [ ] `plugins/asset-catalog/resources/views/catalog.blade.php`
 - [ ] `plugins/assessments-audits/resources/views/index.blade.php`
-- [ ] shell support for contextual detail navigation
+- [x] shell support for contextual detail navigation
 
 ### Batch 2: Domain Register Cleanup
 
@@ -128,8 +128,8 @@ Issues:
 - action hierarchy is still too flat in some cases
 
 TODO:
-- [ ] support `index -> detail` flows cleanly in shell navigation
-- [ ] support contextual back links to parent list pages
+- [x] support `index -> detail` flows cleanly in shell navigation
+- [x] support contextual back links to parent list pages
 - [ ] standardize placement of page-level primary actions
 
 ### Dashboard
@@ -294,12 +294,12 @@ Issues:
 - this is the clearest example of list rows acting as full workspaces
 
 TODO:
-- [ ] create `Recovery Plan Detail`
-- [ ] move evidence, exercises, test runs, workflow transitions, linked records, and edit form there
-- [ ] keep plan list as summaries plus `Open`
+- [x] create `Recovery Plan Detail`
+- [x] move evidence, exercises, test runs, workflow transitions, linked records, and edit form there
+- [x] keep plan list as summaries plus `Open`
 
 Status:
-- [ ] In progress first implementation target
+- [x] Detail-first implementation in place
 
 ### Assessments and Audits
 

@@ -259,7 +259,7 @@ class ContextualReferenceIntegrityTest extends TestCase
             ->post('/plugins/policies', [
                 ...$this->operatorPayload('plugin.policy-exceptions.root'),
                 'title' => 'Cross context policy',
-                'area' => 'Identity',
+                'area' => 'identity',
                 'version_label' => 'v1.0',
                 'statement' => 'Test statement.',
                 'linked_control_id' => 'control-backup-governance',

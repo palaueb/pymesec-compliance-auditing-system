@@ -9,6 +9,10 @@
 </style>
 
 <section class="module-screen">
+    <div class="surface-note">
+        Transfer types are business-managed catalog values from `Reference catalogs`. Privacy workflow states such as `draft`, `review`, or `active` are system-controlled.
+    </div>
+
     @if (is_array($selected_flow))
         <div class="surface-card" style="padding:16px; display:grid; gap:16px;">
             <div class="row-between" style="align-items:flex-start;">

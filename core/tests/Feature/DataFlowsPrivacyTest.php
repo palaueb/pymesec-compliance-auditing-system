@@ -30,6 +30,7 @@ class DataFlowsPrivacyTest extends TestCase
         $this->get('/app?menu=plugin.data-flows-privacy.root&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
             ->assertOk()
             ->assertSee('Data Flows Register')
+            ->assertSee('Transfer types are business-managed catalog values')
             ->assertSee('Customer support handoff')
             ->assertSee('Add data flow')
             ->assertSee('Open');
@@ -67,6 +68,7 @@ class DataFlowsPrivacyTest extends TestCase
         $this->get('/app?menu=plugin.data-flows-privacy.activities&activity_id=processing-activity-customer-support-operations&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
             ->assertOk()
             ->assertSee('Processing Activities')
+            ->assertSee('Lawful bases are business-managed catalog values')
             ->assertSee('RoPA export')
             ->assertSee('ropa.txt');
     }

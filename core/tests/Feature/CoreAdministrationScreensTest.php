@@ -16,8 +16,9 @@ class CoreAdministrationScreensTest extends TestCase
             'core.plugins' => 'Installed Modules',
             'core.permissions' => 'Permission Catalog',
             'core.tenancy' => 'Tenant Structure',
+            'core.reference-data' => 'Reference catalogs',
             'core.audit' => 'Audit Trail',
-            'core.functional-actors' => 'Functional Directory',
+            'core.notifications' => 'Notifications & Delivery',
         ];
 
         foreach ($screens as $menu => $title) {

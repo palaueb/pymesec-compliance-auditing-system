@@ -12,6 +12,9 @@
 </style>
 
 <section class="module-screen">
+    <div class="surface-note">
+        Type, criticality, and classification are business-managed catalog values from `Reference catalogs`. Asset lifecycle states such as `active`, `review`, or `retired` are system-controlled.
+    </div>
 
     {{-- ── Creation form (hidden, toggled via toolbar) ──────────────────────── --}}
     @if ($can_manage_assets)
@@ -154,7 +157,7 @@
                         @endforeach
                     </div>
                 @else
-                    <div class="table-note">{{ $selected_asset['owner_label'] !== '' ? 'Legacy owner label: '.$selected_asset['owner_label'] : 'No owner assigned' }}</div>
+                    <div class="table-note">No owner assigned</div>
                 @endif
             </div>
 
@@ -307,7 +310,7 @@
                                         <div class="table-note">{{ $asset['owner_assignments'][0]['kind'] }}</div>
                                     @endif
                                 @else
-                                    <span class="table-note">{{ $asset['owner_label'] !== '' ? 'Legacy owner label' : 'No owner' }}</span>
+                                    <span class="table-note">No owner</span>
                                 @endif
                             </td>
                             <td>{{ $asset['classification_label'] }}</td>

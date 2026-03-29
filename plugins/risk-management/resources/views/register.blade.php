@@ -9,6 +9,10 @@
 </style>
 
 <section class="module-screen">
+    <div class="surface-note">
+        Risk categories are business-managed catalog values from `Reference catalogs`. Risk workflow states such as `assessing`, `accepted`, or `closed` are system-controlled.
+    </div>
+
     @if (is_array($selected_risk))
         <div class="surface-card" style="padding:16px; display:grid; gap:16px;">
             <div class="row-between" style="align-items:flex-start;">

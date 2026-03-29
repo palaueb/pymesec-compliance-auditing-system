@@ -14,6 +14,10 @@
 </style>
 
 <section class="module-screen">
+    <div class="surface-note">
+        Policy areas are business-managed catalog values from `Reference catalogs`. Policy and exception workflow states such as `draft`, `review`, `active`, or `approved` are system-controlled.
+    </div>
+
     @if (is_array($selected_policy))
         <div class="surface-card" style="padding:16px; display:grid; gap:16px;">
             <div class="row-between" style="align-items:flex-start;">
@@ -21,7 +25,7 @@
                     <div class="eyebrow">Policy</div>
                     <h2 class="screen-title" style="font-size:28px;">{{ $selected_policy['title'] }}</h2>
                     <div class="table-note">{{ $selected_policy['id'] }} · {{ $selected_policy['version_label'] }}</div>
-                    <div class="table-note">{{ $selected_policy['area'] }}</div>
+                    <div class="table-note">{{ $selected_policy['area_label'] }}</div>
                 </div>
                 <div class="action-cluster">
                     @php $polStatePill = match($selected_policy['state']) { 'active' => 'pill-active', 'draft' => 'pill-draft', 'review' => 'pill-review', 'archived' => 'pill-archived', default => '' }; @endphp
@@ -262,7 +266,12 @@
                                 </div>
                                 <div class="field">
                                     <label class="field-label">Area</label>
-                                    <input class="field-input" name="area" value="{{ $selected_policy['area'] }}" required>
+                                    <select class="field-select" name="area" required>
+                                        @foreach ($area_options as $option)
+                                            <option value="{{ $option['id'] }}" @selected($selected_policy['area'] === $option['id'])>{{ $option['label'] }}</option>
+                                        @endforeach
+                                    </select>
+                                    <div class="table-note">Business-managed policy areas come from `Reference catalogs`; workflow states remain system controlled.</div>
                                 </div>
                                 <div class="field">
                                     <label class="field-label">Version</label>
@@ -361,7 +370,12 @@
                         </div>
                         <div class="field">
                             <label class="field-label" for="policy-area">Area</label>
-                            <input class="field-input" id="policy-area" name="area" required>
+                            <select class="field-select" id="policy-area" name="area" required>
+                                @foreach ($area_options as $option)
+                                    <option value="{{ $option['id'] }}">{{ $option['label'] }}</option>
+                                @endforeach
+                            </select>
+                            <div class="table-note">Business-managed policy areas come from `Reference catalogs`; workflow states remain system controlled.</div>
                         </div>
                         <div class="field">
                             <label class="field-label" for="policy-version">Version</label>
@@ -444,7 +458,7 @@
                                 <div class="table-note">{{ $policy['statement'] }}</div>
                                 <div class="table-note">{{ $policy['exception_count'] }} exceptions</div>
                             </td>
-                            <td>{{ $policy['area'] }}</td>
+                            <td>{{ $policy['area_label'] }}</td>
                             <td>
                                 @if (($policy['owner_assignments'] ?? []) !== [])
                                     <div>{{ $policy['owner_assignments'][0]['display_name'] }}</div>

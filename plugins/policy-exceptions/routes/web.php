@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use PymeSec\Core\Artifacts\ArtifactUploadData;
@@ -11,6 +12,7 @@ use PymeSec\Core\Principals\MembershipReference;
 use PymeSec\Core\Principals\PrincipalReference;
 use PymeSec\Core\Workflows\Contracts\WorkflowServiceInterface;
 use PymeSec\Core\Workflows\WorkflowExecutionContext;
+use PymeSec\Plugins\PolicyExceptions\PolicyReferenceData;
 use PymeSec\Plugins\PolicyExceptions\PolicyExceptionsRepository;
 
 Route::get('/plugins/policies', function (Request $request, PolicyExceptionsRepository $repository, ObjectAccessService $objectAccess) {
@@ -52,7 +54,7 @@ Route::post('/plugins/policies', function (
 ) {
     $validated = $request->validate([
         'title' => ['required', 'string', 'max:140'],
-        'area' => ['required', 'string', 'max:80'],
+        'area' => ['required', 'string', Rule::in(PolicyReferenceData::areaKeys())],
         'version_label' => ['required', 'string', 'max:40'],
         'statement' => ['required', 'string', 'max:2000'],
         'linked_control_id' => ['nullable', 'string', 'max:120'],
@@ -99,7 +101,7 @@ Route::post('/plugins/policies/{policyId}', function (
 ) {
     $validated = $request->validate([
         'title' => ['required', 'string', 'max:140'],
-        'area' => ['required', 'string', 'max:80'],
+        'area' => ['required', 'string', Rule::in(PolicyReferenceData::areaKeys())],
         'version_label' => ['required', 'string', 'max:40'],
         'statement' => ['required', 'string', 'max:2000'],
         'linked_control_id' => ['nullable', 'string', 'max:120'],

@@ -56,14 +56,14 @@ The UI must use a selector, not a text input.
 
 ### 4. Owner Editing
 
-`owner_label` is legacy-only in v1.
+`owner_label` is legacy-only and no longer participates in the active runtime ownership model.
 
 Rules:
 
 - users must no longer edit `owner_label`
 - ownership is assigned through `owner actor`
 - list and detail views prefer resolved actor ownership
-- legacy `owner_label` may still be displayed as fallback during transition
+- legacy `owner_label` may remain in stored records during transition, but runtime ownership is assignment-based
 
 This keeps the runtime compatible with seeded or migrated records without preserving the anti-pattern in the edit flow.
 

@@ -28,6 +28,7 @@ RUN apt-get update \
 COPY --from=composer /usr/bin/composer /usr/bin/composer
 COPY docker/php/entrypoint.sh /usr/local/bin/pymesec-entrypoint
 COPY docker/php/000-default.conf /etc/apache2/sites-available/000-default.conf
+COPY docker/php/zz-pymesec.ini /usr/local/etc/php/conf.d/zz-pymesec.ini
 
 RUN chmod +x /usr/local/bin/pymesec-entrypoint
 

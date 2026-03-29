@@ -1,4 +1,8 @@
 <section class="module-screen">
+    <div class="surface-note">
+        This screen uses system-controlled continuity values for workflow, exercise types, outcomes, and execution status. Business-managed vocabularies such as impact tiers and dependency kinds are governed separately in `Reference catalogs`.
+    </div>
+
     @if (is_array($selected_plan))
         <div class="surface-card" style="padding:16px; display:grid; gap:16px;">
             <div class="row-between" style="align-items:flex-start;">
@@ -18,14 +22,55 @@
                 <div class="metric-card"><div class="metric-label">Test runs</div><div class="metric-value">{{ count($selected_plan['executions']) }}</div></div>
             </div>
 
-            <div class="overview-grid" style="grid-template-columns:repeat(2, minmax(0, 1fr));">
+            <div class="surface-note">
+                Recovery Plan Detail keeps workflow, linked records, ownership, evidence, exercises, and test runs in one record workspace. The list view stays focused on summaries and navigation.
+            </div>
+
+            <div class="overview-grid" style="grid-template-columns:repeat(3, minmax(0, 1fr));">
                 <div class="surface-card" style="padding:14px;">
-                    <div class="metric-label">Overview</div>
+                    <div class="metric-label">Plan summary</div>
                     <div class="entity-title" style="margin-top:10px;">{{ $selected_plan['strategy_summary'] }}</div>
-                    <div class="table-note" style="margin-top:12px;">Policy: {{ $selected_plan['linked_policy_id'] !== '' ? $selected_plan['linked_policy_id'] : 'None' }}</div>
-                    <div class="table-note">Finding: {{ $selected_plan['linked_finding_id'] !== '' ? $selected_plan['linked_finding_id'] : 'None' }}</div>
-                    <div class="table-note">Scope: {{ $selected_plan['scope_id'] !== '' ? $selected_plan['scope_id'] : 'Organization-wide' }}</div>
-                    <div class="table-note">Owners: {{ count($selected_plan['owner_assignments']) }}</div>
+                    <div class="data-stack" style="margin-top:12px;">
+                        <div class="data-item">
+                            <div class="field-label">Continuity service</div>
+                            <div class="entity-title">{{ $selected_plan['service_link']['label'] }}</div>
+                            <a class="button button-ghost" href="{{ $selected_plan['service_link']['url'] }}" style="margin-top:8px;">Open continuity service</a>
+                        </div>
+                        <div class="data-item">
+                            <div class="field-label">Scope</div>
+                            <div class="entity-title">{{ $selected_plan['scope_id'] !== '' ? $selected_plan['scope_id'] : 'Organization-wide' }}</div>
+                            <div class="table-note">Test due: {{ $selected_plan['test_due_on'] !== '' ? $selected_plan['test_due_on'] : 'No review date set' }}</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="surface-card" style="padding:14px;">
+                    <div class="metric-label">Linked records</div>
+                    <div class="data-stack" style="margin-top:10px;">
+                        <div class="data-item">
+                            <div class="field-label">Policy</div>
+                            @if (is_array($selected_plan['linked_policy']))
+                                <div class="entity-title">{{ $selected_plan['linked_policy']['label'] }}</div>
+                                <a class="button button-ghost" href="{{ $selected_plan['linked_policy']['url'] }}" style="margin-top:8px;">Open linked policy</a>
+                            @else
+                                <span class="muted-note">No linked policy</span>
+                            @endif
+                        </div>
+                        <div class="data-item">
+                            <div class="field-label">Finding</div>
+                            @if (is_array($selected_plan['linked_finding']))
+                                <div class="entity-title">{{ $selected_plan['linked_finding']['label'] }}</div>
+                                <a class="button button-ghost" href="{{ $selected_plan['linked_finding']['url'] }}" style="margin-top:8px;">Open linked finding</a>
+                            @else
+                                <span class="muted-note">No linked finding</span>
+                            @endif
+                        </div>
+                    </div>
+                </div>
+
+                <div class="surface-card" style="padding:14px;">
+                    <div class="metric-label">Accountability</div>
+                    <div class="table-note" style="margin-top:10px;">Owners: {{ count($selected_plan['owner_assignments']) }}</div>
                     <div class="data-stack" style="margin-top:10px;">
                         @forelse ($selected_plan['owner_assignments'] as $owner)
                             <div class="data-item">
@@ -49,9 +94,17 @@
                         @endforelse
                     </div>
                 </div>
+            </div>
 
-                <div class="surface-card" style="padding:14px;">
-                    <div class="metric-label">Workflow</div>
+            <div class="surface-card" style="padding:14px;">
+                <div class="row-between" style="align-items:flex-start;">
+                    <div>
+                        <div class="metric-label">Governance actions</div>
+                        <div class="table-note" style="margin-top:8px;">Edit plan metadata, links, due dates, and ownership from this detail page.</div>
+                    </div>
+                    <span class="pill">{{ $selected_plan['state'] }}</span>
+                </div>
+                <div style="margin-top:12px;">
                     @if ($selected_plan['transitions'] !== [])
                         <div class="action-cluster" style="margin-top:10px;">
                             @foreach ($selected_plan['transitions'] as $transition)
@@ -158,7 +211,7 @@
                                     <button class="button button-secondary" type="submit">Save changes</button>
                                 </div>
                             </form>
-                        </details>
+                            </details>
                     @endif
                 </div>
             </div>
@@ -321,7 +374,7 @@
             <div class="row-between" style="gap:12px; align-items:flex-start;">
                 <div>
                     <div class="entity-title">Recovery plans list</div>
-                    <div class="table-note">Open a plan to work on exercises, test runs, evidence, links, ownership, and transitions. To create a new recovery plan, first open the related continuity service.</div>
+                    <div class="table-note">This list stays summary-only. Open a plan to manage evidence, exercises, test runs, links, ownership, and workflow. To create a new recovery plan, first open the related continuity service.</div>
                 </div>
                 @if ($can_manage_continuity)
                     <a class="button button-secondary" href="{{ route('core.shell.index', [...$list_query, 'menu' => 'plugin.continuity-bcm.root']) }}#continuity-service-plans">Choose service</a>
@@ -336,6 +389,7 @@
                         <th>Recovery Plan</th>
                         <th>Service</th>
                         <th>Owner</th>
+                        <th>Operations</th>
                         <th>Links</th>
                         <th>Test Due</th>
                         <th>State</th>
@@ -364,9 +418,14 @@
                                 @endif
                             </td>
                             <td>
-                                @if ($plan['linked_policy_id'] !== '') <span class="tag">Policy</span> @endif
-                                @if ($plan['linked_finding_id'] !== '') <span class="tag">Finding</span> @endif
-                                @if ($plan['linked_policy_id'] === '' && $plan['linked_finding_id'] === '') <span class="muted-note">—</span> @endif
+                                <div class="table-note">{{ count($plan['exercises']) }} exercise{{ count($plan['exercises']) === 1 ? '' : 's' }}</div>
+                                <div class="table-note">{{ count($plan['executions']) }} test run{{ count($plan['executions']) === 1 ? '' : 's' }}</div>
+                                <div class="table-note">{{ count($plan['artifacts']) }} evidence item{{ count($plan['artifacts']) === 1 ? '' : 's' }}</div>
+                            </td>
+                            <td>
+                                @if (is_array($plan['linked_policy'])) <span class="tag">Policy</span> @endif
+                                @if (is_array($plan['linked_finding'])) <span class="tag">Finding</span> @endif
+                                @if (! is_array($plan['linked_policy']) && ! is_array($plan['linked_finding'])) <span class="muted-note">—</span> @endif
                             </td>
                             <td>{{ $plan['test_due_on'] !== '' ? $plan['test_due_on'] : 'No test date' }}</td>
                             <td><span class="pill">{{ $plan['state'] }}</span></td>
