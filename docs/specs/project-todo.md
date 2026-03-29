@@ -4,14 +4,14 @@ Simple list of the main pending items.
 
 ## Delivery Rules
 
-- [ ] Keep the public demo alive as a first-class maintained surface.
-- [ ] For every feature change, explicitly check whether the `demo` branch and `demo_builder/patches/` need to be refreshed.
-- [ ] If product changes affect demo-specific behavior or files already represented in the patch pack, regenerate the affected demo patches before closing the work.
-- [ ] Require tests for every new or changed mutable parameter so ownership, permission, role, scope, and quota boundaries are enforced and cannot be spoofed by unauthorized users.
+- [x] Keep the public demo alive as a first-class maintained surface.
+- [x] For every feature change, explicitly check whether the `demo` branch and `demo_builder/patches/` need to be refreshed.
+- [x] If product changes affect demo-specific behavior or files already represented in the patch pack, regenerate the affected demo patches before closing the work.
+- [x] Require tests for every new or changed mutable parameter so ownership, permission, role, scope, and quota boundaries are enforced and cannot be spoofed by unauthorized users.
 
 ## Product
 
-- [ ] Multi-owner and assignment depth across assets, risks, findings, continuity, privacy, policy, controls, and assessments.
+- [ ] Finish multi-owner and assignment depth for assessments and any remaining surfaces still outside the shared assignment model.
 - [ ] Framework-specific reporting presets and readiness views.
 - [ ] Communications and reminder channels from the admin UI.
 - [ ] SMTP and outbound mail configuration from the web admin.
@@ -29,7 +29,7 @@ Simple list of the main pending items.
 
 ## Data Governance
 
-- [ ] Support multiple accountable parties for assets.
+- [x] Support multiple accountable parties for assets.
 - [ ] Replace remaining single-owner semantics with assignment-based ownership where needed.
 - [ ] Finish governed business catalogues where free text still exists.
 - [ ] Distinguish clearly between system enums and business-managed catalogues in all affected screens.
