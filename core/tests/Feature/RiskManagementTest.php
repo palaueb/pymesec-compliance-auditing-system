@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -132,5 +133,65 @@ class RiskManagementTest extends TestCase
             ->assertSee('Supplier onboarding coverage gap')
             ->assertSee('Add onboarding approvals and quarterly supplier review.')
             ->assertSee('Compliance Office');
+    }
+
+    public function test_risks_support_multiple_owner_assignments_and_owner_removal(): void
+    {
+        $payload = [
+            'principal_id' => 'principal-org-a',
+            'organization_id' => 'org-a',
+            'locale' => 'en',
+            'menu' => 'plugin.risk-management.root',
+            'membership_id' => 'membership-org-a-hello',
+        ];
+
+        $this->post('/plugins/risks/risk-access-drift', [
+            ...$payload,
+            'title' => 'Privileged access drift',
+            'category' => 'third-party',
+            'inherent_score' => 20,
+            'residual_score' => 10,
+            'linked_asset_id' => 'asset-erp-prod',
+            'linked_control_id' => 'control-access-review',
+            'treatment' => 'Quarterly certification and emergency access review.',
+            'scope_id' => 'scope-eu',
+            'owner_actor_id' => 'actor-compliance-office',
+        ])->assertFound();
+
+        $this->assertSame(['actor-ava-mason', 'actor-compliance-office'], DB::table('functional_assignments')
+            ->where('domain_object_type', 'risk')
+            ->where('domain_object_id', 'risk-access-drift')
+            ->where('assignment_type', 'owner')
+            ->where('is_active', true)
+            ->orderBy('functional_actor_id')
+            ->pluck('functional_actor_id')
+            ->all());
+
+        $this->get('/app?menu=plugin.risk-management.root&risk_id=risk-access-drift&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
+            ->assertOk()
+            ->assertSee('Owners: 2')
+            ->assertSee('Ava Mason')
+            ->assertSee('Compliance Office');
+
+        $assignmentId = (string) DB::table('functional_assignments')
+            ->where('domain_object_type', 'risk')
+            ->where('domain_object_id', 'risk-access-drift')
+            ->where('assignment_type', 'owner')
+            ->where('functional_actor_id', 'actor-compliance-office')
+            ->value('id');
+
+        $this->post("/plugins/risks/risk-access-drift/owners/{$assignmentId}/remove", $payload)->assertFound();
+
+        $this->assertFalse((bool) DB::table('functional_assignments')
+            ->where('id', $assignmentId)
+            ->value('is_active'));
+
+        $this->assertSame(['actor-ava-mason'], DB::table('functional_assignments')
+            ->where('domain_object_type', 'risk')
+            ->where('domain_object_id', 'risk-access-drift')
+            ->where('assignment_type', 'owner')
+            ->where('is_active', true)
+            ->pluck('functional_actor_id')
+            ->all());
     }
 }

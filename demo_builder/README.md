@@ -8,6 +8,9 @@ The intended model is:
 - `demo_builder/patches/` stores one generated patch per changed file.
 - `demo_builder/IMPLEMENT_DEMO_PROMPT.md` is the working prompt for future demo refresh tasks.
 
+The demo is a maintained deliverable.
+If product work changes demo-relevant behavior or touches files already covered by the patch pack, the demo branch and exported patches must be refreshed as part of that work.
+
 ## Quick Start
 
 Initialize the workflow once:
@@ -61,6 +64,7 @@ If SSH is jailed and the web server sees a different absolute root, pass one of:
 - `drift` is strict by design. If it reports drift, the patch pack should be reviewed and regenerated.
 - `apply` requires the checkout to be clean and at the exact base commit captured during export.
 - Metadata is stored in `demo_builder/state/`.
+- Product work is not finished if the demo surface was affected and the required patch refresh was skipped.
 
 ## Walkthrough: Refresh And Republish The Demo
 

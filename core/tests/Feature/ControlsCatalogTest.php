@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -219,6 +220,53 @@ class ControlsCatalogTest extends TestCase
             ->assertSee('Supplier Access Recertification')
             ->assertSee('Semi-annual supplier entitlement review')
             ->assertSee('Compliance Office');
+    }
+
+    public function test_controls_support_multiple_owner_assignments_and_owner_removal(): void
+    {
+        $payload = [
+            'principal_id' => 'principal-org-a',
+            'organization_id' => 'org-a',
+            'locale' => 'en',
+            'menu' => 'plugin.controls-catalog.root',
+            'membership_id' => 'membership-org-a-hello',
+        ];
+
+        $this->post('/plugins/controls/control-access-review', [
+            ...$payload,
+            'name' => 'Quarterly Access Review',
+            'framework_id' => 'framework-iso-27001',
+            'domain' => 'Identity and access',
+            'evidence' => 'Signed recertification package.',
+            'scope_id' => 'scope-eu',
+            'owner_actor_id' => 'actor-compliance-office',
+        ])->assertFound();
+
+        $this->assertSame(2, DB::table('functional_assignments')
+            ->where('domain_object_type', 'control')
+            ->where('domain_object_id', 'control-access-review')
+            ->where('assignment_type', 'owner')
+            ->where('is_active', true)
+            ->count());
+
+        $this->get('/app?menu=plugin.controls-catalog.root&control_id=control-access-review&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
+            ->assertOk()
+            ->assertSee('Ava Mason')
+            ->assertSee('Compliance Office')
+            ->assertSee('Remove owner');
+
+        $assignmentId = (string) DB::table('functional_assignments')
+            ->where('domain_object_type', 'control')
+            ->where('domain_object_id', 'control-access-review')
+            ->where('assignment_type', 'owner')
+            ->where('functional_actor_id', 'actor-compliance-office')
+            ->value('id');
+
+        $this->post("/plugins/controls/control-access-review/owners/{$assignmentId}/remove", $payload)->assertFound();
+
+        $this->assertFalse((bool) DB::table('functional_assignments')
+            ->where('id', $assignmentId)
+            ->value('is_active'));
     }
 
     public function test_frameworks_requirements_and_mappings_can_be_managed_from_the_shell_runtime(): void

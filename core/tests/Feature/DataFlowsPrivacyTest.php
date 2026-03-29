@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -181,5 +182,117 @@ class DataFlowsPrivacyTest extends TestCase
             ])
             ->assertRedirect('/app?menu=plugin.data-flows-privacy.activities')
             ->assertSessionHasErrors(['lawful_basis']);
+    }
+
+    public function test_data_flows_and_processing_activities_support_multiple_owner_assignments_and_owner_removal(): void
+    {
+        $payload = [
+            'principal_id' => 'principal-org-a',
+            'organization_id' => 'org-a',
+            'locale' => 'en',
+            'membership_id' => 'membership-org-a-hello',
+        ];
+
+        $this->post('/plugins/privacy/data-flows/data-flow-customer-support-handoff', [
+            ...$payload,
+            'menu' => 'plugin.data-flows-privacy.root',
+            'flow_id' => 'data-flow-customer-support-handoff',
+            'title' => 'Customer support handoff',
+            'source' => 'CRM platform',
+            'destination' => 'Support operations',
+            'data_category_summary' => 'Customer identifiers, case notes, and order references.',
+            'transfer_type' => 'internal',
+            'review_due_on' => DB::table('privacy_data_flows')->where('id', 'data-flow-customer-support-handoff')->value('review_due_on'),
+            'scope_id' => 'scope-eu',
+            'linked_asset_id' => 'asset-erp-prod',
+            'linked_risk_id' => 'risk-access-drift',
+            'owner_actor_id' => 'actor-ava-mason',
+        ])->assertFound();
+
+        $this->assertSame(['actor-ava-mason', 'actor-compliance-office'], DB::table('functional_assignments')
+            ->where('domain_object_type', 'privacy-data-flow')
+            ->where('domain_object_id', 'data-flow-customer-support-handoff')
+            ->where('assignment_type', 'owner')
+            ->where('is_active', true)
+            ->orderBy('functional_actor_id')
+            ->pluck('functional_actor_id')
+            ->all());
+
+        $this->get('/app?menu=plugin.data-flows-privacy.root&flow_id=data-flow-customer-support-handoff&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
+            ->assertOk()
+            ->assertSee('Owners')
+            ->assertSee('Ava Mason')
+            ->assertSee('Compliance Office');
+
+        $flowAssignmentId = (string) DB::table('functional_assignments')
+            ->where('domain_object_type', 'privacy-data-flow')
+            ->where('domain_object_id', 'data-flow-customer-support-handoff')
+            ->where('assignment_type', 'owner')
+            ->where('functional_actor_id', 'actor-compliance-office')
+            ->value('id');
+
+        $this->post("/plugins/privacy/data-flows/data-flow-customer-support-handoff/owners/{$flowAssignmentId}/remove", [
+            ...$payload,
+            'menu' => 'plugin.data-flows-privacy.root',
+        ])->assertFound();
+
+        $this->assertSame(['actor-ava-mason'], DB::table('functional_assignments')
+            ->where('domain_object_type', 'privacy-data-flow')
+            ->where('domain_object_id', 'data-flow-customer-support-handoff')
+            ->where('assignment_type', 'owner')
+            ->where('is_active', true)
+            ->pluck('functional_actor_id')
+            ->all());
+
+        $this->post('/plugins/privacy/activities/processing-activity-customer-support-operations', [
+            ...$payload,
+            'menu' => 'plugin.data-flows-privacy.activities',
+            'activity_id' => 'processing-activity-customer-support-operations',
+            'title' => 'Customer support operations',
+            'purpose' => 'Handle support requests, triage incidents, and coordinate customer case resolution.',
+            'lawful_basis' => 'contract',
+            'review_due_on' => DB::table('privacy_processing_activities')->where('id', 'processing-activity-customer-support-operations')->value('review_due_on'),
+            'scope_id' => 'scope-eu',
+            'linked_data_flow_ids' => 'data-flow-customer-support-handoff',
+            'linked_risk_ids' => 'risk-access-drift',
+            'linked_policy_id' => 'policy-access-governance',
+            'linked_finding_id' => 'finding-access-review-gap',
+            'owner_actor_id' => 'actor-compliance-office',
+        ])->assertFound();
+
+        $this->assertSame(['actor-ava-mason', 'actor-compliance-office'], DB::table('functional_assignments')
+            ->where('domain_object_type', 'privacy-processing-activity')
+            ->where('domain_object_id', 'processing-activity-customer-support-operations')
+            ->where('assignment_type', 'owner')
+            ->where('is_active', true)
+            ->orderBy('functional_actor_id')
+            ->pluck('functional_actor_id')
+            ->all());
+
+        $this->get('/app?menu=plugin.data-flows-privacy.activities&activity_id=processing-activity-customer-support-operations&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
+            ->assertOk()
+            ->assertSee('Owners')
+            ->assertSee('Ava Mason')
+            ->assertSee('Compliance Office');
+
+        $activityAssignmentId = (string) DB::table('functional_assignments')
+            ->where('domain_object_type', 'privacy-processing-activity')
+            ->where('domain_object_id', 'processing-activity-customer-support-operations')
+            ->where('assignment_type', 'owner')
+            ->where('functional_actor_id', 'actor-compliance-office')
+            ->value('id');
+
+        $this->post("/plugins/privacy/activities/processing-activity-customer-support-operations/owners/{$activityAssignmentId}/remove", [
+            ...$payload,
+            'menu' => 'plugin.data-flows-privacy.activities',
+        ])->assertFound();
+
+        $this->assertSame(['actor-ava-mason'], DB::table('functional_assignments')
+            ->where('domain_object_type', 'privacy-processing-activity')
+            ->where('domain_object_id', 'processing-activity-customer-support-operations')
+            ->where('assignment_type', 'owner')
+            ->where('is_active', true)
+            ->pluck('functional_actor_id')
+            ->all());
     }
 }

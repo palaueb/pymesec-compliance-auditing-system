@@ -2,6 +2,7 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use PymeSec\Core\Artifacts\ArtifactUploadData;
 use PymeSec\Core\Artifacts\Contracts\ArtifactServiceInterface;
@@ -70,7 +71,7 @@ Route::post('/plugins/privacy/data-flows', function (
     $membershipId = $request->input('membership_id');
 
     if (is_string($validated['owner_actor_id'] ?? null) && $validated['owner_actor_id'] !== '') {
-        $actors->syncSingleAssignment(
+        $actors->assignActor(
             actorId: $validated['owner_actor_id'],
             domainObjectType: 'privacy-data-flow',
             domainObjectId: $flow['id'],
@@ -133,7 +134,7 @@ Route::post('/plugins/privacy/data-flows/{flowId}', function (
     $membershipId = $request->input('membership_id');
 
     if (is_string($validated['owner_actor_id'] ?? null) && $validated['owner_actor_id'] !== '') {
-        $actors->syncSingleAssignment(
+        $actors->assignActor(
             actorId: $validated['owner_actor_id'],
             domainObjectType: 'privacy-data-flow',
             domainObjectId: $flow['id'],
@@ -145,6 +146,16 @@ Route::post('/plugins/privacy/data-flows/{flowId}', function (
         );
     }
 
+    DB::table('functional_assignments')
+        ->where('domain_object_type', 'privacy-data-flow')
+        ->where('domain_object_id', $flow['id'])
+        ->where('organization_id', $flow['organization_id'])
+        ->where('is_active', true)
+        ->update([
+            'scope_id' => $flow['scope_id'] !== '' ? $flow['scope_id'] : null,
+            'updated_at' => now(),
+        ]);
+
     return redirect()->route('core.shell.index', array_filter([
         'menu' => 'plugin.data-flows-privacy.root',
         'flow_id' => $flow['id'],
@@ -155,6 +166,53 @@ Route::post('/plugins/privacy/data-flows/{flowId}', function (
         'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
     ]))->with('status', 'Saved.');
 })->middleware('core.permission:plugin.data-flows-privacy.records.manage')->name('plugin.data-flows-privacy.update');
+
+Route::post('/plugins/privacy/data-flows/{flowId}/owners/{assignmentId}/remove', function (
+    Request $request,
+    string $flowId,
+    string $assignmentId,
+    DataFlowsPrivacyRepository $repository,
+    FunctionalActorServiceInterface $actors,
+    ObjectAccessService $objectAccess,
+) {
+    $flow = $repository->findDataFlow($flowId);
+
+    abort_if($flow === null, 404);
+
+    $principalId = (string) $request->input('principal_id', 'principal-org-a');
+    abort_unless($objectAccess->canAccessObject(
+        principalId: $principalId,
+        organizationId: $flow['organization_id'],
+        scopeId: $flow['scope_id'] !== '' ? $flow['scope_id'] : null,
+        domainObjectType: 'privacy-data-flow',
+        domainObjectId: $flow['id'],
+    ), 403);
+
+    $assignment = collect($actors->assignmentsFor(
+        domainObjectType: 'privacy-data-flow',
+        domainObjectId: $flow['id'],
+        organizationId: $flow['organization_id'],
+        scopeId: $flow['scope_id'] !== '' ? $flow['scope_id'] : null,
+    ))->first(fn ($candidate) => $candidate->id === $assignmentId && $candidate->assignmentType === 'owner');
+
+    abort_if($assignment === null, 404);
+
+    $membershipId = $request->input('membership_id');
+    $actors->deactivateAssignment(
+        assignmentId: $assignmentId,
+        deactivatedByPrincipalId: $principalId,
+    );
+
+    return redirect()->route('core.shell.index', array_filter([
+        'menu' => 'plugin.data-flows-privacy.root',
+        'flow_id' => $flow['id'],
+        'principal_id' => $principalId,
+        'organization_id' => $flow['organization_id'],
+        'scope_id' => $flow['scope_id'] !== '' ? $flow['scope_id'] : null,
+        'locale' => $request->input('locale', 'en'),
+        'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
+    ]))->with('status', 'Owner removed.');
+})->middleware('core.permission:plugin.data-flows-privacy.records.manage')->name('plugin.data-flows-privacy.owners.destroy');
 
 Route::post('/plugins/privacy/data-flows/{flowId}/artifacts', function (
     Request $request,
@@ -287,7 +345,7 @@ Route::post('/plugins/privacy/activities', function (
     $membershipId = $request->input('membership_id');
 
     if (is_string($validated['owner_actor_id'] ?? null) && $validated['owner_actor_id'] !== '') {
-        $actors->syncSingleAssignment(
+        $actors->assignActor(
             actorId: $validated['owner_actor_id'],
             domainObjectType: 'privacy-processing-activity',
             domainObjectId: $activity['id'],
@@ -350,7 +408,7 @@ Route::post('/plugins/privacy/activities/{activityId}', function (
     $membershipId = $request->input('membership_id');
 
     if (is_string($validated['owner_actor_id'] ?? null) && $validated['owner_actor_id'] !== '') {
-        $actors->syncSingleAssignment(
+        $actors->assignActor(
             actorId: $validated['owner_actor_id'],
             domainObjectType: 'privacy-processing-activity',
             domainObjectId: $activity['id'],
@@ -362,6 +420,16 @@ Route::post('/plugins/privacy/activities/{activityId}', function (
         );
     }
 
+    DB::table('functional_assignments')
+        ->where('domain_object_type', 'privacy-processing-activity')
+        ->where('domain_object_id', $activity['id'])
+        ->where('organization_id', $activity['organization_id'])
+        ->where('is_active', true)
+        ->update([
+            'scope_id' => $activity['scope_id'] !== '' ? $activity['scope_id'] : null,
+            'updated_at' => now(),
+        ]);
+
     return redirect()->route('core.shell.index', array_filter([
         'menu' => 'plugin.data-flows-privacy.activities',
         'activity_id' => $activity['id'],
@@ -372,6 +440,53 @@ Route::post('/plugins/privacy/activities/{activityId}', function (
         'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
     ]))->with('status', 'Saved.');
 })->middleware('core.permission:plugin.data-flows-privacy.records.manage')->name('plugin.data-flows-privacy.activities.update');
+
+Route::post('/plugins/privacy/activities/{activityId}/owners/{assignmentId}/remove', function (
+    Request $request,
+    string $activityId,
+    string $assignmentId,
+    DataFlowsPrivacyRepository $repository,
+    FunctionalActorServiceInterface $actors,
+    ObjectAccessService $objectAccess,
+) {
+    $activity = $repository->findProcessingActivity($activityId);
+
+    abort_if($activity === null, 404);
+
+    $principalId = (string) $request->input('principal_id', 'principal-org-a');
+    abort_unless($objectAccess->canAccessObject(
+        principalId: $principalId,
+        organizationId: $activity['organization_id'],
+        scopeId: $activity['scope_id'] !== '' ? $activity['scope_id'] : null,
+        domainObjectType: 'privacy-processing-activity',
+        domainObjectId: $activity['id'],
+    ), 403);
+
+    $assignment = collect($actors->assignmentsFor(
+        domainObjectType: 'privacy-processing-activity',
+        domainObjectId: $activity['id'],
+        organizationId: $activity['organization_id'],
+        scopeId: $activity['scope_id'] !== '' ? $activity['scope_id'] : null,
+    ))->first(fn ($candidate) => $candidate->id === $assignmentId && $candidate->assignmentType === 'owner');
+
+    abort_if($assignment === null, 404);
+
+    $membershipId = $request->input('membership_id');
+    $actors->deactivateAssignment(
+        assignmentId: $assignmentId,
+        deactivatedByPrincipalId: $principalId,
+    );
+
+    return redirect()->route('core.shell.index', array_filter([
+        'menu' => 'plugin.data-flows-privacy.activities',
+        'activity_id' => $activity['id'],
+        'principal_id' => $principalId,
+        'organization_id' => $activity['organization_id'],
+        'scope_id' => $activity['scope_id'] !== '' ? $activity['scope_id'] : null,
+        'locale' => $request->input('locale', 'en'),
+        'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
+    ]))->with('status', 'Owner removed.');
+})->middleware('core.permission:plugin.data-flows-privacy.records.manage')->name('plugin.data-flows-privacy.activities.owners.destroy');
 
 Route::post('/plugins/privacy/activities/{activityId}/artifacts', function (
     Request $request,

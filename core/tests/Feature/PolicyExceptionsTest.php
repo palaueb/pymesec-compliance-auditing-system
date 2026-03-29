@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -163,5 +164,110 @@ class PolicyExceptionsTest extends TestCase
             ->assertSee('approve')
             ->assertSee('Exception sign-off')
             ->assertSee('exception-signoff.txt');
+    }
+
+    public function test_policies_and_exceptions_support_multiple_owner_assignments_and_owner_removal(): void
+    {
+        $payload = [
+            'principal_id' => 'principal-org-a',
+            'organization_id' => 'org-a',
+            'locale' => 'en',
+            'membership_id' => 'membership-org-a-hello',
+        ];
+
+        $this->post('/plugins/policies/policy-access-governance', [
+            ...$payload,
+            'menu' => 'plugin.policy-exceptions.root',
+            'title' => 'Access Governance Policy',
+            'area' => 'Identity',
+            'version_label' => 'v1.4',
+            'statement' => 'Privileged access must be reviewed quarterly and emergency entitlements must be justified and logged.',
+            'linked_control_id' => 'control-access-review',
+            'review_due_on' => DB::table('policies')->where('id', 'policy-access-governance')->value('review_due_on'),
+            'scope_id' => 'scope-eu',
+            'owner_actor_id' => 'actor-ava-mason',
+        ])->assertFound();
+
+        $this->assertSame(['actor-ava-mason', 'actor-compliance-office'], DB::table('functional_assignments')
+            ->where('domain_object_type', 'policy')
+            ->where('domain_object_id', 'policy-access-governance')
+            ->where('assignment_type', 'owner')
+            ->where('is_active', true)
+            ->orderBy('functional_actor_id')
+            ->pluck('functional_actor_id')
+            ->all());
+
+        $this->get('/app?menu=plugin.policy-exceptions.root&policy_id=policy-access-governance&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
+            ->assertOk()
+            ->assertSee('Owners: 2')
+            ->assertSee('Ava Mason')
+            ->assertSee('Compliance Office');
+
+        $policyAssignmentId = (string) DB::table('functional_assignments')
+            ->where('domain_object_type', 'policy')
+            ->where('domain_object_id', 'policy-access-governance')
+            ->where('assignment_type', 'owner')
+            ->where('functional_actor_id', 'actor-compliance-office')
+            ->value('id');
+
+        $this->post("/plugins/policies/policy-access-governance/owners/{$policyAssignmentId}/remove", [
+            ...$payload,
+            'menu' => 'plugin.policy-exceptions.root',
+        ])->assertFound();
+
+        $this->assertSame(['actor-ava-mason'], DB::table('functional_assignments')
+            ->where('domain_object_type', 'policy')
+            ->where('domain_object_id', 'policy-access-governance')
+            ->where('assignment_type', 'owner')
+            ->where('is_active', true)
+            ->pluck('functional_actor_id')
+            ->all());
+
+        $this->post('/plugins/policies/exceptions/exception-break-glass-window', [
+            ...$payload,
+            'menu' => 'plugin.policy-exceptions.exceptions',
+            'title' => 'Extended break-glass review window',
+            'rationale' => 'Quarter-end finance close requires a temporary extension of emergency access certification windows.',
+            'compensating_control' => 'Daily review by compliance office during the extended window.',
+            'linked_finding_id' => 'finding-access-review-gap',
+            'expires_on' => DB::table('policy_exceptions')->where('id', 'exception-break-glass-window')->value('expires_on'),
+            'scope_id' => 'scope-eu',
+            'owner_actor_id' => 'actor-compliance-office',
+        ])->assertFound();
+
+        $this->assertSame(['actor-ava-mason', 'actor-compliance-office'], DB::table('functional_assignments')
+            ->where('domain_object_type', 'policy-exception')
+            ->where('domain_object_id', 'exception-break-glass-window')
+            ->where('assignment_type', 'owner')
+            ->where('is_active', true)
+            ->orderBy('functional_actor_id')
+            ->pluck('functional_actor_id')
+            ->all());
+
+        $this->get('/app?menu=plugin.policy-exceptions.exceptions&exception_id=exception-break-glass-window&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
+            ->assertOk()
+            ->assertSee('Owners')
+            ->assertSee('Ava Mason')
+            ->assertSee('Compliance Office');
+
+        $exceptionAssignmentId = (string) DB::table('functional_assignments')
+            ->where('domain_object_type', 'policy-exception')
+            ->where('domain_object_id', 'exception-break-glass-window')
+            ->where('assignment_type', 'owner')
+            ->where('functional_actor_id', 'actor-compliance-office')
+            ->value('id');
+
+        $this->post("/plugins/policies/exceptions/exception-break-glass-window/owners/{$exceptionAssignmentId}/remove", [
+            ...$payload,
+            'menu' => 'plugin.policy-exceptions.exceptions',
+        ])->assertFound();
+
+        $this->assertSame(['actor-ava-mason'], DB::table('functional_assignments')
+            ->where('domain_object_type', 'policy-exception')
+            ->where('domain_object_id', 'exception-break-glass-window')
+            ->where('assignment_type', 'owner')
+            ->where('is_active', true)
+            ->pluck('functional_actor_id')
+            ->all());
     }
 }

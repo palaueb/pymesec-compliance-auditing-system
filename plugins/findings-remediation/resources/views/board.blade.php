@@ -54,9 +54,13 @@
                             <span class="pill {{ $aPill }}">{{ $action['status_label'] }}</span>
                         </td>
                         <td>
-                            @if ($action['owner_assignment'] !== null)
-                                <div>{{ $action['owner_assignment']['display_name'] }}</div>
-                                <div class="table-note">{{ $action['owner_assignment']['kind'] }}</div>
+                            @if (($action['owner_assignments'] ?? []) !== [])
+                                <div>{{ $action['owner_assignments'][0]['display_name'] }}</div>
+                                @if (count($action['owner_assignments']) > 1)
+                                    <div class="table-note">+{{ count($action['owner_assignments']) - 1 }} more owner{{ count($action['owner_assignments']) > 2 ? 's' : '' }}</div>
+                                @else
+                                    <div class="table-note">{{ $action['owner_assignments'][0]['kind'] }}</div>
+                                @endif
                             @else
                                 <span class="muted-note">No owner assigned</span>
                             @endif

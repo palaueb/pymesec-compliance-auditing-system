@@ -23,7 +23,9 @@ class DataFlowsPrivacyPlugin implements PluginInterface
 {
     public function register(PluginContext $context): void
     {
-        $context->app()->singleton(DataFlowsPrivacyRepository::class, fn () => new DataFlowsPrivacyRepository());
+        $context->app()->singleton(DataFlowsPrivacyRepository::class, fn ($app) => new DataFlowsPrivacyRepository(
+            $app->make(\PymeSec\Core\Security\ContextualReferenceValidator::class),
+        ));
 
         $context->app()->make(WorkflowRegistryInterface::class)->register(new WorkflowDefinition(
             key: 'plugin.data-flows-privacy.data-flow-lifecycle',
@@ -228,7 +230,7 @@ class DataFlowsPrivacyPlugin implements PluginInterface
             $dataFlows[] = [
                 ...$flow,
                 'transfer_type_label' => PrivacyReferenceData::transferTypeLabel($flow['transfer_type']),
-                'owner_assignment' => $this->ownerAssignment($actors, 'privacy-data-flow', $flow['id'], $organizationId, $screenContext->scopeId),
+                'owner_assignments' => $this->ownerAssignments($actors, 'privacy-data-flow', $flow['id'], $organizationId, $screenContext->scopeId),
                 'artifacts' => array_map(
                     static fn ($artifact): array => $artifact->toArray(),
                     $artifacts->forSubject('privacy-data-flow', $flow['id'], $organizationId, $screenContext->scopeId, 5),
@@ -238,6 +240,7 @@ class DataFlowsPrivacyPlugin implements PluginInterface
                 'transition_route' => route('plugin.data-flows-privacy.transition', ['flowId' => $flow['id'], 'transitionKey' => '__TRANSITION__']),
                 'artifact_upload_route' => route('plugin.data-flows-privacy.artifacts.store', ['flowId' => $flow['id']]),
                 'update_route' => route('plugin.data-flows-privacy.update', ['flowId' => $flow['id']]),
+                'owner_remove_route' => route('plugin.data-flows-privacy.owners.destroy', ['flowId' => $flow['id'], 'assignmentId' => '__ASSIGNMENT__']),
                 'linked_asset_label' => $assetLabels[$flow['linked_asset_id']] ?? null,
                 'linked_risk_label' => $riskLabels[$flow['linked_risk_id']] ?? null,
                 'linked_asset_url' => $flow['linked_asset_id'] !== ''
@@ -349,7 +352,7 @@ class DataFlowsPrivacyPlugin implements PluginInterface
             $activities[] = [
                 ...$activity,
                 'lawful_basis_label' => PrivacyReferenceData::lawfulBasisLabel($activity['lawful_basis']),
-                'owner_assignment' => $this->ownerAssignment($actors, 'privacy-processing-activity', $activity['id'], $organizationId, $screenContext->scopeId),
+                'owner_assignments' => $this->ownerAssignments($actors, 'privacy-processing-activity', $activity['id'], $organizationId, $screenContext->scopeId),
                 'artifacts' => array_map(
                     static fn ($artifact): array => $artifact->toArray(),
                     $artifacts->forSubject('privacy-processing-activity', $activity['id'], $organizationId, $screenContext->scopeId, 5),
@@ -359,6 +362,7 @@ class DataFlowsPrivacyPlugin implements PluginInterface
                 'transition_route' => route('plugin.data-flows-privacy.activities.transition', ['activityId' => $activity['id'], 'transitionKey' => '__TRANSITION__']),
                 'artifact_upload_route' => route('plugin.data-flows-privacy.activities.artifacts.store', ['activityId' => $activity['id']]),
                 'update_route' => route('plugin.data-flows-privacy.activities.update', ['activityId' => $activity['id']]),
+                'owner_remove_route' => route('plugin.data-flows-privacy.activities.owners.destroy', ['activityId' => $activity['id'], 'assignmentId' => '__ASSIGNMENT__']),
                 'linked_data_flow_label' => $dataFlowLabels[$activity['linked_data_flow_ids']] ?? null,
                 'linked_risk_label' => $riskLabels[$activity['linked_risk_ids']] ?? null,
                 'linked_policy_label' => $policyLabels[$activity['linked_policy_id']] ?? null,
@@ -471,15 +475,17 @@ class DataFlowsPrivacyPlugin implements PluginInterface
     }
 
     /**
-     * @return array<string, string>|null
+     * @return array<int, array{id: string, assignment_id: string, display_name: string, kind: string}>
      */
-    private function ownerAssignment(
+    private function ownerAssignments(
         FunctionalActorServiceInterface $actors,
         string $domainObjectType,
         string $domainObjectId,
         string $organizationId,
         ?string $scopeId,
-    ): ?array {
+    ): array {
+        $owners = [];
+
         foreach ($actors->assignmentsFor($domainObjectType, $domainObjectId, $organizationId, $scopeId) as $assignment) {
             if ($assignment->assignmentType !== 'owner') {
                 continue;
@@ -488,17 +494,18 @@ class DataFlowsPrivacyPlugin implements PluginInterface
             $actor = $actors->findActor($assignment->functionalActorId);
 
             if ($actor === null) {
-                return null;
+                continue;
             }
 
-            return [
+            $owners[] = [
                 'id' => $actor->id,
+                'assignment_id' => $assignment->id,
                 'display_name' => $actor->displayName,
                 'kind' => $actor->kind,
             ];
         }
 
-        return null;
+        return $owners;
     }
 
     /**

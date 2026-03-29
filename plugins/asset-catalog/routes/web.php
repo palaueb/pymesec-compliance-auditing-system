@@ -2,6 +2,7 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use PymeSec\Core\FunctionalActors\Contracts\FunctionalActorServiceInterface;
 use PymeSec\Core\ObjectAccess\ObjectAccessService;
@@ -54,7 +55,7 @@ Route::post('/plugins/assets', function (
     $membershipId = $request->input('membership_id');
 
     if (is_string($validated['owner_actor_id'] ?? null) && $validated['owner_actor_id'] !== '') {
-        $actors->syncSingleAssignment(
+        $actors->assignActor(
             actorId: $validated['owner_actor_id'],
             domainObjectType: 'asset',
             domainObjectId: $asset['id'],
@@ -115,7 +116,7 @@ Route::post('/plugins/assets/{assetId}', function (
     $membershipId = $request->input('membership_id');
 
     if (is_string($validated['owner_actor_id'] ?? null) && $validated['owner_actor_id'] !== '') {
-        $actors->syncSingleAssignment(
+        $actors->assignActor(
             actorId: $validated['owner_actor_id'],
             domainObjectType: 'asset',
             domainObjectId: $asset['id'],
@@ -127,6 +128,16 @@ Route::post('/plugins/assets/{assetId}', function (
         );
     }
 
+    DB::table('functional_assignments')
+        ->where('domain_object_type', 'asset')
+        ->where('domain_object_id', $asset['id'])
+        ->where('organization_id', $asset['organization_id'])
+        ->where('is_active', true)
+        ->update([
+            'scope_id' => $asset['scope_id'] !== '' ? $asset['scope_id'] : null,
+            'updated_at' => now(),
+        ]);
+
     return redirect()->route('core.shell.index', array_filter([
         'menu' => 'plugin.asset-catalog.root',
         'asset_id' => $asset['id'],
@@ -137,6 +148,53 @@ Route::post('/plugins/assets/{assetId}', function (
         'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
     ]))->with('status', 'Saved.');
 })->middleware('core.permission:plugin.asset-catalog.assets.manage')->name('plugin.asset-catalog.update');
+
+Route::post('/plugins/assets/{assetId}/owners/{assignmentId}/remove', function (
+    Request $request,
+    string $assetId,
+    string $assignmentId,
+    AssetCatalogRepository $repository,
+    FunctionalActorServiceInterface $actors,
+    ObjectAccessService $objectAccess,
+) {
+    $asset = $repository->find($assetId);
+
+    abort_if($asset === null, 404);
+    abort_unless($objectAccess->canAccessObject(
+        principalId: (string) $request->input('principal_id', 'principal-org-a'),
+        organizationId: $asset['organization_id'],
+        scopeId: $asset['scope_id'] !== '' ? $asset['scope_id'] : null,
+        domainObjectType: 'asset',
+        domainObjectId: $asset['id'],
+    ), 403);
+
+    $assignment = collect($actors->assignmentsFor(
+        domainObjectType: 'asset',
+        domainObjectId: $asset['id'],
+        organizationId: $asset['organization_id'],
+        scopeId: $asset['scope_id'] !== '' ? $asset['scope_id'] : null,
+    ))->first(fn ($candidate) => $candidate->id === $assignmentId && $candidate->assignmentType === 'owner');
+
+    abort_if($assignment === null, 404);
+
+    $principalId = (string) $request->input('principal_id', 'principal-org-a');
+    $membershipId = $request->input('membership_id');
+
+    $actors->deactivateAssignment(
+        assignmentId: $assignmentId,
+        deactivatedByPrincipalId: $principalId,
+    );
+
+    return redirect()->route('core.shell.index', array_filter([
+        'menu' => 'plugin.asset-catalog.root',
+        'asset_id' => $asset['id'],
+        'principal_id' => $principalId,
+        'organization_id' => $asset['organization_id'],
+        'scope_id' => $asset['scope_id'] !== '' ? $asset['scope_id'] : null,
+        'locale' => $request->input('locale', app()->getLocale()),
+        'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
+    ]))->with('status', 'Owner removed.');
+})->middleware('core.permission:plugin.asset-catalog.assets.manage')->name('plugin.asset-catalog.owners.destroy');
 
 Route::post('/plugins/assets/{assetId}/transitions/{transitionKey}', function (
     string $assetId,

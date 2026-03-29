@@ -40,7 +40,29 @@
                 <div class="surface-card" style="padding:14px;">
                     <div class="metric-label">Overview</div>
                     <div class="table-note" style="margin-top:10px;">{{ $selected_policy['statement'] }}</div>
-                    <div class="table-note">Owner: {{ $selected_policy['owner_assignment']['display_name'] ?? 'No owner assigned' }}</div>
+                    <div class="table-note">Owners: {{ count($selected_policy['owner_assignments']) }}</div>
+                    <div class="data-stack" style="margin-top:10px;">
+                        @forelse ($selected_policy['owner_assignments'] as $owner)
+                            <div class="data-item">
+                                <div class="entity-title">{{ $owner['display_name'] }}</div>
+                                <div class="table-note">{{ $owner['kind'] }}</div>
+                                @if ($can_manage_policies)
+                                    <form method="POST" action="{{ str_replace('__ASSIGNMENT__', $owner['assignment_id'], $selected_policy['owner_remove_route']) }}" style="margin-top:8px;">
+                                        @csrf
+                                        <input type="hidden" name="principal_id" value="{{ $query['principal_id'] ?? '' }}">
+                                        <input type="hidden" name="organization_id" value="{{ $query['organization_id'] }}">
+                                        <input type="hidden" name="locale" value="{{ $query['locale'] }}">
+                                        <input type="hidden" name="menu" value="plugin.policy-exceptions.root">
+                                        <input type="hidden" name="policy_id" value="{{ $selected_policy['id'] }}">
+                                        <input type="hidden" name="membership_id" value="{{ $query['membership_ids'][0] ?? 'membership-org-a-hello' }}">
+                                        <button class="button button-ghost" type="submit">Remove owner</button>
+                                    </form>
+                                @endif
+                            </div>
+                        @empty
+                            <span class="muted-note">No owner assigned</span>
+                        @endforelse
+                    </div>
                     <div class="table-note">
                         Control:
                         @if ($selected_policy['linked_control_url'] !== null)
@@ -166,7 +188,7 @@
                                         <input class="field-input" name="expires_on" type="date">
                                     </div>
                                     <div class="field">
-                                        <label class="field-label">Owner actor</label>
+                                        <label class="field-label">Initial owner actor</label>
                                         <select class="field-select" name="owner_actor_id">
                                             <option value="">No owner</option>
                                             @foreach ($owner_actor_options as $actor)
@@ -196,7 +218,13 @@
                                     <div>
                                         <div class="entity-title">{{ $exception['title'] }}</div>
                                         <div class="table-note">{{ ucfirst($exception['state']) }}{{ $exception['expires_on'] !== '' ? ' · expires '.$exception['expires_on'] : '' }}</div>
-                                        <div class="table-note">{{ $exception['owner_assignment']['display_name'] ?? 'No owner assigned' }}</div>
+                                        <div class="table-note">
+                                            @if (($exception['owner_assignments'] ?? []) !== [])
+                                                {{ $exception['owner_assignments'][0]['display_name'] }}{{ count($exception['owner_assignments']) > 1 ? ' +'.(count($exception['owner_assignments']) - 1).' more' : '' }}
+                                            @else
+                                                No owner assigned
+                                            @endif
+                                        </div>
                                     </div>
                                     @php $excPill = match($exception['state']) { 'approved' => 'pill-approved', 'requested' => 'pill-requested', 'expired' => 'pill-expired', 'revoked' => 'pill-revoked', default => '' }; @endphp
                                     <span class="pill {{ $excPill }}">{{ $exception['state'] }}</span>
@@ -263,14 +291,38 @@
                                     </select>
                                 </div>
                                 <div class="field">
-                                    <label class="field-label">Owner actor</label>
+                                    <label class="field-label">Add owner actor</label>
                                     <select class="field-select" name="owner_actor_id">
-                                        <option value="">Keep current owner</option>
+                                        <option value="">Do not add owner</option>
                                         @foreach ($owner_actor_options as $actor)
-                                            <option value="{{ $actor['id'] }}" @selected(($selected_policy['owner_assignment']['id'] ?? null) === $actor['id'])>{{ $actor['label'] }}</option>
+                                            <option value="{{ $actor['id'] }}">{{ $actor['label'] }}</option>
                                         @endforeach
                                     </select>
+                                    <div class="table-note">Selecting an actor adds another owner instead of replacing the current set.</div>
                                 </div>
+                                @if (($selected_policy['owner_assignments'] ?? []) !== [])
+                                    <div class="field" style="grid-column:1 / -1;">
+                                        <label class="field-label">Current owners</label>
+                                        <div class="data-stack">
+                                            @foreach ($selected_policy['owner_assignments'] as $owner)
+                                                <div class="data-item">
+                                                    <div class="entity-title">{{ $owner['display_name'] }}</div>
+                                                    <div class="table-note">{{ $owner['kind'] }}</div>
+                                                    <form method="POST" action="{{ str_replace('__ASSIGNMENT__', $owner['assignment_id'], $selected_policy['owner_remove_route']) }}" style="margin-top:8px;">
+                                                        @csrf
+                                                        <input type="hidden" name="principal_id" value="{{ $query['principal_id'] ?? '' }}">
+                                                        <input type="hidden" name="organization_id" value="{{ $query['organization_id'] }}">
+                                                        <input type="hidden" name="locale" value="{{ $query['locale'] }}">
+                                                        <input type="hidden" name="menu" value="plugin.policy-exceptions.root">
+                                                        <input type="hidden" name="policy_id" value="{{ $selected_policy['id'] }}">
+                                                        <input type="hidden" name="membership_id" value="{{ $query['membership_ids'][0] ?? 'membership-org-a-hello' }}">
+                                                        <button class="button button-ghost" type="submit">Remove owner</button>
+                                                    </form>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    </div>
+                                @endif
                                 <div class="field" style="grid-column:1 / -1;">
                                     <label class="field-label">Statement</label>
                                     <textarea class="field-input" name="statement" rows="4" required>{{ $selected_policy['statement'] }}</textarea>
@@ -338,7 +390,7 @@
                             </select>
                         </div>
                         <div class="field">
-                            <label class="field-label" for="policy-owner">Owner actor</label>
+                            <label class="field-label" for="policy-owner">Initial owner actor</label>
                             <select class="field-select" id="policy-owner" name="owner_actor_id">
                                 <option value="">No owner</option>
                                 @foreach ($owner_actor_options as $actor)
@@ -394,9 +446,13 @@
                             </td>
                             <td>{{ $policy['area'] }}</td>
                             <td>
-                                @if ($policy['owner_assignment'] !== null)
-                                    <div>{{ $policy['owner_assignment']['display_name'] }}</div>
-                                    <div class="table-note">{{ $policy['owner_assignment']['kind'] }}</div>
+                                @if (($policy['owner_assignments'] ?? []) !== [])
+                                    <div>{{ $policy['owner_assignments'][0]['display_name'] }}</div>
+                                    @if (count($policy['owner_assignments']) > 1)
+                                        <div class="table-note">+{{ count($policy['owner_assignments']) - 1 }} more owner{{ count($policy['owner_assignments']) > 2 ? 's' : '' }}</div>
+                                    @else
+                                        <div class="table-note">{{ $policy['owner_assignments'][0]['kind'] }}</div>
+                                    @endif
                                 @else
                                     <span class="muted-note">No owner assigned</span>
                                 @endif

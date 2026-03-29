@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Validation\Rule;
 use PymeSec\Core\Artifacts\ArtifactUploadData;
@@ -71,7 +72,7 @@ Route::post('/plugins/risks', function (
     $membershipId = $request->input('membership_id');
 
     if (is_string($validated['owner_actor_id'] ?? null) && $validated['owner_actor_id'] !== '') {
-        $actors->syncSingleAssignment(
+        $actors->assignActor(
             actorId: $validated['owner_actor_id'],
             domainObjectType: 'risk',
             domainObjectId: $risk['id'],
@@ -135,7 +136,7 @@ Route::post('/plugins/risks/{riskId}', function (
     $membershipId = $request->input('membership_id');
 
     if (is_string($validated['owner_actor_id'] ?? null) && $validated['owner_actor_id'] !== '') {
-        $actors->syncSingleAssignment(
+        $actors->assignActor(
             actorId: $validated['owner_actor_id'],
             domainObjectType: 'risk',
             domainObjectId: $risk['id'],
@@ -147,6 +148,16 @@ Route::post('/plugins/risks/{riskId}', function (
         );
     }
 
+    DB::table('functional_assignments')
+        ->where('domain_object_type', 'risk')
+        ->where('domain_object_id', $risk['id'])
+        ->where('organization_id', $risk['organization_id'])
+        ->where('is_active', true)
+        ->update([
+            'scope_id' => $risk['scope_id'] !== '' ? $risk['scope_id'] : null,
+            'updated_at' => now(),
+        ]);
+
     return redirect()->route('core.shell.index', array_filter([
         'menu' => 'plugin.risk-management.root',
         'risk_id' => $risk['id'],
@@ -157,6 +168,53 @@ Route::post('/plugins/risks/{riskId}', function (
         'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
     ]))->with('status', 'Saved.');
 })->middleware('core.permission:plugin.risk-management.risks.manage')->name('plugin.risk-management.update');
+
+Route::post('/plugins/risks/{riskId}/owners/{assignmentId}/remove', function (
+    Request $request,
+    string $riskId,
+    string $assignmentId,
+    RiskRepository $repository,
+    FunctionalActorServiceInterface $actors,
+    ObjectAccessService $objectAccess,
+) {
+    $risk = $repository->find($riskId);
+
+    abort_if($risk === null, 404);
+    abort_unless($objectAccess->canAccessObject(
+        principalId: (string) $request->input('principal_id', 'principal-org-a'),
+        organizationId: $risk['organization_id'],
+        scopeId: $risk['scope_id'] !== '' ? $risk['scope_id'] : null,
+        domainObjectType: 'risk',
+        domainObjectId: $risk['id'],
+    ), 403);
+
+    $assignment = collect($actors->assignmentsFor(
+        domainObjectType: 'risk',
+        domainObjectId: $risk['id'],
+        organizationId: $risk['organization_id'],
+        scopeId: $risk['scope_id'] !== '' ? $risk['scope_id'] : null,
+    ))->first(fn ($candidate) => $candidate->id === $assignmentId && $candidate->assignmentType === 'owner');
+
+    abort_if($assignment === null, 404);
+
+    $principalId = (string) $request->input('principal_id', 'principal-org-a');
+    $membershipId = $request->input('membership_id');
+
+    $actors->deactivateAssignment(
+        assignmentId: $assignmentId,
+        deactivatedByPrincipalId: $principalId,
+    );
+
+    return redirect()->route('core.shell.index', array_filter([
+        'menu' => 'plugin.risk-management.root',
+        'risk_id' => $risk['id'],
+        'principal_id' => $principalId,
+        'organization_id' => $risk['organization_id'],
+        'scope_id' => $risk['scope_id'] !== '' ? $risk['scope_id'] : null,
+        'locale' => $request->input('locale', 'en'),
+        'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
+    ]))->with('status', 'Owner removed.');
+})->middleware('core.permission:plugin.risk-management.risks.manage')->name('plugin.risk-management.owners.destroy');
 
 Route::post('/plugins/risks/{riskId}/artifacts', function (
     Request $request,

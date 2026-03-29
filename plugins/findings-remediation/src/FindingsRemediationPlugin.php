@@ -23,7 +23,9 @@ class FindingsRemediationPlugin implements PluginInterface
 {
     public function register(PluginContext $context): void
     {
-        $context->app()->singleton(FindingsRemediationRepository::class, fn () => new FindingsRemediationRepository());
+        $context->app()->singleton(FindingsRemediationRepository::class, fn ($app) => new FindingsRemediationRepository(
+            $app->make(\PymeSec\Core\Security\ContextualReferenceValidator::class),
+        ));
 
         $context->app()->make(WorkflowRegistryInterface::class)->register(new WorkflowDefinition(
             key: 'plugin.findings-remediation.finding-lifecycle',
@@ -182,8 +184,9 @@ class FindingsRemediationPlugin implements PluginInterface
                 $findingActions[] = [
                     ...$action,
                     'status_label' => FindingsReferenceData::remediationStatusLabel($action['status']),
-                    'owner_assignment' => $this->ownerAssignment($actors, 'remediation-action', $action['id'], $organizationId, $screenContext->scopeId),
+                    'owner_assignments' => $this->ownerAssignments($actors, 'remediation-action', $action['id'], $organizationId, $screenContext->scopeId),
                     'update_route' => route('plugin.findings-remediation.actions.update', ['actionId' => $action['id']]),
+                    'owner_remove_route' => route('plugin.findings-remediation.actions.owners.destroy', ['actionId' => $action['id'], 'assignmentId' => '__ASSIGNMENT__']),
                 ];
             }
 
@@ -191,7 +194,7 @@ class FindingsRemediationPlugin implements PluginInterface
                 ...$finding,
                 'severity_label' => FindingsReferenceData::severityLabel($finding['severity']),
                 'actions' => $findingActions,
-                'owner_assignment' => $this->ownerAssignment($actors, 'finding', $finding['id'], $organizationId, $screenContext->scopeId),
+                'owner_assignments' => $this->ownerAssignments($actors, 'finding', $finding['id'], $organizationId, $screenContext->scopeId),
                 'artifacts' => array_map(
                     static fn ($artifact): array => $artifact->toArray(),
                     $artifacts->forSubject('finding', $finding['id'], $organizationId, $screenContext->scopeId, 5),
@@ -201,6 +204,7 @@ class FindingsRemediationPlugin implements PluginInterface
                 'transition_route' => route('plugin.findings-remediation.transition', ['findingId' => $finding['id'], 'transitionKey' => '__TRANSITION__']),
                 'artifact_upload_route' => route('plugin.findings-remediation.artifacts.store', ['findingId' => $finding['id']]),
                 'update_route' => route('plugin.findings-remediation.update', ['findingId' => $finding['id']]),
+                'owner_remove_route' => route('plugin.findings-remediation.owners.destroy', ['findingId' => $finding['id'], 'assignmentId' => '__ASSIGNMENT__']),
                 'action_store_route' => route('plugin.findings-remediation.actions.store', ['findingId' => $finding['id']]),
                 'linked_control_label' => $controlLabels[$finding['linked_control_id']] ?? null,
                 'linked_risk_label' => $riskLabels[$finding['linked_risk_id']] ?? null,
@@ -311,7 +315,7 @@ class FindingsRemediationPlugin implements PluginInterface
                 'status_label' => FindingsReferenceData::remediationStatusLabel($action['status']),
                 'finding' => $finding,
                 'finding_open_url' => route('core.shell.index', [...$baseQuery, 'menu' => 'plugin.findings-remediation.root', 'finding_id' => $action['finding_id']]),
-                'owner_assignment' => $this->ownerAssignment($actors, 'remediation-action', $action['id'], $organizationId, $screenContext->scopeId),
+                'owner_assignments' => $this->ownerAssignments($actors, 'remediation-action', $action['id'], $organizationId, $screenContext->scopeId),
                 'update_route' => route('plugin.findings-remediation.actions.update', ['actionId' => $action['id']]),
             ];
         }
@@ -370,15 +374,17 @@ class FindingsRemediationPlugin implements PluginInterface
     }
 
     /**
-     * @return array<string, string>|null
+     * @return array<int, array{id: string, assignment_id: string, display_name: string, kind: string}>
      */
-    private function ownerAssignment(
+    private function ownerAssignments(
         FunctionalActorServiceInterface $actors,
         string $domainObjectType,
         string $domainObjectId,
         string $organizationId,
         ?string $scopeId,
-    ): ?array {
+    ): array {
+        $owners = [];
+
         foreach ($actors->assignmentsFor($domainObjectType, $domainObjectId, $organizationId, $scopeId) as $assignment) {
             if ($assignment->assignmentType !== 'owner') {
                 continue;
@@ -387,17 +393,18 @@ class FindingsRemediationPlugin implements PluginInterface
             $actor = $actors->findActor($assignment->functionalActorId);
 
             if ($actor === null) {
-                return null;
+                continue;
             }
 
-            return [
+            $owners[] = [
                 'id' => $actor->id,
+                'assignment_id' => $assignment->id,
                 'display_name' => $actor->displayName,
                 'kind' => $actor->kind,
             ];
         }
 
-        return null;
+        return $owners;
     }
 
     /**

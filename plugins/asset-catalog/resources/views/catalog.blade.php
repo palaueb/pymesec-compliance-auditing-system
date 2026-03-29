@@ -67,7 +67,7 @@
                         </select>
                     </div>
                     <div class="field">
-                        <label class="field-label" for="asset-owner-actor">Owner actor</label>
+                        <label class="field-label" for="asset-owner-actor">Initial owner actor</label>
                         <select class="field-select" id="asset-owner-actor" name="owner_actor_id">
                             <option value="">No actor owner</option>
                             @foreach ($owner_actor_options as $actor)
@@ -131,10 +131,28 @@
 
             {{-- Owner --}}
             <div class="surface-card" style="padding:14px; background:rgba(255,255,255,0.4);">
-                <div class="metric-label" style="margin-bottom:8px;">Owner</div>
-                @if ($selected_asset['owner_assignment'] !== null)
-                    <div class="entity-title" style="font-size:14px;">{{ $selected_asset['owner_assignment']['display_name'] }}</div>
-                    <div class="table-note">{{ $selected_asset['owner_assignment']['kind'] }}</div>
+                <div class="metric-label" style="margin-bottom:8px;">Owners</div>
+                @if (($selected_asset['owner_assignments'] ?? []) !== [])
+                    <div class="data-stack">
+                        @foreach ($selected_asset['owner_assignments'] as $owner)
+                            <div class="data-item">
+                                <div class="entity-title" style="font-size:14px;">{{ $owner['display_name'] }}</div>
+                                <div class="table-note">{{ $owner['kind'] }}</div>
+                                @if ($can_manage_assets)
+                                    <form method="POST" action="{{ str_replace('__ASSIGNMENT__', $owner['assignment_id'], $selected_asset['owner_remove_route']) }}" style="margin-top:8px;">
+                                        @csrf
+                                        <input type="hidden" name="principal_id" value="{{ $query['principal_id'] ?? '' }}">
+                                        <input type="hidden" name="organization_id" value="{{ $query['organization_id'] }}">
+                                        <input type="hidden" name="locale" value="{{ $query['locale'] }}">
+                                        <input type="hidden" name="menu" value="plugin.asset-catalog.root">
+                                        <input type="hidden" name="asset_id" value="{{ $selected_asset['id'] }}">
+                                        <input type="hidden" name="membership_id" value="{{ $query['membership_ids'][0] ?? 'membership-org-a-hello' }}">
+                                        <button class="button button-ghost" type="submit">Remove owner</button>
+                                    </form>
+                                @endif
+                            </div>
+                        @endforeach
+                    </div>
                 @else
                     <div class="table-note">{{ $selected_asset['owner_label'] !== '' ? 'Legacy owner label: '.$selected_asset['owner_label'] : 'No owner assigned' }}</div>
                 @endif
@@ -226,13 +244,14 @@
                                 </select>
                             </div>
                             <div class="field">
-                                <label class="field-label">Owner actor</label>
+                                <label class="field-label">Add owner actor</label>
                                 <select class="field-select" name="owner_actor_id">
-                                    <option value="">Keep current owner</option>
+                                    <option value="">Do not add owner</option>
                                     @foreach ($owner_actor_options as $actor)
-                                        <option value="{{ $actor['id'] }}" @selected(($selected_asset['owner_assignment']['id'] ?? null) === $actor['id'])>{{ $actor['label'] }}</option>
+                                        <option value="{{ $actor['id'] }}">{{ $actor['label'] }}</option>
                                     @endforeach
                                 </select>
+                                <div class="table-note">Selecting an actor adds another accountable owner instead of replacing the current set.</div>
                             </div>
                         </div>
                         <div class="action-cluster" style="margin-top:14px;">
@@ -280,9 +299,13 @@
                                 <span class="pill {{ $critPill }}" style="margin-top:4px; display:inline-block;">{{ $asset['criticality_label'] }}</span>
                             </td>
                             <td>
-                                @if ($asset['owner_assignment'] !== null)
-                                    <div>{{ $asset['owner_assignment']['display_name'] }}</div>
-                                    <div class="table-note">{{ $asset['owner_assignment']['kind'] }}</div>
+                                @if (($asset['owner_assignments'] ?? []) !== [])
+                                    <div>{{ $asset['owner_assignments'][0]['display_name'] }}</div>
+                                    @if (count($asset['owner_assignments']) > 1)
+                                        <div class="table-note">+{{ count($asset['owner_assignments']) - 1 }} more owner{{ count($asset['owner_assignments']) > 2 ? 's' : '' }}</div>
+                                    @else
+                                        <div class="table-note">{{ $asset['owner_assignments'][0]['kind'] }}</div>
+                                    @endif
                                 @else
                                     <span class="table-note">{{ $asset['owner_label'] !== '' ? 'Legacy owner label' : 'No owner' }}</span>
                                 @endif

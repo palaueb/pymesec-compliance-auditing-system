@@ -23,7 +23,9 @@ class ContinuityBcmPlugin implements PluginInterface
 {
     public function register(PluginContext $context): void
     {
-        $context->app()->singleton(ContinuityBcmRepository::class, fn () => new ContinuityBcmRepository());
+        $context->app()->singleton(ContinuityBcmRepository::class, fn ($app) => new ContinuityBcmRepository(
+            $app->make(\PymeSec\Core\Security\ContextualReferenceValidator::class),
+        ));
 
         $context->app()->make(WorkflowRegistryInterface::class)->register(new WorkflowDefinition(
             key: 'plugin.continuity-bcm.service-lifecycle',
@@ -228,7 +230,7 @@ class ContinuityBcmPlugin implements PluginInterface
             $services[] = [
                 ...$service,
                 'impact_tier_label' => ContinuityReferenceData::impactTierLabel($service['impact_tier']),
-                'owner_assignment' => $this->ownerAssignment($actors, 'continuity-service', $service['id'], $organizationId, $screenContext->scopeId),
+                'owner_assignments' => $this->ownerAssignments($actors, 'continuity-service', $service['id'], $organizationId, $screenContext->scopeId),
                 'artifacts' => array_map(
                     static fn ($artifact): array => $artifact->toArray(),
                     $artifacts->forSubject('continuity-service', $service['id'], $organizationId, $screenContext->scopeId, 5),
@@ -238,6 +240,7 @@ class ContinuityBcmPlugin implements PluginInterface
                 'transition_route' => route('plugin.continuity-bcm.transition', ['serviceId' => $service['id'], 'transitionKey' => '__TRANSITION__']),
                 'artifact_upload_route' => route('plugin.continuity-bcm.artifacts.store', ['serviceId' => $service['id']]),
                 'update_route' => route('plugin.continuity-bcm.update', ['serviceId' => $service['id']]),
+                'owner_remove_route' => route('plugin.continuity-bcm.owners.destroy', ['serviceId' => $service['id'], 'assignmentId' => '__ASSIGNMENT__']),
                 'plan_store_route' => route('plugin.continuity-bcm.plans.store', ['serviceId' => $service['id']]),
                 'dependency_store_route' => route('plugin.continuity-bcm.dependencies.store', ['serviceId' => $service['id']]),
                 'plan_count' => count($plans),
@@ -361,7 +364,7 @@ class ContinuityBcmPlugin implements PluginInterface
             $plans[] = [
                 ...$plan,
                 'service' => $service,
-                'owner_assignment' => $this->ownerAssignment($actors, 'continuity-plan', $plan['id'], $organizationId, $screenContext->scopeId),
+                'owner_assignments' => $this->ownerAssignments($actors, 'continuity-plan', $plan['id'], $organizationId, $screenContext->scopeId),
                 'artifacts' => array_map(
                     static fn ($artifact): array => $artifact->toArray(),
                     $artifacts->forSubject('continuity-plan', $plan['id'], $organizationId, $screenContext->scopeId, 5),
@@ -371,6 +374,7 @@ class ContinuityBcmPlugin implements PluginInterface
                 'transition_route' => route('plugin.continuity-bcm.plans.transition', ['planId' => $plan['id'], 'transitionKey' => '__TRANSITION__']),
                 'artifact_upload_route' => route('plugin.continuity-bcm.plans.artifacts.store', ['planId' => $plan['id']]),
                 'update_route' => route('plugin.continuity-bcm.plans.update', ['planId' => $plan['id']]),
+                'owner_remove_route' => route('plugin.continuity-bcm.plans.owners.destroy', ['planId' => $plan['id'], 'assignmentId' => '__ASSIGNMENT__']),
                 'exercise_store_route' => route('plugin.continuity-bcm.plans.exercises.store', ['planId' => $plan['id']]),
                 'execution_store_route' => route('plugin.continuity-bcm.plans.executions.store', ['planId' => $plan['id']]),
                 'exercises' => array_map(static fn (array $exercise): array => [
@@ -480,15 +484,17 @@ class ContinuityBcmPlugin implements PluginInterface
     }
 
     /**
-     * @return array<string, string>|null
+     * @return array<int, array{id: string, assignment_id: string, display_name: string, kind: string}>
      */
-    private function ownerAssignment(
+    private function ownerAssignments(
         FunctionalActorServiceInterface $actors,
         string $domainObjectType,
         string $domainObjectId,
         string $organizationId,
         ?string $scopeId,
-    ): ?array {
+    ): array {
+        $owners = [];
+
         foreach ($actors->assignmentsFor($domainObjectType, $domainObjectId, $organizationId, $scopeId) as $assignment) {
             if ($assignment->assignmentType !== 'owner') {
                 continue;
@@ -497,17 +503,18 @@ class ContinuityBcmPlugin implements PluginInterface
             $actor = $actors->findActor($assignment->functionalActorId);
 
             if ($actor === null) {
-                return null;
+                continue;
             }
 
-            return [
+            $owners[] = [
                 'id' => $actor->id,
+                'assignment_id' => $assignment->id,
                 'display_name' => $actor->displayName,
                 'kind' => $actor->kind,
             ];
         }
 
-        return null;
+        return $owners;
     }
 
     /**

@@ -4,9 +4,14 @@ namespace PymeSec\Plugins\DataFlowsPrivacy;
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use PymeSec\Core\Security\ContextualReferenceValidator;
 
 class DataFlowsPrivacyRepository
 {
+    public function __construct(
+        private readonly ContextualReferenceValidator $references,
+    ) {}
+
     /**
      * @return array<int, array<string, string>>
      */
@@ -42,6 +47,25 @@ class DataFlowsPrivacyRepository
      */
     public function createDataFlow(array $data): array
     {
+        $scopeId = ($data['scope_id'] ?? null) ?: null;
+
+        $this->references->assertRecord(
+            recordId: ($data['linked_asset_id'] ?? null) ?: null,
+            table: 'assets',
+            organizationId: (string) $data['organization_id'],
+            scopeId: is_string($scopeId) ? $scopeId : null,
+            field: 'linked_asset_id',
+            message: 'The selected linked asset is invalid for this organization or scope.',
+        );
+        $this->references->assertRecord(
+            recordId: ($data['linked_risk_id'] ?? null) ?: null,
+            table: 'risks',
+            organizationId: (string) $data['organization_id'],
+            scopeId: is_string($scopeId) ? $scopeId : null,
+            field: 'linked_risk_id',
+            message: 'The selected linked risk is invalid for this organization or scope.',
+        );
+
         $id = $this->nextId('data-flow', (string) ($data['title'] ?? 'data-flow'), 'privacy_data_flows');
 
         DB::table('privacy_data_flows')->insert([
@@ -72,6 +96,25 @@ class DataFlowsPrivacyRepository
      */
     public function updateDataFlow(string $flowId, array $data): ?array
     {
+        $scopeId = ($data['scope_id'] ?? null) ?: null;
+
+        $this->references->assertRecord(
+            recordId: ($data['linked_asset_id'] ?? null) ?: null,
+            table: 'assets',
+            organizationId: (string) $data['organization_id'],
+            scopeId: is_string($scopeId) ? $scopeId : null,
+            field: 'linked_asset_id',
+            message: 'The selected linked asset is invalid for this organization or scope.',
+        );
+        $this->references->assertRecord(
+            recordId: ($data['linked_risk_id'] ?? null) ?: null,
+            table: 'risks',
+            organizationId: (string) $data['organization_id'],
+            scopeId: is_string($scopeId) ? $scopeId : null,
+            field: 'linked_risk_id',
+            message: 'The selected linked risk is invalid for this organization or scope.',
+        );
+
         $updated = DB::table('privacy_data_flows')
             ->where('id', $flowId)
             ->update([
@@ -129,6 +172,41 @@ class DataFlowsPrivacyRepository
      */
     public function createProcessingActivity(array $data): array
     {
+        $scopeId = ($data['scope_id'] ?? null) ?: null;
+
+        $this->references->assertDelimitedRecords(
+            recordIds: ($data['linked_data_flow_ids'] ?? null) ?: null,
+            table: 'privacy_data_flows',
+            organizationId: (string) $data['organization_id'],
+            scopeId: is_string($scopeId) ? $scopeId : null,
+            field: 'linked_data_flow_ids',
+            message: 'The selected linked data flow is invalid for this organization or scope.',
+        );
+        $this->references->assertDelimitedRecords(
+            recordIds: ($data['linked_risk_ids'] ?? null) ?: null,
+            table: 'risks',
+            organizationId: (string) $data['organization_id'],
+            scopeId: is_string($scopeId) ? $scopeId : null,
+            field: 'linked_risk_ids',
+            message: 'The selected linked risk is invalid for this organization or scope.',
+        );
+        $this->references->assertRecord(
+            recordId: ($data['linked_policy_id'] ?? null) ?: null,
+            table: 'policies',
+            organizationId: (string) $data['organization_id'],
+            scopeId: is_string($scopeId) ? $scopeId : null,
+            field: 'linked_policy_id',
+            message: 'The selected linked policy is invalid for this organization or scope.',
+        );
+        $this->references->assertRecord(
+            recordId: ($data['linked_finding_id'] ?? null) ?: null,
+            table: 'findings',
+            organizationId: (string) $data['organization_id'],
+            scopeId: is_string($scopeId) ? $scopeId : null,
+            field: 'linked_finding_id',
+            message: 'The selected linked finding is invalid for this organization or scope.',
+        );
+
         $id = $this->nextId('processing-activity', (string) ($data['title'] ?? 'processing-activity'), 'privacy_processing_activities');
 
         DB::table('privacy_processing_activities')->insert([
@@ -159,6 +237,41 @@ class DataFlowsPrivacyRepository
      */
     public function updateProcessingActivity(string $activityId, array $data): ?array
     {
+        $scopeId = ($data['scope_id'] ?? null) ?: null;
+
+        $this->references->assertDelimitedRecords(
+            recordIds: ($data['linked_data_flow_ids'] ?? null) ?: null,
+            table: 'privacy_data_flows',
+            organizationId: (string) $data['organization_id'],
+            scopeId: is_string($scopeId) ? $scopeId : null,
+            field: 'linked_data_flow_ids',
+            message: 'The selected linked data flow is invalid for this organization or scope.',
+        );
+        $this->references->assertDelimitedRecords(
+            recordIds: ($data['linked_risk_ids'] ?? null) ?: null,
+            table: 'risks',
+            organizationId: (string) $data['organization_id'],
+            scopeId: is_string($scopeId) ? $scopeId : null,
+            field: 'linked_risk_ids',
+            message: 'The selected linked risk is invalid for this organization or scope.',
+        );
+        $this->references->assertRecord(
+            recordId: ($data['linked_policy_id'] ?? null) ?: null,
+            table: 'policies',
+            organizationId: (string) $data['organization_id'],
+            scopeId: is_string($scopeId) ? $scopeId : null,
+            field: 'linked_policy_id',
+            message: 'The selected linked policy is invalid for this organization or scope.',
+        );
+        $this->references->assertRecord(
+            recordId: ($data['linked_finding_id'] ?? null) ?: null,
+            table: 'findings',
+            organizationId: (string) $data['organization_id'],
+            scopeId: is_string($scopeId) ? $scopeId : null,
+            field: 'linked_finding_id',
+            message: 'The selected linked finding is invalid for this organization or scope.',
+        );
+
         $updated = DB::table('privacy_processing_activities')
             ->where('id', $activityId)
             ->update([

@@ -7,6 +7,7 @@ Use this prompt when the task is to implement or refresh the demo edition of the
 Build the demo edition through the `demo` branch and the `demo_builder/` patch workflow.
 
 The normal application branch must stay free of demo-only runtime concepts unless the user explicitly changes that policy.
+The demo must stay operational as product development continues; when product changes affect the demo surface, updating the exported patch pack is part of completing the work.
 
 ## Non-Negotiable Constraints
 
@@ -16,6 +17,7 @@ The normal application branch must stay free of demo-only runtime concepts unles
 - Generate one patch file per modified source file.
 - Treat `demo_builder/state/` as local metadata only. Never rely on it as versioned source.
 - If `main` drifted on files covered by the patch pack, stop and reconcile before exporting again.
+- When a mainline feature touches demo-relevant screens, flows, or files already represented in `demo_builder/patches/`, treat demo refresh as mandatory, not optional.
 
 ## Available Tools
 
@@ -36,6 +38,7 @@ The normal application branch must stay free of demo-only runtime concepts unles
 7. Run `./demo_builder/demo-builder.sh drift` to ensure the exported patch targets still match the base branch state.
 8. Review the generated files under `demo_builder/patches/`.
 9. Commit the builder updates on `main`.
+10. Do not declare the feature complete until the demo impact has been checked and the patch pack has been refreshed when required.
 
 ## When Refreshing an Existing Demo Patch Pack
 

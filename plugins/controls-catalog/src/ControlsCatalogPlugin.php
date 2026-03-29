@@ -248,7 +248,7 @@ class ControlsCatalogPlugin implements PluginInterface
             $controls[] = [
                 ...$control,
                 'open_url' => route('core.shell.index', [...$this->baseQuery($screenContext), 'menu' => 'plugin.controls-catalog.root', 'control_id' => $control['id']]),
-                'owner_assignment' => $this->ownerAssignment($actors, $control['id'], $organizationId, $screenContext->scopeId),
+                'owner_assignments' => $this->ownerAssignments($actors, $control['id'], $organizationId, $screenContext->scopeId),
                 'artifacts' => array_map(
                     static fn ($artifact): array => $artifact->toArray(),
                     $artifacts->forSubject('control', $control['id'], $organizationId, $screenContext->scopeId, 5),
@@ -258,6 +258,7 @@ class ControlsCatalogPlugin implements PluginInterface
                 'transition_route' => route('plugin.controls-catalog.transition', ['controlId' => $control['id'], 'transitionKey' => '__TRANSITION__']),
                 'artifact_upload_route' => route('plugin.controls-catalog.artifacts.store', ['controlId' => $control['id']]),
                 'update_route' => route('plugin.controls-catalog.update', ['controlId' => $control['id']]),
+                'owner_remove_route' => route('plugin.controls-catalog.owners.destroy', ['controlId' => $control['id'], 'assignmentId' => '__ASSIGNMENT__']),
                 'attach_requirement_route' => route('plugin.controls-catalog.requirements.attach', ['controlId' => $control['id']]),
                 'requirements' => $requirementsByControl[$control['id']] ?? [],
             ];
@@ -607,14 +608,16 @@ class ControlsCatalogPlugin implements PluginInterface
     }
 
     /**
-     * @return array<string, string> | null
+     * @return array<int, array{id: string, assignment_id: string, display_name: string, kind: string}>
      */
-    private function ownerAssignment(
+    private function ownerAssignments(
         FunctionalActorServiceInterface $actors,
         string $controlId,
         string $organizationId,
         ?string $scopeId,
-    ): ?array {
+    ): array {
+        $owners = [];
+
         foreach ($actors->assignmentsFor('control', $controlId, $organizationId, $scopeId) as $assignment) {
             if ($assignment->assignmentType !== 'owner') {
                 continue;
@@ -623,17 +626,18 @@ class ControlsCatalogPlugin implements PluginInterface
             $actor = $actors->findActor($assignment->functionalActorId);
 
             if ($actor === null) {
-                return null;
+                continue;
             }
 
-            return [
+            $owners[] = [
                 'id' => $actor->id,
+                'assignment_id' => $assignment->id,
                 'display_name' => $actor->displayName,
                 'kind' => $actor->kind,
             ];
         }
 
-        return null;
+        return $owners;
     }
 
     /**

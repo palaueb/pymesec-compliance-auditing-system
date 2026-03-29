@@ -23,7 +23,9 @@ class RiskManagementPlugin implements PluginInterface
 {
     public function register(PluginContext $context): void
     {
-        $context->app()->singleton(RiskRepository::class, fn () => new RiskRepository());
+        $context->app()->singleton(RiskRepository::class, fn ($app) => new RiskRepository(
+            $app->make(\PymeSec\Core\Security\ContextualReferenceValidator::class),
+        ));
 
         $context->app()->make(WorkflowRegistryInterface::class)->register(new WorkflowDefinition(
             key: 'plugin.risk-management.risk-lifecycle',
@@ -178,7 +180,7 @@ class RiskManagementPlugin implements PluginInterface
             $risks[] = [
                 ...$risk,
                 'category_label' => RiskReferenceData::categoryLabel($risk['category']),
-                'owner_assignment' => $this->ownerAssignment($actors, $risk['id'], $organizationId, $screenContext->scopeId),
+                'owner_assignments' => $this->ownerAssignments($actors, $risk['id'], $organizationId, $screenContext->scopeId),
                 'artifacts' => array_map(
                     static fn ($artifact): array => $artifact->toArray(),
                     $artifacts->forSubject('risk', $risk['id'], $organizationId, $screenContext->scopeId, 5),
@@ -188,6 +190,7 @@ class RiskManagementPlugin implements PluginInterface
                 'transition_route' => route('plugin.risk-management.transition', ['riskId' => $risk['id'], 'transitionKey' => '__TRANSITION__']),
                 'artifact_upload_route' => route('plugin.risk-management.artifacts.store', ['riskId' => $risk['id']]),
                 'update_route' => route('plugin.risk-management.update', ['riskId' => $risk['id']]),
+                'owner_remove_route' => route('plugin.risk-management.owners.destroy', ['riskId' => $risk['id'], 'assignmentId' => '__ASSIGNMENT__']),
                 'linked_asset_label' => $assetLabels[$risk['linked_asset_id']] ?? null,
                 'linked_control_label' => $controlLabels[$risk['linked_control_id']] ?? null,
                 'history' => $workflow->history('plugin.risk-management.risk-lifecycle', 'risk', $risk['id']),
@@ -323,14 +326,16 @@ class RiskManagementPlugin implements PluginInterface
     }
 
     /**
-     * @return array<string, string> | null
+     * @return array<int, array{id: string, assignment_id: string, display_name: string, kind: string}>
      */
-    private function ownerAssignment(
+    private function ownerAssignments(
         FunctionalActorServiceInterface $actors,
         string $riskId,
         string $organizationId,
         ?string $scopeId,
-    ): ?array {
+    ): array {
+        $owners = [];
+
         foreach ($actors->assignmentsFor('risk', $riskId, $organizationId, $scopeId) as $assignment) {
             if ($assignment->assignmentType !== 'owner') {
                 continue;
@@ -339,17 +344,18 @@ class RiskManagementPlugin implements PluginInterface
             $actor = $actors->findActor($assignment->functionalActorId);
 
             if ($actor === null) {
-                return null;
+                continue;
             }
 
-            return [
+            $owners[] = [
                 'id' => $actor->id,
+                'assignment_id' => $assignment->id,
                 'display_name' => $actor->displayName,
                 'kind' => $actor->kind,
             ];
         }
 
-        return null;
+        return $owners;
     }
 
     /**

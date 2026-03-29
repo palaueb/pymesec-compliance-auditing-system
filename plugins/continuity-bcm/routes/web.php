@@ -2,6 +2,7 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use PymeSec\Core\Artifacts\ArtifactUploadData;
 use PymeSec\Core\Artifacts\Contracts\ArtifactServiceInterface;
@@ -68,7 +69,7 @@ Route::post('/plugins/continuity/services', function (
     $membershipId = $request->input('membership_id');
 
     if (is_string($validated['owner_actor_id'] ?? null) && $validated['owner_actor_id'] !== '') {
-        $actors->syncSingleAssignment(
+        $actors->assignActor(
             actorId: $validated['owner_actor_id'],
             domainObjectType: 'continuity-service',
             domainObjectId: $service['id'],
@@ -166,7 +167,7 @@ Route::post('/plugins/continuity/services/{serviceId}', function (
     $membershipId = $request->input('membership_id');
 
     if (is_string($validated['owner_actor_id'] ?? null) && $validated['owner_actor_id'] !== '') {
-        $actors->syncSingleAssignment(
+        $actors->assignActor(
             actorId: $validated['owner_actor_id'],
             domainObjectType: 'continuity-service',
             domainObjectId: $service['id'],
@@ -178,6 +179,16 @@ Route::post('/plugins/continuity/services/{serviceId}', function (
         );
     }
 
+    DB::table('functional_assignments')
+        ->where('domain_object_type', 'continuity-service')
+        ->where('domain_object_id', $service['id'])
+        ->where('organization_id', $service['organization_id'])
+        ->where('is_active', true)
+        ->update([
+            'scope_id' => $service['scope_id'] !== '' ? $service['scope_id'] : null,
+            'updated_at' => now(),
+        ]);
+
     return redirect()->route('core.shell.index', array_filter([
         'menu' => 'plugin.continuity-bcm.root',
         'service_id' => $service['id'],
@@ -188,6 +199,53 @@ Route::post('/plugins/continuity/services/{serviceId}', function (
         'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
     ]))->with('status', 'Saved.');
 })->middleware('core.permission:plugin.continuity-bcm.plans.manage')->name('plugin.continuity-bcm.update');
+
+Route::post('/plugins/continuity/services/{serviceId}/owners/{assignmentId}/remove', function (
+    Request $request,
+    string $serviceId,
+    string $assignmentId,
+    ContinuityBcmRepository $repository,
+    FunctionalActorServiceInterface $actors,
+    ObjectAccessService $objectAccess,
+) {
+    $service = $repository->findService($serviceId);
+
+    abort_if($service === null, 404);
+
+    $principalId = (string) $request->input('principal_id', 'principal-org-a');
+    abort_unless($objectAccess->canAccessObject(
+        principalId: $principalId,
+        organizationId: $service['organization_id'],
+        scopeId: $service['scope_id'] !== '' ? $service['scope_id'] : null,
+        domainObjectType: 'continuity-service',
+        domainObjectId: $service['id'],
+    ), 403);
+
+    $assignment = collect($actors->assignmentsFor(
+        domainObjectType: 'continuity-service',
+        domainObjectId: $service['id'],
+        organizationId: $service['organization_id'],
+        scopeId: $service['scope_id'] !== '' ? $service['scope_id'] : null,
+    ))->first(fn ($candidate) => $candidate->id === $assignmentId && $candidate->assignmentType === 'owner');
+
+    abort_if($assignment === null, 404);
+
+    $membershipId = $request->input('membership_id');
+    $actors->deactivateAssignment(
+        assignmentId: $assignmentId,
+        deactivatedByPrincipalId: $principalId,
+    );
+
+    return redirect()->route('core.shell.index', array_filter([
+        'menu' => 'plugin.continuity-bcm.root',
+        'service_id' => $service['id'],
+        'principal_id' => $principalId,
+        'organization_id' => $service['organization_id'],
+        'scope_id' => $service['scope_id'] !== '' ? $service['scope_id'] : null,
+        'locale' => $request->input('locale', 'en'),
+        'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
+    ]))->with('status', 'Owner removed.');
+})->middleware('core.permission:plugin.continuity-bcm.plans.manage')->name('plugin.continuity-bcm.owners.destroy');
 
 Route::post('/plugins/continuity/services/{serviceId}/artifacts', function (
     Request $request,
@@ -323,7 +381,7 @@ Route::post('/plugins/continuity/services/{serviceId}/plans', function (
     $membershipId = $request->input('membership_id');
 
     if (is_string($validated['owner_actor_id'] ?? null) && $validated['owner_actor_id'] !== '') {
-        $actors->syncSingleAssignment(
+        $actors->assignActor(
             actorId: $validated['owner_actor_id'],
             domainObjectType: 'continuity-plan',
             domainObjectId: $plan['id'],
@@ -461,7 +519,7 @@ Route::post('/plugins/continuity/plans/{planId}', function (
     $membershipId = $request->input('membership_id');
 
     if (is_string($validated['owner_actor_id'] ?? null) && $validated['owner_actor_id'] !== '') {
-        $actors->syncSingleAssignment(
+        $actors->assignActor(
             actorId: $validated['owner_actor_id'],
             domainObjectType: 'continuity-plan',
             domainObjectId: $plan['id'],
@@ -473,6 +531,16 @@ Route::post('/plugins/continuity/plans/{planId}', function (
         );
     }
 
+    DB::table('functional_assignments')
+        ->where('domain_object_type', 'continuity-plan')
+        ->where('domain_object_id', $plan['id'])
+        ->where('organization_id', $plan['organization_id'])
+        ->where('is_active', true)
+        ->update([
+            'scope_id' => $plan['scope_id'] !== '' ? $plan['scope_id'] : null,
+            'updated_at' => now(),
+        ]);
+
     return redirect()->route('core.shell.index', array_filter([
         'menu' => 'plugin.continuity-bcm.plans',
         'plan_id' => $plan['id'],
@@ -483,6 +551,53 @@ Route::post('/plugins/continuity/plans/{planId}', function (
         'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
     ]))->with('status', 'Saved.');
 })->middleware('core.permission:plugin.continuity-bcm.plans.manage')->name('plugin.continuity-bcm.plans.update');
+
+Route::post('/plugins/continuity/plans/{planId}/owners/{assignmentId}/remove', function (
+    Request $request,
+    string $planId,
+    string $assignmentId,
+    ContinuityBcmRepository $repository,
+    FunctionalActorServiceInterface $actors,
+    ObjectAccessService $objectAccess,
+) {
+    $plan = $repository->findPlan($planId);
+
+    abort_if($plan === null, 404);
+
+    $principalId = (string) $request->input('principal_id', 'principal-org-a');
+    abort_unless($objectAccess->canAccessObject(
+        principalId: $principalId,
+        organizationId: $plan['organization_id'],
+        scopeId: $plan['scope_id'] !== '' ? $plan['scope_id'] : null,
+        domainObjectType: 'continuity-plan',
+        domainObjectId: $plan['id'],
+    ), 403);
+
+    $assignment = collect($actors->assignmentsFor(
+        domainObjectType: 'continuity-plan',
+        domainObjectId: $plan['id'],
+        organizationId: $plan['organization_id'],
+        scopeId: $plan['scope_id'] !== '' ? $plan['scope_id'] : null,
+    ))->first(fn ($candidate) => $candidate->id === $assignmentId && $candidate->assignmentType === 'owner');
+
+    abort_if($assignment === null, 404);
+
+    $membershipId = $request->input('membership_id');
+    $actors->deactivateAssignment(
+        assignmentId: $assignmentId,
+        deactivatedByPrincipalId: $principalId,
+    );
+
+    return redirect()->route('core.shell.index', array_filter([
+        'menu' => 'plugin.continuity-bcm.plans',
+        'plan_id' => $plan['id'],
+        'principal_id' => $principalId,
+        'organization_id' => $plan['organization_id'],
+        'scope_id' => $plan['scope_id'] !== '' ? $plan['scope_id'] : null,
+        'locale' => $request->input('locale', 'en'),
+        'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
+    ]))->with('status', 'Owner removed.');
+})->middleware('core.permission:plugin.continuity-bcm.plans.manage')->name('plugin.continuity-bcm.plans.owners.destroy');
 
 Route::post('/plugins/continuity/plans/{planId}/artifacts', function (
     Request $request,

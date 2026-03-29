@@ -17,7 +17,9 @@ class AssessmentsAuditsPlugin implements PluginInterface
 {
     public function register(PluginContext $context): void
     {
-        $context->app()->singleton(AssessmentsAuditsRepository::class, fn () => new AssessmentsAuditsRepository());
+        $context->app()->singleton(AssessmentsAuditsRepository::class, fn ($app) => new AssessmentsAuditsRepository(
+            $app->make(\PymeSec\Core\Security\ContextualReferenceValidator::class),
+        ));
 
         $context->registerScreen(new ScreenDefinition(
             menuId: 'plugin.assessments-audits.root',

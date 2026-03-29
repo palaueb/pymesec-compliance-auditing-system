@@ -4,6 +4,7 @@ namespace PymeSec\Core\FunctionalActors;
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use PymeSec\Core\Audit\AuditRecordData;
 use PymeSec\Core\Audit\Contracts\AuditTrailInterface;
 use PymeSec\Core\Events\Contracts\EventBusInterface;
@@ -179,6 +180,25 @@ class DatabaseFunctionalActorService implements FunctionalActorServiceInterface
         array $metadata = [],
         ?string $assignedByPrincipalId = null,
     ): FunctionalAssignment {
+        $actor = $this->findActor($actorId);
+
+        if ($actor === null || $actor->organizationId !== $organizationId) {
+            throw ValidationException::withMessages([
+                'owner_actor_id' => 'The selected owner actor is invalid for this organization or scope.',
+            ]);
+        }
+
+        if (
+            is_string($scopeId) && $scopeId !== ''
+            && is_string($actor->scopeId)
+            && $actor->scopeId !== ''
+            && $actor->scopeId !== $scopeId
+        ) {
+            throw ValidationException::withMessages([
+                'owner_actor_id' => 'The selected owner actor is invalid for this organization or scope.',
+            ]);
+        }
+
         $existing = DB::table('functional_assignments')
             ->where('functional_actor_id', $actorId)
             ->where('domain_object_type', $domainObjectType)
@@ -297,6 +317,64 @@ class DatabaseFunctionalActorService implements FunctionalActorServiceInterface
             metadata: $metadata,
             assignedByPrincipalId: $assignedByPrincipalId,
         );
+    }
+
+    public function deactivateAssignment(
+        string $assignmentId,
+        ?string $deactivatedByPrincipalId = null,
+    ): void {
+        $record = DB::table('functional_assignments')
+            ->where('id', $assignmentId)
+            ->first();
+
+        if ($record === null || ! (bool) ($record->is_active ?? false)) {
+            return;
+        }
+
+        DB::table('functional_assignments')
+            ->where('id', $assignmentId)
+            ->update([
+                'is_active' => false,
+                'updated_at' => now(),
+            ]);
+
+        $organizationId = is_string($record->organization_id ?? null) ? $record->organization_id : null;
+        $scopeId = is_string($record->scope_id ?? null) && $record->scope_id !== '' ? $record->scope_id : null;
+        $domainObjectType = (string) ($record->domain_object_type ?? 'functional_assignment');
+        $domainObjectId = (string) ($record->domain_object_id ?? $assignmentId);
+        $assignmentType = (string) ($record->assignment_type ?? '');
+        $functionalActorId = (string) ($record->functional_actor_id ?? '');
+
+        $this->audit->record(new AuditRecordData(
+            eventType: 'core.functional-actors.assignment.deactivated',
+            outcome: 'success',
+            originComponent: 'core',
+            principalId: $deactivatedByPrincipalId,
+            organizationId: $organizationId,
+            scopeId: $scopeId,
+            targetType: $domainObjectType,
+            targetId: $domainObjectId,
+            summary: [
+                'assignment_id' => $assignmentId,
+                'assignment_type' => $assignmentType,
+                'functional_actor_id' => $functionalActorId,
+            ],
+            executionOrigin: 'functional-actors',
+        ));
+
+        $this->events->publish(new PublicEvent(
+            name: 'core.functional-actors.assignment.deactivated',
+            originComponent: 'core',
+            organizationId: $organizationId,
+            scopeId: $scopeId,
+            payload: [
+                'assignment_id' => $assignmentId,
+                'functional_actor_id' => $functionalActorId,
+                'domain_object_type' => $domainObjectType,
+                'domain_object_id' => $domainObjectId,
+                'assignment_type' => $assignmentType,
+            ],
+        ));
     }
 
     public function linksForPrincipal(string $principalId, ?string $organizationId = null): array

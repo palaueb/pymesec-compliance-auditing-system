@@ -25,7 +25,29 @@
                     <div class="table-note" style="margin-top:12px;">Policy: {{ $selected_plan['linked_policy_id'] !== '' ? $selected_plan['linked_policy_id'] : 'None' }}</div>
                     <div class="table-note">Finding: {{ $selected_plan['linked_finding_id'] !== '' ? $selected_plan['linked_finding_id'] : 'None' }}</div>
                     <div class="table-note">Scope: {{ $selected_plan['scope_id'] !== '' ? $selected_plan['scope_id'] : 'Organization-wide' }}</div>
-                    <div class="table-note">Owner: {{ $selected_plan['owner_assignment']['display_name'] ?? 'No owner assigned' }}</div>
+                    <div class="table-note">Owners: {{ count($selected_plan['owner_assignments']) }}</div>
+                    <div class="data-stack" style="margin-top:10px;">
+                        @forelse ($selected_plan['owner_assignments'] as $owner)
+                            <div class="data-item">
+                                <div class="entity-title">{{ $owner['display_name'] }}</div>
+                                <div class="table-note">{{ $owner['kind'] }}</div>
+                                @if ($can_manage_continuity)
+                                    <form method="POST" action="{{ str_replace('__ASSIGNMENT__', $owner['assignment_id'], $selected_plan['owner_remove_route']) }}" style="margin-top:8px;">
+                                        @csrf
+                                        <input type="hidden" name="principal_id" value="{{ $query['principal_id'] ?? '' }}">
+                                        <input type="hidden" name="organization_id" value="{{ $query['organization_id'] }}">
+                                        <input type="hidden" name="locale" value="{{ $query['locale'] }}">
+                                        <input type="hidden" name="menu" value="plugin.continuity-bcm.plans">
+                                        <input type="hidden" name="plan_id" value="{{ $selected_plan['id'] }}">
+                                        <input type="hidden" name="membership_id" value="{{ $query['membership_ids'][0] ?? 'membership-org-a-hello' }}">
+                                        <button class="button button-ghost" type="submit">Remove owner</button>
+                                    </form>
+                                @endif
+                            </div>
+                        @empty
+                            <span class="muted-note">No owner assigned</span>
+                        @endforelse
+                    </div>
                 </div>
 
                 <div class="surface-card" style="padding:14px;">
@@ -100,14 +122,38 @@
                                     </select>
                                 </div>
                                 <div class="field">
-                                    <label class="field-label">Owner actor</label>
+                                    <label class="field-label">Add owner actor</label>
                                     <select class="field-select" name="owner_actor_id">
-                                        <option value="">Keep current owner</option>
+                                        <option value="">Do not add owner</option>
                                         @foreach ($owner_actor_options as $actor)
-                                            <option value="{{ $actor['id'] }}" @selected(($selected_plan['owner_assignment']['id'] ?? null) === $actor['id'])>{{ $actor['label'] }}</option>
+                                            <option value="{{ $actor['id'] }}">{{ $actor['label'] }}</option>
                                         @endforeach
                                     </select>
+                                    <div class="table-note">Selecting an actor adds another owner instead of replacing the current set.</div>
                                 </div>
+                                @if (($selected_plan['owner_assignments'] ?? []) !== [])
+                                    <div class="field" style="grid-column:1 / -1;">
+                                        <label class="field-label">Current owners</label>
+                                        <div class="data-stack">
+                                            @foreach ($selected_plan['owner_assignments'] as $owner)
+                                                <div class="data-item">
+                                                    <div class="entity-title">{{ $owner['display_name'] }}</div>
+                                                    <div class="table-note">{{ $owner['kind'] }}</div>
+                                                    <form method="POST" action="{{ str_replace('__ASSIGNMENT__', $owner['assignment_id'], $selected_plan['owner_remove_route']) }}" style="margin-top:8px;">
+                                                        @csrf
+                                                        <input type="hidden" name="principal_id" value="{{ $query['principal_id'] ?? '' }}">
+                                                        <input type="hidden" name="organization_id" value="{{ $query['organization_id'] }}">
+                                                        <input type="hidden" name="locale" value="{{ $query['locale'] }}">
+                                                        <input type="hidden" name="menu" value="plugin.continuity-bcm.plans">
+                                                        <input type="hidden" name="plan_id" value="{{ $selected_plan['id'] }}">
+                                                        <input type="hidden" name="membership_id" value="{{ $query['membership_ids'][0] ?? 'membership-org-a-hello' }}">
+                                                        <button class="button button-ghost" type="submit">Remove owner</button>
+                                                    </form>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    </div>
+                                @endif
                                 <div class="action-cluster">
                                     <button class="button button-secondary" type="submit">Save changes</button>
                                 </div>
@@ -305,7 +351,18 @@
                                 <div class="table-note">{{ $plan['strategy_summary'] }}</div>
                             </td>
                             <td>{{ $plan['service']['title'] }}</td>
-                            <td>{{ $plan['owner_assignment']['display_name'] ?? 'No owner assigned' }}</td>
+                            <td>
+                                @if (($plan['owner_assignments'] ?? []) !== [])
+                                    <div>{{ $plan['owner_assignments'][0]['display_name'] }}</div>
+                                    @if (count($plan['owner_assignments']) > 1)
+                                        <div class="table-note">+{{ count($plan['owner_assignments']) - 1 }} more owner{{ count($plan['owner_assignments']) > 2 ? 's' : '' }}</div>
+                                    @else
+                                        <div class="table-note">{{ $plan['owner_assignments'][0]['kind'] }}</div>
+                                    @endif
+                                @else
+                                    <span class="muted-note">No owner assigned</span>
+                                @endif
+                            </td>
                             <td>
                                 @if ($plan['linked_policy_id'] !== '') <span class="tag">Policy</span> @endif
                                 @if ($plan['linked_finding_id'] !== '') <span class="tag">Finding</span> @endif

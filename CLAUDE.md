@@ -15,6 +15,17 @@ docker/     → Docker service definitions
 Makefile    → All common dev commands
 ```
 
+## Demo Governance
+
+The public demo is a maintained product surface, not a disposable side branch.
+
+- Always preserve the demo workflow under `demo_builder/`.
+- Before shipping product changes, assess whether the demo branch or exported patch pack must also be updated.
+- If a change affects demo behavior, demo content, demo auth/setup, or any file already covered by `demo_builder/patches/`, refresh the corresponding demo implementation and regenerate the patch pack.
+- Do not introduce demo-only runtime behavior into `main` unless the user explicitly changes that policy.
+- Treat `demo_builder/state/` as local metadata only; the reviewable source of truth for the demo delta is `demo_builder/patches/`.
+- If `demo_builder/demo-builder.sh drift` reports drift on touched files, reconcile the demo branch before considering the work complete.
+
 ## Key Architecture Rules
 
 These come from accepted ADRs in `docs/adr/` — never work against them:
@@ -80,6 +91,8 @@ php artisan workflows:list
 
 - Base tests use in-memory SQLite with `TestDatabaseSeeder` — fast and isolated
 - Integration tests must hit a real database, never mock it
+- Every product or core change that introduces or touches request parameters, linked IDs, ownership fields, authorization context, or mutable state must ship with tests that prove unauthorized users cannot spoof or modify those parameters outside their real permissions, memberships, roles, scopes, ownership, or quota boundaries.
+- Treat parameter ownership and authorization guarantees as part of the feature definition, not optional hardening after the fact.
 - Run `make test` from repo root
 
 ## Current State (March 2026)

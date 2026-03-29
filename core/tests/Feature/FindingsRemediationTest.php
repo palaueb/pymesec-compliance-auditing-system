@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -103,6 +104,152 @@ class FindingsRemediationTest extends TestCase
             ->assertOk()
             ->assertSee('Upload signed exception evidence log')
             ->assertSee('Evidence collection has started.');
+    }
+
+    public function test_findings_and_actions_support_multiple_owner_assignments_and_owner_removal(): void
+    {
+        $payload = [
+            'principal_id' => 'principal-org-a',
+            'organization_id' => 'org-a',
+            'locale' => 'en',
+            'menu' => 'plugin.findings-remediation.root',
+            'membership_id' => 'membership-org-a-hello',
+        ];
+
+        $this->post('/plugins/findings/finding-access-review-gap', [
+            ...$payload,
+            'title' => 'Access review evidence gap',
+            'severity' => 'high',
+            'description' => 'Quarterly certification evidence is not consistently attached to the review record.',
+            'linked_control_id' => 'control-access-review',
+            'linked_risk_id' => 'risk-access-drift',
+            'due_on' => '2026-04-15',
+            'scope_id' => 'scope-eu',
+            'owner_actor_id' => 'actor-compliance-office',
+        ])->assertFound();
+
+        $this->post('/plugins/findings/finding-access-review-gap', [
+            ...$payload,
+            'title' => 'Access review evidence gap',
+            'severity' => 'high',
+            'description' => 'Quarterly certification evidence is not consistently attached to the review record.',
+            'linked_control_id' => 'control-access-review',
+            'linked_risk_id' => 'risk-access-drift',
+            'due_on' => '2026-04-15',
+            'scope_id' => 'scope-eu',
+            'owner_actor_id' => 'actor-ava-mason',
+        ])->assertFound();
+
+        $findingOwnerAssignments = DB::table('functional_assignments')
+            ->where('domain_object_type', 'finding')
+            ->where('domain_object_id', 'finding-access-review-gap')
+            ->where('assignment_type', 'owner')
+            ->where('is_active', true)
+            ->orderBy('functional_actor_id')
+            ->pluck('functional_actor_id')
+            ->all();
+
+        $this->assertSame(['actor-ava-mason', 'actor-compliance-office'], $findingOwnerAssignments);
+
+        $this->get('/app?menu=plugin.findings-remediation.root&finding_id=finding-access-review-gap&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
+            ->assertOk()
+            ->assertSee('Owners: 2')
+            ->assertSee('Ava Mason')
+            ->assertSee('Compliance Office');
+
+        $findingAssignmentId = (string) DB::table('functional_assignments')
+            ->where('domain_object_type', 'finding')
+            ->where('domain_object_id', 'finding-access-review-gap')
+            ->where('assignment_type', 'owner')
+            ->where('functional_actor_id', 'actor-compliance-office')
+            ->value('id');
+
+        $this->assertNotSame('', $findingAssignmentId);
+
+        $this->post('/plugins/findings/actions/action-quarterly-access-review-package/owners/'.$findingAssignmentId.'/remove', $payload)
+            ->assertStatus(404);
+
+        $this->post("/plugins/findings/finding-access-review-gap/owners/{$findingAssignmentId}/remove", $payload)->assertFound();
+
+        $this->assertFalse((bool) DB::table('functional_assignments')
+            ->where('id', $findingAssignmentId)
+            ->value('is_active'));
+
+        $this->assertSame(
+            ['actor-ava-mason'],
+            DB::table('functional_assignments')
+                ->where('domain_object_type', 'finding')
+                ->where('domain_object_id', 'finding-access-review-gap')
+                ->where('assignment_type', 'owner')
+                ->where('is_active', true)
+                ->orderBy('functional_actor_id')
+                ->pluck('functional_actor_id')
+                ->all()
+        );
+
+        $this->post('/plugins/findings/finding-access-review-gap/actions', [
+            ...$payload,
+            'title' => 'Quarterly access evidence rollup',
+            'status' => 'planned',
+            'notes' => 'Collect evidence from all business units.',
+            'due_on' => '2026-04-10',
+            'owner_actor_id' => 'actor-compliance-office',
+        ])->assertFound();
+
+        $this->post('/plugins/findings/actions/action-quarterly-access-evidence-rollup', [
+            ...$payload,
+            'finding_id' => 'finding-access-review-gap',
+            'title' => 'Quarterly access evidence rollup',
+            'status' => 'planned',
+            'notes' => 'Collect evidence from all business units.',
+            'due_on' => '2026-04-10',
+            'scope_id' => 'scope-eu',
+            'owner_actor_id' => 'actor-ava-mason',
+        ])->assertFound();
+
+        $actionOwnerAssignments = DB::table('functional_assignments')
+            ->where('domain_object_type', 'remediation-action')
+            ->where('domain_object_id', 'action-quarterly-access-evidence-rollup')
+            ->where('assignment_type', 'owner')
+            ->where('is_active', true)
+            ->orderBy('functional_actor_id')
+            ->pluck('functional_actor_id')
+            ->all();
+
+        $this->assertSame(['actor-ava-mason', 'actor-compliance-office'], $actionOwnerAssignments);
+
+        $this->get('/app?menu=plugin.findings-remediation.board&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
+            ->assertOk()
+            ->assertSee('Quarterly access evidence rollup')
+            ->assertSee('Compliance Office')
+            ->assertSee('+1 more owner');
+
+        $actionAssignmentId = (string) DB::table('functional_assignments')
+            ->where('domain_object_type', 'remediation-action')
+            ->where('domain_object_id', 'action-quarterly-access-evidence-rollup')
+            ->where('assignment_type', 'owner')
+            ->where('functional_actor_id', 'actor-compliance-office')
+            ->value('id');
+
+        $this->assertNotSame('', $actionAssignmentId);
+
+        $this->post("/plugins/findings/actions/action-quarterly-access-evidence-rollup/owners/{$actionAssignmentId}/remove", $payload)->assertFound();
+
+        $this->assertFalse((bool) DB::table('functional_assignments')
+            ->where('id', $actionAssignmentId)
+            ->value('is_active'));
+
+        $this->assertSame(
+            ['actor-ava-mason'],
+            DB::table('functional_assignments')
+                ->where('domain_object_type', 'remediation-action')
+                ->where('domain_object_id', 'action-quarterly-access-evidence-rollup')
+                ->where('assignment_type', 'owner')
+                ->where('is_active', true)
+                ->orderBy('functional_actor_id')
+                ->pluck('functional_actor_id')
+                ->all()
+        );
     }
 
     public function test_findings_transition_and_artifact_render_on_the_register(): void

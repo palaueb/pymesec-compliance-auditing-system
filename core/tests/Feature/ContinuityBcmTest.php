@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
@@ -270,5 +271,112 @@ class ContinuityBcmTest extends TestCase
             ])
             ->assertRedirect('/app?menu=plugin.continuity-bcm.plans&plan_id=continuity-plan-support-fallback')
             ->assertSessionHasErrors(['status']);
+    }
+
+    public function test_continuity_services_and_plans_support_multiple_owner_assignments_and_owner_removal(): void
+    {
+        $payload = [
+            'principal_id' => 'principal-org-a',
+            'organization_id' => 'org-a',
+            'locale' => 'en',
+            'membership_id' => 'membership-org-a-hello',
+        ];
+
+        $this->post('/plugins/continuity/services/continuity-service-customer-support', [
+            ...$payload,
+            'menu' => 'plugin.continuity-bcm.root',
+            'service_id' => 'continuity-service-customer-support',
+            'title' => 'Customer Support Operations',
+            'impact_tier' => 'high',
+            'recovery_time_objective_hours' => 8,
+            'recovery_point_objective_hours' => 2,
+            'linked_asset_id' => 'asset-erp-prod',
+            'linked_risk_id' => 'risk-access-drift',
+            'scope_id' => 'scope-eu',
+            'owner_actor_id' => 'actor-compliance-office',
+        ])->assertFound();
+
+        $this->assertSame(['actor-ava-mason', 'actor-compliance-office'], DB::table('functional_assignments')
+            ->where('domain_object_type', 'continuity-service')
+            ->where('domain_object_id', 'continuity-service-customer-support')
+            ->where('assignment_type', 'owner')
+            ->where('is_active', true)
+            ->orderBy('functional_actor_id')
+            ->pluck('functional_actor_id')
+            ->all());
+
+        $this->get('/app?menu=plugin.continuity-bcm.root&service_id=continuity-service-customer-support&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
+            ->assertOk()
+            ->assertSee('Owners: 2')
+            ->assertSee('Ava Mason')
+            ->assertSee('Compliance Office');
+
+        $serviceAssignmentId = (string) DB::table('functional_assignments')
+            ->where('domain_object_type', 'continuity-service')
+            ->where('domain_object_id', 'continuity-service-customer-support')
+            ->where('assignment_type', 'owner')
+            ->where('functional_actor_id', 'actor-compliance-office')
+            ->value('id');
+
+        $this->post("/plugins/continuity/services/continuity-service-customer-support/owners/{$serviceAssignmentId}/remove", [
+            ...$payload,
+            'menu' => 'plugin.continuity-bcm.root',
+        ])->assertFound();
+
+        $this->assertSame(['actor-ava-mason'], DB::table('functional_assignments')
+            ->where('domain_object_type', 'continuity-service')
+            ->where('domain_object_id', 'continuity-service-customer-support')
+            ->where('assignment_type', 'owner')
+            ->where('is_active', true)
+            ->pluck('functional_actor_id')
+            ->all());
+
+        $this->post('/plugins/continuity/plans/continuity-plan-support-fallback', [
+            ...$payload,
+            'menu' => 'plugin.continuity-bcm.plans',
+            'plan_id' => 'continuity-plan-support-fallback',
+            'title' => 'Support fallback rota',
+            'strategy_summary' => 'Switch support intake to the fallback rota and route escalations to the continuity bridge.',
+            'test_due_on' => DB::table('continuity_recovery_plans')->where('id', 'continuity-plan-support-fallback')->value('test_due_on'),
+            'linked_policy_id' => 'policy-access-governance',
+            'linked_finding_id' => 'finding-access-review-gap',
+            'scope_id' => 'scope-eu',
+            'owner_actor_id' => 'actor-ava-mason',
+        ])->assertFound();
+
+        $this->assertSame(['actor-ava-mason', 'actor-compliance-office'], DB::table('functional_assignments')
+            ->where('domain_object_type', 'continuity-plan')
+            ->where('domain_object_id', 'continuity-plan-support-fallback')
+            ->where('assignment_type', 'owner')
+            ->where('is_active', true)
+            ->orderBy('functional_actor_id')
+            ->pluck('functional_actor_id')
+            ->all());
+
+        $this->get('/app?menu=plugin.continuity-bcm.plans&plan_id=continuity-plan-support-fallback&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
+            ->assertOk()
+            ->assertSee('Owners: 2')
+            ->assertSee('Ava Mason')
+            ->assertSee('Compliance Office');
+
+        $planAssignmentId = (string) DB::table('functional_assignments')
+            ->where('domain_object_type', 'continuity-plan')
+            ->where('domain_object_id', 'continuity-plan-support-fallback')
+            ->where('assignment_type', 'owner')
+            ->where('functional_actor_id', 'actor-compliance-office')
+            ->value('id');
+
+        $this->post("/plugins/continuity/plans/continuity-plan-support-fallback/owners/{$planAssignmentId}/remove", [
+            ...$payload,
+            'menu' => 'plugin.continuity-bcm.plans',
+        ])->assertFound();
+
+        $this->assertSame(['actor-ava-mason'], DB::table('functional_assignments')
+            ->where('domain_object_type', 'continuity-plan')
+            ->where('domain_object_id', 'continuity-plan-support-fallback')
+            ->where('assignment_type', 'owner')
+            ->where('is_active', true)
+            ->pluck('functional_actor_id')
+            ->all());
     }
 }

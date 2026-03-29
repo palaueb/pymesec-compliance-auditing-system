@@ -23,7 +23,9 @@ class PolicyExceptionsPlugin implements PluginInterface
 {
     public function register(PluginContext $context): void
     {
-        $context->app()->singleton(PolicyExceptionsRepository::class, fn () => new PolicyExceptionsRepository());
+        $context->app()->singleton(PolicyExceptionsRepository::class, fn ($app) => new PolicyExceptionsRepository(
+            $app->make(\PymeSec\Core\Security\ContextualReferenceValidator::class),
+        ));
 
         $context->app()->make(WorkflowRegistryInterface::class)->register(new WorkflowDefinition(
             key: 'plugin.policy-exceptions.policy-lifecycle',
@@ -240,7 +242,8 @@ class PolicyExceptionsPlugin implements PluginInterface
                 $policyExceptions[] = [
                     ...$exception,
                     'state' => $exceptionInstance->currentState,
-                    'owner_assignment' => $this->ownerAssignment($actors, 'policy-exception', $exception['id'], $organizationId, $screenContext->scopeId),
+                    'owner_assignments' => $this->ownerAssignments($actors, 'policy-exception', $exception['id'], $organizationId, $screenContext->scopeId),
+                    'owner_remove_route' => route('plugin.policy-exceptions.exceptions.owners.destroy', ['exceptionId' => $exception['id'], 'assignmentId' => '__ASSIGNMENT__']),
                     'linked_finding_label' => $findingLabels[$exception['linked_finding_id']] ?? null,
                     'linked_finding_url' => $exception['linked_finding_id'] !== ''
                         ? route('core.shell.index', [...$baseQuery, 'menu' => 'plugin.findings-remediation.root', 'finding_id' => $exception['linked_finding_id']])
@@ -252,7 +255,7 @@ class PolicyExceptionsPlugin implements PluginInterface
             $policies[] = [
                 ...$policy,
                 'exceptions' => $policyExceptions,
-                'owner_assignment' => $this->ownerAssignment($actors, 'policy', $policy['id'], $organizationId, $screenContext->scopeId),
+                'owner_assignments' => $this->ownerAssignments($actors, 'policy', $policy['id'], $organizationId, $screenContext->scopeId),
                 'artifacts' => array_map(
                     static fn ($artifact): array => $artifact->toArray(),
                     $artifacts->forSubject('policy', $policy['id'], $organizationId, $screenContext->scopeId, 5),
@@ -262,6 +265,7 @@ class PolicyExceptionsPlugin implements PluginInterface
                 'transition_route' => route('plugin.policy-exceptions.transition', ['policyId' => $policy['id'], 'transitionKey' => '__TRANSITION__']),
                 'artifact_upload_route' => route('plugin.policy-exceptions.artifacts.store', ['policyId' => $policy['id']]),
                 'update_route' => route('plugin.policy-exceptions.update', ['policyId' => $policy['id']]),
+                'owner_remove_route' => route('plugin.policy-exceptions.owners.destroy', ['policyId' => $policy['id'], 'assignmentId' => '__ASSIGNMENT__']),
                 'exception_store_route' => route('plugin.policy-exceptions.exceptions.store', ['policyId' => $policy['id']]),
                 'linked_control_label' => $controlLabels[$policy['linked_control_id']] ?? null,
                 'linked_control_url' => $policy['linked_control_id'] !== ''
@@ -360,7 +364,7 @@ class PolicyExceptionsPlugin implements PluginInterface
             $exceptions[] = [
                 ...$exception,
                 'policy' => $policy,
-                'owner_assignment' => $this->ownerAssignment($actors, 'policy-exception', $exception['id'], $organizationId, $screenContext->scopeId),
+                'owner_assignments' => $this->ownerAssignments($actors, 'policy-exception', $exception['id'], $organizationId, $screenContext->scopeId),
                 'artifacts' => array_map(
                     static fn ($artifact): array => $artifact->toArray(),
                     $artifacts->forSubject('policy-exception', $exception['id'], $organizationId, $screenContext->scopeId, 5),
@@ -370,6 +374,7 @@ class PolicyExceptionsPlugin implements PluginInterface
                 'transition_route' => route('plugin.policy-exceptions.exceptions.transition', ['exceptionId' => $exception['id'], 'transitionKey' => '__TRANSITION__']),
                 'artifact_upload_route' => route('plugin.policy-exceptions.exceptions.artifacts.store', ['exceptionId' => $exception['id']]),
                 'update_route' => route('plugin.policy-exceptions.exceptions.update', ['exceptionId' => $exception['id']]),
+                'owner_remove_route' => route('plugin.policy-exceptions.exceptions.owners.destroy', ['exceptionId' => $exception['id'], 'assignmentId' => '__ASSIGNMENT__']),
                 'history' => $workflow->history('plugin.policy-exceptions.exception-lifecycle', 'policy-exception', $exception['id']),
                 'linked_finding_label' => $findingLabels[$exception['linked_finding_id']] ?? null,
                 'linked_finding_url' => $exception['linked_finding_id'] !== ''
@@ -479,15 +484,17 @@ class PolicyExceptionsPlugin implements PluginInterface
     }
 
     /**
-     * @return array<string, string>|null
+     * @return array<int, array{id: string, assignment_id: string, display_name: string, kind: string}>
      */
-    private function ownerAssignment(
+    private function ownerAssignments(
         FunctionalActorServiceInterface $actors,
         string $domainObjectType,
         string $domainObjectId,
         string $organizationId,
         ?string $scopeId,
-    ): ?array {
+    ): array {
+        $owners = [];
+
         foreach ($actors->assignmentsFor($domainObjectType, $domainObjectId, $organizationId, $scopeId) as $assignment) {
             if ($assignment->assignmentType !== 'owner') {
                 continue;
@@ -496,17 +503,18 @@ class PolicyExceptionsPlugin implements PluginInterface
             $actor = $actors->findActor($assignment->functionalActorId);
 
             if ($actor === null) {
-                return null;
+                continue;
             }
 
-            return [
+            $owners[] = [
                 'id' => $actor->id,
+                'assignment_id' => $assignment->id,
                 'display_name' => $actor->displayName,
                 'kind' => $actor->kind,
             ];
         }
 
-        return null;
+        return $owners;
     }
 
     /**

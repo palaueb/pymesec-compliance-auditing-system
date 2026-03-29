@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Validation\Rule;
 use PymeSec\Core\Artifacts\ArtifactUploadData;
@@ -401,9 +402,18 @@ Route::post('/plugins/assessments/{assessmentId}/reviews/{controlId}/findings', 
         'due_on' => ['nullable', 'date'],
     ]);
 
+    $control = DB::table('controls')
+        ->where('id', $controlId)
+        ->where('organization_id', (string) $request->input('organization_id', 'org-a'))
+        ->first(['scope_id']);
+
+    $findingScopeId = is_string($control?->scope_id) && $control->scope_id !== ''
+        ? (string) $control->scope_id
+        : (is_string($request->input('scope_id')) && $request->input('scope_id') !== '' ? (string) $request->input('scope_id') : null);
+
     $finding = $findings->createFinding([
         'organization_id' => (string) $request->input('organization_id', 'org-a'),
-        'scope_id' => is_string($request->input('scope_id')) && $request->input('scope_id') !== '' ? (string) $request->input('scope_id') : null,
+        'scope_id' => $findingScopeId,
         'title' => (string) $validated['title'],
         'severity' => (string) $validated['severity'],
         'description' => (string) $validated['description'],

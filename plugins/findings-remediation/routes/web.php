@@ -2,6 +2,7 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use PymeSec\Core\Artifacts\ArtifactUploadData;
 use PymeSec\Core\Artifacts\Contracts\ArtifactServiceInterface;
@@ -82,7 +83,7 @@ Route::post('/plugins/findings', function (
     $membershipId = $request->input('membership_id');
 
     if (is_string($validated['owner_actor_id'] ?? null) && $validated['owner_actor_id'] !== '') {
-        $actors->syncSingleAssignment(
+        $actors->assignActor(
             actorId: $validated['owner_actor_id'],
             domainObjectType: 'finding',
             domainObjectId: $finding['id'],
@@ -145,7 +146,7 @@ Route::post('/plugins/findings/{findingId}', function (
     $membershipId = $request->input('membership_id');
 
     if (is_string($validated['owner_actor_id'] ?? null) && $validated['owner_actor_id'] !== '') {
-        $actors->syncSingleAssignment(
+        $actors->assignActor(
             actorId: $validated['owner_actor_id'],
             domainObjectType: 'finding',
             domainObjectId: $finding['id'],
@@ -157,6 +158,16 @@ Route::post('/plugins/findings/{findingId}', function (
         );
     }
 
+    DB::table('functional_assignments')
+        ->where('domain_object_type', 'finding')
+        ->where('domain_object_id', $finding['id'])
+        ->where('organization_id', $finding['organization_id'])
+        ->where('is_active', true)
+        ->update([
+            'scope_id' => $finding['scope_id'] !== '' ? $finding['scope_id'] : null,
+            'updated_at' => now(),
+        ]);
+
     return redirect()->route('core.shell.index', array_filter([
         'menu' => 'plugin.findings-remediation.root',
         'finding_id' => $finding['id'],
@@ -167,6 +178,53 @@ Route::post('/plugins/findings/{findingId}', function (
         'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
     ]))->with('status', 'Saved.');
 })->middleware('core.permission:plugin.findings-remediation.findings.manage')->name('plugin.findings-remediation.update');
+
+Route::post('/plugins/findings/{findingId}/owners/{assignmentId}/remove', function (
+    Request $request,
+    string $findingId,
+    string $assignmentId,
+    FindingsRemediationRepository $repository,
+    FunctionalActorServiceInterface $actors,
+    ObjectAccessService $objectAccess,
+) {
+    $finding = $repository->findFinding($findingId);
+
+    abort_if($finding === null, 404);
+    abort_unless($objectAccess->canAccessObject(
+        principalId: (string) $request->input('principal_id', 'principal-org-a'),
+        organizationId: $finding['organization_id'],
+        scopeId: $finding['scope_id'] !== '' ? $finding['scope_id'] : null,
+        domainObjectType: 'finding',
+        domainObjectId: $finding['id'],
+    ), 403);
+
+    $assignment = collect($actors->assignmentsFor(
+        domainObjectType: 'finding',
+        domainObjectId: $finding['id'],
+        organizationId: $finding['organization_id'],
+        scopeId: $finding['scope_id'] !== '' ? $finding['scope_id'] : null,
+    ))->first(fn ($candidate) => $candidate->id === $assignmentId && $candidate->assignmentType === 'owner');
+
+    abort_if($assignment === null, 404);
+
+    $principalId = (string) $request->input('principal_id', 'principal-org-a');
+    $membershipId = $request->input('membership_id');
+
+    $actors->deactivateAssignment(
+        assignmentId: $assignmentId,
+        deactivatedByPrincipalId: $principalId,
+    );
+
+    return redirect()->route('core.shell.index', array_filter([
+        'menu' => 'plugin.findings-remediation.root',
+        'finding_id' => $finding['id'],
+        'principal_id' => $principalId,
+        'organization_id' => $finding['organization_id'],
+        'scope_id' => $finding['scope_id'] !== '' ? $finding['scope_id'] : null,
+        'locale' => $request->input('locale', 'en'),
+        'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
+    ]))->with('status', 'Owner removed.');
+})->middleware('core.permission:plugin.findings-remediation.findings.manage')->name('plugin.findings-remediation.owners.destroy');
 
 Route::post('/plugins/findings/{findingId}/actions', function (
     Request $request,
@@ -204,7 +262,7 @@ Route::post('/plugins/findings/{findingId}/actions', function (
     $membershipId = $request->input('membership_id');
 
     if (is_string($validated['owner_actor_id'] ?? null) && $validated['owner_actor_id'] !== '') {
-        $actors->syncSingleAssignment(
+        $actors->assignActor(
             actorId: $validated['owner_actor_id'],
             domainObjectType: 'remediation-action',
             domainObjectId: $action['id'],
@@ -277,7 +335,7 @@ Route::post('/plugins/findings/actions/{actionId}', function (
     $membershipId = $request->input('membership_id');
 
     if (is_string($validated['owner_actor_id'] ?? null) && $validated['owner_actor_id'] !== '') {
-        $actors->syncSingleAssignment(
+        $actors->assignActor(
             actorId: $validated['owner_actor_id'],
             domainObjectType: 'remediation-action',
             domainObjectId: $action['id'],
@@ -289,6 +347,16 @@ Route::post('/plugins/findings/actions/{actionId}', function (
         );
     }
 
+    DB::table('functional_assignments')
+        ->where('domain_object_type', 'remediation-action')
+        ->where('domain_object_id', $action['id'])
+        ->where('organization_id', $action['organization_id'])
+        ->where('is_active', true)
+        ->update([
+            'scope_id' => $action['scope_id'] !== '' ? $action['scope_id'] : null,
+            'updated_at' => now(),
+        ]);
+
     return redirect()->route('core.shell.index', array_filter([
         'menu' => 'plugin.findings-remediation.root',
         'finding_id' => $finding['id'],
@@ -299,6 +367,65 @@ Route::post('/plugins/findings/actions/{actionId}', function (
         'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
     ]))->with('status', 'Saved.');
 })->middleware('core.permission:plugin.findings-remediation.findings.manage')->name('plugin.findings-remediation.actions.update');
+
+Route::post('/plugins/findings/actions/{actionId}/owners/{assignmentId}/remove', function (
+    Request $request,
+    string $actionId,
+    string $assignmentId,
+    FindingsRemediationRepository $repository,
+    FunctionalActorServiceInterface $actors,
+    ObjectAccessService $objectAccess,
+) {
+    $action = $repository->findAction($actionId);
+
+    abort_if($action === null, 404);
+    $finding = $repository->findFinding((string) $action['finding_id']);
+
+    abort_if($finding === null, 404);
+    abort_unless(
+        $objectAccess->canAccessObject(
+            principalId: (string) $request->input('principal_id', 'principal-org-a'),
+            organizationId: $finding['organization_id'],
+            scopeId: $finding['scope_id'] !== '' ? $finding['scope_id'] : null,
+            domainObjectType: 'finding',
+            domainObjectId: $finding['id'],
+        ) || $objectAccess->canAccessObject(
+            principalId: (string) $request->input('principal_id', 'principal-org-a'),
+            organizationId: $action['organization_id'],
+            scopeId: $action['scope_id'] !== '' ? $action['scope_id'] : null,
+            domainObjectType: 'remediation-action',
+            domainObjectId: $action['id'],
+        ),
+        403
+    );
+
+    $assignment = collect($actors->assignmentsFor(
+        domainObjectType: 'remediation-action',
+        domainObjectId: $action['id'],
+        organizationId: $action['organization_id'],
+        scopeId: $action['scope_id'] !== '' ? $action['scope_id'] : null,
+    ))->first(fn ($candidate) => $candidate->id === $assignmentId && $candidate->assignmentType === 'owner');
+
+    abort_if($assignment === null, 404);
+
+    $principalId = (string) $request->input('principal_id', 'principal-org-a');
+    $membershipId = $request->input('membership_id');
+
+    $actors->deactivateAssignment(
+        assignmentId: $assignmentId,
+        deactivatedByPrincipalId: $principalId,
+    );
+
+    return redirect()->route('core.shell.index', array_filter([
+        'menu' => 'plugin.findings-remediation.root',
+        'finding_id' => $finding['id'],
+        'principal_id' => $principalId,
+        'organization_id' => $finding['organization_id'],
+        'scope_id' => $finding['scope_id'] !== '' ? $finding['scope_id'] : null,
+        'locale' => $request->input('locale', 'en'),
+        'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
+    ]))->with('status', 'Owner removed.');
+})->middleware('core.permission:plugin.findings-remediation.findings.manage')->name('plugin.findings-remediation.actions.owners.destroy');
 
 Route::post('/plugins/findings/{findingId}/artifacts', function (
     Request $request,

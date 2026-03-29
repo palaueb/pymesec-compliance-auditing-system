@@ -2,6 +2,7 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use PymeSec\Core\Artifacts\ArtifactUploadData;
 use PymeSec\Core\Artifacts\Contracts\ArtifactServiceInterface;
@@ -78,7 +79,7 @@ Route::post('/plugins/controls', function (
     $membershipId = $request->input('membership_id');
 
     if (is_string($validated['owner_actor_id'] ?? null) && $validated['owner_actor_id'] !== '') {
-        $actors->syncSingleAssignment(
+        $actors->assignActor(
             actorId: $validated['owner_actor_id'],
             domainObjectType: 'control',
             domainObjectId: $control['id'],
@@ -329,7 +330,7 @@ Route::post('/plugins/controls/{controlId}', function (
     $membershipId = $request->input('membership_id');
 
     if (is_string($validated['owner_actor_id'] ?? null) && $validated['owner_actor_id'] !== '') {
-        $actors->syncSingleAssignment(
+        $actors->assignActor(
             actorId: $validated['owner_actor_id'],
             domainObjectType: 'control',
             domainObjectId: $control['id'],
@@ -341,6 +342,16 @@ Route::post('/plugins/controls/{controlId}', function (
         );
     }
 
+    DB::table('functional_assignments')
+        ->where('domain_object_type', 'control')
+        ->where('domain_object_id', $control['id'])
+        ->where('organization_id', $control['organization_id'])
+        ->where('is_active', true)
+        ->update([
+            'scope_id' => $control['scope_id'] !== '' ? $control['scope_id'] : null,
+            'updated_at' => now(),
+        ]);
+
     return redirect()->route('core.shell.index', array_filter([
         'menu' => 'plugin.controls-catalog.root',
         'principal_id' => $principalId,
@@ -351,6 +362,53 @@ Route::post('/plugins/controls/{controlId}', function (
         'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
     ]))->with('status', 'Saved.');
 })->middleware('core.permission:plugin.controls-catalog.controls.manage')->name('plugin.controls-catalog.update');
+
+Route::post('/plugins/controls/{controlId}/owners/{assignmentId}/remove', function (
+    Request $request,
+    string $controlId,
+    string $assignmentId,
+    ControlsCatalogRepository $repository,
+    FunctionalActorServiceInterface $actors,
+    ObjectAccessService $objectAccess,
+) {
+    $control = $repository->find($controlId);
+
+    abort_if($control === null, 404);
+    abort_unless($objectAccess->canAccessObject(
+        principalId: (string) $request->input('principal_id', 'principal-org-a'),
+        organizationId: $control['organization_id'],
+        scopeId: $control['scope_id'] !== '' ? $control['scope_id'] : null,
+        domainObjectType: 'control',
+        domainObjectId: $control['id'],
+    ), 403);
+
+    $assignment = collect($actors->assignmentsFor(
+        domainObjectType: 'control',
+        domainObjectId: $control['id'],
+        organizationId: $control['organization_id'],
+        scopeId: $control['scope_id'] !== '' ? $control['scope_id'] : null,
+    ))->first(fn ($candidate) => $candidate->id === $assignmentId && $candidate->assignmentType === 'owner');
+
+    abort_if($assignment === null, 404);
+
+    $principalId = (string) $request->input('principal_id', 'principal-org-a');
+    $membershipId = $request->input('membership_id');
+
+    $actors->deactivateAssignment(
+        assignmentId: $assignmentId,
+        deactivatedByPrincipalId: $principalId,
+    );
+
+    return redirect()->route('core.shell.index', array_filter([
+        'menu' => 'plugin.controls-catalog.root',
+        'principal_id' => $principalId,
+        'organization_id' => $control['organization_id'],
+        'control_id' => $control['id'],
+        'scope_id' => $control['scope_id'] !== '' ? $control['scope_id'] : null,
+        'locale' => $request->input('locale', 'en'),
+        'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
+    ]))->with('status', 'Owner removed.');
+})->middleware('core.permission:plugin.controls-catalog.controls.manage')->name('plugin.controls-catalog.owners.destroy');
 
 Route::post('/plugins/controls/{controlId}/artifacts', function (
     Request $request,

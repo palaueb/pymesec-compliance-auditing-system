@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use PymeSec\Core\Artifacts\ArtifactUploadData;
 use PymeSec\Core\Artifacts\Contracts\ArtifactServiceInterface;
@@ -66,7 +67,7 @@ Route::post('/plugins/policies', function (
     $membershipId = $request->input('membership_id');
 
     if (is_string($validated['owner_actor_id'] ?? null) && $validated['owner_actor_id'] !== '') {
-        $actors->syncSingleAssignment(
+        $actors->assignActor(
             actorId: $validated['owner_actor_id'],
             domainObjectType: 'policy',
             domainObjectId: $policy['id'],
@@ -127,7 +128,7 @@ Route::post('/plugins/policies/{policyId}', function (
     $membershipId = $request->input('membership_id');
 
     if (is_string($validated['owner_actor_id'] ?? null) && $validated['owner_actor_id'] !== '') {
-        $actors->syncSingleAssignment(
+        $actors->assignActor(
             actorId: $validated['owner_actor_id'],
             domainObjectType: 'policy',
             domainObjectId: $policy['id'],
@@ -139,6 +140,16 @@ Route::post('/plugins/policies/{policyId}', function (
         );
     }
 
+    DB::table('functional_assignments')
+        ->where('domain_object_type', 'policy')
+        ->where('domain_object_id', $policy['id'])
+        ->where('organization_id', $policy['organization_id'])
+        ->where('is_active', true)
+        ->update([
+            'scope_id' => $policy['scope_id'] !== '' ? $policy['scope_id'] : null,
+            'updated_at' => now(),
+        ]);
+
     return redirect()->route('core.shell.index', array_filter([
         'menu' => 'plugin.policy-exceptions.root',
         'policy_id' => $policy['id'],
@@ -149,6 +160,53 @@ Route::post('/plugins/policies/{policyId}', function (
         'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
     ]))->with('status', 'Saved.');
 })->middleware('core.permission:plugin.policy-exceptions.policies.manage')->name('plugin.policy-exceptions.update');
+
+Route::post('/plugins/policies/{policyId}/owners/{assignmentId}/remove', function (
+    Request $request,
+    string $policyId,
+    string $assignmentId,
+    PolicyExceptionsRepository $repository,
+    FunctionalActorServiceInterface $actors,
+    ObjectAccessService $objectAccess,
+) {
+    $policy = $repository->findPolicy($policyId);
+
+    abort_if($policy === null, 404);
+
+    $principalId = (string) $request->input('principal_id', 'principal-org-a');
+    abort_unless($objectAccess->canAccessObject(
+        principalId: $principalId,
+        organizationId: $policy['organization_id'],
+        scopeId: $policy['scope_id'] !== '' ? $policy['scope_id'] : null,
+        domainObjectType: 'policy',
+        domainObjectId: $policy['id'],
+    ), 403);
+
+    $assignment = collect($actors->assignmentsFor(
+        domainObjectType: 'policy',
+        domainObjectId: $policy['id'],
+        organizationId: $policy['organization_id'],
+        scopeId: $policy['scope_id'] !== '' ? $policy['scope_id'] : null,
+    ))->first(fn ($candidate) => $candidate->id === $assignmentId && $candidate->assignmentType === 'owner');
+
+    abort_if($assignment === null, 404);
+
+    $membershipId = $request->input('membership_id');
+    $actors->deactivateAssignment(
+        assignmentId: $assignmentId,
+        deactivatedByPrincipalId: $principalId,
+    );
+
+    return redirect()->route('core.shell.index', array_filter([
+        'menu' => 'plugin.policy-exceptions.root',
+        'policy_id' => $policy['id'],
+        'principal_id' => $principalId,
+        'organization_id' => $policy['organization_id'],
+        'scope_id' => $policy['scope_id'] !== '' ? $policy['scope_id'] : null,
+        'locale' => $request->input('locale', 'en'),
+        'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
+    ]))->with('status', 'Owner removed.');
+})->middleware('core.permission:plugin.policy-exceptions.policies.manage')->name('plugin.policy-exceptions.owners.destroy');
 
 Route::post('/plugins/policies/{policyId}/exceptions', function (
     Request $request,
@@ -188,7 +246,7 @@ Route::post('/plugins/policies/{policyId}/exceptions', function (
     $membershipId = $request->input('membership_id');
 
     if (is_string($validated['owner_actor_id'] ?? null) && $validated['owner_actor_id'] !== '') {
-        $actors->syncSingleAssignment(
+        $actors->assignActor(
             actorId: $validated['owner_actor_id'],
             domainObjectType: 'policy-exception',
             domainObjectId: $exception['id'],
@@ -246,7 +304,7 @@ Route::post('/plugins/policies/exceptions/{exceptionId}', function (
     $membershipId = $request->input('membership_id');
 
     if (is_string($validated['owner_actor_id'] ?? null) && $validated['owner_actor_id'] !== '') {
-        $actors->syncSingleAssignment(
+        $actors->assignActor(
             actorId: $validated['owner_actor_id'],
             domainObjectType: 'policy-exception',
             domainObjectId: $exception['id'],
@@ -258,6 +316,16 @@ Route::post('/plugins/policies/exceptions/{exceptionId}', function (
         );
     }
 
+    DB::table('functional_assignments')
+        ->where('domain_object_type', 'policy-exception')
+        ->where('domain_object_id', $exception['id'])
+        ->where('organization_id', $exception['organization_id'])
+        ->where('is_active', true)
+        ->update([
+            'scope_id' => $exception['scope_id'] !== '' ? $exception['scope_id'] : null,
+            'updated_at' => now(),
+        ]);
+
     return redirect()->route('core.shell.index', array_filter([
         'menu' => 'plugin.policy-exceptions.exceptions',
         'exception_id' => $exception['id'],
@@ -268,6 +336,53 @@ Route::post('/plugins/policies/exceptions/{exceptionId}', function (
         'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
     ]))->with('status', 'Saved.');
 })->middleware('core.permission:plugin.policy-exceptions.policies.manage')->name('plugin.policy-exceptions.exceptions.update');
+
+Route::post('/plugins/policies/exceptions/{exceptionId}/owners/{assignmentId}/remove', function (
+    Request $request,
+    string $exceptionId,
+    string $assignmentId,
+    PolicyExceptionsRepository $repository,
+    FunctionalActorServiceInterface $actors,
+    ObjectAccessService $objectAccess,
+) {
+    $exception = $repository->findException($exceptionId);
+
+    abort_if($exception === null, 404);
+
+    $principalId = (string) $request->input('principal_id', 'principal-org-a');
+    abort_unless($objectAccess->canAccessObject(
+        principalId: $principalId,
+        organizationId: $exception['organization_id'],
+        scopeId: $exception['scope_id'] !== '' ? $exception['scope_id'] : null,
+        domainObjectType: 'policy-exception',
+        domainObjectId: $exception['id'],
+    ), 403);
+
+    $assignment = collect($actors->assignmentsFor(
+        domainObjectType: 'policy-exception',
+        domainObjectId: $exception['id'],
+        organizationId: $exception['organization_id'],
+        scopeId: $exception['scope_id'] !== '' ? $exception['scope_id'] : null,
+    ))->first(fn ($candidate) => $candidate->id === $assignmentId && $candidate->assignmentType === 'owner');
+
+    abort_if($assignment === null, 404);
+
+    $membershipId = $request->input('membership_id');
+    $actors->deactivateAssignment(
+        assignmentId: $assignmentId,
+        deactivatedByPrincipalId: $principalId,
+    );
+
+    return redirect()->route('core.shell.index', array_filter([
+        'menu' => 'plugin.policy-exceptions.exceptions',
+        'exception_id' => $exception['id'],
+        'principal_id' => $principalId,
+        'organization_id' => $exception['organization_id'],
+        'scope_id' => $exception['scope_id'] !== '' ? $exception['scope_id'] : null,
+        'locale' => $request->input('locale', 'en'),
+        'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
+    ]))->with('status', 'Owner removed.');
+})->middleware('core.permission:plugin.policy-exceptions.policies.manage')->name('plugin.policy-exceptions.exceptions.owners.destroy');
 
 Route::post('/plugins/policies/{policyId}/artifacts', function (
     Request $request,

@@ -169,13 +169,14 @@ class AssetCatalogPlugin implements PluginInterface
                 'type_label' => AssetReferenceData::typeLabel($asset['type']),
                 'criticality_label' => AssetReferenceData::criticalityLabel($asset['criticality']),
                 'classification_label' => AssetReferenceData::classificationLabel($asset['classification']),
-                'owner_assignment' => $this->ownerAssignment($actors, $asset['id'], $organizationId, $screenContext->scopeId),
+                'owner_assignments' => $this->ownerAssignments($actors, $asset['id'], $organizationId, $screenContext->scopeId),
                 'state' => $instance->currentState,
                 'transitions' => $canManageAssets
                     ? $this->transitionsForState($instance->currentState)
                     : [],
                 'transition_route' => route('plugin.asset-catalog.transition', ['assetId' => $asset['id'], 'transitionKey' => '__TRANSITION__']),
                 'update_route' => route('plugin.asset-catalog.update', ['assetId' => $asset['id']]),
+                'owner_remove_route' => route('plugin.asset-catalog.owners.destroy', ['assetId' => $asset['id'], 'assignmentId' => '__ASSIGNMENT__']),
                 'history' => $workflow->history('plugin.asset-catalog.asset-lifecycle', 'asset', $asset['id']),
                 'open_url' => route('core.shell.index', [...$this->baseQuery($screenContext, false), 'menu' => 'plugin.asset-catalog.root', 'asset_id' => $asset['id']]),
             ];
@@ -302,14 +303,16 @@ class AssetCatalogPlugin implements PluginInterface
     }
 
     /**
-     * @return array<string, string> | null
+     * @return array<int, array{id: string, assignment_id: string, display_name: string, kind: string}>
      */
-    private function ownerAssignment(
+    private function ownerAssignments(
         FunctionalActorServiceInterface $actors,
         string $assetId,
         string $organizationId,
         ?string $scopeId,
-    ): ?array {
+    ): array {
+        $owners = [];
+
         foreach ($actors->assignmentsFor('asset', $assetId, $organizationId, $scopeId) as $assignment) {
             if ($assignment->assignmentType !== 'owner') {
                 continue;
@@ -318,16 +321,17 @@ class AssetCatalogPlugin implements PluginInterface
             $actor = $actors->findActor($assignment->functionalActorId);
 
             if ($actor === null) {
-                return null;
+                continue;
             }
 
-            return [
+            $owners[] = [
                 'id' => $actor->id,
+                'assignment_id' => $assignment->id,
                 'display_name' => $actor->displayName,
                 'kind' => $actor->kind,
             ];
         }
 
-        return null;
+        return $owners;
     }
 }

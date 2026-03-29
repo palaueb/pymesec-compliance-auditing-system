@@ -75,6 +75,11 @@ interface FunctionalActorServiceInterface
         ?string $assignedByPrincipalId = null,
     ): FunctionalAssignment;
 
+    public function deactivateAssignment(
+        string $assignmentId,
+        ?string $deactivatedByPrincipalId = null,
+    ): void;
+
     /**
      * @return array<int, FunctionalActorLink>
      */

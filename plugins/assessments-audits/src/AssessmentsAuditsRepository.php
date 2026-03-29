@@ -5,9 +5,14 @@ namespace PymeSec\Plugins\AssessmentsAudits;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
+use PymeSec\Core\Security\ContextualReferenceValidator;
 
 class AssessmentsAuditsRepository
 {
+    public function __construct(
+        private readonly ContextualReferenceValidator $references,
+    ) {}
+
     /**
      * @return array<int, array<string, mixed>>
      */
@@ -44,6 +49,15 @@ class AssessmentsAuditsRepository
      */
     public function create(array $data): array
     {
+        $this->references->assertArrayRecords(
+            recordIds: array_values($this->normalizeStringArray($data['control_ids'] ?? [])),
+            table: 'controls',
+            organizationId: (string) $data['organization_id'],
+            scopeId: null,
+            field: 'control_ids',
+            message: 'The selected control is invalid for this organization.',
+        );
+
         $id = $this->nextId((string) $data['title']);
 
         DB::table('assessment_campaigns')->insert([
@@ -80,6 +94,15 @@ class AssessmentsAuditsRepository
      */
     public function update(string $assessmentId, array $data): ?array
     {
+        $this->references->assertArrayRecords(
+            recordIds: array_values($this->normalizeStringArray($data['control_ids'] ?? [])),
+            table: 'controls',
+            organizationId: (string) $data['organization_id'],
+            scopeId: null,
+            field: 'control_ids',
+            message: 'The selected control is invalid for this organization.',
+        );
+
         $existing = $this->find($assessmentId);
 
         if ($existing === null) {

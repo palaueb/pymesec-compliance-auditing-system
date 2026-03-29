@@ -892,10 +892,15 @@ Provide automated technical evidence.
 ### Deliverables
 
 * connector SDK
+* Microsoft 365
+* Google Workspace
+* AWS / Azure / GCP
 * Wazuh connector
 * Fleet/osquery connector
 * OpenSCAP connector
 * GitHub/GitLab connector
+* OKTA / Microsoft Entra ID connector
+* Jira / youtrack / notion / asana connector
 * execution scheduler
 * initial rules engine
 

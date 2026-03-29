@@ -2,6 +2,13 @@
 
 Simple list of the main pending items.
 
+## Delivery Rules
+
+- [ ] Keep the public demo alive as a first-class maintained surface.
+- [ ] For every feature change, explicitly check whether the `demo` branch and `demo_builder/patches/` need to be refreshed.
+- [ ] If product changes affect demo-specific behavior or files already represented in the patch pack, regenerate the affected demo patches before closing the work.
+- [ ] Require tests for every new or changed mutable parameter so ownership, permission, role, scope, and quota boundaries are enforced and cannot be spoofed by unauthorized users.
+
 ## Product
 
 - [ ] Multi-owner and assignment depth across assets, risks, findings, continuity, privacy, policy, controls, and assessments.
@@ -18,6 +25,7 @@ Simple list of the main pending items.
 - [ ] LDAP login mode completion on top of the current sync connector.
 - [ ] Clear web UI for governing object access matrices.
 - [ ] Better separation between platform administration and delegated access governance where still rough.
+- [ ] Extend parameter-level authorization coverage until every GET/POST mutation path that changes governed data has an explicit ownership and authorization regression test.
 
 ## Data Governance
 

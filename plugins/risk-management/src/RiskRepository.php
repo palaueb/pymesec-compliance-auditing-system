@@ -4,9 +4,14 @@ namespace PymeSec\Plugins\RiskManagement;
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use PymeSec\Core\Security\ContextualReferenceValidator;
 
 class RiskRepository
 {
+    public function __construct(
+        private readonly ContextualReferenceValidator $references,
+    ) {}
+
     /**
      * @return array<int, array<string, string>>
      */
@@ -41,6 +46,25 @@ class RiskRepository
      */
     public function create(array $data): array
     {
+        $scopeId = ($data['scope_id'] ?? null) ?: null;
+
+        $this->references->assertRecord(
+            recordId: ($data['linked_asset_id'] ?? null) ?: null,
+            table: 'assets',
+            organizationId: (string) $data['organization_id'],
+            scopeId: is_string($scopeId) ? $scopeId : null,
+            field: 'linked_asset_id',
+            message: 'The selected linked asset is invalid for this organization or scope.',
+        );
+        $this->references->assertRecord(
+            recordId: ($data['linked_control_id'] ?? null) ?: null,
+            table: 'controls',
+            organizationId: (string) $data['organization_id'],
+            scopeId: is_string($scopeId) ? $scopeId : null,
+            field: 'linked_control_id',
+            message: 'The selected linked control is invalid for this organization or scope.',
+        );
+
         $id = $this->nextId((string) ($data['title'] ?? 'risk'));
 
         DB::table('risks')->insert([
@@ -70,6 +94,25 @@ class RiskRepository
      */
     public function update(string $riskId, array $data): ?array
     {
+        $scopeId = ($data['scope_id'] ?? null) ?: null;
+
+        $this->references->assertRecord(
+            recordId: ($data['linked_asset_id'] ?? null) ?: null,
+            table: 'assets',
+            organizationId: (string) $data['organization_id'],
+            scopeId: is_string($scopeId) ? $scopeId : null,
+            field: 'linked_asset_id',
+            message: 'The selected linked asset is invalid for this organization or scope.',
+        );
+        $this->references->assertRecord(
+            recordId: ($data['linked_control_id'] ?? null) ?: null,
+            table: 'controls',
+            organizationId: (string) $data['organization_id'],
+            scopeId: is_string($scopeId) ? $scopeId : null,
+            field: 'linked_control_id',
+            message: 'The selected linked control is invalid for this organization or scope.',
+        );
+
         $updated = DB::table('risks')
             ->where('id', $riskId)
             ->update([

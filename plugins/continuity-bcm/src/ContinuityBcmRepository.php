@@ -5,9 +5,14 @@ namespace PymeSec\Plugins\ContinuityBcm;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use PymeSec\Core\Security\ContextualReferenceValidator;
 
 class ContinuityBcmRepository
 {
+    public function __construct(
+        private readonly ContextualReferenceValidator $references,
+    ) {}
+
     /**
      * @return array<int, array<string, string>>
      */
@@ -82,6 +87,25 @@ class ContinuityBcmRepository
      */
     public function createService(array $data): array
     {
+        $scopeId = ($data['scope_id'] ?? null) ?: null;
+
+        $this->references->assertRecord(
+            recordId: ($data['linked_asset_id'] ?? null) ?: null,
+            table: 'assets',
+            organizationId: (string) $data['organization_id'],
+            scopeId: is_string($scopeId) ? $scopeId : null,
+            field: 'linked_asset_id',
+            message: 'The selected linked asset is invalid for this organization or scope.',
+        );
+        $this->references->assertRecord(
+            recordId: ($data['linked_risk_id'] ?? null) ?: null,
+            table: 'risks',
+            organizationId: (string) $data['organization_id'],
+            scopeId: is_string($scopeId) ? $scopeId : null,
+            field: 'linked_risk_id',
+            message: 'The selected linked risk is invalid for this organization or scope.',
+        );
+
         $id = $this->nextId('continuity-service', (string) ($data['title'] ?? 'continuity-service'), 'continuity_services');
 
         DB::table('continuity_services')->insert([
@@ -168,6 +192,25 @@ class ContinuityBcmRepository
      */
     public function updateService(string $serviceId, array $data): ?array
     {
+        $scopeId = ($data['scope_id'] ?? null) ?: null;
+
+        $this->references->assertRecord(
+            recordId: ($data['linked_asset_id'] ?? null) ?: null,
+            table: 'assets',
+            organizationId: (string) $data['organization_id'],
+            scopeId: is_string($scopeId) ? $scopeId : null,
+            field: 'linked_asset_id',
+            message: 'The selected linked asset is invalid for this organization or scope.',
+        );
+        $this->references->assertRecord(
+            recordId: ($data['linked_risk_id'] ?? null) ?: null,
+            table: 'risks',
+            organizationId: (string) $data['organization_id'],
+            scopeId: is_string($scopeId) ? $scopeId : null,
+            field: 'linked_risk_id',
+            message: 'The selected linked risk is invalid for this organization or scope.',
+        );
+
         $updated = DB::table('continuity_services')
             ->where('id', $serviceId)
             ->update([
@@ -287,6 +330,25 @@ class ContinuityBcmRepository
      */
     public function createPlan(string $serviceId, array $data): array
     {
+        $scopeId = ($data['scope_id'] ?? null) ?: null;
+
+        $this->references->assertRecord(
+            recordId: ($data['linked_policy_id'] ?? null) ?: null,
+            table: 'policies',
+            organizationId: (string) $data['organization_id'],
+            scopeId: is_string($scopeId) ? $scopeId : null,
+            field: 'linked_policy_id',
+            message: 'The selected linked policy is invalid for this organization or scope.',
+        );
+        $this->references->assertRecord(
+            recordId: ($data['linked_finding_id'] ?? null) ?: null,
+            table: 'findings',
+            organizationId: (string) $data['organization_id'],
+            scopeId: is_string($scopeId) ? $scopeId : null,
+            field: 'linked_finding_id',
+            message: 'The selected linked finding is invalid for this organization or scope.',
+        );
+
         $id = $this->nextId('continuity-plan', (string) ($data['title'] ?? 'continuity-plan'), 'continuity_recovery_plans');
 
         DB::table('continuity_recovery_plans')->insert([
@@ -369,6 +431,25 @@ class ContinuityBcmRepository
      */
     public function updatePlan(string $planId, array $data): ?array
     {
+        $scopeId = ($data['scope_id'] ?? null) ?: null;
+
+        $this->references->assertRecord(
+            recordId: ($data['linked_policy_id'] ?? null) ?: null,
+            table: 'policies',
+            organizationId: (string) $data['organization_id'],
+            scopeId: is_string($scopeId) ? $scopeId : null,
+            field: 'linked_policy_id',
+            message: 'The selected linked policy is invalid for this organization or scope.',
+        );
+        $this->references->assertRecord(
+            recordId: ($data['linked_finding_id'] ?? null) ?: null,
+            table: 'findings',
+            organizationId: (string) $data['organization_id'],
+            scopeId: is_string($scopeId) ? $scopeId : null,
+            field: 'linked_finding_id',
+            message: 'The selected linked finding is invalid for this organization or scope.',
+        );
+
         $updated = DB::table('continuity_recovery_plans')
             ->where('id', $planId)
             ->update([

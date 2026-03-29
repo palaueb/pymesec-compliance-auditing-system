@@ -4,9 +4,14 @@ namespace PymeSec\Plugins\PolicyExceptions;
 
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
+use PymeSec\Core\Security\ContextualReferenceValidator;
 
 class PolicyExceptionsRepository
 {
+    public function __construct(
+        private readonly ContextualReferenceValidator $references,
+    ) {}
+
     /**
      * @return array<int, array<string, string>>
      */
@@ -39,6 +44,17 @@ class PolicyExceptionsRepository
      */
     public function createPolicy(array $data): array
     {
+        $scopeId = ($data['scope_id'] ?? null) ?: null;
+
+        $this->references->assertRecord(
+            recordId: ($data['linked_control_id'] ?? null) ?: null,
+            table: 'controls',
+            organizationId: (string) $data['organization_id'],
+            scopeId: is_string($scopeId) ? $scopeId : null,
+            field: 'linked_control_id',
+            message: 'The selected linked control is invalid for this organization or scope.',
+        );
+
         $id = $this->nextId('policy', (string) ($data['title'] ?? 'policy'));
 
         DB::table('policies')->insert([
@@ -67,6 +83,17 @@ class PolicyExceptionsRepository
      */
     public function updatePolicy(string $policyId, array $data): ?array
     {
+        $scopeId = ($data['scope_id'] ?? null) ?: null;
+
+        $this->references->assertRecord(
+            recordId: ($data['linked_control_id'] ?? null) ?: null,
+            table: 'controls',
+            organizationId: (string) $data['organization_id'],
+            scopeId: is_string($scopeId) ? $scopeId : null,
+            field: 'linked_control_id',
+            message: 'The selected linked control is invalid for this organization or scope.',
+        );
+
         $updated = DB::table('policies')
             ->where('id', $policyId)
             ->update([
@@ -134,6 +161,17 @@ class PolicyExceptionsRepository
      */
     public function createException(string $policyId, array $data): array
     {
+        $scopeId = ($data['scope_id'] ?? null) ?: null;
+
+        $this->references->assertRecord(
+            recordId: ($data['linked_finding_id'] ?? null) ?: null,
+            table: 'findings',
+            organizationId: (string) $data['organization_id'],
+            scopeId: is_string($scopeId) ? $scopeId : null,
+            field: 'linked_finding_id',
+            message: 'The selected linked finding is invalid for this organization or scope.',
+        );
+
         $id = $this->nextId('exception', (string) ($data['title'] ?? 'exception'));
 
         DB::table('policy_exceptions')->insert([
@@ -162,6 +200,24 @@ class PolicyExceptionsRepository
      */
     public function updateException(string $exceptionId, array $data): ?array
     {
+        $existing = $this->findException($exceptionId);
+
+        if ($existing === null) {
+            return null;
+        }
+
+        $scopeId = ($data['scope_id'] ?? $existing['scope_id'] ?? null) ?: null;
+        $organizationId = (string) ($data['organization_id'] ?? $existing['organization_id']);
+
+        $this->references->assertRecord(
+            recordId: ($data['linked_finding_id'] ?? null) ?: null,
+            table: 'findings',
+            organizationId: $organizationId,
+            scopeId: is_string($scopeId) ? $scopeId : null,
+            field: 'linked_finding_id',
+            message: 'The selected linked finding is invalid for this organization or scope.',
+        );
+
         $updated = DB::table('policy_exceptions')
             ->where('id', $exceptionId)
             ->update([
@@ -175,7 +231,7 @@ class PolicyExceptionsRepository
             ]);
 
         if ($updated === 0) {
-            return $this->findException($exceptionId);
+            return $existing;
         }
 
         return $this->findException($exceptionId);

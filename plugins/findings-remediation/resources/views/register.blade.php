@@ -49,7 +49,29 @@
                 <div class="surface-card" style="padding:14px;">
                     <div class="metric-label">Overview</div>
                     <div class="table-note" style="margin-top:10px;">{{ $selected_finding['description'] }}</div>
-                    <div class="table-note">Owner: {{ $selected_finding['owner_assignment']['display_name'] ?? 'No owner assigned' }}</div>
+                    <div class="table-note">Owners: {{ count($selected_finding['owner_assignments']) }}</div>
+                    <div class="data-stack" style="margin-top:10px;">
+                        @forelse ($selected_finding['owner_assignments'] as $owner)
+                            <div class="data-item">
+                                <div class="entity-title">{{ $owner['display_name'] }}</div>
+                                <div class="table-note">{{ $owner['kind'] }}</div>
+                                @if ($can_manage_findings)
+                                    <form method="POST" action="{{ str_replace('__ASSIGNMENT__', $owner['assignment_id'], $selected_finding['owner_remove_route']) }}" style="margin-top:8px;">
+                                        @csrf
+                                        <input type="hidden" name="principal_id" value="{{ $query['principal_id'] ?? '' }}">
+                                        <input type="hidden" name="organization_id" value="{{ $query['organization_id'] }}">
+                                        <input type="hidden" name="locale" value="{{ $query['locale'] }}">
+                                        <input type="hidden" name="menu" value="plugin.findings-remediation.root">
+                                        <input type="hidden" name="finding_id" value="{{ $selected_finding['id'] }}">
+                                        <input type="hidden" name="membership_id" value="{{ $query['membership_ids'][0] ?? 'membership-org-a-hello' }}">
+                                        <button class="button button-ghost" type="submit">Remove owner</button>
+                                    </form>
+                                @endif
+                            </div>
+                        @empty
+                            <span class="muted-note">No owner assigned</span>
+                        @endforelse
+                    </div>
                     <div class="table-note">
                         Control:
                         @if ($selected_finding['linked_control_url'] !== null)
@@ -182,7 +204,7 @@
                                         <input class="field-input" name="due_on" type="date">
                                     </div>
                                     <div class="field">
-                                        <label class="field-label">Owner actor</label>
+                                        <label class="field-label">Initial owner actor</label>
                                         <select class="field-select" name="owner_actor_id">
                                             <option value="">No owner</option>
                                             @foreach ($owner_actor_options as $actor)
@@ -208,7 +230,13 @@
                                     <div>
                                         <div class="entity-title">{{ $action['title'] }}</div>
                                         <div class="table-note">{{ $action['status_label'] }}{{ $action['due_on'] !== '' ? ' · due '.$action['due_on'] : '' }}</div>
-                                        <div class="table-note">{{ $action['owner_assignment']['display_name'] ?? 'No owner assigned' }}</div>
+                                        <div class="table-note">
+                                            @if (($action['owner_assignments'] ?? []) !== [])
+                                                {{ $action['owner_assignments'][0]['display_name'] }}{{ count($action['owner_assignments']) > 1 ? ' +'.(count($action['owner_assignments']) - 1).' more' : '' }}
+                                            @else
+                                                No owner assigned
+                                            @endif
+                                        </div>
                                         @if ($action['notes'] !== '')
                                             <div class="table-note">{{ $action['notes'] }}</div>
                                         @endif
@@ -253,14 +281,38 @@
                                                 </select>
                                             </div>
                                             <div class="field">
-                                                <label class="field-label">Owner actor</label>
+                                                <label class="field-label">Add owner actor</label>
                                                 <select class="field-select" name="owner_actor_id">
-                                                    <option value="">Keep current owner</option>
+                                                    <option value="">Do not add owner</option>
                                                     @foreach ($owner_actor_options as $actor)
-                                                        <option value="{{ $actor['id'] }}" @selected(($action['owner_assignment']['id'] ?? null) === $actor['id'])>{{ $actor['label'] }}</option>
+                                                        <option value="{{ $actor['id'] }}">{{ $actor['label'] }}</option>
                                                     @endforeach
                                                 </select>
+                                                <div class="table-note">Selecting an actor adds another owner instead of replacing the current set.</div>
                                             </div>
+                                            @if (($action['owner_assignments'] ?? []) !== [])
+                                                <div class="field" style="grid-column:1 / -1;">
+                                                    <label class="field-label">Current owners</label>
+                                                    <div class="data-stack">
+                                                        @foreach ($action['owner_assignments'] as $owner)
+                                                            <div class="data-item">
+                                                                <div class="entity-title">{{ $owner['display_name'] }}</div>
+                                                                <div class="table-note">{{ $owner['kind'] }}</div>
+                                                                <form method="POST" action="{{ str_replace('__ASSIGNMENT__', $owner['assignment_id'], $action['owner_remove_route']) }}" style="margin-top:8px;">
+                                                                    @csrf
+                                                                    <input type="hidden" name="principal_id" value="{{ $query['principal_id'] ?? '' }}">
+                                                                    <input type="hidden" name="organization_id" value="{{ $query['organization_id'] }}">
+                                                                    <input type="hidden" name="locale" value="{{ $query['locale'] }}">
+                                                                    <input type="hidden" name="menu" value="plugin.findings-remediation.root">
+                                                                    <input type="hidden" name="finding_id" value="{{ $selected_finding['id'] }}">
+                                                                    <input type="hidden" name="membership_id" value="{{ $query['membership_ids'][0] ?? 'membership-org-a-hello' }}">
+                                                                    <button class="button button-ghost" type="submit">Remove owner</button>
+                                                                </form>
+                                                            </div>
+                                                        @endforeach
+                                                    </div>
+                                                </div>
+                                            @endif
                                             <div class="field">
                                                 <label class="field-label">Notes</label>
                                                 <textarea class="field-input" name="notes" rows="2">{{ $action['notes'] }}</textarea>
@@ -337,14 +389,38 @@
                                     </select>
                                 </div>
                                 <div class="field">
-                                    <label class="field-label">Owner actor</label>
+                                    <label class="field-label">Add owner actor</label>
                                     <select class="field-select" name="owner_actor_id">
-                                        <option value="">Keep current owner</option>
+                                        <option value="">Do not add owner</option>
                                         @foreach ($owner_actor_options as $actor)
-                                            <option value="{{ $actor['id'] }}" @selected(($selected_finding['owner_assignment']['id'] ?? null) === $actor['id'])>{{ $actor['label'] }}</option>
+                                            <option value="{{ $actor['id'] }}">{{ $actor['label'] }}</option>
                                         @endforeach
                                     </select>
+                                    <div class="table-note">Selecting an actor adds another owner instead of replacing the current set.</div>
                                 </div>
+                                @if (($selected_finding['owner_assignments'] ?? []) !== [])
+                                    <div class="field" style="grid-column:1 / -1;">
+                                        <label class="field-label">Current owners</label>
+                                        <div class="data-stack">
+                                            @foreach ($selected_finding['owner_assignments'] as $owner)
+                                                <div class="data-item">
+                                                    <div class="entity-title">{{ $owner['display_name'] }}</div>
+                                                    <div class="table-note">{{ $owner['kind'] }}</div>
+                                                    <form method="POST" action="{{ str_replace('__ASSIGNMENT__', $owner['assignment_id'], $selected_finding['owner_remove_route']) }}" style="margin-top:8px;">
+                                                        @csrf
+                                                        <input type="hidden" name="principal_id" value="{{ $query['principal_id'] ?? '' }}">
+                                                        <input type="hidden" name="organization_id" value="{{ $query['organization_id'] }}">
+                                                        <input type="hidden" name="locale" value="{{ $query['locale'] }}">
+                                                        <input type="hidden" name="menu" value="plugin.findings-remediation.root">
+                                                        <input type="hidden" name="finding_id" value="{{ $selected_finding['id'] }}">
+                                                        <input type="hidden" name="membership_id" value="{{ $query['membership_ids'][0] ?? 'membership-org-a-hello' }}">
+                                                        <button class="button button-ghost" type="submit">Remove owner</button>
+                                                    </form>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    </div>
+                                @endif
                                 <div class="field" style="grid-column:1 / -1;">
                                     <label class="field-label">Description</label>
                                     <textarea class="field-input" name="description" rows="3" required>{{ $selected_finding['description'] }}</textarea>
@@ -421,7 +497,7 @@
                             </select>
                         </div>
                         <div class="field">
-                            <label class="field-label" for="finding-owner">Owner actor</label>
+                            <label class="field-label" for="finding-owner">Initial owner actor</label>
                             <select class="field-select" id="finding-owner" name="owner_actor_id">
                                 <option value="">No owner</option>
                                 @foreach ($owner_actor_options as $actor)
@@ -481,9 +557,13 @@
                                 <span class="pill {{ $sSevPill }}">{{ $finding['severity_label'] }}</span>
                             </td>
                             <td>
-                                @if ($finding['owner_assignment'] !== null)
-                                    <div>{{ $finding['owner_assignment']['display_name'] }}</div>
-                                    <div class="table-note">{{ $finding['owner_assignment']['kind'] }}</div>
+                                @if (($finding['owner_assignments'] ?? []) !== [])
+                                    <div>{{ $finding['owner_assignments'][0]['display_name'] }}</div>
+                                    @if (count($finding['owner_assignments']) > 1)
+                                        <div class="table-note">+{{ count($finding['owner_assignments']) - 1 }} more owner{{ count($finding['owner_assignments']) > 2 ? 's' : '' }}</div>
+                                    @else
+                                        <div class="table-note">{{ $finding['owner_assignments'][0]['kind'] }}</div>
+                                    @endif
                                 @else
                                     <span class="muted-note">No owner assigned</span>
                                 @endif
