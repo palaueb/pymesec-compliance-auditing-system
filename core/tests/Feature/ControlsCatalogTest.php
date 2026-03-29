@@ -33,7 +33,7 @@ class ControlsCatalogTest extends TestCase
             ->assertSee('Controls Catalog')
             ->assertSee('Quarterly Access Review')
             ->assertDontSee('Backup Governance')
-            ->assertSee('Open framework adoption')
+            ->assertSee('Framework adoption')
             ->assertSee('Ava Mason')
             ->assertSee('Create control');
     }

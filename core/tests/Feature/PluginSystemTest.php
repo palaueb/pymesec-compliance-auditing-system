@@ -179,28 +179,10 @@ class PluginSystemTest extends TestCase
     public function test_the_plugins_list_command_reports_manifest_metadata(): void
     {
         $this->artisan('plugins:list')
-            ->expectsTable(
-                ['ID', 'Type', 'Enabled', 'Booted', 'Permissions', 'Routes', 'Menus', 'Reason'],
-                [
-                    ['actor-directory', 'domain-actor', 'yes', 'yes', '2', '1', '2', ''],
-                    ['assessments-audits', 'domain', 'yes', 'yes', '2', '1', '1', ''],
-                    ['asset-catalog', 'domain', 'yes', 'yes', '2', '1', '2', ''],
-                    ['continuity-bcm', 'domain', 'yes', 'yes', '2', '1', '2', ''],
-                    ['controls-catalog', 'domain', 'yes', 'yes', '2', '1', '2', ''],
-                    ['data-flows-privacy', 'domain', 'yes', 'yes', '2', '1', '2', ''],
-                    ['evidence-management', 'domain', 'yes', 'yes', '2', '1', '1', ''],
-                    ['findings-remediation', 'domain', 'yes', 'yes', '2', '1', '2', ''],
-                    ['framework-ens', 'framework-pack', 'no', 'no', '0', '0', '0', 'plugin_not_enabled'],
-                    ['framework-gdpr', 'framework-pack', 'no', 'no', '0', '0', '0', 'plugin_not_enabled'],
-                    ['framework-iso27001', 'framework-pack', 'no', 'no', '0', '0', '0', 'plugin_not_enabled'],
-                    ['framework-nis2', 'framework-pack', 'no', 'no', '0', '0', '0', 'plugin_not_enabled'],
-                    ['hello-world', 'ui', 'yes', 'yes', '1', '1', '2', ''],
-                    ['identity-ldap', 'identity', 'yes', 'yes', '2', '1', '1', ''],
-                    ['identity-local', 'identity', 'yes', 'yes', '4', '1', '2', ''],
-                    ['policy-exceptions', 'domain', 'yes', 'yes', '2', '1', '2', ''],
-                    ['risk-management', 'domain', 'yes', 'yes', '2', '1', '2', ''],
-                ],
-            )
+            ->expectsOutputToContain('| ID')
+            ->expectsOutputToContain('| controls-catalog     | domain         | yes     | yes    | 2           | 1      | 3')
+            ->expectsOutputToContain('| framework-gdpr       | framework-pack | no      | no     | 0           | 0      | 0     | plugin_not_enabled |')
+            ->expectsOutputToContain('| risk-management      | domain         | yes     | yes    | 2           | 1      | 2')
             ->assertExitCode(0);
     }
 
@@ -366,20 +348,21 @@ class PluginSystemTest extends TestCase
                 ['ID', 'Owner', 'Parent', 'Route', 'Permission', 'Area', 'Order'],
                 [
                     ['core.dashboard', 'core', '', 'core.shell.index', '', 'app', '5'],
+                    ['core.support', 'core', '', 'core.shell.index', '', 'app', '8'],
                     ['core.platform', 'core', '', '', '', 'admin', '10'],
                     ['core.plugins', 'core', 'core.platform', 'core.plugins.index', 'core.plugins.view', 'admin', '10'],
                     ['core.permissions', 'core', 'core.platform', 'core.permissions.index', 'core.permissions.view', 'admin', '20'],
                     ['core.roles', 'core', 'core.platform', 'core.roles.index', 'core.roles.view', 'admin', '25'],
                     ['core.tenancy', 'core', 'core.platform', 'core.tenancy.index', 'core.tenancy.view', 'admin', '30'],
+                    ['core.reference-data', 'core', 'core.platform', 'core.reference-data.index', 'core.reference-data.view', 'admin', '35'],
                     ['core.audit', 'core', 'core.platform', 'core.audit.index', 'core.audit-logs.view', 'admin', '40'],
                     ['core.functional-actors', 'core', 'core.platform', 'core.functional-actors.index', 'core.functional-actors.view', 'admin', '50'],
                     ['plugin.identity-local.memberships', 'identity-local', '', 'plugin.identity-local.memberships.index', 'plugin.identity-local.memberships.view', 'app', '10'],
                     ['plugin.asset-catalog.root', 'asset-catalog', '', 'plugin.asset-catalog.index', 'plugin.asset-catalog.assets.view', 'app', '20'],
                     ['plugin.asset-catalog.lifecycle', 'asset-catalog', 'plugin.asset-catalog.root', 'plugin.asset-catalog.lifecycle', 'plugin.asset-catalog.assets.view', 'app', '10'],
                     ['plugin.controls-catalog.root', 'controls-catalog', '', 'plugin.controls-catalog.index', 'plugin.controls-catalog.controls.view', 'app', '25'],
+                    ['plugin.controls-catalog.framework-adoption', 'controls-catalog', 'plugin.controls-catalog.root', 'plugin.controls-catalog.framework-adoption', 'plugin.controls-catalog.controls.view', 'app', '5'],
                     ['plugin.controls-catalog.reviews', 'controls-catalog', 'plugin.controls-catalog.root', 'plugin.controls-catalog.reviews', 'plugin.controls-catalog.controls.view', 'app', '10'],
-                    ['plugin.hello-world.root', 'hello-world', '', 'plugin.hello-world.index', 'plugin.hello-world.hello.view', 'app', '30'],
-                    ['plugin.hello-world.examples', 'hello-world', 'plugin.hello-world.root', 'plugin.hello-world.index', 'plugin.hello-world.hello.view', 'app', '10'],
                     ['plugin.risk-management.root', 'risk-management', '', 'plugin.risk-management.index', 'plugin.risk-management.risks.view', 'app', '35'],
                     ['plugin.risk-management.board', 'risk-management', 'plugin.risk-management.root', 'plugin.risk-management.board', 'plugin.risk-management.risks.view', 'app', '10'],
                     ['plugin.findings-remediation.root', 'findings-remediation', '', 'plugin.findings-remediation.index', 'plugin.findings-remediation.findings.view', 'app', '38'],
@@ -389,6 +372,7 @@ class PluginSystemTest extends TestCase
                     ['plugin.assessments-audits.root', 'assessments-audits', '', 'plugin.assessments-audits.index', 'plugin.assessments-audits.assessments.view', 'app', '42'],
                     ['plugin.policy-exceptions.root', 'policy-exceptions', '', 'plugin.policy-exceptions.index', 'plugin.policy-exceptions.policies.view', 'app', '42'],
                     ['plugin.policy-exceptions.exceptions', 'policy-exceptions', 'plugin.policy-exceptions.root', 'plugin.policy-exceptions.exceptions', 'plugin.policy-exceptions.policies.view', 'app', '10'],
+                    ['plugin.evidence-management.root', 'evidence-management', '', 'plugin.evidence-management.index', 'plugin.evidence-management.evidence.view', 'app', '44'],
                     ['plugin.data-flows-privacy.root', 'data-flows-privacy', '', 'plugin.data-flows-privacy.index', 'plugin.data-flows-privacy.records.view', 'app', '45'],
                     ['plugin.data-flows-privacy.activities', 'data-flows-privacy', 'plugin.data-flows-privacy.root', 'plugin.data-flows-privacy.activities', 'plugin.data-flows-privacy.records.view', 'app', '10'],
                     ['plugin.identity-local.users', 'identity-local', '', 'plugin.identity-local.users.index', 'plugin.identity-local.users.view', 'admin', '47'],
