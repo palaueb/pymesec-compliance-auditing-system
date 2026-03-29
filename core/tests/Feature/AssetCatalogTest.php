@@ -16,14 +16,17 @@ class AssetCatalogTest extends TestCase
             ->assertOk()
             ->assertSee('Asset Catalog')
             ->assertSee('business-managed catalog values')
+            ->assertSee('This list stays focused on browse, compare, and open.')
             ->assertSee('ERP Production')
             ->assertSee('Add asset')
             ->assertSee('Open');
 
         $this->get('/app?menu=plugin.asset-catalog.root&asset_id=asset-erp-prod&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
             ->assertOk()
-            ->assertSee('Edit asset details')
-            ->assertSee('Workflow');
+            ->assertSee('Asset Detail keeps workflow, accountability, and governed asset changes inside one record workspace.')
+            ->assertSee('Accountability')
+            ->assertSee('Governance actions')
+            ->assertSee('Edit asset details');
     }
 
     public function test_assets_can_be_created_and_edited_from_the_shell_runtime(): void

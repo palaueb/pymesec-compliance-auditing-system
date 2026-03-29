@@ -28,10 +28,18 @@ class AssessmentsAuditsTest extends TestCase
 
     public function test_the_assessments_screen_renders_inside_the_shell(): void
     {
+        $this->get('/app?menu=plugin.assessments-audits.root&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
+            ->assertOk()
+            ->assertSee('Assessment Campaigns')
+            ->assertSee('Assessment campaign list')
+            ->assertSee('This list stays focused on perimeter and result summary.')
+            ->assertSee('Open');
+
         $this->get('/app?menu=plugin.assessments-audits.root&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello&assessment_id=assessment-q2-access-resilience')
             ->assertOk()
             ->assertSee('Assessment Campaigns')
             ->assertSee('Assessment status and review results are system-controlled values')
+            ->assertSee('Assessment Detail keeps checklist reviews, workpapers, linked findings, export actions, sign-off, and summary editing in one campaign workspace.')
             ->assertSee('Q2 Access and Resilience Review')
             ->assertSee('Quarterly Access Review')
             ->assertSee('Access rights')

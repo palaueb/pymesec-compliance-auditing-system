@@ -91,6 +91,9 @@
 
         {{-- ── Asset detail ──────────────────────────────────────────────────── --}}
         <div class="surface-card" style="padding:20px; display:grid; gap:18px;">
+            <div class="surface-note">
+                Asset Detail keeps workflow, accountability, and governed asset changes inside one record workspace. The catalog list stays focused on browse, compare, and open.
+            </div>
 
             {{-- Header --}}
             <div class="screen-header" style="margin-bottom:0; padding-bottom:16px;">
@@ -132,67 +135,70 @@
                 </div>
             </div>
 
-            {{-- Owner --}}
-            <div class="surface-card" style="padding:14px; background:rgba(255,255,255,0.4);">
-                <div class="metric-label" style="margin-bottom:8px;">Owners</div>
-                @if (($selected_asset['owner_assignments'] ?? []) !== [])
-                    <div class="data-stack">
-                        @foreach ($selected_asset['owner_assignments'] as $owner)
-                            <div class="data-item">
-                                <div class="entity-title" style="font-size:14px;">{{ $owner['display_name'] }}</div>
-                                <div class="table-note">{{ $owner['kind'] }}</div>
-                                @if ($can_manage_assets)
-                                    <form method="POST" action="{{ str_replace('__ASSIGNMENT__', $owner['assignment_id'], $selected_asset['owner_remove_route']) }}" style="margin-top:8px;">
-                                        @csrf
-                                        <input type="hidden" name="principal_id" value="{{ $query['principal_id'] ?? '' }}">
-                                        <input type="hidden" name="organization_id" value="{{ $query['organization_id'] }}">
-                                        <input type="hidden" name="locale" value="{{ $query['locale'] }}">
-                                        <input type="hidden" name="menu" value="plugin.asset-catalog.root">
-                                        <input type="hidden" name="asset_id" value="{{ $selected_asset['id'] }}">
-                                        <input type="hidden" name="membership_id" value="{{ $query['membership_ids'][0] ?? 'membership-org-a-hello' }}">
-                                        <button class="button button-ghost" type="submit">Remove owner</button>
-                                    </form>
-                                @endif
-                            </div>
-                        @endforeach
-                    </div>
-                @else
-                    <div class="table-note">No owner assigned</div>
-                @endif
-            </div>
+            <div class="overview-grid" style="grid-template-columns:repeat(2, minmax(0, 1fr));">
+                {{-- Owner --}}
+                <div class="surface-card" style="padding:14px; background:rgba(255,255,255,0.4);">
+                    <div class="metric-label" style="margin-bottom:8px;">Accountability</div>
+                    <div class="table-note" style="margin-bottom:10px;">Owners: {{ count($selected_asset['owner_assignments'] ?? []) }}</div>
+                    @if (($selected_asset['owner_assignments'] ?? []) !== [])
+                        <div class="data-stack">
+                            @foreach ($selected_asset['owner_assignments'] as $owner)
+                                <div class="data-item">
+                                    <div class="entity-title" style="font-size:14px;">{{ $owner['display_name'] }}</div>
+                                    <div class="table-note">{{ $owner['kind'] }}</div>
+                                    @if ($can_manage_assets)
+                                        <form method="POST" action="{{ str_replace('__ASSIGNMENT__', $owner['assignment_id'], $selected_asset['owner_remove_route']) }}" style="margin-top:8px;">
+                                            @csrf
+                                            <input type="hidden" name="principal_id" value="{{ $query['principal_id'] ?? '' }}">
+                                            <input type="hidden" name="organization_id" value="{{ $query['organization_id'] }}">
+                                            <input type="hidden" name="locale" value="{{ $query['locale'] }}">
+                                            <input type="hidden" name="menu" value="plugin.asset-catalog.root">
+                                            <input type="hidden" name="asset_id" value="{{ $selected_asset['id'] }}">
+                                            <input type="hidden" name="membership_id" value="{{ $query['membership_ids'][0] ?? 'membership-org-a-hello' }}">
+                                            <button class="button button-ghost" type="submit">Remove owner</button>
+                                        </form>
+                                    @endif
+                                </div>
+                            @endforeach
+                        </div>
+                    @else
+                        <div class="table-note">No owner assigned</div>
+                    @endif
+                </div>
 
-            {{-- Workflow --}}
-            <div style="display:grid; gap:10px;">
-                <div class="metric-label">Workflow</div>
-                @if ($selected_asset['transitions'] !== [])
-                    <div class="action-cluster">
-                        @foreach ($selected_asset['transitions'] as $transition)
-                            <form method="POST" action="{{ str_replace('__TRANSITION__', $transition, $selected_asset['transition_route']) }}">
-                                @csrf
-                                <input type="hidden" name="principal_id"    value="{{ $query['principal_id'] ?? '' }}">
-                                <input type="hidden" name="organization_id" value="{{ $query['organization_id'] }}">
-                                <input type="hidden" name="locale"          value="{{ $query['locale'] }}">
-                                <input type="hidden" name="menu"            value="plugin.asset-catalog.root">
-                                <input type="hidden" name="asset_id"        value="{{ $selected_asset['id'] }}">
-                                <input type="hidden" name="membership_id"   value="{{ $query['membership_ids'][0] ?? 'membership-org-a-hello' }}">
-                                <button class="button button-secondary" type="submit">{{ ucwords(str_replace('-', ' ', $transition)) }}</button>
-                            </form>
-                        @endforeach
-                    </div>
-                @else
-                    <div class="table-note">View-only access</div>
-                @endif
+                {{-- Workflow --}}
+                <div class="surface-card" style="padding:14px; background:rgba(255,255,255,0.4);">
+                    <div class="metric-label" style="margin-bottom:8px;">Governance actions</div>
+                    @if ($selected_asset['transitions'] !== [])
+                        <div class="action-cluster">
+                            @foreach ($selected_asset['transitions'] as $transition)
+                                <form method="POST" action="{{ str_replace('__TRANSITION__', $transition, $selected_asset['transition_route']) }}">
+                                    @csrf
+                                    <input type="hidden" name="principal_id"    value="{{ $query['principal_id'] ?? '' }}">
+                                    <input type="hidden" name="organization_id" value="{{ $query['organization_id'] }}">
+                                    <input type="hidden" name="locale"          value="{{ $query['locale'] }}">
+                                    <input type="hidden" name="menu"            value="plugin.asset-catalog.root">
+                                    <input type="hidden" name="asset_id"        value="{{ $selected_asset['id'] }}">
+                                    <input type="hidden" name="membership_id"   value="{{ $query['membership_ids'][0] ?? 'membership-org-a-hello' }}">
+                                    <button class="button button-secondary" type="submit">{{ ucwords(str_replace('-', ' ', $transition)) }}</button>
+                                </form>
+                            @endforeach
+                        </div>
+                    @else
+                        <div class="table-note">View-only access</div>
+                    @endif
 
-                @if (count($selected_asset['history']) > 0)
-                    <div class="data-stack" style="margin-top:4px;">
-                        @foreach ($selected_asset['history'] as $history)
-                            <div class="data-item">
-                                <div class="entity-title" style="font-size:13px;">{{ $history->transitionKey }}</div>
-                                <div class="table-note">{{ $history->fromState }} → {{ $history->toState }}</div>
-                            </div>
-                        @endforeach
-                    </div>
-                @endif
+                    @if (count($selected_asset['history']) > 0)
+                        <div class="data-stack" style="margin-top:10px;">
+                            @foreach ($selected_asset['history'] as $history)
+                                <div class="data-item">
+                                    <div class="entity-title" style="font-size:13px;">{{ $history->transitionKey }}</div>
+                                    <div class="table-note">{{ $history->fromState }} → {{ $history->toState }}</div>
+                                </div>
+                            @endforeach
+                        </div>
+                    @endif
+                </div>
             </div>
 
             {{-- Edit asset (collapsed) --}}
@@ -274,6 +280,15 @@
             <div class="metric-card"><div class="metric-label">Active</div>   <div class="metric-value" style="color:#166534;">{{ collect($assets)->where('state', 'active')->count() }}</div></div>
             <div class="metric-card"><div class="metric-label">In review</div><div class="metric-value" style="color:#92400e;">{{ collect($assets)->where('state', 'review')->count() }}</div></div>
             <div class="metric-card"><div class="metric-label">Retired</div>  <div class="metric-value" style="color:var(--muted);">{{ collect($assets)->where('state', 'retired')->count() }}</div></div>
+        </div>
+
+        <div class="surface-card" style="padding:14px;">
+            <div class="row-between" style="gap:12px; align-items:flex-start;">
+                <div>
+                    <div class="entity-title">Asset catalog list</div>
+                    <div class="table-note">This list stays focused on browse, compare, and open. Ownership, workflow, and governed changes stay in Asset Detail.</div>
+                </div>
+            </div>
         </div>
 
         {{-- ── Asset list ─────────────────────────────────────────────────────── --}}

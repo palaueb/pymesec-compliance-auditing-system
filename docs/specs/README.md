@@ -20,6 +20,8 @@ The following specification documents are available in the [`specs`](./) folder:
 - [core-mutation-authorization-regressions-v1.md](./core-mutation-authorization-regressions-v1.md)
 - [menu-system-ui-shell-v1.md](./menu-system-ui-shell-v1.md)
 - [contextual-shell-detail-navigation-v1.md](./contextual-shell-detail-navigation-v1.md)
+- [asset-detail-ui-v1.md](./asset-detail-ui-v1.md)
+- [assessment-detail-ui-v1.md](./assessment-detail-ui-v1.md)
 - [plugin-ui-contract-v1.md](./plugin-ui-contract-v1.md)
 - [findings-remediation-plugin-v1.md](./findings-remediation-plugin-v1.md)
 - [policy-exceptions-plugin-v1.md](./policy-exceptions-plugin-v1.md)

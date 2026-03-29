@@ -153,6 +153,9 @@
 
         {{-- ── Assessment detail ────────────────────────────────────────────── --}}
         <div class="surface-card" style="padding:20px; display:grid; gap:18px;">
+            <div class="surface-note">
+                Assessment Detail keeps checklist reviews, workpapers, linked findings, export actions, sign-off, and summary editing in one campaign workspace. The campaign list stays focused on perimeter and result summary.
+            </div>
 
             {{-- Header --}}
             <div class="screen-header" style="margin-bottom:0; padding-bottom:16px;">
@@ -682,7 +685,8 @@
 
         {{-- ── Assessment list ──────────────────────────────────────────────── --}}
         <div class="surface-card">
-            <div class="table-note">Select an assessment to record control reviews, upload workpapers, and link findings.</div>
+            <div class="entity-title">Assessment campaign list</div>
+            <div class="table-note" style="margin-top:6px;">This list stays focused on perimeter and result summary. Open an assessment to record reviews, upload workpapers, link findings, and export the campaign package.</div>
         </div>
 
         <div class="table-card">

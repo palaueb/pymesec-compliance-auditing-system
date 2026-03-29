@@ -378,11 +378,11 @@ $renderShell = function (
         $normalized = $path;
 
         if (is_string($parts['query'] ?? null) && $parts['query'] !== '') {
-            $normalized .= '?' . $parts['query'];
+            $normalized .= '?'.$parts['query'];
         }
 
         if (is_string($parts['fragment'] ?? null) && $parts['fragment'] !== '') {
-            $normalized .= '#' . $parts['fragment'];
+            $normalized .= '#'.$parts['fragment'];
         }
 
         return $normalized;

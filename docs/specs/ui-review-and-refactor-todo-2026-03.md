@@ -71,7 +71,7 @@ Each page and object must be checked against these questions:
 ### Batch 1: Highest Pain / Highest Leverage
 
 - [x] `plugins/continuity-bcm/resources/views/plans.blade.php`
-- [ ] `plugins/asset-catalog/resources/views/catalog.blade.php`
+- [x] `plugins/asset-catalog/resources/views/catalog.blade.php`
 - [ ] `plugins/assessments-audits/resources/views/index.blade.php`
 - [x] shell support for contextual detail navigation
 
@@ -198,11 +198,11 @@ Issues:
 - ownership model is too narrow for real accountability
 
 TODO:
-- [ ] move asset editing to `Asset Detail`
-- [ ] keep list page focused on browse/filter/open
-- [ ] replace governed business fields with managed reference data
-- [ ] replace `owner_label` editing with actor assignments
-- [ ] support multiple owners / accountability assignments
+- [x] move asset editing to `Asset Detail`
+- [x] keep list page focused on browse/filter/open
+- [x] replace governed business fields with managed reference data
+- [x] replace `owner_label` editing with actor assignments
+- [x] support multiple owners / accountability assignments
 
 ### Controls Catalog
 
@@ -310,9 +310,9 @@ Issues:
 - checklist work, findings, workpapers, export, and edit all exist inside the list
 
 TODO:
-- [ ] create `Assessment Detail`
-- [ ] move checklist reviews, workpapers, linked findings, and summary actions to detail
-- [ ] keep campaign list focused on perimeter and result summary
+- [x] create `Assessment Detail`
+- [x] move checklist reviews, workpapers, linked findings, and summary actions to detail
+- [x] keep campaign list focused on perimeter and result summary
 
 ### Actor Directory
 
