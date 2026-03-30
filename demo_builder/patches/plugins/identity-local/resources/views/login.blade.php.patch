@@ -1,5 +1,5 @@
 diff --git a/plugins/identity-local/resources/views/login.blade.php b/plugins/identity-local/resources/views/login.blade.php
-index 0c2dc9d4e2bcb85f452d2ef84576e33575701432..8b65e2e7adfdfea17a16e0ae9790e429903d6bc7 100644
+index e11ad5e171e44551345a39729eadb6022694d4fc..c9e19a9ae3553541df637b480ca08b6c47cec955 100644
 --- a/plugins/identity-local/resources/views/login.blade.php
 +++ b/plugins/identity-local/resources/views/login.blade.php
 @@ -89,24 +89,37 @@
@@ -9,7 +9,7 @@ index 0c2dc9d4e2bcb85f452d2ef84576e33575701432..8b65e2e7adfdfea17a16e0ae9790e429
 -        <div class="eyebrow">Identity</div>
 +        <div class="eyebrow">{{ ($demo_enabled ?? false) ? 'Demo edition' : 'Identity' }}</div>
          <h1>Sign in</h1>
--        <p>Use your username or work email. Password access sends a verification code by email, and you can switch to a sign-in link when email-based access is enabled.</p>
+-        <p>Use your username or work email. Local and directory-backed sign-in can require an email verification code, and some organizations also allow a cached email sign-in link.</p>
 +        @if (($demo_enabled ?? false) === true)
 +            <p>This installation runs as a disposable demo workspace. Each sign-in gets a private SQLite copy of the demo company data.</p>
 +            <div class="note">
@@ -20,7 +20,7 @@ index 0c2dc9d4e2bcb85f452d2ef84576e33575701432..8b65e2e7adfdfea17a16e0ae9790e429
 +                @endif
 +            </div>
 +        @else
-+            <p>Use your username or work email. Password access sends a verification code by email, and you can switch to a sign-in link when email-based access is enabled.</p>
++            <p>Use your username or work email. Local and directory-backed sign-in can require an email verification code, and some organizations also allow a cached email sign-in link.</p>
 +        @endif
  
          <form method="POST" action="{{ route('plugin.identity-local.auth.request') }}">

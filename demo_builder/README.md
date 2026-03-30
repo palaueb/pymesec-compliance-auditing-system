@@ -49,6 +49,15 @@ Deploy the demo edition onto an uploaded checkout:
 ./demo_builder/deploy-demo.sh --app-url https://demo.pymesec.com
 ```
 
+If you want the full server refresh flow in one command, use:
+
+```bash
+./demo_builder/redeploy-demo.sh
+```
+
+This wrapper runs `fetch`, `reset --hard origin/main`, `clean -fd`, `pull --ff-only`, and then
+calls `deploy-demo.sh` with the current demo defaults.
+
 If SSH is jailed and the web server sees a different absolute root, pass one of:
 
 ```bash

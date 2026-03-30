@@ -1,5 +1,5 @@
 diff --git a/core/routes/web.php b/core/routes/web.php
-index cd2aa0eeea98e027252f3d444862de60a89a5ab9..134b52e45d07dfa80cddb6a1d27937d1f2428428 100644
+index f886f20c95f93d6aa0c124e6d9de1ad391b25b19..0b04e9db185a549e45095538c63e23f479da34f2 100644
 --- a/core/routes/web.php
 +++ b/core/routes/web.php
 @@ -616,6 +616,12 @@
