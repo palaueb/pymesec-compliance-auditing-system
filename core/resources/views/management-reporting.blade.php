@@ -1,4 +1,54 @@
-<section class="module-screen compact">
+<style>
+    .management-reporting-screen .management-summary-grid {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 10px;
+    }
+
+    .management-reporting-screen .management-summary-item,
+    .management-reporting-screen .management-breakdown-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: baseline;
+        gap: 12px;
+        border: 1px solid rgba(31,42,34,0.08);
+        border-radius: 4px;
+        background: rgba(255,255,255,0.42);
+    }
+
+    .management-reporting-screen .management-summary-item {
+        padding: 10px 12px;
+    }
+
+    .management-reporting-screen .management-summary-item span,
+    .management-reporting-screen .management-breakdown-row span {
+        color: var(--muted);
+    }
+
+    .management-reporting-screen .management-summary-item strong,
+    .management-reporting-screen .management-breakdown-row strong {
+        font-family: var(--font-heading);
+        font-size: 20px;
+        line-height: 1;
+    }
+
+    .management-reporting-screen .management-breakdown {
+        display: grid;
+        gap: 10px;
+    }
+
+    .management-reporting-screen .management-breakdown-row {
+        padding: 12px 14px;
+    }
+
+    @media (max-width: 720px) {
+        .management-reporting-screen .management-summary-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+</style>
+
+<section class="module-screen compact management-reporting-screen">
     <div class="surface-card" style="padding:18px; margin-bottom:16px;">
         <div class="eyebrow">Cross-domain executive summary</div>
         <h2 class="screen-title" style="font-size:26px; margin-top:6px;">Management view across assessments, evidence, risks, and findings</h2>
@@ -37,18 +87,18 @@
                     <a class="button button-secondary" href="{{ $assessments['section_url'] }}">Open module</a>
                 @endif
             </div>
-            <div class="data-points">
-                <div class="data-point"><span>Campaigns</span><strong>{{ $assessments['metrics']['campaigns'] ?? 0 }}</strong></div>
-                <div class="data-point"><span>Active</span><strong>{{ $assessments['metrics']['active'] ?? 0 }}</strong></div>
-                <div class="data-point"><span>Failing reviews</span><strong>{{ $assessments['metrics']['failing_reviews'] ?? 0 }}</strong></div>
-                <div class="data-point"><span>Linked findings</span><strong>{{ $assessments['metrics']['linked_findings'] ?? 0 }}</strong></div>
+            <div class="management-summary-grid">
+                <div class="management-summary-item"><span>Campaigns</span><strong>{{ $assessments['metrics']['campaigns'] ?? 0 }}</strong></div>
+                <div class="management-summary-item"><span>Active</span><strong>{{ $assessments['metrics']['active'] ?? 0 }}</strong></div>
+                <div class="management-summary-item"><span>Failing reviews</span><strong>{{ $assessments['metrics']['failing_reviews'] ?? 0 }}</strong></div>
+                <div class="management-summary-item"><span>Linked findings</span><strong>{{ $assessments['metrics']['linked_findings'] ?? 0 }}</strong></div>
             </div>
             <div class="overview-grid" style="grid-template-columns:repeat(2, minmax(0, 1fr)); margin-top:16px;">
                 <div class="surface-card" style="padding:14px;">
                     <div class="eyebrow">Campaign status</div>
-                    <div class="data-stack" style="margin-top:10px;">
+                    <div class="management-breakdown" style="margin-top:10px;">
                         @forelse ($assessments['status_breakdown'] as $row)
-                            <div class="data-item"><span>{{ $row['label'] }}</span><strong>{{ $row['count'] }}</strong></div>
+                            <div class="management-breakdown-row"><span>{{ $row['label'] }}</span><strong>{{ $row['count'] }}</strong></div>
                         @empty
                             <div class="table-note">{{ $assessments['empty_copy'] }}</div>
                         @endforelse
@@ -56,9 +106,9 @@
                 </div>
                 <div class="surface-card" style="padding:14px;">
                     <div class="eyebrow">Review results</div>
-                    <div class="data-stack" style="margin-top:10px;">
+                    <div class="management-breakdown" style="margin-top:10px;">
                         @forelse ($assessments['result_breakdown'] as $row)
-                            <div class="data-item"><span>{{ $row['label'] }}</span><strong>{{ $row['count'] }}</strong></div>
+                            <div class="management-breakdown-row"><span>{{ $row['label'] }}</span><strong>{{ $row['count'] }}</strong></div>
                         @empty
                             <div class="table-note">{{ $assessments['empty_copy'] }}</div>
                         @endforelse
@@ -104,17 +154,17 @@
                     <a class="button button-secondary" href="{{ $evidence['section_url'] }}">Open module</a>
                 @endif
             </div>
-            <div class="data-points">
-                <div class="data-point"><span>Records</span><strong>{{ $evidence['metrics']['records'] ?? 0 }}</strong></div>
-                <div class="data-point"><span>Approved</span><strong>{{ $evidence['metrics']['approved'] ?? 0 }}</strong></div>
-                <div class="data-point"><span>Review due</span><strong>{{ $evidence['metrics']['review_due'] ?? 0 }}</strong></div>
-                <div class="data-point"><span>Needs validation</span><strong>{{ $evidence['metrics']['needs_validation'] ?? 0 }}</strong></div>
+            <div class="management-summary-grid">
+                <div class="management-summary-item"><span>Records</span><strong>{{ $evidence['metrics']['records'] ?? 0 }}</strong></div>
+                <div class="management-summary-item"><span>Approved</span><strong>{{ $evidence['metrics']['approved'] ?? 0 }}</strong></div>
+                <div class="management-summary-item"><span>Review due</span><strong>{{ $evidence['metrics']['review_due'] ?? 0 }}</strong></div>
+                <div class="management-summary-item"><span>Needs validation</span><strong>{{ $evidence['metrics']['needs_validation'] ?? 0 }}</strong></div>
             </div>
             <div class="surface-card" style="padding:14px; margin-top:16px;">
                 <div class="eyebrow">Status mix</div>
-                <div class="data-stack" style="margin-top:10px;">
+                <div class="management-breakdown" style="margin-top:10px;">
                     @forelse ($evidence['status_breakdown'] as $row)
-                        <div class="data-item"><span>{{ $row['label'] }}</span><strong>{{ $row['count'] }}</strong></div>
+                        <div class="management-breakdown-row"><span>{{ $row['label'] }}</span><strong>{{ $row['count'] }}</strong></div>
                     @empty
                         <div class="table-note">{{ $evidence['empty_copy'] }}</div>
                     @endforelse
@@ -165,17 +215,17 @@
                     <a class="button button-secondary" href="{{ $risks['section_url'] }}">Open module</a>
                 @endif
             </div>
-            <div class="data-points">
-                <div class="data-point"><span>Risks</span><strong>{{ $risks['metrics']['risks'] ?? 0 }}</strong></div>
-                <div class="data-point"><span>In workflow</span><strong>{{ $risks['metrics']['in_workflow'] ?? 0 }}</strong></div>
-                <div class="data-point"><span>Assessing</span><strong>{{ $risks['metrics']['assessing'] ?? 0 }}</strong></div>
-                <div class="data-point"><span>Average residual</span><strong>{{ $risks['metrics']['average_residual'] ?? 0 }}</strong></div>
+            <div class="management-summary-grid">
+                <div class="management-summary-item"><span>Risks</span><strong>{{ $risks['metrics']['risks'] ?? 0 }}</strong></div>
+                <div class="management-summary-item"><span>In workflow</span><strong>{{ $risks['metrics']['in_workflow'] ?? 0 }}</strong></div>
+                <div class="management-summary-item"><span>Assessing</span><strong>{{ $risks['metrics']['assessing'] ?? 0 }}</strong></div>
+                <div class="management-summary-item"><span>Average residual</span><strong>{{ $risks['metrics']['average_residual'] ?? 0 }}</strong></div>
             </div>
             <div class="surface-card" style="padding:14px; margin-top:16px;">
                 <div class="eyebrow">Workflow state</div>
-                <div class="data-stack" style="margin-top:10px;">
+                <div class="management-breakdown" style="margin-top:10px;">
                     @forelse ($risks['state_breakdown'] as $row)
-                        <div class="data-item"><span>{{ $row['label'] }}</span><strong>{{ $row['count'] }}</strong></div>
+                        <div class="management-breakdown-row"><span>{{ $row['label'] }}</span><strong>{{ $row['count'] }}</strong></div>
                     @empty
                         <div class="table-note">{{ $risks['empty_copy'] }}</div>
                     @endforelse
@@ -220,18 +270,18 @@
                     <a class="button button-secondary" href="{{ $findings['section_url'] }}">Open module</a>
                 @endif
             </div>
-            <div class="data-points">
-                <div class="data-point"><span>Findings</span><strong>{{ $findings['metrics']['findings'] ?? 0 }}</strong></div>
-                <div class="data-point"><span>Open</span><strong>{{ $findings['metrics']['open'] ?? 0 }}</strong></div>
-                <div class="data-point"><span>Overdue</span><strong>{{ $findings['metrics']['overdue'] ?? 0 }}</strong></div>
-                <div class="data-point"><span>Open actions</span><strong>{{ $findings['metrics']['open_actions'] ?? 0 }}</strong></div>
+            <div class="management-summary-grid">
+                <div class="management-summary-item"><span>Findings</span><strong>{{ $findings['metrics']['findings'] ?? 0 }}</strong></div>
+                <div class="management-summary-item"><span>Open</span><strong>{{ $findings['metrics']['open'] ?? 0 }}</strong></div>
+                <div class="management-summary-item"><span>Overdue</span><strong>{{ $findings['metrics']['overdue'] ?? 0 }}</strong></div>
+                <div class="management-summary-item"><span>Open actions</span><strong>{{ $findings['metrics']['open_actions'] ?? 0 }}</strong></div>
             </div>
             <div class="overview-grid" style="grid-template-columns:repeat(3, minmax(0, 1fr)); margin-top:16px;">
                 <div class="surface-card" style="padding:14px;">
                     <div class="eyebrow">Workflow state</div>
-                    <div class="data-stack" style="margin-top:10px;">
+                    <div class="management-breakdown" style="margin-top:10px;">
                         @forelse ($findings['state_breakdown'] as $row)
-                            <div class="data-item"><span>{{ $row['label'] }}</span><strong>{{ $row['count'] }}</strong></div>
+                            <div class="management-breakdown-row"><span>{{ $row['label'] }}</span><strong>{{ $row['count'] }}</strong></div>
                         @empty
                             <div class="table-note">{{ $findings['empty_copy'] }}</div>
                         @endforelse
@@ -239,9 +289,9 @@
                 </div>
                 <div class="surface-card" style="padding:14px;">
                     <div class="eyebrow">Severity</div>
-                    <div class="data-stack" style="margin-top:10px;">
+                    <div class="management-breakdown" style="margin-top:10px;">
                         @forelse ($findings['severity_breakdown'] as $row)
-                            <div class="data-item"><span>{{ $row['label'] }}</span><strong>{{ $row['count'] }}</strong></div>
+                            <div class="management-breakdown-row"><span>{{ $row['label'] }}</span><strong>{{ $row['count'] }}</strong></div>
                         @empty
                             <div class="table-note">{{ $findings['empty_copy'] }}</div>
                         @endforelse
@@ -249,9 +299,9 @@
                 </div>
                 <div class="surface-card" style="padding:14px;">
                     <div class="eyebrow">Action status</div>
-                    <div class="data-stack" style="margin-top:10px;">
+                    <div class="management-breakdown" style="margin-top:10px;">
                         @forelse ($findings['action_breakdown'] as $row)
-                            <div class="data-item"><span>{{ $row['label'] }}</span><strong>{{ $row['count'] }}</strong></div>
+                            <div class="management-breakdown-row"><span>{{ $row['label'] }}</span><strong>{{ $row['count'] }}</strong></div>
                         @empty
                             <div class="table-note">{{ $findings['empty_copy'] }}</div>
                         @endforelse

@@ -49,6 +49,7 @@ The following specification documents are available in the [`specs`](./) folder:
 - [system-enums-vs-business-catalogues-ui-v1.md](./system-enums-vs-business-catalogues-ui-v1.md)
 - [framework-packs-and-reporting-depth-v1.md](./framework-packs-and-reporting-depth-v1.md)
 - [management-reporting-v1.md](./management-reporting-v1.md)
+- [information-architecture-and-data-contract-review-2026-03.md](./information-architecture-and-data-contract-review-2026-03.md)
 - [next-product-backlog-v1.md](./next-product-backlog-v1.md)
 - [framework-adoption-workflows-v1.md](./framework-adoption-workflows-v1.md)
 - [evidence-automation-and-repository-depth-v1.md](./evidence-automation-and-repository-depth-v1.md)
