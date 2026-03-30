@@ -16,6 +16,7 @@ Compliance auditing system for small and medium-sized enterprises (SMEs). Automa
 
 ![PymeSec Beta Screenshot](https://raw.githubusercontent.com/palaueb/pymesec-compliance-auditing-system/refs/heads/main/docs/screenshots/beta2.png)
 
+![PymeSec Beta Screenshot](https://raw.githubusercontent.com/palaueb/pymesec-compliance-auditing-system/refs/heads/main/docs/screenshots/beta3.png)
 
 ## Documentation Index
 
