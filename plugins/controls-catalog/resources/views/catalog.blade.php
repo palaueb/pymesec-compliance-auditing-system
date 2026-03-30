@@ -12,10 +12,11 @@
     $hasFrameworks = $framework_options !== [];
     $hasRequirements = $requirement_options !== [];
     $selectedControl = is_array($selected_control ?? null) ? $selected_control : null;
+    $isDetailMode = $selectedControl !== null;
 @endphp
 
 <section class="module-screen">
-    @if ($can_manage_controls)
+    @if ($can_manage_controls && ! $isDetailMode)
         <div class="surface-card" id="control-editor" hidden>
             <div class="row-between" style="margin-bottom:14px;">
                 <div>
@@ -94,10 +95,15 @@
     </div>
 
 
-    @if ($selectedControl !== null)
+    @if ($isDetailMode)
         <div class="table-card">
+            <div class="surface-note" style="margin-bottom:16px;">
+                Control Detail keeps requirement mappings, ownership, evidence, workflow transitions, and control editing in one workspace. Use the control list to browse the catalog and open the control you want to work on.
+            </div>
+
             <div class="screen-header">
                 <div>
+                    <div class="eyebrow">Control Detail</div>
                     <h2 class="screen-title" style="font-size:24px;">{{ $selectedControl['name'] }}</h2>
                     <p class="screen-subtitle">{{ $selectedControl['framework'] }} · {{ $selectedControl['domain'] }} · {{ $selectedControl['id'] }}</p>
                 </div>
@@ -330,54 +336,65 @@
                 @endif
             </div>
         </div>
-    @endif
+    @else
+        <div class="surface-card">
+            <div class="entity-title">Control list</div>
+            <div class="table-note" style="margin-top:6px;">This list stays focused on catalog browsing, framework context, owner summary, and Open. Use Control Detail to manage requirement mappings, evidence, workflow, and control maintenance.</div>
+        </div>
 
-    <div class="table-card">
-        <table class="entity-table">
-            <thead>
-                <tr>
-                    <th>Control</th>
-                    <th>Framework</th>
-                    <th>Owner</th>
-                    <th>Evidence</th>
-                    <th>State</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                @foreach ($controls as $control)
+        <div class="table-card">
+            <table class="entity-table">
+                <thead>
                     <tr>
-                        <td>
-                            <div class="entity-title">{{ $control['name'] }}</div>
-                            <div class="entity-id">{{ $control['id'] }}</div>
-                            <div class="table-note">{{ $control['domain'] }}</div>
-                        </td>
-                        <td>{{ $control['framework'] }}</td>
-                        <td>
-                            @if (($control['owner_assignments'] ?? []) !== [])
-                                <div>{{ $control['owner_assignments'][0]['display_name'] }}</div>
-                                @if (count($control['owner_assignments']) > 1)
-                                    <div class="table-note">+{{ count($control['owner_assignments']) - 1 }} more owner{{ count($control['owner_assignments']) > 2 ? 's' : '' }}</div>
-                                @else
-                                    <div class="table-note">{{ $control['owner_assignments'][0]['kind'] }}</div>
-                                @endif
-                            @else
-                                <span class="muted-note">No owner assigned</span>
-                            @endif
-                        </td>
-                        <td>{{ $control['evidence'] }}</td>
-                        <td>
-                            @php $sCtrlPill = match($control['state']) { 'draft' => 'pill-draft', 'review' => 'pill-review', 'approved' => 'pill-approved', 'archived' => 'pill-archived', default => '' }; @endphp
-                            <span class="pill {{ $sCtrlPill }}">{{ $control['state'] }}</span>
-                        </td>
-                        <td>
-                            <div class="action-cluster">
-                                <a class="button button-secondary" href="{{ $control['open_url'] }}&{{ http_build_query(['context_label' => 'Controls', 'context_back_url' => $controls_list_url]) }}">Open</a>
-                            </div>
-                        </td>
+                        <th>Control</th>
+                        <th>Framework</th>
+                        <th>Owner</th>
+                        <th>Evidence</th>
+                        <th>State</th>
+                        <th>Actions</th>
                     </tr>
-                @endforeach
-            </tbody>
-        </table>
-    </div>
+                </thead>
+                <tbody>
+                    @forelse ($controls as $control)
+                        <tr>
+                            <td>
+                                <div class="entity-title">{{ $control['name'] }}</div>
+                                <div class="entity-id">{{ $control['id'] }}</div>
+                                <div class="table-note">{{ $control['domain'] }}</div>
+                            </td>
+                            <td>{{ $control['framework'] }}</td>
+                            <td>
+                                @if (($control['owner_assignments'] ?? []) !== [])
+                                    <div>{{ $control['owner_assignments'][0]['display_name'] }}</div>
+                                    @if (count($control['owner_assignments']) > 1)
+                                        <div class="table-note">+{{ count($control['owner_assignments']) - 1 }} more owner{{ count($control['owner_assignments']) > 2 ? 's' : '' }}</div>
+                                    @else
+                                        <div class="table-note">{{ $control['owner_assignments'][0]['kind'] }}</div>
+                                    @endif
+                                @else
+                                    <span class="muted-note">No owner assigned</span>
+                                @endif
+                            </td>
+                            <td>{{ $control['evidence'] }}</td>
+                            <td>
+                                @php $sCtrlPill = match($control['state']) { 'draft' => 'pill-draft', 'review' => 'pill-review', 'approved' => 'pill-approved', 'archived' => 'pill-archived', default => '' }; @endphp
+                                <span class="pill {{ $sCtrlPill }}">{{ $control['state'] }}</span>
+                            </td>
+                            <td>
+                                <div class="action-cluster">
+                                    <a class="button button-secondary" href="{{ $control['open_url'] }}&{{ http_build_query(['context_label' => 'Controls', 'context_back_url' => $controls_list_url]) }}">Open</a>
+                                </div>
+                            </td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="6" style="text-align:center; padding:28px;">
+                                <span class="muted-note">No controls yet.</span>
+                            </td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+    @endif
 </section>

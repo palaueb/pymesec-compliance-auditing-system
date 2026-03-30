@@ -7,7 +7,8 @@
 
 <section class="module-screen">
     <div class="surface-card">
-        <div class="table-note">Workflow state and review history for all controls. Open a control from the Controls catalog to manage transitions and evidence.</div>
+        <div class="entity-title">Control review board</div>
+        <div class="table-note" style="margin-top:6px;">This view stays focused on workflow state, notifications, and review history. Open a control from the Controls Catalog when you need to manage transitions, evidence, or requirement mappings.</div>
     </div>
 
     <div class="table-card">

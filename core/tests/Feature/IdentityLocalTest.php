@@ -39,6 +39,8 @@ class IdentityLocalTest extends TestCase
         $this->get('/admin?menu=plugin.identity-local.users&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
             ->assertOk()
             ->assertSee('People & Access')
+            ->assertSee('Governance page. `People` defines identity records and sign-in modes.')
+            ->assertSee('People list')
             ->assertSee('Ava Mason')
             ->assertSee('Add person')
             ->assertSee('Import people from CSV / TSV')
@@ -47,6 +49,8 @@ class IdentityLocalTest extends TestCase
         $this->get('/app?menu=plugin.identity-local.memberships&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
             ->assertOk()
             ->assertSee('Organization Access')
+            ->assertSee('Governance page. `Organization Access` defines workspace role sets and scope reach.')
+            ->assertSee('Access list')
             ->assertSee('membership-org-a-hello')
             ->assertSee('Grant access')
             ->assertSee('Operational workspaces')
@@ -59,6 +63,7 @@ class IdentityLocalTest extends TestCase
         // Membership detail view — exercises the @php block that triggered the @php(...) bug
         $this->get('/app?menu=plugin.identity-local.memberships&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello&selected_membership_id=membership-org-a-hello')
             ->assertOk()
+            ->assertSee('Access Detail keeps role sets, scope reach, and functional-profile links in one governance workspace.')
             ->assertSee('Access administration')
             ->assertSee('Identity operator')         // label shown in display section
             ->assertSee('Directory sync operator')   // label shown in display section
@@ -70,6 +75,7 @@ class IdentityLocalTest extends TestCase
         // User detail view — exercises the same pattern in users.blade.php
         $this->get('/admin?menu=plugin.identity-local.users&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello&user_id=identity-user-ava-mason')
             ->assertOk()
+            ->assertSee('Person Detail keeps profile maintenance in one governance workspace.')
             ->assertSee('Ava Mason');
     }
 

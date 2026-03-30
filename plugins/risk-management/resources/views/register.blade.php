@@ -15,9 +15,13 @@
 
     @if (is_array($selected_risk))
         <div class="surface-card" style="padding:16px; display:grid; gap:16px;">
+            <div class="surface-note">
+                Risk Detail keeps evidence, workflow, linked records, ownership, and treatment maintenance in one workspace. Use the risk register to browse risks and open the one you want to work on.
+            </div>
+
             <div class="row-between" style="align-items:flex-start;">
                 <div>
-                    <div class="eyebrow">Risk</div>
+                    <div class="eyebrow">Risk Detail</div>
                     <h2 class="screen-title" style="font-size:28px;">{{ $selected_risk['title'] }}</h2>
                     <div class="table-note">{{ $selected_risk['id'] }}</div>
                     <div class="table-note">{{ $selected_risk['category_label'] }}</div>
@@ -343,7 +347,8 @@
         </div>
 
         <div class="surface-card">
-            <div class="table-note">Open a risk to work on evidence, workflow, linked records and treatment details.</div>
+            <div class="entity-title">Risk register list</div>
+            <div class="table-note" style="margin-top:6px;">This list stays focused on category, score, owner summary, linked records, state, and Open. Use Risk Detail to manage evidence, workflow, and treatment maintenance.</div>
         </div>
 
         <div class="table-card">

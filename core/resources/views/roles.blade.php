@@ -1,9 +1,17 @@
 <section class="module-screen">
+    <div class="surface-note">
+        Governance page. Define reusable role sets and grants here, then open one role or grant when you need dense editing. Operational work stays in the domain workspaces.
+    </div>
+
     @if (is_array($selected_role))
         <div class="surface-card" style="padding:16px; display:grid; gap:16px;">
+            <div class="surface-note">
+                Role Detail keeps permission selection and role maintenance in one governance workspace. Use the role list to browse roles and open the one you want to edit.
+            </div>
+
             <div class="row-between" style="align-items:flex-start;">
                 <div>
-                    <div class="eyebrow">Role</div>
+                    <div class="eyebrow">Role Detail</div>
                     <h2 class="screen-title" style="font-size:28px;">{{ $selected_role['label'] }}</h2>
                     <div class="table-note">{{ $selected_role['key'] }}</div>
                     <div class="table-note">{{ $selected_role['category_label'] }}</div>
@@ -76,9 +84,13 @@
         </div>
     @elseif (is_array($selected_grant))
         <div class="surface-card" style="padding:16px; display:grid; gap:16px;">
+            <div class="surface-note">
+                Grant Detail keeps grant maintenance in one governance workspace. Use the grant list to browse grants and open the one you want to edit.
+            </div>
+
             <div class="row-between" style="align-items:flex-start;">
                 <div>
-                    <div class="eyebrow">Grant</div>
+                    <div class="eyebrow">Grant Detail</div>
                     <h2 class="screen-title" style="font-size:28px;">{{ $selected_grant['grant_type'] }}: {{ $selected_grant['value'] }}</h2>
                     <div class="table-note">{{ $selected_grant['id'] }}</div>
                     <div class="table-note">{{ $selected_grant['target_type'] }} · {{ $selected_grant['target_id'] }}</div>
@@ -230,6 +242,12 @@
         </div>
 
         <div class="table-card">
+            <div class="screen-header">
+                <div>
+                    <h2 class="screen-title" style="font-size:24px;">Role list</h2>
+                    <p class="screen-subtitle">Browse role sets, review category fit, and open one role when you need governance editing.</p>
+                </div>
+            </div>
             <table class="entity-table">
                 <thead>
                     <tr><th>Role</th><th>Category</th><th>Permissions</th><th>Source</th><th>Actions</th></tr>
@@ -249,6 +267,12 @@
         </div>
 
         <div class="table-card">
+            <div class="screen-header">
+                <div>
+                    <h2 class="screen-title" style="font-size:24px;">Grant list</h2>
+                    <p class="screen-subtitle">Browse grants by target and context, then open one grant for governance changes.</p>
+                </div>
+            </div>
             <table class="entity-table">
                 <thead>
                     <tr><th>Grant</th><th>Target</th><th>Context</th><th>Source</th><th>Actions</th></tr>

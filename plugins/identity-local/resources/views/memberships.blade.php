@@ -1,10 +1,18 @@
 <section class="module-screen">
+    <div class="surface-note">
+        Governance page. `Organization Access` defines workspace role sets and scope reach. Identity profile data stays in `People` so access governance remains separate from sign-in administration.
+    </div>
+
     @if (is_array($selected_row))
         @php $selectedMembership = $selected_row['membership']; @endphp
         <div class="surface-card" style="padding:16px; display:grid; gap:16px;">
+            <div class="surface-note">
+                Access Detail keeps role sets, scope reach, and functional-profile links in one governance workspace. Use the access list to browse memberships and open the one you want to edit.
+            </div>
+
             <div class="row-between" style="align-items:flex-start;">
                 <div>
-                    <div class="eyebrow">Access</div>
+                    <div class="eyebrow">Access Detail</div>
                     <h2 class="screen-title" style="font-size:28px;">{{ $selected_row['user']['display_name'] ?? $selectedMembership['principal_id'] }}</h2>
                     <div class="table-note">{{ $selectedMembership['id'] }}</div>
                     <div class="table-note">{{ $selected_row['user']['email'] ?? 'No local profile' }}</div>
@@ -201,6 +209,11 @@
             <div class="metric-card"><div class="metric-label">Active</div><div class="metric-value">{{ collect($rows)->where('membership.is_active', true)->count() }}</div></div>
             <div class="metric-card"><div class="metric-label">Role grants</div><div class="metric-value">{{ collect($rows)->sum(fn ($row) => count($row['membership']['roles'])) }}</div></div>
             <div class="metric-card"><div class="metric-label">Scoped access</div><div class="metric-value">{{ collect($rows)->filter(fn ($row) => $row['membership']['scope_ids'] !== [])->count() }}</div></div>
+        </div>
+
+        <div class="surface-card">
+            <div class="entity-title">Access list</div>
+            <div class="table-note" style="margin-top:6px;">This list stays focused on membership status, role-set summary, scope reach, and Open. Use Access Detail to manage grants and responsibility links.</div>
         </div>
 
         <div class="table-card">

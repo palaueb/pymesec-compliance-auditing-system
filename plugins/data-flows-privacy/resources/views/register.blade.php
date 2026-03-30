@@ -15,9 +15,13 @@
 
     @if (is_array($selected_flow))
         <div class="surface-card" style="padding:16px; display:grid; gap:16px;">
+            <div class="surface-note">
+                Data Flow Detail keeps records, workflow, linked objects, ownership, and privacy maintenance in one workspace. Use the data flow list to browse records and open the one you want to work on.
+            </div>
+
             <div class="row-between" style="align-items:flex-start;">
                 <div>
-                    <div class="eyebrow">Data flow</div>
+                    <div class="eyebrow">Data Flow Detail</div>
                     <h2 class="screen-title" style="font-size:28px;">{{ $selected_flow['title'] }}</h2>
                     <div class="table-note">{{ $selected_flow['id'] }} · {{ $selected_flow['transfer_type_label'] }}</div>
                     <div class="table-note">{{ $selected_flow['source'] }} → {{ $selected_flow['destination'] }}</div>
@@ -373,7 +377,8 @@
         </div>
 
         <div class="surface-card">
-            <div class="table-note">Open a data flow to manage records, workflow, linked assets and privacy review details.</div>
+            <div class="entity-title">Data flow list</div>
+            <div class="table-note" style="margin-top:6px;">This list stays focused on route summary, owner summary, linked records, review due, state, and Open. Use Data Flow Detail to manage records, workflow, and privacy maintenance.</div>
         </div>
 
         <div class="table-card">

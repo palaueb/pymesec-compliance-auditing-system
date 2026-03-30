@@ -25,9 +25,13 @@
 
     @if (is_array($selected_finding))
         <div class="surface-card" style="padding:16px; display:grid; gap:16px;">
+            <div class="surface-note">
+                Finding Detail keeps workflow, evidence, remediation actions, ownership, and finding maintenance in one workspace. Use the findings register to browse findings and open the one you want to work on.
+            </div>
+
             <div class="row-between" style="align-items:flex-start;">
                 <div>
-                    <div class="eyebrow">Finding</div>
+                    <div class="eyebrow">Finding Detail</div>
                     <h2 class="screen-title" style="font-size:28px;">{{ $selected_finding['title'] }}</h2>
                     <div class="table-note">{{ $selected_finding['id'] }}</div>
                     <div class="table-note">{{ $selected_finding['severity_label'] }} severity</div>
@@ -530,7 +534,8 @@
         </div>
 
         <div class="surface-card">
-            <div class="table-note">Open a finding to manage workflow, remediation actions, evidence and linked records.</div>
+            <div class="entity-title">Findings register list</div>
+            <div class="table-note" style="margin-top:6px;">This list stays focused on severity, owner summary, due date, state, and Open. Use Finding Detail to manage workflow, remediation actions, evidence, and linked records.</div>
         </div>
 
         <div class="table-card">

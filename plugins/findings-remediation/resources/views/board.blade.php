@@ -14,7 +14,8 @@
     </div>
 
     <div class="surface-card">
-        <div class="table-note">Remediation actions across all findings. Open a finding to update action details, assign owners, or record progress notes.</div>
+        <div class="entity-title">Remediation board</div>
+        <div class="table-note" style="margin-top:6px;">This board stays focused on action status and follow-up visibility. Open a finding when you need to update action details, assign owners, or record progress notes.</div>
     </div>
 
     <div class="table-card">

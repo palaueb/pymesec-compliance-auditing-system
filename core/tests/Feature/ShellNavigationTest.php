@@ -37,6 +37,11 @@ class ShellNavigationTest extends TestCase
 
     public function test_delegated_governance_screens_render_in_the_workspace_shell(): void
     {
+        $this->get('/app?menu=core.management-reporting&principal_id=principal-admin&organization_id=org-a')
+            ->assertOk()
+            ->assertSee('Management Reporting')
+            ->assertSee('Cross-domain executive summary');
+
         $this->get('/app?menu=core.governance&principal_id=principal-admin&organization_id=org-a')
             ->assertOk()
             ->assertSee('Delegated Access Governance')
@@ -53,6 +58,11 @@ class ShellNavigationTest extends TestCase
 
     public function test_the_admin_shell_rejects_delegated_governance_menus(): void
     {
+        $this->get('/admin?menu=core.management-reporting&principal_id=principal-admin&organization_id=org-a')
+            ->assertOk()
+            ->assertSee('Screen unavailable')
+            ->assertSee('core.management-reporting');
+
         $this->get('/admin?menu=core.governance&principal_id=principal-admin&organization_id=org-a')
             ->assertOk()
             ->assertSee('Screen unavailable')

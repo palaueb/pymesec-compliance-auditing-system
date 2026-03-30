@@ -24,7 +24,7 @@ Simple list of the main pending items.
 
 ## Identity and Access
 
-- [ ] LDAP login mode completion on top of the current sync connector.
+- [x] LDAP login mode completion on top of the current sync connector.
 - [x] Clear web UI for governing object access matrices.
 - [x] Better separation between platform administration and delegated access governance where still rough.
 - [x] Extend parameter-level authorization coverage until every GET/POST mutation path that changes governed data has an explicit ownership and authorization regression test.
@@ -38,19 +38,20 @@ Simple list of the main pending items.
 
 ## UI and Usability
 
-- [ ] Finish the remaining UI cleanup batches from `ui-review-and-refactor-todo-2026-03.md`.
-- [ ] Define and apply a reusable governance-page interaction pattern for admin-heavy screens.
+- [x] Finish the remaining UI cleanup batches from `ui-review-and-refactor-todo-2026-03.md`.
+- [x] Define and apply a reusable governance-page interaction pattern for admin-heavy screens.
 - [x] Finish shell support for cleaner contextual `index -> detail` navigation.
-- [ ] Keep updating help/support content as screens and workflows change.
+- [x] Keep updating help/support content as screens and workflows change.
 
 ## Reporting and Compliance Content
 
-- [ ] More framework packs beyond the current baseline.
-- [ ] Deeper management reporting across assessments, evidence, risks, and findings.
+- [x] Deeper management reporting across assessments, evidence, risks, and findings.
 - [x] Readiness summaries by organization, scope, and adopted framework.
 
 ## Longer-Term
 
-- [ ] Vendor / third-party risk workflows.
-- [ ] External evidence collectors and automated fetch connectors.
-- [ ] Shared draft persistence and cross-user editing continuity.
+- [ ] Third-party risk / vendor review workspace.
+- [ ] Secure external collaboration model for vendors and other third parties.
+- [ ] Questionnaire engine with internal, brokered, and direct secure external collection modes.
+- [ ] Automation catalog with installable automation packs and connector-backed evidence refresh.
+- [ ] Collaboration layer for comments, requests, handoffs, tasks, and shared draft continuity.

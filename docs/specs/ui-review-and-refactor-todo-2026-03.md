@@ -25,9 +25,9 @@ Each page and object must be checked against these questions:
 ## Cross-Cutting TODO
 
 - [x] Add first-class support in the shell for contextual detail pages without polluting the main sidebar navigation.
-- [ ] Define a reusable page contract for `index`, `detail`, and `governance` screens.
-- [ ] Standardize `Open` / `View details` as the main action from list pages.
-- [ ] Remove child collection maintenance from list rows across the product.
+- [x] Define a reusable page contract for `index`, `detail`, and `governance` screens.
+- [x] Standardize `Open` / `View details` as the main action from list pages.
+- [x] Remove child collection maintenance from list rows across the product.
 - [ ] Normalize governed fields so reporting and filtering do not depend on free text.
 - [ ] Define return-to-origin flows for `create related record` actions.
 
@@ -72,48 +72,48 @@ Each page and object must be checked against these questions:
 
 - [x] `plugins/continuity-bcm/resources/views/plans.blade.php`
 - [x] `plugins/asset-catalog/resources/views/catalog.blade.php`
-- [ ] `plugins/assessments-audits/resources/views/index.blade.php`
+- [x] `plugins/assessments-audits/resources/views/index.blade.php`
 - [x] shell support for contextual detail navigation
 
 ### Batch 2: Domain Register Cleanup
 
-- [ ] `plugins/controls-catalog/resources/views/catalog.blade.php`
-- [ ] `plugins/risk-management/resources/views/register.blade.php`
-- [ ] `plugins/findings-remediation/resources/views/register.blade.php`
-- [ ] `plugins/policy-exceptions/resources/views/register.blade.php`
-- [ ] `plugins/data-flows-privacy/resources/views/register.blade.php`
-- [ ] `plugins/continuity-bcm/resources/views/register.blade.php`
+- [x] `plugins/controls-catalog/resources/views/catalog.blade.php`
+- [x] `plugins/risk-management/resources/views/register.blade.php`
+- [x] `plugins/findings-remediation/resources/views/register.blade.php`
+- [x] `plugins/policy-exceptions/resources/views/register.blade.php`
+- [x] `plugins/data-flows-privacy/resources/views/register.blade.php`
+- [x] `plugins/continuity-bcm/resources/views/register.blade.php`
 
 ### Batch 3: Secondary Domain Views
 
-- [ ] `plugins/controls-catalog/resources/views/reviews.blade.php`
-- [ ] `plugins/risk-management/resources/views/board.blade.php`
-- [ ] `plugins/findings-remediation/resources/views/board.blade.php`
-- [ ] `plugins/policy-exceptions/resources/views/exceptions.blade.php`
-- [ ] `plugins/data-flows-privacy/resources/views/activities.blade.php`
-- [ ] `plugins/actor-directory/resources/views/assignments.blade.php`
-- [ ] `plugins/asset-catalog/resources/views/lifecycle.blade.php`
+- [x] `plugins/controls-catalog/resources/views/reviews.blade.php`
+- [x] `plugins/risk-management/resources/views/board.blade.php`
+- [x] `plugins/findings-remediation/resources/views/board.blade.php`
+- [x] `plugins/policy-exceptions/resources/views/exceptions.blade.php`
+- [x] `plugins/data-flows-privacy/resources/views/activities.blade.php`
+- [x] `plugins/actor-directory/resources/views/assignments.blade.php`
+- [x] `plugins/asset-catalog/resources/views/lifecycle.blade.php`
 
 ### Batch 4: Identity and Administration
 
-- [ ] `plugins/identity-local/resources/views/users.blade.php`
-- [ ] `plugins/identity-local/resources/views/memberships.blade.php`
-- [ ] `plugins/identity-ldap/resources/views/directory.blade.php`
-- [ ] `core/resources/views/tenancy.blade.php`
-- [ ] `core/resources/views/roles.blade.php`
-- [ ] `core/resources/views/plugins.blade.php`
-- [ ] `core/resources/views/functional-actors.blade.php`
+- [x] `plugins/identity-local/resources/views/users.blade.php`
+- [x] `plugins/identity-local/resources/views/memberships.blade.php`
+- [x] `plugins/identity-ldap/resources/views/directory.blade.php`
+- [x] `core/resources/views/tenancy.blade.php`
+- [x] `core/resources/views/roles.blade.php`
+- [x] `core/resources/views/plugins.blade.php`
+- [x] `core/resources/views/functional-actors.blade.php`
 
 ### Batch 5: Review-Only / Stable Pages
 
-- [ ] `core/resources/views/dashboard.blade.php`
-- [ ] `core/resources/views/support.blade.php`
-- [ ] `core/resources/views/platform-overview.blade.php`
-- [ ] `core/resources/views/permissions.blade.php`
-- [ ] `core/resources/views/audit.blade.php`
-- [ ] `plugins/identity-local/resources/views/login.blade.php`
-- [ ] `plugins/identity-local/resources/views/verify.blade.php`
-- [ ] `plugins/identity-local/resources/views/setup.blade.php`
+- [x] `core/resources/views/dashboard.blade.php`
+- [x] `core/resources/views/support.blade.php`
+- [x] `core/resources/views/platform-overview.blade.php`
+- [x] `core/resources/views/permissions.blade.php`
+- [x] `core/resources/views/audit.blade.php`
+- [x] `plugins/identity-local/resources/views/login.blade.php`
+- [x] `plugins/identity-local/resources/views/verify.blade.php`
+- [x] `plugins/identity-local/resources/views/setup.blade.php`
 
 ## Page-by-Page TODO
 
@@ -141,8 +141,8 @@ Issues:
 - needs eventual deeper personalization by owned objects and responsibilities
 
 TODO:
-- [ ] keep as review item after detail pages exist
-- [ ] re-evaluate dashboard cards once object-level detail pages are in place
+- [x] keep as review item after detail pages exist
+- [x] re-evaluate dashboard cards once object-level detail pages are in place
 
 ### Support
 
@@ -153,7 +153,7 @@ Issues:
 - support content should reflect the new navigation model
 
 TODO:
-- [ ] update help entries as each module moves to master-detail
+- [x] update help entries as each module moves to master-detail
 
 ### Tenancy
 
@@ -165,8 +165,8 @@ Issues:
 - organizations and scopes should eventually have cleaner detail/governance split
 
 TODO:
-- [ ] keep as governance page, not operational list page
-- [ ] simplify row editing once governance patterns are standardized
+- [x] keep as governance page, not operational list page
+- [x] simplify row editing once governance patterns are standardized
 
 ### Roles / Permissions / Plugins / Functional Actors
 
@@ -181,8 +181,8 @@ Issues:
 - governance pages need a dedicated pattern, different from operational pages
 
 TODO:
-- [ ] define `governance page` interaction pattern
-- [ ] keep dense admin operations out of main application UX
+- [x] define `governance page` interaction pattern
+- [x] keep dense admin operations out of main application UX
 
 ### Asset Catalog
 
@@ -214,9 +214,9 @@ Issues:
 - frameworks, requirements, mappings, artifacts, transitions, and edit forms all compete on one page
 
 TODO:
-- [ ] split `Control List` from `Control Detail`
-- [ ] keep `Framework Governance` and `Requirement Governance` as dedicated sections or screens
-- [ ] move artifacts and requirement mappings to control detail
+- [x] split `Control List` from `Control Detail`
+- [x] keep `Framework Governance` and `Requirement Governance` as dedicated sections or screens
+- [x] move artifacts and requirement mappings to control detail
 
 ### Risk Management
 
@@ -229,8 +229,8 @@ Issues:
 - lifecycle actions and maintenance are mixed
 
 TODO:
-- [ ] move risk maintenance to `Risk Detail`
-- [ ] keep board focused on workflow and state
+- [x] move risk maintenance to `Risk Detail`
+- [x] keep board focused on workflow and state
 
 ### Findings and Remediation
 
@@ -242,9 +242,9 @@ Issues:
 - findings, artifacts, actions, transitions, and edit forms are crowded together
 
 TODO:
-- [ ] move action management and evidence to `Finding Detail`
-- [ ] keep register as browse/filter/open
-- [ ] keep board focused on workflow state
+- [x] move action management and evidence to `Finding Detail`
+- [x] keep register as browse/filter/open
+- [x] keep board focused on workflow state
 
 ### Policy Exceptions
 
@@ -256,8 +256,8 @@ Issues:
 - policies and exceptions still carry too many inline forms
 
 TODO:
-- [ ] move exception management to policy detail or exception detail as appropriate
-- [ ] simplify list pages
+- [x] move exception management to policy detail or exception detail as appropriate
+- [x] simplify list pages
 
 ### Privacy
 
@@ -269,8 +269,8 @@ Issues:
 - records still mix browse and maintenance
 
 TODO:
-- [ ] move attachments and advanced maintenance to detail pages
-- [ ] keep list pages focused on record navigation
+- [x] move attachments and advanced maintenance to detail pages
+- [x] keep list pages focused on record navigation
 
 ### Continuity Services
 
@@ -281,8 +281,8 @@ Issues:
 - dependencies and artifacts are still edited from the list
 
 TODO:
-- [ ] move service dependencies and artifacts to `Continuity Service Detail`
-- [ ] keep service register focused on service summaries
+- [x] move service dependencies and artifacts to `Continuity Service Detail`
+- [x] keep service register focused on service summaries
 
 ### Recovery Plans
 
@@ -324,7 +324,7 @@ Issues:
 - assignments should align with the new ownership and relationship model
 
 TODO:
-- [ ] review once asset and continuity ownership refactor is underway
+- [x] review once asset and continuity ownership refactor is underway
 
 ### Identity Local / LDAP
 
@@ -338,8 +338,8 @@ Issues:
 - identities and memberships are different concerns and should stay visually separated
 
 TODO:
-- [ ] standardize admin/governance editing pattern
-- [ ] reduce visual clutter where multiple admin forms compete
+- [x] standardize admin/governance editing pattern
+- [x] reduce visual clutter where multiple admin forms compete
 
 ## Start Order
 

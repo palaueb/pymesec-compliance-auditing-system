@@ -7,6 +7,10 @@
         The external directory remains the source of identity data, while the local copy keeps sessions, fallback access and assigned work context available.
     </div>
 
+    <div class="surface-note">
+        Governance page. Directory connector settings and group mappings live here; day-to-day person and membership maintenance stays in the local identity screens.
+    </div>
+
     @if (session('status'))
         <div class="surface-note">{{ session('status') }}</div>
     @endif

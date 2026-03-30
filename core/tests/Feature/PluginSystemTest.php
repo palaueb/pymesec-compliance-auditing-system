@@ -305,25 +305,26 @@ class PluginSystemTest extends TestCase
         $this->get('/core/menus?principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
             ->assertOk()
             ->assertJsonPath('menus.0.id', 'core.dashboard')
-            ->assertJsonPath('menus.1.id', 'core.support')
-            ->assertJsonPath('menus.2.id', 'core.governance')
-            ->assertJsonPath('menus.2.children.0.id', 'core.functional-actors')
-            ->assertJsonPath('menus.2.children.1.id', 'core.object-access')
-            ->assertJsonPath('menus.3.id', 'core.platform')
-            ->assertJsonPath('menus.4.id', 'plugin.identity-local.memberships')
-            ->assertJsonPath('menus.5.id', 'plugin.asset-catalog.root')
-            ->assertJsonPath('menus.5.children.0.id', 'plugin.asset-catalog.lifecycle')
-            ->assertJsonPath('menus.6.id', 'plugin.controls-catalog.root')
-            ->assertJsonPath('menus.7.id', 'plugin.hello-world.root')
-            ->assertJsonPath('menus.8.id', 'plugin.risk-management.root')
-            ->assertJsonPath('menus.9.id', 'plugin.findings-remediation.root')
-            ->assertJsonPath('menus.10.id', 'plugin.actor-directory.root')
-            ->assertJsonPath('menus.11.id', 'plugin.assessments-audits.root')
-            ->assertJsonPath('menus.12.id', 'plugin.policy-exceptions.root')
-            ->assertJsonPath('menus.13.id', 'plugin.evidence-management.root')
-            ->assertJsonPath('menus.14.id', 'plugin.data-flows-privacy.root')
-            ->assertJsonPath('menus.15.id', 'plugin.identity-local.users')
-            ->assertJsonPath('menus.16.id', 'plugin.continuity-bcm.root')
+            ->assertJsonPath('menus.1.id', 'core.management-reporting')
+            ->assertJsonPath('menus.2.id', 'core.support')
+            ->assertJsonPath('menus.3.id', 'core.governance')
+            ->assertJsonPath('menus.3.children.0.id', 'core.functional-actors')
+            ->assertJsonPath('menus.3.children.1.id', 'core.object-access')
+            ->assertJsonPath('menus.4.id', 'core.platform')
+            ->assertJsonPath('menus.5.id', 'plugin.identity-local.memberships')
+            ->assertJsonPath('menus.6.id', 'plugin.asset-catalog.root')
+            ->assertJsonPath('menus.6.children.0.id', 'plugin.asset-catalog.lifecycle')
+            ->assertJsonPath('menus.7.id', 'plugin.controls-catalog.root')
+            ->assertJsonPath('menus.8.id', 'plugin.hello-world.root')
+            ->assertJsonPath('menus.9.id', 'plugin.risk-management.root')
+            ->assertJsonPath('menus.10.id', 'plugin.findings-remediation.root')
+            ->assertJsonPath('menus.11.id', 'plugin.actor-directory.root')
+            ->assertJsonPath('menus.12.id', 'plugin.assessments-audits.root')
+            ->assertJsonPath('menus.13.id', 'plugin.policy-exceptions.root')
+            ->assertJsonPath('menus.14.id', 'plugin.evidence-management.root')
+            ->assertJsonPath('menus.15.id', 'plugin.data-flows-privacy.root')
+            ->assertJsonPath('menus.16.id', 'plugin.identity-local.users')
+            ->assertJsonPath('menus.17.id', 'plugin.continuity-bcm.root')
             ->assertJsonPath('issues', []);
     }
 
@@ -332,10 +333,11 @@ class PluginSystemTest extends TestCase
         $this->get('/core/menus?principal_id=principal-admin')
             ->assertOk()
             ->assertJsonPath('visible_menus.0.id', 'core.dashboard')
-            ->assertJsonPath('visible_menus.1.id', 'core.support')
-            ->assertJsonPath('visible_menus.2.id', 'core.governance')
-            ->assertJsonPath('visible_menus.3.id', 'core.platform')
-            ->assertJsonCount(4, 'visible_menus');
+            ->assertJsonPath('visible_menus.1.id', 'core.management-reporting')
+            ->assertJsonPath('visible_menus.2.id', 'core.support')
+            ->assertJsonPath('visible_menus.3.id', 'core.governance')
+            ->assertJsonPath('visible_menus.4.id', 'core.platform')
+            ->assertJsonCount(5, 'visible_menus');
 
         $this->get('/core/menus?principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
             ->assertOk()
@@ -352,6 +354,7 @@ class PluginSystemTest extends TestCase
                 ['ID', 'Owner', 'Parent', 'Route', 'Permission', 'Area', 'Order'],
                 [
                     ['core.dashboard', 'core', '', 'core.shell.index', '', 'app', '5'],
+                    ['core.management-reporting', 'core', '', 'core.shell.index', '', 'app', '6'],
                     ['core.support', 'core', '', 'core.shell.index', '', 'app', '8'],
                     ['core.governance', 'core', '', 'core.shell.index', 'core.functional-actors.view', 'app', '9'],
                     ['core.functional-actors', 'core', 'core.governance', 'core.shell.index', 'core.functional-actors.view', 'app', '10'],

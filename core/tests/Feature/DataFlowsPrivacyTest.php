@@ -31,6 +31,8 @@ class DataFlowsPrivacyTest extends TestCase
             ->assertOk()
             ->assertSee('Data Flows Register')
             ->assertSee('Transfer types are business-managed catalog values')
+            ->assertSee('Data flow list')
+            ->assertSee('This list stays focused on route summary, owner summary, linked records, review due, state, and Open.')
             ->assertSee('Customer support handoff')
             ->assertSee('Add data flow')
             ->assertSee('Open');
@@ -63,12 +65,16 @@ class DataFlowsPrivacyTest extends TestCase
 
         $this->get('/app?menu=plugin.data-flows-privacy.root&flow_id=data-flow-customer-support-handoff&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
             ->assertOk()
+            ->assertSee('Data Flow Detail keeps records, workflow, linked objects, ownership, and privacy maintenance in one workspace.')
+            ->assertSee('Data Flow Detail')
             ->assertSee('submit-review');
 
         $this->get('/app?menu=plugin.data-flows-privacy.activities&activity_id=processing-activity-customer-support-operations&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
             ->assertOk()
             ->assertSee('Processing Activities')
             ->assertSee('Lawful bases are business-managed catalog values')
+            ->assertSee('Processing Activity Detail keeps records, workflow, linked objects, ownership, and activity maintenance in one workspace.')
+            ->assertSee('Processing Activity Detail')
             ->assertSee('RoPA export')
             ->assertSee('ropa.txt');
     }

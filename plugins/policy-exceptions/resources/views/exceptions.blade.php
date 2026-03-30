@@ -11,9 +11,13 @@
 <section class="module-screen">
     @if (is_array($selected_exception))
         <div class="surface-card" style="padding:16px; display:grid; gap:16px;">
+            <div class="surface-note">
+                Exception Detail keeps workflow, evidence, ownership, linked findings, and exception maintenance in one workspace. Use the exception list to browse exceptions and open the one you want to work on.
+            </div>
+
             <div class="row-between" style="align-items:flex-start;">
                 <div>
-                    <div class="eyebrow">Exception</div>
+                    <div class="eyebrow">Exception Detail</div>
                     <h2 class="screen-title" style="font-size:28px;">{{ $selected_exception['title'] }}</h2>
                     <div class="table-note">{{ $selected_exception['id'] }}</div>
                     <div class="table-note">{{ $selected_exception['policy']['title'] }}</div>
@@ -248,7 +252,8 @@
         </div>
 
         <div class="surface-card">
-            <div class="table-note">Open an exception to manage workflow, evidence, linked findings and approvals.</div>
+            <div class="entity-title">Exception list</div>
+            <div class="table-note" style="margin-top:6px;">This list stays focused on policy context, owner summary, expiry, state, and Open. Use Exception Detail to manage workflow, evidence, and linked findings.</div>
         </div>
 
         <div class="table-card">

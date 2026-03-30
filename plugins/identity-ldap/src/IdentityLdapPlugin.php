@@ -31,6 +31,7 @@ class IdentityLdapPlugin implements IdentityPluginInterface
         $context->app()->singleton(IdentityLdapService::class, fn ($app) => new IdentityLdapService(
             repository: $app->make(IdentityLdapRepository::class),
             users: $app->make(\PymeSec\Plugins\IdentityLocal\IdentityLocalRepository::class),
+            auth: $app->make(\PymeSec\Plugins\IdentityLocal\IdentityLocalAuthService::class),
             gateway: $app->make(LdapDirectoryGatewayInterface::class),
             audit: $app->make(\PymeSec\Core\Audit\Contracts\AuditTrailInterface::class),
         ));

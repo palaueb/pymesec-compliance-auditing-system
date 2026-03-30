@@ -31,6 +31,8 @@ class PolicyExceptionsTest extends TestCase
             ->assertOk()
             ->assertSee('Policies Register')
             ->assertSee('Policy areas are business-managed catalog values')
+            ->assertSee('Policy list')
+            ->assertSee('This list stays focused on area, owner summary, linked controls, review due, state, and Open.')
             ->assertSee('Access Governance Policy')
             ->assertSee('1 exceptions')
             ->assertSee('Add policy')
@@ -97,12 +99,16 @@ class PolicyExceptionsTest extends TestCase
 
         $this->get('/app?menu=plugin.policy-exceptions.root&policy_id=policy-supplier-governance-policy&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
             ->assertOk()
+            ->assertSee('Policy Detail keeps workflow, linked controls, documents, approved exceptions, ownership, and policy maintenance in one workspace.')
+            ->assertSee('Policy Detail')
             ->assertSee('Supplier Access Governance Policy')
             ->assertSee('Compliance Office')
             ->assertSee('Legacy supplier bridge approval exception');
 
         $this->get('/app?menu=plugin.policy-exceptions.exceptions&exception_id=exception-legacy-supplier-bridge-exception&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
             ->assertOk()
+            ->assertSee('Exception Detail keeps workflow, evidence, ownership, linked findings, and exception maintenance in one workspace.')
+            ->assertSee('Exception Detail')
             ->assertSee('Legacy supplier bridge approval exception')
             ->assertSee('Twice-weekly manual access export review.')
             ->assertSee('Ava Mason');

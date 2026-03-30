@@ -1,4 +1,8 @@
 <section class="module-screen">
+    <div class="surface-note">
+        Governance page. `People` defines identity records and sign-in modes. Organization access and scope grants stay in `Organization Access` so the two concerns remain visually separate.
+    </div>
+
     @if ($errors->any())
         <div class="surface-card">
             <div class="surface-note error">
@@ -12,9 +16,13 @@
     @if (is_array($selected_row))
         @php $selectedUser = $selected_row['user']; @endphp
         <div class="surface-card" style="padding:16px; display:grid; gap:16px;">
+            <div class="surface-note">
+                Person Detail keeps profile maintenance in one governance workspace. Use the people list to browse identity records and open the person you want to edit.
+            </div>
+
             <div class="row-between" style="align-items:flex-start;">
                 <div>
-                    <div class="eyebrow">Person</div>
+                    <div class="eyebrow">Person Detail</div>
                     <h2 class="screen-title" style="font-size:28px;">{{ $selectedUser['display_name'] }}</h2>
                     <div class="table-note">{{ $selectedUser['job_title'] !== '' ? $selectedUser['job_title'] : 'No role defined yet' }}</div>
                     <div class="table-note">{{ $selectedUser['principal_id'] }}</div>
@@ -226,6 +234,11 @@
             <div class="metric-card"><div class="metric-label">Ready for workspace</div><div class="metric-value">{{ collect($rows)->filter(fn ($row) => $row['workspace_ready'] ?? false)->count() }}</div></div>
             <div class="metric-card"><div class="metric-label">Responsible profiles</div><div class="metric-value">{{ collect($rows)->sum(fn ($row) => count($row['linked_actors'])) }}</div></div>
             <div class="metric-card"><div class="metric-label">Inactive</div><div class="metric-value">{{ collect($rows)->where('user.is_active', false)->count() }}</div></div>
+        </div>
+
+        <div class="surface-card">
+            <div class="entity-title">People list</div>
+            <div class="table-note" style="margin-top:6px;">This list stays focused on identity readiness, directory source, and Open. Use Person Detail to manage sign-in modes, profile data, and local-account maintenance.</div>
         </div>
 
         @if ($can_manage_users && is_array($import_upload))

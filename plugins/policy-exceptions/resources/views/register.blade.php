@@ -20,9 +20,13 @@
 
     @if (is_array($selected_policy))
         <div class="surface-card" style="padding:16px; display:grid; gap:16px;">
+            <div class="surface-note">
+                Policy Detail keeps workflow, linked controls, documents, approved exceptions, ownership, and policy maintenance in one workspace. Use the policy list to browse policies and open the one you want to work on.
+            </div>
+
             <div class="row-between" style="align-items:flex-start;">
                 <div>
-                    <div class="eyebrow">Policy</div>
+                    <div class="eyebrow">Policy Detail</div>
                     <h2 class="screen-title" style="font-size:28px;">{{ $selected_policy['title'] }}</h2>
                     <div class="table-note">{{ $selected_policy['id'] }} · {{ $selected_policy['version_label'] }}</div>
                     <div class="table-note">{{ $selected_policy['area_label'] }}</div>
@@ -433,7 +437,8 @@
         </div>
 
         <div class="surface-card">
-            <div class="table-note">Open a policy to manage workflow, linked controls, documents and approved exceptions.</div>
+            <div class="entity-title">Policy list</div>
+            <div class="table-note" style="margin-top:6px;">This list stays focused on area, owner summary, linked controls, review due, state, and Open. Use Policy Detail to manage workflow, documents, and approved exceptions.</div>
         </div>
 
         <div class="table-card">

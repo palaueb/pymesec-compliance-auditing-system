@@ -8,7 +8,8 @@
 
 <section class="module-screen">
     <div class="surface-card">
-        <div class="table-note">Workflow state history for all risks. Open a risk from the Risk register to manage transitions and evidence.</div>
+        <div class="entity-title">Risk workflow board</div>
+        <div class="table-note" style="margin-top:6px;">This board stays focused on workflow state and review history. Open a risk from the Risk Register when you need to manage transitions, evidence, ownership, or treatment details.</div>
     </div>
 
     <div class="table-card">

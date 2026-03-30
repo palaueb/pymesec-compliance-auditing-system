@@ -3,6 +3,10 @@
         {{ __('core.support.intro') }}
     </div>
 
+    <div class="surface-note">
+        Navigation model: most operational modules now use `list -> detail`, with `Open` as the main action from summary lists. Governance-heavy administration stays under `/admin` so dense setup work does not crowd operational screens.
+    </div>
+
     @if ($issues !== [])
         <div class="surface-note error">
             <strong>{{ __('core.support.issues_title') }}</strong>

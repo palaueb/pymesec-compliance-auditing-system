@@ -15,9 +15,13 @@
 
     @if (is_array($selected_activity))
         <div class="surface-card" style="padding:16px; display:grid; gap:16px;">
+            <div class="surface-note">
+                Processing Activity Detail keeps records, workflow, linked objects, ownership, and activity maintenance in one workspace. Use the activity list to browse processing activities and open the one you want to work on.
+            </div>
+
             <div class="row-between" style="align-items:flex-start;">
                 <div>
-                    <div class="eyebrow">Processing activity</div>
+                    <div class="eyebrow">Processing Activity Detail</div>
                     <h2 class="screen-title" style="font-size:28px;">{{ $selected_activity['title'] }}</h2>
                     <div class="table-note">{{ $selected_activity['id'] }} · {{ $selected_activity['lawful_basis_label'] }}</div>
                     <div class="table-note">{{ $selected_activity['purpose'] }}</div>
@@ -298,6 +302,11 @@
             </div>
         </div>
     @else
+        <div class="surface-card">
+            <div class="entity-title">Processing activity list</div>
+            <div class="table-note" style="margin-top:6px;">This list stays focused on lawful basis, owner summary, linked records, review due, state, and Open. Use Processing Activity Detail to manage records, workflow, and linked object maintenance.</div>
+        </div>
+
         @if ($can_manage_privacy)
             <div class="surface-card" id="privacy-activity-editor" hidden>
                 <div class="row-between" style="margin-bottom:14px;">

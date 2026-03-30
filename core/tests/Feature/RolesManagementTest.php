@@ -15,6 +15,7 @@ class RolesManagementTest extends TestCase
         $this->get('/admin?menu=core.roles&principal_id=principal-admin')
             ->assertOk()
             ->assertSee('Roles & Grants')
+            ->assertSee('Governance page. Define reusable role sets and grants here')
             ->assertSee('platform-admin')
             ->assertSee('Platform administration')
             ->assertSee('Operational workspaces')

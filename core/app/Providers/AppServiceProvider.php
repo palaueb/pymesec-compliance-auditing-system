@@ -38,6 +38,7 @@ use PymeSec\Core\Plugins\Contracts\PluginManagerInterface;
 use PymeSec\Core\Plugins\PluginLifecycleManager;
 use PymeSec\Core\Plugins\PluginStateStore;
 use PymeSec\Core\ReferenceData\ReferenceCatalogService;
+use PymeSec\Core\Reporting\ManagementReportingService;
 use PymeSec\Core\Support\Contracts\SupportRegistryInterface;
 use PymeSec\Core\Support\JsonSupportRegistry;
 use PymeSec\Core\Tenancy\Contracts\TenancyServiceInterface;
@@ -183,6 +184,12 @@ class AppServiceProvider extends ServiceProvider
 
         $this->app->singleton(ReferenceCatalogService::class, function (): ReferenceCatalogService {
             return new ReferenceCatalogService;
+        });
+
+        $this->app->singleton(ManagementReportingService::class, function ($app): ManagementReportingService {
+            return new ManagementReportingService(
+                objectAccess: $app->make(ObjectAccessService::class),
+            );
         });
     }
 
@@ -400,6 +407,16 @@ class AppServiceProvider extends ServiceProvider
         ));
 
         $menus->registerCore(new MenuDefinition(
+            id: 'core.management-reporting',
+            owner: 'core',
+            labelKey: 'core.nav.management_reporting',
+            routeName: 'core.shell.index',
+            icon: 'report',
+            order: 6,
+            area: 'app',
+        ));
+
+        $menus->registerCore(new MenuDefinition(
             id: 'core.support',
             owner: 'core',
             labelKey: 'core.nav.support',
@@ -546,6 +563,15 @@ class AppServiceProvider extends ServiceProvider
             subtitleKey: 'core.dashboard.screen.subtitle',
             viewPath: resource_path('views/dashboard.blade.php'),
             dataResolver: fn (ScreenRenderContext $screenContext): array => $this->workspaceDashboardData($screenContext),
+        ));
+
+        $screens->register(new ScreenDefinition(
+            menuId: 'core.management-reporting',
+            owner: 'core',
+            titleKey: 'core.management-reporting.screen.title',
+            subtitleKey: 'core.management-reporting.screen.subtitle',
+            viewPath: resource_path('views/management-reporting.blade.php'),
+            dataResolver: fn (ScreenRenderContext $screenContext): array => $this->managementReportingData($screenContext),
         ));
 
         $screens->register(new ScreenDefinition(
@@ -1152,6 +1178,38 @@ class AppServiceProvider extends ServiceProvider
             'recent_audit' => $recentAudit,
             'quick_links' => $quickLinks,
             'role_sets' => $membershipRoles,
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function managementReportingData(ScreenRenderContext $screenContext): array
+    {
+        $query = $this->coreScreenQuery($screenContext);
+        $organizationId = $screenContext->organizationId;
+        $scopeId = $screenContext->scopeId;
+
+        $organizationName = is_string($organizationId) && $organizationId !== ''
+            ? DB::table('organizations')->where('id', $organizationId)->value('name')
+            : null;
+        $scopeName = is_string($scopeId) && $scopeId !== ''
+            ? DB::table('scopes')->where('id', $scopeId)->value('name')
+            : null;
+
+        return [
+            'query' => $query,
+            'organization_id' => $organizationId,
+            'scope_id' => $scopeId,
+            'organization_name' => is_string($organizationName) && $organizationName !== '' ? $organizationName : $organizationId,
+            'scope_name' => is_string($scopeName) && $scopeName !== '' ? $scopeName : $scopeId,
+            'has_organization_context' => is_string($organizationId) && $organizationId !== '',
+            ...$this->app->make(ManagementReportingService::class)->build(
+                principalId: $screenContext->principal?->id,
+                organizationId: $organizationId,
+                scopeId: $scopeId,
+                baseQuery: $query,
+            ),
         ];
     }
 

@@ -31,6 +31,8 @@ class RiskManagementTest extends TestCase
             ->assertOk()
             ->assertSee('Risk Register')
             ->assertSee('Risk categories are business-managed catalog values')
+            ->assertSee('Risk register list')
+            ->assertSee('This list stays focused on category, score, owner summary, linked records, state, and Open.')
             ->assertSee('Privileged access drift')
             ->assertSee('Ava Mason')
             ->assertSee('Add risk')
@@ -38,6 +40,8 @@ class RiskManagementTest extends TestCase
 
         $this->get('/app?menu=plugin.risk-management.root&risk_id=risk-access-drift&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
             ->assertOk()
+            ->assertSee('Risk Detail keeps evidence, workflow, linked records, ownership, and treatment maintenance in one workspace.')
+            ->assertSee('Risk Detail')
             ->assertSee('Quarterly certification and emergency access review.')
             ->assertSee('Back to risks')
             ->assertSee('Edit risk')
@@ -70,6 +74,7 @@ class RiskManagementTest extends TestCase
         $this->get('/app?menu=plugin.risk-management.board&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
             ->assertOk()
             ->assertSee('Risk Board')
+            ->assertSee('Risk workflow board')
             ->assertSee('start-assessment')
             ->assertSee('Assessment note')
             ->assertSee('assessment.txt');

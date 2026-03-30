@@ -32,11 +32,26 @@ class ControlsCatalogTest extends TestCase
         $this->get('/app?menu=plugin.controls-catalog.root&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
             ->assertOk()
             ->assertSee('Controls Catalog')
+            ->assertSee('Control list')
+            ->assertSee('This list stays focused on catalog browsing, framework context, owner summary, and Open.')
             ->assertSee('Quarterly Access Review')
             ->assertDontSee('Backup Governance')
             ->assertSee('Framework adoption')
             ->assertSee('Ava Mason')
-            ->assertSee('Create control');
+            ->assertSee('Create control')
+            ->assertSee('Open');
+
+        $this->get('/app?menu=plugin.controls-catalog.root&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello&control_id=control-access-review')
+            ->assertOk()
+            ->assertSee('Controls Catalog')
+            ->assertSee('Control Detail keeps requirement mappings, ownership, evidence, workflow transitions, and control editing in one workspace.')
+            ->assertSee('Control Detail')
+            ->assertSee('Quarterly Access Review')
+            ->assertSee('Link requirement')
+            ->assertSee('Attach evidence')
+            ->assertSee('Edit control details')
+            ->assertDontSee('Control list')
+            ->assertDontSee('Create control');
     }
 
     public function test_framework_adoption_screen_renders_inside_the_shell(): void

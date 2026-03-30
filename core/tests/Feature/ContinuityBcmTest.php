@@ -38,6 +38,8 @@ class ContinuityBcmTest extends TestCase
             ->assertOk()
             ->assertSee('Continuity Services')
             ->assertSee('Impact tiers and dependency kinds are business-managed catalog values')
+            ->assertSee('Continuity service list')
+            ->assertSee('This list stays focused on impact summary, owner summary, linked records, state, and Open.')
             ->assertSee('Customer Support Operations')
             ->assertSee('Add continuity service')
             ->assertSee('Open')
@@ -45,6 +47,8 @@ class ContinuityBcmTest extends TestCase
 
         $this->get('/app?menu=plugin.continuity-bcm.root&service_id=continuity-service-customer-support&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
             ->assertOk()
+            ->assertSee('Continuity Service Detail keeps recovery plans, dependencies, documents, workflow, ownership, and service maintenance in one workspace.')
+            ->assertSee('Continuity Service Detail')
             ->assertSee('Back to services')
             ->assertSee('Add recovery plan')
             ->assertSee('Dependencies')

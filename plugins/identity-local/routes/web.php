@@ -5,6 +5,7 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Validation\ValidationException;
 use Illuminate\Validation\Rule;
 use PymeSec\Core\FunctionalActors\Contracts\FunctionalActorServiceInterface;
+use PymeSec\Plugins\IdentityLdap\IdentityLdapService;
 use PymeSec\Plugins\IdentityLocal\IdentityLocalAuthService;
 use PymeSec\Plugins\IdentityLocal\IdentityLocalRepository;
 use PymeSec\Plugins\IdentityLocal\IdentityUserImportService;
@@ -72,13 +73,21 @@ Route::post('/login', function (Request $request, IdentityLocalAuthService $auth
     $login = (string) ($validated['login'] ?? $validated['email'] ?? '');
 
     if ($request->boolean('use_email_link')) {
-        $auth->issueMagicLink($login, $request);
+        $issued = app()->bound(IdentityLdapService::class)
+            ? app(IdentityLdapService::class)->issueMagicLink($login, $request)
+            : null;
+
+        $issued ??= $auth->issueMagicLink($login, $request);
 
         return redirect()->route('plugin.identity-local.auth.login')
             ->with('status', 'If the identity is active, a secure sign-in link has been sent.');
     }
 
-    $challenge = $auth->beginPasswordLogin($login, (string) ($validated['password'] ?? ''), $request);
+    $challenge = app()->bound(IdentityLdapService::class)
+        ? app(IdentityLdapService::class)->beginPasswordLogin($login, (string) ($validated['password'] ?? ''), $request)
+        : null;
+    $provider = $challenge !== null ? 'identity-ldap' : 'identity-local';
+    $challenge ??= $auth->beginPasswordLogin($login, (string) ($validated['password'] ?? ''), $request);
 
     if ($challenge === null) {
         return redirect()->route('plugin.identity-local.auth.login')
@@ -86,7 +95,7 @@ Route::post('/login', function (Request $request, IdentityLocalAuthService $auth
     }
 
     session()->put('auth.pending_principal_id', $challenge['user']['principal_id']);
-    session()->put('auth.pending_provider', 'identity-local');
+    session()->put('auth.pending_provider', $provider);
     session()->put('auth.pending_method', 'password-2fa');
 
     return redirect()->route('plugin.identity-local.auth.verify')
@@ -134,9 +143,11 @@ Route::post('/login/verify', function (Request $request, IdentityLocalAuthServic
             ->with('error', 'This verification code is no longer valid.');
     }
 
+    $provider = session('auth.pending_provider');
+
     session()->forget(['auth.pending_principal_id', 'auth.pending_provider', 'auth.pending_method']);
     session()->put('auth.principal_id', $user['principal_id']);
-    session()->put('auth.provider', 'identity-local');
+    session()->put('auth.provider', is_string($provider) && $provider !== '' ? $provider : 'identity-local');
 
     return redirect()->route('core.shell.index', array_filter([
         'organization_id' => $user['organization_id'] !== '' ? $user['organization_id'] : null,
@@ -153,7 +164,7 @@ Route::get('/login/magic/{token}', function (string $token, IdentityLocalAuthSer
 
     session()->forget(['auth.pending_principal_id', 'auth.pending_provider', 'auth.pending_method']);
     session()->put('auth.principal_id', $user['principal_id']);
-    session()->put('auth.provider', 'identity-local');
+    session()->put('auth.provider', ($user['auth_provider'] ?? 'local') === 'ldap' ? 'identity-ldap' : 'identity-local');
 
     return redirect()->route('core.shell.index', array_filter([
         'organization_id' => $user['organization_id'] !== '' ? $user['organization_id'] : null,

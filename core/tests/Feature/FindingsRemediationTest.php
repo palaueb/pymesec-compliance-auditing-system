@@ -31,6 +31,8 @@ class FindingsRemediationTest extends TestCase
             ->assertOk()
             ->assertSee('Findings Register')
             ->assertSee('Finding severity is a business-managed catalog value')
+            ->assertSee('Findings register list')
+            ->assertSee('This list stays focused on severity, owner summary, due date, state, and Open.')
             ->assertSee('Access review evidence gap')
             ->assertSee('1 remediation actions')
             ->assertSee('Add finding')
@@ -95,6 +97,8 @@ class FindingsRemediationTest extends TestCase
 
         $this->get('/app?menu=plugin.findings-remediation.root&finding_id=finding-supplier-review-exception-gap&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
             ->assertOk()
+            ->assertSee('Finding Detail keeps workflow, evidence, remediation actions, ownership, and finding maintenance in one workspace.')
+            ->assertSee('Finding Detail')
             ->assertSee('Supplier review exception traceability gap')
             ->assertSee('Ava Mason')
             ->assertSee('Upload signed exception evidence log')
@@ -103,6 +107,7 @@ class FindingsRemediationTest extends TestCase
 
         $this->get('/app?menu=plugin.findings-remediation.board&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
             ->assertOk()
+            ->assertSee('Remediation board')
             ->assertSee('Upload signed exception evidence log')
             ->assertSee('Evidence collection has started.');
     }

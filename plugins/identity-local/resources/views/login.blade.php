@@ -91,7 +91,7 @@
     <main class="login-card">
         <div class="eyebrow">Identity</div>
         <h1>Sign in</h1>
-        <p>Use your username or work email. Password access sends a verification code by email, and you can switch to a sign-in link when email-based access is enabled.</p>
+        <p>Use your username or work email. Local and directory-backed sign-in can require an email verification code, and some organizations also allow a cached email sign-in link.</p>
 
         <form method="POST" action="{{ route('plugin.identity-local.auth.request') }}">
             @csrf

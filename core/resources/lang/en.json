@@ -1,10 +1,13 @@
 {
   "core.app.name": "PymeSec",
   "core.nav.dashboard": "Dashboard",
+  "core.nav.management_reporting": "Management Reporting",
   "core.nav.support": "Support",
   "core.nav.governance": "Governance",
   "core.dashboard.screen.title": "Workspace Dashboard",
   "core.dashboard.screen.subtitle": "A quick audit-oriented view of the current organization context and work queues.",
+  "core.management-reporting.screen.title": "Management Reporting",
+  "core.management-reporting.screen.subtitle": "Cross-domain reporting across assessments, evidence, risks, and findings for the active workspace context.",
   "core.support.screen.title": "Support and Concepts",
   "core.support.screen.subtitle": "A practical guide and concept reference for the areas used across the application.",
   "core.governance.screen.title": "Delegated Access Governance",

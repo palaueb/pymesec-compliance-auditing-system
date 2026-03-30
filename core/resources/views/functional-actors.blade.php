@@ -7,6 +7,10 @@
 @endphp
 
 <section class="module-screen compact">
+    <div class="surface-note">
+        Governance page. Functional profiles and accountability links live here so ownership stays separate from day-to-day record maintenance.
+    </div>
+
     <div class="overview-grid">
         <div class="metric-card"><div class="metric-label">Actors</div><div class="metric-value">{{ $metrics['actors'] }}</div></div>
         <div class="metric-card"><div class="metric-label">Principal links</div><div class="metric-value">{{ $metrics['links'] }}</div></div>
@@ -111,6 +115,10 @@
 
     @if ($selectedActor !== null)
         <div class="table-card">
+            <div class="surface-note" style="margin-bottom:16px;">
+                Functional Profile Detail keeps linked people and responsibilities in one governance workspace. Use the profile list to browse profiles and open the one you want to manage.
+            </div>
+
             <div class="screen-header">
                 <div>
                     <h2 class="screen-title" style="font-size:24px;">{{ $selectedActor['display_name'] }}</h2>
@@ -246,6 +254,12 @@
     @endif
 
     <div class="table-card">
+        <div class="screen-header">
+            <div>
+                <h2 class="screen-title" style="font-size:24px;">Functional profile list</h2>
+                <p class="screen-subtitle">Browse profiles, review context, and open one profile when you need governance editing.</p>
+            </div>
+        </div>
         <table class="entity-table">
             <thead>
                 <tr>

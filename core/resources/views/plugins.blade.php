@@ -14,6 +14,10 @@
         Module activation changes are stored in <code>{{ $state_path }}</code>. Module-specific setup lives in each module's own settings area.
     </div>
 
+    <div class="surface-note">
+        Governance page. Enable or disable modules here, but keep module-specific business operations inside each module workspace.
+    </div>
+
     @if ($selectedPlugin !== null)
         @php
             $stateLabel = match ($selectedPlugin['lifecycle_source']) {
@@ -204,7 +208,7 @@
                         </td>
                         <td>
                             <div class="action-cluster">
-                                <a class="button button-ghost" href="{{ $plugin['open_url'] }}">Edit details</a>
+                                <a class="button button-ghost" href="{{ $plugin['open_url'] }}">Open</a>
                             </div>
                         </td>
                     </tr>

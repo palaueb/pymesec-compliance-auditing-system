@@ -1,4 +1,8 @@
 <section class="module-screen compact">
+    <div class="surface-note">
+        Governance page. This catalog stays read-only and explains which permissions exist, where they come from, and in which contexts they apply.
+    </div>
+
     <div class="overview-grid" style="grid-template-columns:repeat(4, minmax(0, 1fr));">
         <div class="metric-card"><div class="metric-label">Registered</div><div class="metric-value">{{ $metrics['total'] }}</div></div>
         <div class="metric-card"><div class="metric-label">Platform scope</div><div class="metric-value">{{ $metrics['platform'] }}</div></div>

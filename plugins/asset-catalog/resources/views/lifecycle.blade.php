@@ -7,6 +7,11 @@
 </style>
 
 <section class="module-screen compact">
+    <div class="surface-card">
+        <div class="entity-title">Asset lifecycle board</div>
+        <div class="table-note" style="margin-top:6px;">This board stays focused on lifecycle state and transition history. Open an asset from the catalog when you need to manage ownership, evidence, or asset maintenance.</div>
+    </div>
+
     <div class="workflow-stack">
         @forelse ($rows as $row)
             <article class="workflow-card">

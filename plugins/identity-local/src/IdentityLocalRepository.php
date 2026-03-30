@@ -120,6 +120,58 @@ class IdentityLocalRepository
     /**
      * @return array<string, mixed>|null
      */
+    public function findActiveLocalUserByLogin(string $login): ?array
+    {
+        $normalized = Str::lower(trim($login));
+
+        if ($normalized === '') {
+            return null;
+        }
+
+        $user = DB::table('identity_local_users')
+            ->where('is_active', true)
+            ->where(function ($query): void {
+                $query->whereNull('auth_provider')
+                    ->orWhere('auth_provider', 'local');
+            })
+            ->where(function ($query) use ($normalized): void {
+                $query->whereRaw('LOWER(email) = ?', [$normalized])
+                    ->orWhereRaw('LOWER(username) = ?', [$normalized]);
+            })
+            ->first();
+
+        return $user !== null ? $this->mapUser($user) : null;
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    public function findActiveDirectoryUserByLoginMode(string $login, string $authProvider, string $loginMode): ?array
+    {
+        $normalized = Str::lower(trim($login));
+
+        if ($normalized === '') {
+            return null;
+        }
+
+        $query = DB::table('identity_local_users')
+            ->where('is_active', true)
+            ->where('auth_provider', $authProvider);
+
+        if ($loginMode === 'email') {
+            $query->whereRaw('LOWER(email) = ?', [$normalized]);
+        } else {
+            $query->whereRaw('LOWER(username) = ?', [$normalized]);
+        }
+
+        $user = $query->first();
+
+        return $user !== null ? $this->mapUser($user) : null;
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
     public function findActiveUserByLogin(string $login): ?array
     {
         $normalized = Str::lower(trim($login));

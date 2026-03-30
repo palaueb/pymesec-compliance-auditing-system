@@ -1,4 +1,9 @@
 <section class="module-screen compact">
+    <div class="surface-card">
+        <div class="entity-title">Assignment register</div>
+        <div class="table-note" style="margin-top:6px;">This supporting view stays focused on accountability records by actor, object, type, and scope. Use functional actor details or the linked workspace item to manage the underlying responsibility.</div>
+    </div>
+
     <div class="table-card">
         <table class="entity-table">
             <thead>

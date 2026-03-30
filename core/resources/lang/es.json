@@ -1,10 +1,13 @@
 {
   "core.app.name": "PymeSec",
   "core.nav.dashboard": "Panel",
+  "core.nav.management_reporting": "Reporting de gestion",
   "core.nav.support": "Ayuda",
   "core.nav.governance": "Gobernanza",
   "core.dashboard.screen.title": "Panel de trabajo",
   "core.dashboard.screen.subtitle": "Una vista rapida orientada a auditoria para el contexto activo y sus colas de trabajo.",
+  "core.management-reporting.screen.title": "Reporting de gestion",
+  "core.management-reporting.screen.subtitle": "Vista transversal de assessments, evidencias, riesgos y findings para el contexto activo del workspace.",
   "core.support.screen.title": "Ayuda y conceptos",
   "core.support.screen.subtitle": "Guia practica y referencia de conceptos para las areas de trabajo de la aplicacion.",
   "core.governance.screen.title": "Gobernanza delegada de acceso",

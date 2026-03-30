@@ -2,11 +2,13 @@
 
 namespace PymeSec\Plugins\IdentityLdap;
 
+use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use RuntimeException;
 use Throwable;
 use PymeSec\Core\Audit\AuditRecordData;
 use PymeSec\Core\Audit\Contracts\AuditTrailInterface;
+use PymeSec\Plugins\IdentityLocal\IdentityLocalAuthService;
 use PymeSec\Plugins\IdentityLocal\IdentityLocalRepository;
 
 class IdentityLdapService
@@ -14,9 +16,106 @@ class IdentityLdapService
     public function __construct(
         private readonly IdentityLdapRepository $repository,
         private readonly IdentityLocalRepository $users,
+        private readonly IdentityLocalAuthService $auth,
         private readonly LdapDirectoryGatewayInterface $gateway,
         private readonly AuditTrailInterface $audit,
     ) {}
+
+    /**
+     * @return array{code:string,user:array<string,mixed>}|null
+     */
+    public function beginPasswordLogin(string $login, string $password, ?Request $request = null): ?array
+    {
+        $candidate = $this->resolveLoginCandidate($login);
+
+        if ($candidate === null) {
+            return null;
+        }
+
+        $organizationId = (string) ($candidate['organization_id'] ?? '');
+        $connection = $organizationId !== '' ? $this->repository->connectionForOrganization($organizationId) : null;
+
+        if ($connection === null || ! (bool) ($connection['is_enabled'] ?? false)) {
+            $this->recordAuthAttempt('failure', $candidate, [
+                'login' => $login,
+                'reason' => 'connector_missing_or_disabled',
+            ]);
+
+            return null;
+        }
+
+        $directoryUser = $this->gateway->authenticate($connection, $login, $password);
+
+        if ($directoryUser === null || ! $this->matchesDirectoryIdentity($candidate, $directoryUser)) {
+            $this->recordAuthAttempt('failure', $candidate, [
+                'login' => $login,
+                'reason' => 'invalid_directory_credentials',
+            ]);
+
+            return null;
+        }
+
+        $challenge = $this->auth->beginPasswordChallengeForPrincipal((string) $candidate['principal_id'], 'password-2fa', $request);
+
+        if ($challenge === null) {
+            $this->recordAuthAttempt('failure', $candidate, [
+                'login' => $login,
+                'reason' => 'cached_user_unavailable',
+            ]);
+
+            return null;
+        }
+
+        $this->recordAuthAttempt('success', $candidate, [
+            'login' => $login,
+            'login_mode' => (string) ($connection['login_mode'] ?? 'username'),
+            'delivery' => 'mail_code',
+        ]);
+
+        return $challenge;
+    }
+
+    /**
+     * @return array{token:string,user:array<string,mixed>}|null
+     */
+    public function issueMagicLink(string $login, ?Request $request = null): ?array
+    {
+        $candidate = $this->resolveFallbackCandidate($login);
+
+        if ($candidate === null) {
+            return null;
+        }
+
+        $organizationId = (string) ($candidate['organization_id'] ?? '');
+        $connection = $organizationId !== '' ? $this->repository->connectionForOrganization($organizationId) : null;
+
+        if ($connection === null || ! (bool) ($connection['fallback_email_enabled'] ?? false)) {
+            $this->recordLinkAttempt('failure', $candidate, [
+                'login' => $login,
+                'reason' => 'fallback_email_disabled',
+            ]);
+
+            return null;
+        }
+
+        $issued = $this->auth->issueMagicLinkForPrincipal((string) $candidate['principal_id'], $request);
+
+        if ($issued === null) {
+            $this->recordLinkAttempt('failure', $candidate, [
+                'login' => $login,
+                'reason' => 'cached_user_unavailable',
+            ]);
+
+            return null;
+        }
+
+        $this->recordLinkAttempt('success', $candidate, [
+            'login' => $login,
+            'delivery' => 'mail',
+        ]);
+
+        return $issued;
+    }
 
     /**
      * @return array<string, mixed>
@@ -165,5 +264,118 @@ class IdentityLdapService
         );
 
         return $base !== 'membership-ldap--' ? $base : 'membership-ldap-'.Str::lower(Str::ulid());
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function resolveLoginCandidate(string $login): ?array
+    {
+        $normalized = trim($login);
+
+        if ($normalized === '') {
+            return null;
+        }
+
+        $emailCandidate = $this->users->findActiveDirectoryUserByLoginMode($normalized, 'ldap', 'email');
+        $usernameCandidate = $this->users->findActiveDirectoryUserByLoginMode($normalized, 'ldap', 'username');
+
+        foreach (array_filter([$emailCandidate, $usernameCandidate]) as $candidate) {
+            $organizationId = (string) ($candidate['organization_id'] ?? '');
+            $connection = $organizationId !== '' ? $this->repository->connectionForOrganization($organizationId) : null;
+
+            if ($connection === null) {
+                continue;
+            }
+
+            $loginMode = (string) ($connection['login_mode'] ?? 'username');
+
+            if ($loginMode === 'email' && $emailCandidate !== null && (string) $emailCandidate['principal_id'] === (string) $candidate['principal_id']) {
+                return $candidate;
+            }
+
+            if ($loginMode === 'username' && $usernameCandidate !== null && (string) $usernameCandidate['principal_id'] === (string) $candidate['principal_id']) {
+                return $candidate;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @return array<string, mixed>|null
+     */
+    private function resolveFallbackCandidate(string $login): ?array
+    {
+        $normalized = Str::lower(trim($login));
+
+        if ($normalized === '') {
+            return null;
+        }
+
+        foreach (['email', 'username'] as $loginMode) {
+            $candidate = $this->users->findActiveDirectoryUserByLoginMode($normalized, 'ldap', $loginMode);
+
+            if ($candidate !== null) {
+                return $candidate;
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @param  array<string, mixed>  $candidate
+     * @param  array<string, mixed>  $directoryUser
+     */
+    private function matchesDirectoryIdentity(array $candidate, array $directoryUser): bool
+    {
+        $candidateSubject = Str::lower((string) ($candidate['external_subject'] ?? ''));
+        $directorySubject = Str::lower((string) ($directoryUser['external_subject'] ?? ''));
+
+        if ($candidateSubject !== '' && $directorySubject !== '') {
+            return $candidateSubject === $directorySubject;
+        }
+
+        return Str::lower((string) ($candidate['email'] ?? '')) === Str::lower((string) ($directoryUser['email'] ?? ''))
+            && Str::lower((string) ($candidate['username'] ?? '')) === Str::lower((string) ($directoryUser['username'] ?? ''));
+    }
+
+    /**
+     * @param  array<string, mixed>  $candidate
+     * @param  array<string, mixed>  $summary
+     */
+    private function recordAuthAttempt(string $outcome, array $candidate, array $summary): void
+    {
+        $this->audit->record(new AuditRecordData(
+            eventType: 'plugin.identity-ldap.auth.password.requested',
+            outcome: $outcome,
+            originComponent: 'identity-ldap',
+            principalId: $outcome === 'success' ? (string) ($candidate['principal_id'] ?? '') : null,
+            organizationId: is_string($candidate['organization_id'] ?? null) ? $candidate['organization_id'] : null,
+            targetType: 'identity_local_user',
+            targetId: is_string($candidate['id'] ?? null) ? $candidate['id'] : null,
+            summary: $summary,
+            executionOrigin: 'identity-ldap-auth',
+        ));
+    }
+
+    /**
+     * @param  array<string, mixed>  $candidate
+     * @param  array<string, mixed>  $summary
+     */
+    private function recordLinkAttempt(string $outcome, array $candidate, array $summary): void
+    {
+        $this->audit->record(new AuditRecordData(
+            eventType: 'plugin.identity-ldap.auth.link.requested',
+            outcome: $outcome,
+            originComponent: 'identity-ldap',
+            principalId: $outcome === 'success' ? (string) ($candidate['principal_id'] ?? '') : null,
+            organizationId: is_string($candidate['organization_id'] ?? null) ? $candidate['organization_id'] : null,
+            targetType: 'identity_local_user',
+            targetId: is_string($candidate['id'] ?? null) ? $candidate['id'] : null,
+            summary: $summary,
+            executionOrigin: 'identity-ldap-auth',
+        ));
     }
 }

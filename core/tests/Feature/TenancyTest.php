@@ -55,6 +55,7 @@ class TenancyTest extends TestCase
 
         $this->get('/admin?menu=core.tenancy&principal_id=principal-admin')
             ->assertOk()
+            ->assertSee('Governance page. Use this area to define tenant boundaries')
             ->assertSee('Create organization')
             ->assertSee('Create scope');
 

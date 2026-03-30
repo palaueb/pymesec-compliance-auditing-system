@@ -48,6 +48,8 @@ The following specification documents are available in the [`specs`](./) folder:
 - [governed-reference-data-phase-3-v1.md](./governed-reference-data-phase-3-v1.md)
 - [system-enums-vs-business-catalogues-ui-v1.md](./system-enums-vs-business-catalogues-ui-v1.md)
 - [framework-packs-and-reporting-depth-v1.md](./framework-packs-and-reporting-depth-v1.md)
+- [management-reporting-v1.md](./management-reporting-v1.md)
+- [next-product-backlog-v1.md](./next-product-backlog-v1.md)
 - [framework-adoption-workflows-v1.md](./framework-adoption-workflows-v1.md)
 - [evidence-automation-and-repository-depth-v1.md](./evidence-automation-and-repository-depth-v1.md)
 - [evidence-download-preview-and-reminders-v1.md](./evidence-download-preview-and-reminders-v1.md)

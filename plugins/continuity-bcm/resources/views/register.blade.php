@@ -15,9 +15,13 @@
 
     @if (is_array($selected_service))
         <div class="surface-card" style="padding:16px; display:grid; gap:16px;">
+            <div class="surface-note">
+                Continuity Service Detail keeps recovery plans, dependencies, documents, workflow, ownership, and service maintenance in one workspace. Use the service register to browse services and open the one you want to work on.
+            </div>
+
             <div class="row-between" style="align-items:flex-start;">
                 <div>
-                    <div class="eyebrow">Continuity service</div>
+                    <div class="eyebrow">Continuity Service Detail</div>
                     <h2 class="screen-title" style="font-size:28px;">{{ $selected_service['title'] }}</h2>
                     <div class="table-note">{{ $selected_service['id'] }}</div>
                     <div class="table-note">{{ $selected_service['impact_tier_label'] }}</div>
@@ -461,7 +465,8 @@
         </div>
 
         <div class="surface-card">
-            <div class="table-note">Open a service to manage its recovery plans, dependencies, documents, ownership, and workflow.</div>
+            <div class="entity-title">Continuity service list</div>
+            <div class="table-note" style="margin-top:6px;">This list stays focused on impact summary, owner summary, linked records, state, and Open. Use Continuity Service Detail to manage recovery plans, dependencies, documents, ownership, and workflow.</div>
         </div>
 
         <div class="table-card" id="continuity-service-plans">

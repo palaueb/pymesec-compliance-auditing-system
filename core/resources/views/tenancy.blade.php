@@ -1,4 +1,8 @@
 <section class="module-screen compact">
+    <div class="surface-note">
+        Governance page. Use this area to define tenant boundaries, default workspace settings, and operational scopes. Day-to-day record maintenance stays in the application workspaces, not here.
+    </div>
+
     <div class="overview-grid">
         <div class="metric-card"><div class="metric-label">Organizations</div><div class="metric-value">{{ $metrics['organizations'] }}</div></div>
         <div class="metric-card"><div class="metric-label">Active scopes</div><div class="metric-value">{{ $metrics['active_scopes'] }}</div></div>

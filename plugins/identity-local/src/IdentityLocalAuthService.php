@@ -87,7 +87,7 @@ class IdentityLocalAuthService
      */
     public function issueMagicLink(string $login, ?Request $request = null): ?array
     {
-        $user = $this->users->findActiveUserByLogin($login);
+        $user = $this->users->findActiveLocalUserByLogin($login);
 
         if ($user === null || ! (bool) ($user['magic_link_enabled'] ?? true)) {
             $this->audit->record(new AuditRecordData(
@@ -105,31 +105,11 @@ class IdentityLocalAuthService
             return null;
         }
 
-        $token = Str::random(64);
-        $tokenHash = hash('sha256', $token);
+        $issued = $this->issueMagicLinkForPrincipal((string) $user['principal_id'], $request);
 
-        DB::table('identity_local_login_links')->insert([
-            'id' => (string) Str::ulid(),
-            'principal_id' => $user['principal_id'],
-            'email' => $user['email'],
-            'token_hash' => $tokenHash,
-            'requested_ip' => $request?->ip(),
-            'user_agent' => Str::limit((string) $request?->userAgent(), 255, ''),
-            'expires_at' => now()->addMinutes(self::LINK_TTL_MINUTES),
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-
-        $url = route('plugin.identity-local.auth.consume', ['token' => $token]);
-
-        Mail::raw(
-            "Use this secure sign-in link: {$url}\n\nThis link expires in ".self::LINK_TTL_MINUTES." minutes.",
-            function ($message) use ($user): void {
-                $message
-                    ->to((string) $user['email'], (string) $user['display_name'])
-                    ->subject('Your sign-in link');
-            },
-        );
+        if ($issued === null) {
+            return null;
+        }
 
         $this->audit->record(new AuditRecordData(
             eventType: 'plugin.identity-local.auth.link.requested',
@@ -156,10 +136,7 @@ class IdentityLocalAuthService
             ],
         ));
 
-        return [
-            'token' => $token,
-            'user' => $user,
-        ];
+        return $issued;
     }
 
     /**
@@ -167,7 +144,7 @@ class IdentityLocalAuthService
      */
     public function beginPasswordLogin(string $login, string $password, ?Request $request = null): ?array
     {
-        $user = $this->users->findActiveUserByLogin($login);
+        $user = $this->users->findActiveLocalUserByLogin($login);
 
         if ($user === null
             || ! (bool) ($user['password_enabled'] ?? false)
@@ -189,7 +166,11 @@ class IdentityLocalAuthService
             return null;
         }
 
-        $code = $this->issueEmailCode($user, 'password-2fa', $request);
+        $challenge = $this->beginPasswordChallengeForPrincipal((string) $user['principal_id'], 'password-2fa', $request);
+
+        if ($challenge === null) {
+            return null;
+        }
 
         $this->audit->record(new AuditRecordData(
             eventType: 'plugin.identity-local.auth.password.requested',
@@ -207,7 +188,7 @@ class IdentityLocalAuthService
         ));
 
         return [
-            'code' => $code,
+            'code' => $challenge['code'],
             'user' => $user,
         ];
     }
@@ -349,6 +330,69 @@ class IdentityLocalAuthService
         }
 
         return $this->users->findUserByPrincipal($principalId);
+    }
+
+    /**
+     * @return array{token:string,user:array<string,mixed>}|null
+     */
+    public function issueMagicLinkForPrincipal(string $principalId, ?Request $request = null): ?array
+    {
+        $user = $this->users->findUserByPrincipal($principalId);
+
+        if ($user === null || ! (bool) ($user['is_active'] ?? false) || ! (bool) ($user['magic_link_enabled'] ?? true)) {
+            return null;
+        }
+
+        $token = Str::random(64);
+        $tokenHash = hash('sha256', $token);
+
+        DB::table('identity_local_login_links')->insert([
+            'id' => (string) Str::ulid(),
+            'principal_id' => $user['principal_id'],
+            'email' => $user['email'],
+            'token_hash' => $tokenHash,
+            'requested_ip' => $request?->ip(),
+            'user_agent' => Str::limit((string) $request?->userAgent(), 255, ''),
+            'expires_at' => now()->addMinutes(self::LINK_TTL_MINUTES),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $url = route('plugin.identity-local.auth.consume', ['token' => $token]);
+
+        Mail::raw(
+            "Use this secure sign-in link: {$url}\n\nThis link expires in ".self::LINK_TTL_MINUTES." minutes.",
+            function ($message) use ($user): void {
+                $message
+                    ->to((string) $user['email'], (string) $user['display_name'])
+                    ->subject('Your sign-in link');
+            },
+        );
+
+        return [
+            'token' => $token,
+            'user' => $user,
+        ];
+    }
+
+    /**
+     * @return array{code:string,user:array<string,mixed>}|null
+     */
+    public function beginPasswordChallengeForPrincipal(
+        string $principalId,
+        string $purpose = 'password-2fa',
+        ?Request $request = null,
+    ): ?array {
+        $user = $this->users->findUserByPrincipal($principalId);
+
+        if ($user === null || ! (bool) ($user['is_active'] ?? false)) {
+            return null;
+        }
+
+        return [
+            'code' => $this->issueEmailCode($user, $purpose, $request),
+            'user' => $user,
+        ];
     }
 
     /**
