@@ -1,5 +1,54 @@
 {
+  "guide": [
+    {
+      "id": "separate-functional-ownership-from-sign-in-access",
+      "title": "Use functional actors for accountability, not as a substitute for access control",
+      "summary": "The actor directory explains who is responsible for business records. It does not replace principals, memberships, or permission checks.",
+      "body": [
+        "Create functional actors for people or teams that need visible operational accountability.",
+        "Link actors to principals when you want traceability between a real sign-in identity and a business-facing ownership role.",
+        "Use assignments to show who owns an asset, control, risk, or other governed record."
+      ],
+      "concept_ids": [
+        "functional-actor",
+        "actor-principal-link",
+        "ownership-assignment"
+      ],
+      "order": 280
+    }
+  ],
   "concepts": [
+    {
+      "id": "functional-actor",
+      "label": "Functional Actor",
+      "category": "governance",
+      "summary": "A business-facing person or team entry used to express accountability across governed records.",
+      "why_it_exists": "The platform needs stable ownership records even when sign-in identities, teams, or membership models change.",
+      "how_to_use": [
+        "Create actors for roles, named people, or teams that need to appear as owners of business records.",
+        "Use actor records to keep governance responsibilities visible without coupling them to login mechanics."
+      ],
+      "relations": [
+        { "type": "may-have", "target": "ownership-assignment", "summary": "Actors can be assigned to governed records as owners or accountable parties." }
+      ],
+      "order": 280
+    },
+    {
+      "id": "actor-principal-link",
+      "label": "Actor to Principal Link",
+      "category": "identity",
+      "summary": "A link between a functional actor and a sign-in principal.",
+      "why_it_exists": "This link preserves the distinction between operational accountability and access control while still allowing them to be related.",
+      "how_to_use": [
+        "Use the link when a functional actor corresponds to a real local or synced principal.",
+        "Do not assume the link itself grants permissions."
+      ],
+      "relations": [
+        { "type": "connects", "target": "functional-actor", "summary": "The link starts from a functional actor." },
+        { "type": "connects", "target": "principal", "summary": "The link can point to a sign-in principal." }
+      ],
+      "order": 281
+    },
     {
       "id": "ownership-assignment",
       "label": "Ownership Assignment",
@@ -14,7 +63,7 @@
         { "type": "uses", "target": "functional-actor", "summary": "Assignments point to functional actors." },
         { "type": "may-reference", "target": "asset", "summary": "Assets can have ownership assignments." }
       ],
-      "order": 280
+      "order": 282
     }
   ]
 }

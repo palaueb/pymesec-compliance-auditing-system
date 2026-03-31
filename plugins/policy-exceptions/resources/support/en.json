@@ -1,5 +1,38 @@
 {
+  "guide": [
+    {
+      "id": "manage-policies-and-approved-deviations",
+      "title": "Use policy detail to manage the rule and its approved deviations together",
+      "summary": "The policy record is the governance anchor. Exceptions are subordinate records used when a deviation is deliberately accepted.",
+      "body": [
+        "Maintain the policy statement, linked control, review cadence, owners, and documents in the policy workspace.",
+        "Create an exception only when the organization is deliberately allowing a bounded deviation.",
+        "Use exception state, expiry, rationale, and compensating control notes to keep the deviation reviewable."
+      ],
+      "concept_ids": [
+        "policy",
+        "policy-exception"
+      ],
+      "order": 250
+    }
+  ],
   "concepts": [
+    {
+      "id": "policy",
+      "label": "Policy",
+      "category": "governance",
+      "summary": "A governed statement of expected practice, ownership, and review cadence.",
+      "why_it_exists": "Policies provide the rule baseline that other records, such as controls and exceptions, can refer back to.",
+      "how_to_use": [
+        "Keep the statement, version, owners, linked control, and review due date current.",
+        "Use attached documents for the working material or approved policy artifacts."
+      ],
+      "relations": [
+        { "type": "may-link-to", "target": "control", "summary": "Policies can point to the control they govern or justify." },
+        { "type": "may-have", "target": "policy-exception", "summary": "One policy can have multiple approved or requested exceptions over time." }
+      ],
+      "order": 250
+    },
     {
       "id": "policy-exception",
       "label": "Policy Exception",
@@ -8,13 +41,14 @@
       "why_it_exists": "Organizations sometimes accept limited deviations. A policy exception keeps that decision visible, reviewed, and time-bound.",
       "how_to_use": [
         "Use an exception when a rule cannot be followed and the deviation is being accepted deliberately.",
-        "Record the reason, owner, approval state, and review date."
+        "Record the reason, owner, approval state, expiry, and compensating controls."
       ],
       "relations": [
-        { "type": "may-relate-to", "target": "control", "summary": "Exceptions often relate to controls or expected practices." },
+        { "type": "belongs-to", "target": "policy", "summary": "Exceptions are managed in the context of one policy." },
+        { "type": "may-relate-to", "target": "finding", "summary": "An exception can reference a finding that triggered or justified it." },
         { "type": "may-increase", "target": "risk", "summary": "An exception may leave risk partially untreated." }
       ],
-      "order": 250
+      "order": 251
     }
   ]
 }

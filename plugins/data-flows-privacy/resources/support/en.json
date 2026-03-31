@@ -1,4 +1,21 @@
 {
+  "guide": [
+    {
+      "id": "manage-privacy-records-through-data-flows",
+      "title": "Use the data flow workspace to keep operational privacy records reviewable",
+      "summary": "The flow record is not only a diagram placeholder. It holds workflow, review cadence, owners, linked records, and supporting files.",
+      "body": [
+        "Register the source, destination, transfer type, and data category summary so the movement is understandable.",
+        "Link the flow to the relevant asset, risk, or processing activity when that improves operational traceability.",
+        "Use workflow state, owners, review due date, and uploaded records to keep the privacy review current."
+      ],
+      "concept_ids": [
+        "data-flow",
+        "processing-activity"
+      ],
+      "order": 260
+    }
+  ],
   "concepts": [
     {
       "id": "data-flow",
@@ -7,11 +24,12 @@
       "summary": "A description of how data moves between people, systems, or external parties.",
       "why_it_exists": "Data flows make privacy work concrete. They show where personal or sensitive data comes from, where it goes, and who touches it.",
       "how_to_use": [
-        "Register the main flow, source, destination, and purpose of the movement.",
-        "Keep the flow linked to the relevant processing activity when possible."
+        "Register the main flow, source, destination, transfer type, and review due date.",
+        "Keep the flow linked to the relevant processing activity or other operational records when possible."
       ],
       "relations": [
-        { "type": "supports", "target": "processing-activity", "summary": "A data flow often explains one part of a processing activity." }
+        { "type": "supports", "target": "processing-activity", "summary": "A data flow often explains one part of a processing activity." },
+        { "type": "may-link-to", "target": "risk", "summary": "A flow can be linked to a broader privacy or transfer risk record." }
       ],
       "order": 260
     },

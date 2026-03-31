@@ -1,0 +1,95 @@
+{
+  "plugin": {
+    "id": "third-party-risk",
+    "name": "Third-Party Risk",
+    "version": "0.1.0",
+    "type": "domain",
+    "description": "Vendor register and review workspace for third-party risk intake, review, and follow-up.",
+    "vendor": "pymesec",
+    "license": "AGPL-3.0-or-later"
+  },
+  "compatibility": {
+    "core": "^0.1.0",
+    "sdk": "^0.1.0"
+  },
+  "dependencies": [
+    "actor-directory"
+  ],
+  "permissions": [
+    {
+      "key": "plugin.third-party-risk.vendors.view",
+      "label": "View vendors",
+      "description": "View the vendor register and current review workspaces.",
+      "feature_area": "vendors",
+      "operation": "view",
+      "contexts": [
+        "organization"
+      ]
+    },
+    {
+      "key": "plugin.third-party-risk.vendors.manage",
+      "label": "Manage vendors",
+      "description": "Create vendor reviews, update vendor records, transition reviews, and attach evidence.",
+      "feature_area": "vendors",
+      "operation": "manage",
+      "contexts": [
+        "organization"
+      ]
+    }
+  ],
+  "routes": [
+    {
+      "id": "third-party-risk.web",
+      "type": "web",
+      "file": "routes/web.php",
+      "middleware": [
+        "web"
+      ],
+      "permission": "plugin.third-party-risk.vendors.view"
+    },
+    {
+      "id": "third-party-risk.public-web",
+      "type": "web",
+      "file": "routes/public.php",
+      "middleware": [
+        "web"
+      ]
+    }
+  ],
+  "menus": [
+    {
+      "id": "plugin.third-party-risk.root",
+      "label_key": "plugin.third-party-risk.nav.root",
+      "route": "plugin.third-party-risk.index",
+      "icon": "shield",
+      "order": 37,
+      "permission": "plugin.third-party-risk.vendors.view"
+    }
+  ],
+  "migrations": [],
+  "translations": {
+    "default_locale": "en",
+    "supported_locales": [
+      "en",
+      "es",
+      "fr",
+      "de"
+    ],
+    "path": "resources/lang"
+  },
+  "support": {
+    "path": "resources/support",
+    "supported_locales": [
+      "en"
+    ]
+  },
+  "lifecycle": {},
+  "runtime": {
+    "class": "PymeSec\\Plugins\\ThirdPartyRisk\\ThirdPartyRiskPlugin",
+    "autoload": {
+      "psr-4": {
+        "PymeSec\\Plugins\\ThirdPartyRisk\\": "src"
+      }
+    }
+  }
+}

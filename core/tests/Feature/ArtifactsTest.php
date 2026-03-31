@@ -93,4 +93,24 @@ class ArtifactsTest extends TestCase
         $this->assertSame(0, $exitCode);
         $this->assertStringContainsString('Control evidence bundle', Artisan::output());
     }
+
+    public function test_artifact_upload_rejects_active_or_executable_file_types(): void
+    {
+        Storage::fake('local');
+
+        $this->from('/app?menu=plugin.controls-catalog.root&principal_id=principal-org-a&organization_id=org-a')
+            ->post('/plugins/controls/control-access-review/artifacts', [
+                'principal_id' => 'principal-org-a',
+                'organization_id' => 'org-a',
+                'locale' => 'en',
+                'menu' => 'plugin.controls-catalog.root',
+                'membership_id' => 'membership-org-a-hello',
+                'label' => 'Malicious payload',
+                'artifact_type' => 'evidence',
+                'artifact' => UploadedFile::fake()->createWithContent('payload.php', '<?php echo "owned";'),
+            ])
+            ->assertSessionHasErrors('artifact');
+
+        Storage::disk('local')->assertDirectoryEmpty('artifacts');
+    }
 }

@@ -96,6 +96,12 @@ Rules:
 - original filenames are metadata only and must not be trusted as storage paths
 - the core should capture a content hash for later integrity checks
 - plugins must not bypass the core artifact service when storing shared platform evidence
+- uploads must be validated against an explicit allowed file profile before artifact storage
+- the platform must not accept arbitrary executable or active-content file types by default
+- upload type validation must use both allowed extensions and server-side detected content type
+- artifact download and preview behavior must remain conservative for unknown or non-previewable file types
+
+See [`file-upload-security-and-type-validation-v1.md`](/media/marc/4T_EXFAT/web/pymesec.com/pymesec/docs/specs/file-upload-security-and-type-validation-v1.md) for the platform-wide upload baseline.
 
 ## 6. Tenancy Rules
 

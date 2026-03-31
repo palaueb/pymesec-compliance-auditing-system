@@ -16,6 +16,7 @@ class DatabaseArtifactService implements ArtifactServiceInterface
     public function __construct(
         private readonly AuditTrailInterface $audit,
         private readonly EventBusInterface $events,
+        private readonly ArtifactUploadFileTypeGuard $fileTypeGuard,
     ) {}
 
     public function store(ArtifactUploadData $artifact): ArtifactRecord
@@ -24,7 +25,8 @@ class DatabaseArtifactService implements ArtifactServiceInterface
         $disk = (string) config('artifacts.disk', 'local');
         $prefix = trim((string) config('artifacts.path_prefix', 'artifacts'), '/');
         $originalFilename = $artifact->file->getClientOriginalName() ?: 'artifact.bin';
-        $extension = strtolower($artifact->file->getClientOriginalExtension() ?: ($artifact->file->guessExtension() ?: 'bin'));
+        $validatedFile = $this->fileTypeGuard->validate($artifact);
+        $extension = $validatedFile['extension'];
         $filenameBase = pathinfo($originalFilename, PATHINFO_FILENAME);
         $safeFilenameBase = Str::slug($filenameBase !== '' ? $filenameBase : 'artifact');
         $storageFilename = $safeFilenameBase !== ''
@@ -51,7 +53,7 @@ class DatabaseArtifactService implements ArtifactServiceInterface
             artifactType: $artifact->artifactType,
             label: $artifact->label,
             originalFilename: $originalFilename,
-            mediaType: $artifact->file->getClientMimeType() ?: ($artifact->file->getMimeType() ?: 'application/octet-stream'),
+            mediaType: $validatedFile['media_type'],
             extension: $extension,
             sizeBytes: (int) ($artifact->file->getSize() ?? strlen($contents)),
             sha256: hash('sha256', $contents),

@@ -2,6 +2,11 @@
 
 Implementation-oriented technical specifications derived from the PRD and ADRs.
 
+Documentation rule:
+
+- Updating the in-application `HELP` is mandatory whenever a feature, workflow, screen, object, or governed record type is added, changed, improved, or removed.
+- A slice is not considered complete if specs change but the user-facing `support` content remains stale.
+
 Current notable documents:
 
 The following specification documents are available in the [`specs`](./) folder:
@@ -10,6 +15,7 @@ The following specification documents are available in the [`specs`](./) folder:
 - [tenancy-model-v1.md](./tenancy-model-v1.md)
 - [audit-trail-v1.md](./audit-trail-v1.md)
 - [artifacts-and-attachments-v1.md](./artifacts-and-attachments-v1.md)
+- [file-upload-security-and-type-validation-v1.md](./file-upload-security-and-type-validation-v1.md)
 - [event-bus-and-hooks-v1.md](./event-bus-and-hooks-v1.md)
 - [continuity-bcm-plugin-v1.md](./continuity-bcm-plugin-v1.md)
 - [continuity-recovery-plan-detail-ui-v1.md](./continuity-recovery-plan-detail-ui-v1.md)
@@ -51,6 +57,7 @@ The following specification documents are available in the [`specs`](./) folder:
 - [management-reporting-v1.md](./management-reporting-v1.md)
 - [information-architecture-and-data-contract-review-2026-03.md](./information-architecture-and-data-contract-review-2026-03.md)
 - [next-product-backlog-v1.md](./next-product-backlog-v1.md)
+- [third-party-risk-vendor-review-workspace-v1.md](./third-party-risk-vendor-review-workspace-v1.md)
 - [framework-adoption-workflows-v1.md](./framework-adoption-workflows-v1.md)
 - [evidence-automation-and-repository-depth-v1.md](./evidence-automation-and-repository-depth-v1.md)
 - [evidence-download-preview-and-reminders-v1.md](./evidence-download-preview-and-reminders-v1.md)

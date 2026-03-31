@@ -6,14 +6,14 @@ use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
-use PymeSec\Core\ObjectAccess\ObjectAccessService;
 use PymeSec\Plugins\AssessmentsAudits\AssessmentReferenceData;
 use PymeSec\Plugins\FindingsRemediation\FindingsReferenceData;
 
 class ManagementReportingService
 {
     public function __construct(
-        private readonly ObjectAccessService $objectAccess,
+        private readonly WorkspaceReportingContext $workspaceContext,
+        private readonly ReportingMetricCatalog $metricCatalog,
     ) {}
 
     /**
@@ -32,10 +32,10 @@ class ManagementReportingService
             ];
         }
 
-        $scopeLabels = $this->scopeLabels($organizationId);
-        $visibleAssessmentIds = $this->objectAccess->visibleObjectIds($principalId, $organizationId, $scopeId, 'assessment');
-        $visibleRiskIds = $this->objectAccess->visibleObjectIds($principalId, $organizationId, $scopeId, 'risk');
-        $visibleFindingIds = $this->objectAccess->visibleObjectIds($principalId, $organizationId, $scopeId, 'finding');
+        $scopeLabels = $this->workspaceContext->scopeLabels($organizationId);
+        $visibleAssessmentIds = $this->workspaceContext->visibleObjectIds($principalId, $organizationId, $scopeId, 'assessment');
+        $visibleRiskIds = $this->workspaceContext->visibleObjectIds($principalId, $organizationId, $scopeId, 'risk');
+        $visibleFindingIds = $this->workspaceContext->visibleObjectIds($principalId, $organizationId, $scopeId, 'finding');
 
         $assessments = $this->assessmentSection($organizationId, $scopeId, $visibleAssessmentIds, $scopeLabels, $baseQuery);
         $evidence = $this->evidenceSection($organizationId, $scopeId, $scopeLabels, $baseQuery);
@@ -44,31 +44,11 @@ class ManagementReportingService
 
         return [
             'headline_metrics' => [
-                [
-                    'label' => 'Active assessments',
-                    'value' => (string) ($assessments['metrics']['active'] ?? 0),
-                    'copy' => 'Campaigns currently running in the visible workspace.',
-                ],
-                [
-                    'label' => 'Failing reviews',
-                    'value' => (string) ($assessments['metrics']['failing_reviews'] ?? 0),
-                    'copy' => 'Assessment control reviews currently marked as fail.',
-                ],
-                [
-                    'label' => 'Evidence review due',
-                    'value' => (string) ($evidence['metrics']['review_due'] ?? 0),
-                    'copy' => 'Evidence records with review due in the next 30 days.',
-                ],
-                [
-                    'label' => 'Risks in workflow',
-                    'value' => (string) ($risks['metrics']['in_workflow'] ?? 0),
-                    'copy' => 'Risks still identified, assessing, or treated.',
-                ],
-                [
-                    'label' => 'Overdue findings',
-                    'value' => (string) ($findings['metrics']['overdue'] ?? 0),
-                    'copy' => 'Findings past due and not yet resolved.',
-                ],
+                $this->metricCatalog->headline('active_assessments', $assessments['metrics']['active'] ?? 0),
+                $this->metricCatalog->headline('failing_reviews', $assessments['metrics']['failing_reviews'] ?? 0),
+                $this->metricCatalog->headline('evidence_review_due', $evidence['metrics']['review_due'] ?? 0),
+                $this->metricCatalog->headline('risks_in_workflow', $risks['metrics']['in_workflow'] ?? 0),
+                $this->metricCatalog->headline('overdue_findings', $findings['metrics']['overdue'] ?? 0),
             ],
             'assessments' => $assessments,
             'evidence' => $evidence,
@@ -94,9 +74,8 @@ class ManagementReportingService
             return $this->emptySection();
         }
 
-        $campaignsQuery = $this->organizationAndScopedQuery('assessment_campaigns', $organizationId, $scopeId, true);
-        $campaignsQuery = $this->applyVisibleIds($campaignsQuery, $visibleIds);
-        $campaigns = $campaignsQuery
+        $campaigns = $this->workspaceContext
+            ->scopedQuery('assessment_campaigns', $organizationId, $scopeId, true, $visibleIds)
             ->orderByDesc('starts_on')
             ->orderBy('title')
             ->get([
@@ -211,8 +190,20 @@ class ManagementReportingService
                 'failing_reviews' => $failingReviews,
                 'linked_findings' => $linkedFindings,
             ],
-            'status_breakdown' => $statusBreakdown,
-            'result_breakdown' => $resultBreakdown,
+            'summary_metrics' => [
+                $this->metricCatalog->summary('campaigns', $campaigns->count()),
+                $this->metricCatalog->summary('active_assessments', $campaigns->where('status', 'active')->count()),
+                $this->metricCatalog->summary('failing_reviews', $failingReviews),
+                $this->metricCatalog->summary('linked_findings', $linkedFindings),
+            ],
+            'breakdowns' => [
+                $this->breakdown('Campaign status', $statusBreakdown),
+                $this->breakdown('Review results', $resultBreakdown),
+            ],
+            'attention' => [
+                'title' => 'Latest campaigns',
+                'copy' => 'Open the campaigns carrying the most current review load from this workspace.',
+            ],
             'rows' => $campaignRows,
             'empty_copy' => 'No assessment campaigns are visible in the current workspace context.',
             'section_url' => route('core.shell.index', [...$baseQuery, 'menu' => 'plugin.assessments-audits.root']),
@@ -236,7 +227,8 @@ class ManagementReportingService
 
         $today = now()->toDateString();
         $windowEnd = now()->addDays(30)->toDateString();
-        $records = $this->organizationAndScopedQuery('evidence_records', $organizationId, $scopeId, true)
+        $records = $this->workspaceContext
+            ->scopedQuery('evidence_records', $organizationId, $scopeId, true)
             ->orderBy('review_due_on')
             ->orderBy('valid_until')
             ->orderByDesc('updated_at')
@@ -307,7 +299,19 @@ class ManagementReportingService
                 'expiring' => $records->filter(static fn (object $record): bool => is_string($record->valid_until ?? null) && $record->valid_until !== '' && $record->valid_until >= $today && $record->valid_until <= $windowEnd)->count(),
                 'needs_validation' => $records->filter(static fn (object $record): bool => in_array((string) $record->status, ['active', 'approved'], true) && ! is_string($record->validated_at ?? null))->count(),
             ],
-            'status_breakdown' => $statusBreakdown,
+            'summary_metrics' => [
+                $this->metricCatalog->summary('records', $records->count()),
+                $this->metricCatalog->summary('approved', $records->where('status', 'approved')->count()),
+                $this->metricCatalog->summary('review_due', $records->filter(static fn (object $record): bool => is_string($record->review_due_on ?? null) && $record->review_due_on !== '' && $record->review_due_on <= $windowEnd)->count()),
+                $this->metricCatalog->summary('needs_validation', $records->filter(static fn (object $record): bool => in_array((string) $record->status, ['active', 'approved'], true) && ! is_string($record->validated_at ?? null))->count()),
+            ],
+            'breakdowns' => [
+                $this->breakdown('Status mix', $statusBreakdown),
+            ],
+            'attention' => [
+                'title' => 'Evidence attention queue',
+                'copy' => 'Review evidence records that are overdue, due soon, expired, or approaching expiry.',
+            ],
             'rows' => array_slice($attentionRows, 0, 5),
             'empty_copy' => 'No evidence records are currently queued for review or expiry attention.',
             'section_url' => route('core.shell.index', [...$baseQuery, 'menu' => 'plugin.evidence-management.root']),
@@ -331,9 +335,8 @@ class ManagementReportingService
             return $this->emptySection();
         }
 
-        $query = $this->organizationAndScopedQuery('risks', $organizationId, $scopeId, false);
-        $query = $this->applyVisibleIds($query, $visibleIds);
-        $riskRows = $query
+        $riskRows = $this->workspaceContext
+            ->scopedQuery('risks', $organizationId, $scopeId, false, $visibleIds)
             ->orderByDesc('residual_score')
             ->orderBy('title')
             ->get([
@@ -393,7 +396,19 @@ class ManagementReportingService
                 'accepted' => $stateCounts['accepted'],
                 'average_residual' => $riskRows->count() > 0 ? round($residualTotal / $riskRows->count(), 1) : 0,
             ],
-            'state_breakdown' => $stateBreakdown,
+            'summary_metrics' => [
+                $this->metricCatalog->summary('risks', $riskRows->count()),
+                $this->metricCatalog->summary('risks_in_workflow', $stateCounts['identified'] + $stateCounts['assessing'] + $stateCounts['treated']),
+                $this->metricCatalog->summary('assessing', $stateCounts['assessing']),
+                $this->metricCatalog->summary('average_residual', $riskRows->count() > 0 ? round($residualTotal / $riskRows->count(), 1) : 0),
+            ],
+            'breakdowns' => [
+                $this->breakdown('Workflow state', $stateBreakdown),
+            ],
+            'attention' => [
+                'title' => 'Highest residual risks',
+                'copy' => 'Use this queue to inspect the visible risks carrying the most residual exposure.',
+            ],
             'rows' => array_slice($rows, 0, 5),
             'empty_copy' => 'No risks are visible in the current workspace context.',
             'section_url' => route('core.shell.index', [...$baseQuery, 'menu' => 'plugin.risk-management.root']),
@@ -418,9 +433,8 @@ class ManagementReportingService
         }
 
         $today = now()->toDateString();
-        $query = $this->organizationAndScopedQuery('findings', $organizationId, $scopeId, false);
-        $query = $this->applyVisibleIds($query, $visibleIds);
-        $findings = $query
+        $findings = $this->workspaceContext
+            ->scopedQuery('findings', $organizationId, $scopeId, false, $visibleIds)
             ->orderBy('due_on')
             ->orderBy('severity')
             ->orderBy('title')
@@ -546,9 +560,21 @@ class ManagementReportingService
                 )),
                 'open_actions' => array_sum($openActionsByFinding),
             ],
-            'state_breakdown' => $stateBreakdown,
-            'severity_breakdown' => $severityBreakdown,
-            'action_breakdown' => $actionBreakdown,
+            'summary_metrics' => [
+                $this->metricCatalog->summary('findings', $findings->count()),
+                $this->metricCatalog->summary('open_findings', $stateCounts['open'] + $stateCounts['triaged'] + $stateCounts['remediating']),
+                $this->metricCatalog->summary('overdue_findings', $overdueCount),
+                $this->metricCatalog->summary('open_actions', array_sum($openActionsByFinding)),
+            ],
+            'breakdowns' => [
+                $this->breakdown('Workflow state', $stateBreakdown),
+                $this->breakdown('Severity', $severityBreakdown),
+                $this->breakdown('Action status', $actionBreakdown),
+            ],
+            'attention' => [
+                'title' => 'Open and overdue findings',
+                'copy' => 'Use this queue to move from executive exposure into the findings that need follow-up.',
+            ],
             'rows' => array_slice($rows, 0, 5),
             'empty_copy' => 'No findings are visible in the current workspace context.',
             'section_url' => route('core.shell.index', [...$baseQuery, 'menu' => 'plugin.findings-remediation.root']),
@@ -556,45 +582,15 @@ class ManagementReportingService
     }
 
     /**
-     * @param  array<int, string>|null  $visibleIds
+     * @param  array<int, array{id: string, label: string, count: int}>  $rows
+     * @return array<string, mixed>
      */
-    private function applyVisibleIds(Builder $query, ?array $visibleIds): Builder
+    private function breakdown(string $title, array $rows): array
     {
-        if ($visibleIds === null) {
-            return $query;
-        }
-
-        if ($visibleIds === []) {
-            return $query->whereRaw('1 = 0');
-        }
-
-        return $query->whereIn('id', $visibleIds);
-    }
-
-    private function organizationAndScopedQuery(
-        string $table,
-        string $organizationId,
-        ?string $scopeId,
-        bool $includeOrganizationWideWhenScoped,
-    ): Builder {
-        $query = DB::table($table)->where('organization_id', $organizationId);
-
-        if (! Schema::hasColumn($table, 'scope_id')) {
-            return $query;
-        }
-
-        if (! is_string($scopeId) || $scopeId === '') {
-            return $query;
-        }
-
-        if ($includeOrganizationWideWhenScoped) {
-            return $query->where(function (Builder $scopedQuery) use ($scopeId): void {
-                $scopedQuery->whereNull('scope_id')
-                    ->orWhere('scope_id', $scopeId);
-            });
-        }
-
-        return $query->where('scope_id', $scopeId);
+        return [
+            'title' => $title,
+            'rows' => $rows,
+        ];
     }
 
     private function workflowState(
@@ -626,22 +622,6 @@ class ManagementReportingService
     }
 
     /**
-     * @return array<string, string>
-     */
-    private function scopeLabels(string $organizationId): array
-    {
-        if (! Schema::hasTable('scopes')) {
-            return [];
-        }
-
-        return DB::table('scopes')
-            ->where('organization_id', $organizationId)
-            ->pluck('name', 'id')
-            ->map(static fn ($name): string => (string) $name)
-            ->all();
-    }
-
-    /**
      * @param  array<string, string>  $scopeLabels
      */
     private function scopeLabel(?string $scopeId, array $scopeLabels): string
@@ -665,11 +645,12 @@ class ManagementReportingService
     {
         return [
             'metrics' => [],
-            'status_breakdown' => [],
-            'result_breakdown' => [],
-            'state_breakdown' => [],
-            'severity_breakdown' => [],
-            'action_breakdown' => [],
+            'summary_metrics' => [],
+            'breakdowns' => [],
+            'attention' => [
+                'title' => 'Operational attention',
+                'copy' => '',
+            ],
             'rows' => [],
             'empty_copy' => 'No records are visible in the current workspace context.',
             'section_url' => null,

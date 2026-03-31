@@ -1,4 +1,22 @@
 {
+  "guide": [
+    {
+      "id": "run-continuity-planning-per-service",
+      "title": "Use one service workspace to keep continuity targets, dependencies, plans, and documents together",
+      "summary": "Continuity work is easier to maintain when the service record becomes the anchor for recovery planning and evidence.",
+      "body": [
+        "Define the service, impact tier, recovery objectives, linked asset or risk, and ownership first.",
+        "Record dependencies and one or more recovery plans so the service can be reviewed as an operational whole.",
+        "Use workflow, plan details, and documents to keep the continuity posture current."
+      ],
+      "concept_ids": [
+        "continuity-service",
+        "service-dependency",
+        "recovery-plan"
+      ],
+      "order": 270
+    }
+  ],
   "concepts": [
     {
       "id": "continuity-service",
@@ -8,13 +26,29 @@
       "why_it_exists": "Continuity work is easier to plan around services than around abstract obligations.",
       "how_to_use": [
         "Register each important service and describe what it depends on.",
-        "Use recovery plans, exercises, and test runs to keep preparedness current."
+        "Use recovery plans, exercises, and supporting documents to keep preparedness current."
       ],
       "relations": [
-        { "type": "may-depend-on", "target": "asset", "summary": "Services often depend on specific assets." },
+        { "type": "may-depend-on", "target": "service-dependency", "summary": "Continuity services can list operational dependencies that matter to recovery." },
         { "type": "may-have", "target": "recovery-plan", "summary": "A continuity service can have one or more recovery plans." }
       ],
       "order": 270
+    },
+    {
+      "id": "service-dependency",
+      "label": "Service Dependency",
+      "category": "continuity",
+      "summary": "A recorded dependency that the service relies on for normal operation or recovery.",
+      "why_it_exists": "Recovery planning is weaker when critical dependencies remain implicit.",
+      "how_to_use": [
+        "Record the key dependency and its kind so recovery assumptions are explicit.",
+        "Review dependencies whenever the service architecture, supplier model, or fallback pattern changes."
+      ],
+      "relations": [
+        { "type": "belongs-to", "target": "continuity-service", "summary": "Dependencies are maintained inside one service workspace." },
+        { "type": "may-reference", "target": "asset", "summary": "A dependency may point to an asset or other operational component." }
+      ],
+      "order": 271
     },
     {
       "id": "recovery-plan",
@@ -24,12 +58,12 @@
       "why_it_exists": "A recovery plan turns continuity intent into actionable steps that can be reviewed and tested.",
       "how_to_use": [
         "Write one plan per important recovery approach or fallback pattern.",
-        "Run exercises and record test executions to prove that the plan is still usable."
+        "Use linked policy, finding, test due dates, and owner assignments to keep the plan governed."
       ],
       "relations": [
         { "type": "belongs-to", "target": "continuity-service", "summary": "Plans are created to support one service." }
       ],
-      "order": 271
+      "order": 272
     }
   ]
 }

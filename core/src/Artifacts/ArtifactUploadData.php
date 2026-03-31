@@ -21,6 +21,7 @@ class ArtifactUploadData
         public readonly ?string $organizationId = null,
         public readonly ?string $scopeId = null,
         public readonly array $metadata = [],
+        public readonly ?string $uploadProfile = null,
         public readonly string $executionOrigin = 'request',
     ) {}
 }

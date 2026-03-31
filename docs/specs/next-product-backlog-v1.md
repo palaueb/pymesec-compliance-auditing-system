@@ -46,6 +46,26 @@ Any external collaboration model must be:
 
 Internet-facing support does not change this rule.
 
+### 2b. File uploads must stay security-first
+
+Every upload flow should validate that the uploaded file matches the document family expected by that flow.
+
+The platform should not accept unrestricted uploads where the product actually expects:
+
+- pdf
+- spreadsheet
+- office document
+- image
+- plain text
+
+This matters especially for:
+
+- external collaboration
+- vendor evidence requests
+- questionnaire attachments
+- review workpapers
+- evidence promotion
+
 ### 3. Automation must stay modular
 
 The platform should not assume that every deployment wants every automation or connector.
@@ -76,6 +96,7 @@ This is the first product wedge because it naturally combines:
 - vendor register
 - vendor tiering and review status
 - vendor review workspace
+- internal and controlled external questionnaire collection
 - linked evidence and review artifacts
 - findings and remediation tied to one vendor review
 - reminders and follow-up workflow
@@ -101,6 +122,7 @@ The product needs an explicit model for external participants such as vendors, a
 - time-bounded access
 - auditable invite / revoke lifecycle
 - security baseline for externally reachable collaboration flows
+- upload restrictions tied to explicit allowed file profiles
 
 ### Access Rule
 

@@ -32,6 +32,12 @@ The support system must provide:
 
 Support content is contributed through JSON documents.
 
+Support maintenance is mandatory:
+
+- whenever a feature, workflow, screen, object, or governed record type is added, changed, improved, or removed, the relevant support content must be reviewed and updated in the same delivery slice
+- stale support content is considered a documentation defect, not an optional follow-up
+- removing a product element must also remove or revise the related support entries so the aggregated help stays accurate
+
 Sources:
 
 - `core/resources/support/<locale>.json`
@@ -101,6 +107,7 @@ Rules:
 - the final support page must always render a complete index of all aggregated concepts
 - duplicate concept ids should be treated as a catalogue issue
 - the page may still render if issues exist, but issues must be visible
+- plugin support content should reflect the actual workspace and object model currently exposed by that plugin, not an older or partial implementation
 
 ## 6. Locale Rules
 

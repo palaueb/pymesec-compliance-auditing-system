@@ -1,4 +1,21 @@
 {
+  "guide": [
+    {
+      "id": "run-finding-follow-up",
+      "title": "Use the finding workspace to manage issue follow-up, not just issue logging",
+      "summary": "A finding becomes useful when evidence, ownership, workflow, and remediation actions stay together in one record.",
+      "body": [
+        "Create a finding for a confirmed issue or nonconformity, not for a purely hypothetical concern.",
+        "Use remediation actions to break follow-up into concrete tasks with owners, dates, and status.",
+        "Attach evidence and update workflow state until closure can be justified."
+      ],
+      "concept_ids": [
+        "finding",
+        "remediation-action"
+      ],
+      "order": 240
+    }
+  ],
   "concepts": [
     {
       "id": "finding",
@@ -16,6 +33,21 @@
         { "type": "may-reference", "target": "risk", "summary": "A finding can support or refine the risk picture." }
       ],
       "order": 240
+    },
+    {
+      "id": "remediation-action",
+      "label": "Remediation Action",
+      "category": "operations",
+      "summary": "A concrete follow-up task created under a finding to move the issue toward resolution.",
+      "why_it_exists": "A finding often requires more than one step. Remediation actions make accountability, timing, and execution visible.",
+      "how_to_use": [
+        "Create one action per discrete piece of follow-up work.",
+        "Set status, due date, owner, and notes so the finding can be reviewed operationally."
+      ],
+      "relations": [
+        { "type": "belongs-to", "target": "finding", "summary": "Actions stay attached to the finding they remediate." }
+      ],
+      "order": 241
     }
   ]
 }

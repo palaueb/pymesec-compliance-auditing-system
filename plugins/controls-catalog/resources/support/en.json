@@ -1,4 +1,23 @@
 {
+  "guide": [
+    {
+      "id": "manage-control-coverage-in-one-place",
+      "title": "Use control detail to keep ownership, evidence, workflow, and requirement coverage together",
+      "summary": "The catalog list is for browsing. The selected control workspace is where mappings and supporting material are maintained.",
+      "body": [
+        "Create internal controls that describe the safeguard or expected practice you want to govern.",
+        "Link framework requirements to each control when you need to show coverage against a standard or regulation.",
+        "Keep owners, workflow state, evidence summary, and artifacts current inside the control detail workspace."
+      ],
+      "concept_ids": [
+        "control",
+        "control-framework",
+        "control-requirement",
+        "control-coverage-mapping"
+      ],
+      "order": 220
+    }
+  ],
   "concepts": [
     {
       "id": "control",
@@ -47,6 +66,22 @@
         { "type": "may-be-covered-by", "target": "control", "summary": "Internal controls can cover one or more requirements." }
       ],
       "order": 226
+    },
+    {
+      "id": "control-coverage-mapping",
+      "label": "Control Coverage Mapping",
+      "category": "catalogue",
+      "summary": "The explicit relationship between one internal control and one framework requirement, including the stated coverage level.",
+      "why_it_exists": "Coverage mapping makes framework adoption and audit traceability concrete instead of implied.",
+      "how_to_use": [
+        "Link the requirement to the control and choose the coverage level that best reflects reality.",
+        "Add a short note when the relationship needs qualification or context."
+      ],
+      "relations": [
+        { "type": "connects", "target": "control", "summary": "The mapping belongs to one internal control." },
+        { "type": "connects", "target": "control-requirement", "summary": "The mapping points to one framework requirement." }
+      ],
+      "order": 227
     }
   ]
 }

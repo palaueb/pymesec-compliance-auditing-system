@@ -105,6 +105,14 @@ class PluginSystemTest extends TestCase
                 'runtime_contract_satisfied' => true,
             ])
             ->assertJsonFragment([
+                'id' => 'third-party-risk',
+                'enabled' => true,
+                'booted' => true,
+                'route_count' => 1,
+                'menu_count' => 1,
+                'runtime_contract_satisfied' => true,
+            ])
+            ->assertJsonFragment([
                 'id' => 'findings-remediation',
                 'enabled' => true,
                 'booted' => true,
@@ -173,6 +181,10 @@ class PluginSystemTest extends TestCase
             ->assertJsonFragment([
                 'key' => 'plugin.evidence-management.evidence.view',
                 'origin' => 'evidence-management',
+            ])
+            ->assertJsonFragment([
+                'key' => 'plugin.third-party-risk.vendors.view',
+                'origin' => 'third-party-risk',
             ]);
     }
 
@@ -238,6 +250,8 @@ class PluginSystemTest extends TestCase
                     ['plugin.policy-exceptions.policies.view', 'policy-exceptions', 'view', 'organization'],
                     ['plugin.risk-management.risks.manage', 'risk-management', 'manage', 'organization'],
                     ['plugin.risk-management.risks.view', 'risk-management', 'view', 'organization'],
+                    ['plugin.third-party-risk.vendors.manage', 'third-party-risk', 'manage', 'organization'],
+                    ['plugin.third-party-risk.vendors.view', 'third-party-risk', 'view', 'organization'],
                 ],
             )
             ->assertExitCode(0);
@@ -251,7 +265,7 @@ class PluginSystemTest extends TestCase
 
         $effective = $this->app->make(PluginStateStore::class)->effectiveEnabled(config('plugins.enabled', []));
 
-        $this->assertSame(['hello-world', 'asset-catalog', 'actor-directory', 'controls-catalog', 'risk-management', 'findings-remediation', 'policy-exceptions', 'data-flows-privacy', 'continuity-bcm', 'assessments-audits', 'evidence-management', 'identity-local', 'identity-ldap'], $effective);
+        $this->assertSame(['hello-world', 'asset-catalog', 'actor-directory', 'controls-catalog', 'risk-management', 'third-party-risk', 'findings-remediation', 'policy-exceptions', 'data-flows-privacy', 'continuity-bcm', 'assessments-audits', 'evidence-management', 'identity-local', 'identity-ldap'], $effective);
     }
 
     public function test_the_plugins_disable_command_persists_a_local_override(): void
@@ -262,7 +276,7 @@ class PluginSystemTest extends TestCase
 
         $effective = $this->app->make(PluginStateStore::class)->effectiveEnabled(config('plugins.enabled', []));
 
-        $this->assertSame(['asset-catalog', 'actor-directory', 'controls-catalog', 'risk-management', 'findings-remediation', 'policy-exceptions', 'data-flows-privacy', 'continuity-bcm', 'assessments-audits', 'evidence-management', 'identity-local', 'identity-ldap'], $effective);
+        $this->assertSame(['asset-catalog', 'actor-directory', 'controls-catalog', 'risk-management', 'third-party-risk', 'findings-remediation', 'policy-exceptions', 'data-flows-privacy', 'continuity-bcm', 'assessments-audits', 'evidence-management', 'identity-local', 'identity-ldap'], $effective);
     }
 
     public function test_the_plugins_disable_command_rejects_disabling_a_required_dependency(): void
@@ -273,7 +287,7 @@ class PluginSystemTest extends TestCase
 
         $effective = $this->app->make(PluginStateStore::class)->effectiveEnabled(config('plugins.enabled', []));
 
-        $this->assertSame(['hello-world', 'asset-catalog', 'actor-directory', 'controls-catalog', 'risk-management', 'findings-remediation', 'policy-exceptions', 'data-flows-privacy', 'continuity-bcm', 'assessments-audits', 'evidence-management', 'identity-local', 'identity-ldap'], $effective);
+        $this->assertSame(['hello-world', 'asset-catalog', 'actor-directory', 'controls-catalog', 'risk-management', 'third-party-risk', 'findings-remediation', 'policy-exceptions', 'data-flows-privacy', 'continuity-bcm', 'assessments-audits', 'evidence-management', 'identity-local', 'identity-ldap'], $effective);
     }
 
     public function test_the_plugins_enable_command_rejects_when_required_dependencies_are_disabled(): void
@@ -290,7 +304,7 @@ class PluginSystemTest extends TestCase
 
         $effective = $this->app->make(PluginStateStore::class)->effectiveEnabled(config('plugins.enabled', []));
 
-        $this->assertSame(['hello-world', 'asset-catalog', 'actor-directory', 'controls-catalog', 'risk-management', 'findings-remediation', 'policy-exceptions', 'data-flows-privacy', 'continuity-bcm', 'assessments-audits', 'evidence-management'], $effective);
+        $this->assertSame(['hello-world', 'asset-catalog', 'actor-directory', 'controls-catalog', 'risk-management', 'third-party-risk', 'findings-remediation', 'policy-exceptions', 'data-flows-privacy', 'continuity-bcm', 'assessments-audits', 'evidence-management'], $effective);
     }
 
     public function test_the_plugins_enable_command_rejects_unknown_plugins(): void
@@ -317,14 +331,15 @@ class PluginSystemTest extends TestCase
             ->assertJsonPath('menus.7.id', 'plugin.controls-catalog.root')
             ->assertJsonPath('menus.8.id', 'plugin.hello-world.root')
             ->assertJsonPath('menus.9.id', 'plugin.risk-management.root')
-            ->assertJsonPath('menus.10.id', 'plugin.findings-remediation.root')
-            ->assertJsonPath('menus.11.id', 'plugin.actor-directory.root')
-            ->assertJsonPath('menus.12.id', 'plugin.assessments-audits.root')
-            ->assertJsonPath('menus.13.id', 'plugin.policy-exceptions.root')
-            ->assertJsonPath('menus.14.id', 'plugin.evidence-management.root')
-            ->assertJsonPath('menus.15.id', 'plugin.data-flows-privacy.root')
-            ->assertJsonPath('menus.16.id', 'plugin.identity-local.users')
-            ->assertJsonPath('menus.17.id', 'plugin.continuity-bcm.root')
+            ->assertJsonPath('menus.10.id', 'plugin.third-party-risk.root')
+            ->assertJsonPath('menus.11.id', 'plugin.findings-remediation.root')
+            ->assertJsonPath('menus.12.id', 'plugin.actor-directory.root')
+            ->assertJsonPath('menus.13.id', 'plugin.assessments-audits.root')
+            ->assertJsonPath('menus.14.id', 'plugin.policy-exceptions.root')
+            ->assertJsonPath('menus.15.id', 'plugin.evidence-management.root')
+            ->assertJsonPath('menus.16.id', 'plugin.data-flows-privacy.root')
+            ->assertJsonPath('menus.17.id', 'plugin.identity-local.users')
+            ->assertJsonPath('menus.18.id', 'plugin.continuity-bcm.root')
             ->assertJsonPath('issues', []);
     }
 
@@ -377,6 +392,7 @@ class PluginSystemTest extends TestCase
                     ['plugin.hello-world.examples', 'hello-world', 'plugin.hello-world.root', 'plugin.hello-world.index', 'plugin.hello-world.hello.view', 'app', '10'],
                     ['plugin.risk-management.root', 'risk-management', '', 'plugin.risk-management.index', 'plugin.risk-management.risks.view', 'app', '35'],
                     ['plugin.risk-management.board', 'risk-management', 'plugin.risk-management.root', 'plugin.risk-management.board', 'plugin.risk-management.risks.view', 'app', '10'],
+                    ['plugin.third-party-risk.root', 'third-party-risk', '', 'plugin.third-party-risk.index', 'plugin.third-party-risk.vendors.view', 'app', '37'],
                     ['plugin.findings-remediation.root', 'findings-remediation', '', 'plugin.findings-remediation.index', 'plugin.findings-remediation.findings.view', 'app', '38'],
                     ['plugin.findings-remediation.board', 'findings-remediation', 'plugin.findings-remediation.root', 'plugin.findings-remediation.board', 'plugin.findings-remediation.findings.view', 'app', '10'],
                     ['plugin.actor-directory.root', 'actor-directory', '', 'plugin.actor-directory.index', 'plugin.actor-directory.actors.view', 'app', '40'],

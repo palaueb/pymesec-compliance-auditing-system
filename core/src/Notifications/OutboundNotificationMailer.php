@@ -15,7 +15,7 @@ class OutboundNotificationMailer
     {
         $body = trim($notification->title."\n\n".$notification->body);
 
-        $this->sendPlainText(
+        $this->sendDirectMessage(
             settings: $settings,
             recipientEmail: $recipientEmail,
             subject: $notification->title,
@@ -34,7 +34,7 @@ class OutboundNotificationMailer
             'Organization: '.$organizationId,
         ]);
 
-        $this->sendPlainText(
+        $this->sendDirectMessage(
             settings: $settings,
             recipientEmail: $recipientEmail,
             subject: 'PymeSec outbound notifications test',
@@ -45,7 +45,7 @@ class OutboundNotificationMailer
     /**
      * @param  array<string, mixed>  $settings
      */
-    private function sendPlainText(array $settings, string $recipientEmail, string $subject, string $body): void
+    public function sendDirectMessage(array $settings, string $recipientEmail, string $subject, string $body): void
     {
         $originalMailerConfig = Config::get('mail.mailers.smtp');
         $manager = app('mail.manager');

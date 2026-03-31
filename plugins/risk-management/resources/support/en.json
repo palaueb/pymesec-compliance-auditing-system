@@ -1,4 +1,22 @@
 {
+  "guide": [
+    {
+      "id": "manage-risks-in-one-workspace",
+      "title": "Use the risk workspace to keep assessment, treatment, ownership, and evidence together",
+      "summary": "The risk register is for browsing. The selected risk workspace is where scoring, workflow, linked records, and evidence are maintained.",
+      "body": [
+        "Create a risk with clear context, then keep the inherent and residual scores current as the assessment evolves.",
+        "Link the risk to the relevant asset or control when that gives better operational traceability.",
+        "Use treatment notes, workflow state, owners, and evidence to keep the record reviewable over time."
+      ],
+      "concept_ids": [
+        "risk",
+        "risk-treatment",
+        "risk-workflow"
+      ],
+      "order": 230
+    }
+  ],
   "concepts": [
     {
       "id": "risk",
@@ -8,7 +26,7 @@
       "why_it_exists": "Risks let the organization identify what could go wrong, assess severity, and decide how to respond.",
       "how_to_use": [
         "Register risks with a clear description, context, and affected assets when possible.",
-        "Update status and treatment decisions as the assessment evolves."
+        "Update status, scores, and related records as the assessment evolves."
       ],
       "relations": [
         { "type": "may-affect", "target": "asset", "summary": "Risks often point to the assets they threaten." },
@@ -16,6 +34,37 @@
         { "type": "may-lead-to", "target": "finding", "summary": "A risk review may reveal a concrete issue that becomes a finding." }
       ],
       "order": 230
+    },
+    {
+      "id": "risk-treatment",
+      "label": "Risk Treatment",
+      "category": "operations",
+      "summary": "The chosen response or handling approach recorded for a risk.",
+      "why_it_exists": "A risk record is incomplete without showing what the organization plans to do about it.",
+      "how_to_use": [
+        "Record a short treatment summary that explains the current response plan.",
+        "Update the treatment when controls, exceptions, acceptance, or remediation work change the handling approach."
+      ],
+      "relations": [
+        { "type": "belongs-to", "target": "risk", "summary": "Treatment is maintained inside the risk record." },
+        { "type": "may-reference", "target": "control", "summary": "Treatment often depends on controls being implemented or improved." }
+      ],
+      "order": 231
+    },
+    {
+      "id": "risk-workflow",
+      "label": "Risk Workflow",
+      "category": "governance",
+      "summary": "The system-controlled lifecycle state for a risk, such as assessing, accepted, or closed.",
+      "why_it_exists": "Workflow states show whether a risk is still being worked, has been formally accepted, or is no longer active.",
+      "how_to_use": [
+        "Move the risk through workflow transitions as the review and decision process advances.",
+        "Use workflow history together with evidence and treatment notes to support auditability."
+      ],
+      "relations": [
+        { "type": "applies-to", "target": "risk", "summary": "Each risk record has one current workflow state." }
+      ],
+      "order": 232
     }
   ]
 }

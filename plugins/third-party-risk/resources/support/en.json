@@ -1,0 +1,185 @@
+{
+  "guide": [
+    {
+      "id": "vendor-review-workspace-overview",
+      "title": "Vendor review workspace",
+      "summary": "Use the vendor review workspace to keep intake, questionnaire answers, evidence, linked records, and approval decisions together for one third-party review.",
+      "body": [
+        "The vendor register stays lightweight and is mainly for browsing vendors, current status, and opening the active review.",
+        "The review workspace is where the real work happens: capture questionnaire responses, attach artifacts, link internal records, and move the review through approval states."
+      ],
+      "concept_ids": [
+        "vendor-record",
+        "vendor-review",
+        "vendor-review-profile",
+        "vendor-questionnaire-template",
+        "vendor-external-review-link",
+        "vendor-questionnaire-item"
+      ],
+      "order": 255
+    }
+  ],
+  "concepts": [
+    {
+      "id": "vendor-record",
+      "label": "Vendor record",
+      "category": "operations",
+      "summary": "A third-party register entry that identifies the vendor, service context, contact details, tier, and current lifecycle status.",
+      "why_it_exists": "It separates vendor identity from one specific review cycle so the organization can keep long-term third-party history.",
+      "how_to_use": [
+        "Create one vendor record per third party you need to assess or monitor.",
+        "Keep the tier, service summary, contact information, and current status up to date."
+      ],
+      "relations": [
+        {
+          "type": "has-review",
+          "target": "vendor-review",
+          "summary": "A vendor can have one or more review cycles over time."
+        }
+      ],
+      "order": 255
+    },
+    {
+      "id": "vendor-review",
+      "label": "Vendor review",
+      "category": "operations",
+      "summary": "The operational review workspace for one vendor assessment cycle, including inherent risk, questionnaire answers, evidence, decision notes, and approval state.",
+      "why_it_exists": "It gives the team one place to perform due diligence and record a clear decision before approval or reassessment.",
+      "how_to_use": [
+        "Open the vendor review when you need to assess a new vendor or revisit an approved one.",
+        "Use it to collect answers, evidence, follow-up notes, and linked findings or risks."
+      ],
+      "relations": [
+        {
+          "type": "belongs-to",
+          "target": "vendor-record",
+          "summary": "Each review belongs to one vendor record."
+        },
+        {
+          "type": "includes",
+          "target": "vendor-questionnaire-item",
+          "summary": "Questionnaire items stay bound to the review that collected them."
+        },
+        {
+          "type": "may-link-to",
+          "target": "risk",
+          "summary": "A review can point to an existing risk record when the third party is part of a broader risk posture."
+        },
+        {
+          "type": "may-link-to",
+          "target": "finding",
+          "summary": "A review can link or lead to findings when due diligence identifies a concrete gap."
+        }
+      ],
+      "order": 256
+    },
+    {
+      "id": "vendor-review-profile",
+      "label": "Vendor review profile",
+      "category": "operations",
+      "summary": "A reusable review depth and cadence profile used to shape how one vendor review should be run.",
+      "why_it_exists": "Review profiles let the team apply a consistent due diligence pattern for vendors with similar exposure, tier, or service characteristics.",
+      "how_to_use": [
+        "Choose the review profile when creating or editing a vendor review.",
+        "Use the profile to drive the default questionnaire template and expected reassessment cadence."
+      ],
+      "relations": [
+        {
+          "type": "may-shape",
+          "target": "vendor-review",
+          "summary": "A review can be assigned one profile to guide its depth and cadence."
+        },
+        {
+          "type": "may-have",
+          "target": "vendor-questionnaire-template",
+          "summary": "Profiles can own one or more questionnaire templates."
+        }
+      ],
+      "order": 257
+    },
+    {
+      "id": "vendor-questionnaire-template",
+      "label": "Vendor questionnaire template",
+      "category": "operations",
+      "summary": "A reusable question set linked to one review profile and copied into a concrete vendor review when applied.",
+      "why_it_exists": "Templates keep recurring third-party reviews consistent without forcing every review to start from a blank questionnaire.",
+      "how_to_use": [
+        "Select a questionnaire template for the review and apply it to create review-bound question items.",
+        "Use review-bound items for actual answers, status, and follow-up notes after the template has been copied."
+      ],
+      "relations": [
+        {
+          "type": "belongs-to",
+          "target": "vendor-review-profile",
+          "summary": "Each template belongs to one review profile."
+        },
+        {
+          "type": "can-create",
+          "target": "vendor-questionnaire-item",
+          "summary": "Applying a template creates review-bound questionnaire items."
+        }
+      ],
+      "order": 258
+    },
+    {
+      "id": "vendor-questionnaire-item",
+      "label": "Vendor questionnaire item",
+      "category": "operations",
+      "summary": "One review-bound question and answer entry used to capture due diligence responses, their review status, and follow-up notes.",
+      "why_it_exists": "It lets the team gather structured review answers before a full external questionnaire engine or template catalogue is introduced.",
+      "how_to_use": [
+        "Add one item per question you need to track during the review.",
+        "Update the answer, response status, and follow-up notes as the review progresses."
+      ],
+      "relations": [
+        {
+          "type": "belongs-to",
+          "target": "vendor-review",
+          "summary": "Questionnaire items are stored inside one concrete vendor review."
+        },
+        {
+          "type": "may-come-from",
+          "target": "vendor-questionnaire-template",
+          "summary": "Some question items are copied from an applied questionnaire template."
+        }
+      ],
+      "order": 259
+    },
+    {
+      "id": "vendor-external-review-link",
+      "label": "Vendor external review link",
+      "category": "operations",
+      "summary": "A revocable, expirable external access link scoped to one vendor review.",
+      "why_it_exists": "It allows controlled external collaboration without exposing the full internal workspace or unrelated records.",
+      "how_to_use": [
+        "Issue an external review link only for the concrete review you want to share.",
+        "Choose whether the recipient may answer questionnaire items, upload evidence, or both.",
+        "Decide whether the link stays manual-only or whether the workspace should send the invitation through the organization SMTP connector.",
+        "Revoke the link when the collaboration window is over or when access should end immediately."
+      ],
+      "relations": [
+        {
+          "type": "belongs-to",
+          "target": "vendor-review",
+          "summary": "Each external link is scoped to one vendor review."
+        },
+        {
+          "type": "may-allow",
+          "target": "vendor-questionnaire-item",
+          "summary": "A link can allow the external participant to submit answers for review-bound questionnaire items."
+        },
+        {
+          "type": "may-allow",
+          "target": "artifact",
+          "summary": "A link can allow external evidence uploads into the review workspace."
+        },
+        {
+          "type": "may-use",
+          "target": "notification-mail-settings",
+          "summary": "Email invitation delivery for the link uses the organization outbound mail connector when enabled."
+        }
+      ],
+      "order": 260
+    }
+  ]
+}

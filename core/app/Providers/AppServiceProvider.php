@@ -5,6 +5,7 @@ namespace App\Providers;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\ServiceProvider;
+use PymeSec\Core\Artifacts\ArtifactUploadFileTypeGuard;
 use PymeSec\Core\Artifacts\Contracts\ArtifactServiceInterface;
 use PymeSec\Core\Artifacts\DatabaseArtifactService;
 use PymeSec\Core\Audit\Contracts\AuditTrailInterface;
@@ -39,6 +40,8 @@ use PymeSec\Core\Plugins\PluginLifecycleManager;
 use PymeSec\Core\Plugins\PluginStateStore;
 use PymeSec\Core\ReferenceData\ReferenceCatalogService;
 use PymeSec\Core\Reporting\ManagementReportingService;
+use PymeSec\Core\Reporting\ReportingMetricCatalog;
+use PymeSec\Core\Reporting\WorkspaceReportingContext;
 use PymeSec\Core\Support\Contracts\SupportRegistryInterface;
 use PymeSec\Core\Support\JsonSupportRegistry;
 use PymeSec\Core\Tenancy\Contracts\TenancyServiceInterface;
@@ -124,6 +127,7 @@ class AppServiceProvider extends ServiceProvider
             return new DatabaseArtifactService(
                 audit: $this->app->make(AuditTrailInterface::class),
                 events: $this->app->make(EventBusInterface::class),
+                fileTypeGuard: $this->app->make(ArtifactUploadFileTypeGuard::class),
             );
         });
 
@@ -186,9 +190,14 @@ class AppServiceProvider extends ServiceProvider
             return new ReferenceCatalogService;
         });
 
+        $this->app->singleton(ReportingMetricCatalog::class, function (): ReportingMetricCatalog {
+            return new ReportingMetricCatalog;
+        });
+
         $this->app->singleton(ManagementReportingService::class, function ($app): ManagementReportingService {
             return new ManagementReportingService(
-                objectAccess: $app->make(ObjectAccessService::class),
+                workspaceContext: $app->make(WorkspaceReportingContext::class),
+                metricCatalog: $app->make(ReportingMetricCatalog::class),
             );
         });
     }

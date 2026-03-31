@@ -79,6 +79,19 @@ return [
                 'plugin.risk-management.risks.view',
             ],
         ],
+        'third-party-risk-operator' => [
+            'label' => 'Third-party risk operator',
+            'permissions' => [
+                'plugin.third-party-risk.vendors.view',
+                'plugin.third-party-risk.vendors.manage',
+            ],
+        ],
+        'third-party-risk-viewer' => [
+            'label' => 'Third-party risk viewer',
+            'permissions' => [
+                'plugin.third-party-risk.vendors.view',
+            ],
+        ],
         'findings-operator' => [
             'label' => 'Findings operator',
             'permissions' => [
@@ -239,6 +252,14 @@ return [
             'target_type' => 'membership',
             'target_id' => 'membership-org-a-hello',
             'grant_type' => 'role',
+            'value' => 'third-party-risk-operator',
+            'context_type' => 'organization',
+            'organization_id' => 'org-a',
+        ],
+        [
+            'target_type' => 'membership',
+            'target_id' => 'membership-org-a-hello',
+            'grant_type' => 'role',
             'value' => 'findings-operator',
             'context_type' => 'organization',
             'organization_id' => 'org-a',
@@ -336,6 +357,14 @@ return [
             'target_id' => 'membership-org-a-viewer',
             'grant_type' => 'role',
             'value' => 'risk-viewer',
+            'context_type' => 'organization',
+            'organization_id' => 'org-a',
+        ],
+        [
+            'target_type' => 'membership',
+            'target_id' => 'membership-org-a-viewer',
+            'grant_type' => 'role',
+            'value' => 'third-party-risk-viewer',
             'context_type' => 'organization',
             'organization_id' => 'org-a',
         ],

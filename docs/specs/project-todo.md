@@ -9,6 +9,7 @@ Simple list of the main pending items.
 - [x] If product changes affect demo-specific behavior or files already represented in the patch pack, regenerate the affected demo patches before closing the work.
 - [x] Require tests for every new or changed mutable parameter so ownership, permission, role, scope, and quota boundaries are enforced and cannot be spoofed by unauthorized users.
 - [x] Require documentation updates for every completed slice so specs, workflow notes, and product-facing docs stay aligned with the implemented behavior.
+- [x] Require in-application `HELP` updates whenever a feature, workflow, screen, object, or governed record type is added, changed, improved, or removed.
 - [x] Treat `tests + demo check + documentation update` as the minimum closeout checklist for every code change.
 
 ## Product

@@ -1,53 +1,3 @@
-<style>
-    .management-reporting-screen .management-summary-grid {
-        display: grid;
-        grid-template-columns: repeat(4, minmax(0, 1fr));
-        gap: 10px;
-    }
-
-    .management-reporting-screen .management-summary-item,
-    .management-reporting-screen .management-breakdown-row {
-        display: flex;
-        justify-content: space-between;
-        align-items: baseline;
-        gap: 12px;
-        border: 1px solid rgba(31,42,34,0.08);
-        border-radius: 4px;
-        background: rgba(255,255,255,0.42);
-    }
-
-    .management-reporting-screen .management-summary-item {
-        padding: 10px 12px;
-    }
-
-    .management-reporting-screen .management-summary-item span,
-    .management-reporting-screen .management-breakdown-row span {
-        color: var(--muted);
-    }
-
-    .management-reporting-screen .management-summary-item strong,
-    .management-reporting-screen .management-breakdown-row strong {
-        font-family: var(--font-heading);
-        font-size: 20px;
-        line-height: 1;
-    }
-
-    .management-reporting-screen .management-breakdown {
-        display: grid;
-        gap: 10px;
-    }
-
-    .management-reporting-screen .management-breakdown-row {
-        padding: 12px 14px;
-    }
-
-    @media (max-width: 720px) {
-        .management-reporting-screen .management-summary-grid {
-            grid-template-columns: 1fr;
-        }
-    }
-</style>
-
 <section class="module-screen compact management-reporting-screen">
     <div class="surface-card" style="padding:18px; margin-bottom:16px;">
         <div class="eyebrow">Cross-domain executive summary</div>
@@ -76,46 +26,61 @@
         </div>
     @endif
 
+    <div class="surface-card" style="padding:16px;">
+        <div class="screen-header" style="margin-bottom:0; border-bottom:0; padding-bottom:0;">
+            <div>
+                <h2 class="screen-title" style="font-size:24px;">Executive summary by domain</h2>
+                <p class="screen-subtitle">Use these four sections to compare domain pressure without dropping into operational queues yet.</p>
+            </div>
+        </div>
+    </div>
+
+    <div class="overview-grid" style="grid-template-columns:repeat(2, minmax(0, 1fr)); align-items:start;">
+        @include('partials.management-reporting-executive-section', [
+            'title' => 'Assessments',
+            'subtitle' => 'Campaign status, review results, and the linked findings load carried by current assessments.',
+            'section' => $assessments,
+        ])
+
+        @include('partials.management-reporting-executive-section', [
+            'title' => 'Evidence',
+            'subtitle' => 'Review queue, expiry attention, and validation gaps for the current workspace context.',
+            'section' => $evidence,
+        ])
+    </div>
+
+    <div class="overview-grid" style="grid-template-columns:repeat(2, minmax(0, 1fr)); align-items:start;">
+        @include('partials.management-reporting-executive-section', [
+            'title' => 'Risks',
+            'subtitle' => 'Workflow load and residual score concentration across visible risks.',
+            'section' => $risks,
+        ])
+
+        @include('partials.management-reporting-executive-section', [
+            'title' => 'Findings',
+            'subtitle' => 'Severity mix, overdue exposure, and remediation action pressure.',
+            'section' => $findings,
+        ])
+    </div>
+
+    <div class="surface-card" style="padding:16px;">
+        <div class="screen-header" style="margin-bottom:0;">
+            <div>
+                <h2 class="screen-title" style="font-size:24px;">Operational attention</h2>
+                <p class="screen-subtitle">Use these queues only after the executive summary tells you where to drill down.</p>
+            </div>
+        </div>
+    </div>
+
     <div class="overview-grid" style="grid-template-columns:repeat(2, minmax(0, 1fr)); align-items:start;">
         <div class="table-card">
             <div class="screen-header">
                 <div>
-                    <h2 class="screen-title" style="font-size:24px;">Assessments</h2>
-                    <p class="screen-subtitle">Campaign status, review results, and the linked findings load carried by current assessments.</p>
-                </div>
-                @if (is_string($assessments['section_url'] ?? null))
-                    <a class="button button-secondary" href="{{ $assessments['section_url'] }}">Open module</a>
-                @endif
-            </div>
-            <div class="management-summary-grid">
-                <div class="management-summary-item"><span>Campaigns</span><strong>{{ $assessments['metrics']['campaigns'] ?? 0 }}</strong></div>
-                <div class="management-summary-item"><span>Active</span><strong>{{ $assessments['metrics']['active'] ?? 0 }}</strong></div>
-                <div class="management-summary-item"><span>Failing reviews</span><strong>{{ $assessments['metrics']['failing_reviews'] ?? 0 }}</strong></div>
-                <div class="management-summary-item"><span>Linked findings</span><strong>{{ $assessments['metrics']['linked_findings'] ?? 0 }}</strong></div>
-            </div>
-            <div class="overview-grid" style="grid-template-columns:repeat(2, minmax(0, 1fr)); margin-top:16px;">
-                <div class="surface-card" style="padding:14px;">
-                    <div class="eyebrow">Campaign status</div>
-                    <div class="management-breakdown" style="margin-top:10px;">
-                        @forelse ($assessments['status_breakdown'] as $row)
-                            <div class="management-breakdown-row"><span>{{ $row['label'] }}</span><strong>{{ $row['count'] }}</strong></div>
-                        @empty
-                            <div class="table-note">{{ $assessments['empty_copy'] }}</div>
-                        @endforelse
-                    </div>
-                </div>
-                <div class="surface-card" style="padding:14px;">
-                    <div class="eyebrow">Review results</div>
-                    <div class="management-breakdown" style="margin-top:10px;">
-                        @forelse ($assessments['result_breakdown'] as $row)
-                            <div class="management-breakdown-row"><span>{{ $row['label'] }}</span><strong>{{ $row['count'] }}</strong></div>
-                        @empty
-                            <div class="table-note">{{ $assessments['empty_copy'] }}</div>
-                        @endforelse
-                    </div>
+                    <h2 class="screen-title" style="font-size:22px;">{{ $assessments['attention']['title'] }}</h2>
+                    <p class="screen-subtitle">{{ $assessments['attention']['copy'] }}</p>
                 </div>
             </div>
-            <table class="entity-table" style="margin-top:16px;">
+            <table class="entity-table">
                 <thead>
                     <tr>
                         <th>Campaign</th>
@@ -147,30 +112,11 @@
         <div class="table-card">
             <div class="screen-header">
                 <div>
-                    <h2 class="screen-title" style="font-size:24px;">Evidence</h2>
-                    <p class="screen-subtitle">Review queue, expiry attention, and validation gaps for the current workspace context.</p>
-                </div>
-                @if (is_string($evidence['section_url'] ?? null))
-                    <a class="button button-secondary" href="{{ $evidence['section_url'] }}">Open module</a>
-                @endif
-            </div>
-            <div class="management-summary-grid">
-                <div class="management-summary-item"><span>Records</span><strong>{{ $evidence['metrics']['records'] ?? 0 }}</strong></div>
-                <div class="management-summary-item"><span>Approved</span><strong>{{ $evidence['metrics']['approved'] ?? 0 }}</strong></div>
-                <div class="management-summary-item"><span>Review due</span><strong>{{ $evidence['metrics']['review_due'] ?? 0 }}</strong></div>
-                <div class="management-summary-item"><span>Needs validation</span><strong>{{ $evidence['metrics']['needs_validation'] ?? 0 }}</strong></div>
-            </div>
-            <div class="surface-card" style="padding:14px; margin-top:16px;">
-                <div class="eyebrow">Status mix</div>
-                <div class="management-breakdown" style="margin-top:10px;">
-                    @forelse ($evidence['status_breakdown'] as $row)
-                        <div class="management-breakdown-row"><span>{{ $row['label'] }}</span><strong>{{ $row['count'] }}</strong></div>
-                    @empty
-                        <div class="table-note">{{ $evidence['empty_copy'] }}</div>
-                    @endforelse
+                    <h2 class="screen-title" style="font-size:22px;">{{ $evidence['attention']['title'] }}</h2>
+                    <p class="screen-subtitle">{{ $evidence['attention']['copy'] }}</p>
                 </div>
             </div>
-            <table class="entity-table" style="margin-top:16px;">
+            <table class="entity-table">
                 <thead>
                     <tr>
                         <th>Evidence</th>
@@ -208,30 +154,11 @@
         <div class="table-card">
             <div class="screen-header">
                 <div>
-                    <h2 class="screen-title" style="font-size:24px;">Risks</h2>
-                    <p class="screen-subtitle">Workflow load and residual score concentration across visible risks.</p>
-                </div>
-                @if (is_string($risks['section_url'] ?? null))
-                    <a class="button button-secondary" href="{{ $risks['section_url'] }}">Open module</a>
-                @endif
-            </div>
-            <div class="management-summary-grid">
-                <div class="management-summary-item"><span>Risks</span><strong>{{ $risks['metrics']['risks'] ?? 0 }}</strong></div>
-                <div class="management-summary-item"><span>In workflow</span><strong>{{ $risks['metrics']['in_workflow'] ?? 0 }}</strong></div>
-                <div class="management-summary-item"><span>Assessing</span><strong>{{ $risks['metrics']['assessing'] ?? 0 }}</strong></div>
-                <div class="management-summary-item"><span>Average residual</span><strong>{{ $risks['metrics']['average_residual'] ?? 0 }}</strong></div>
-            </div>
-            <div class="surface-card" style="padding:14px; margin-top:16px;">
-                <div class="eyebrow">Workflow state</div>
-                <div class="management-breakdown" style="margin-top:10px;">
-                    @forelse ($risks['state_breakdown'] as $row)
-                        <div class="management-breakdown-row"><span>{{ $row['label'] }}</span><strong>{{ $row['count'] }}</strong></div>
-                    @empty
-                        <div class="table-note">{{ $risks['empty_copy'] }}</div>
-                    @endforelse
+                    <h2 class="screen-title" style="font-size:22px;">{{ $risks['attention']['title'] }}</h2>
+                    <p class="screen-subtitle">{{ $risks['attention']['copy'] }}</p>
                 </div>
             </div>
-            <table class="entity-table" style="margin-top:16px;">
+            <table class="entity-table">
                 <thead>
                     <tr>
                         <th>Risk</th>
@@ -263,52 +190,11 @@
         <div class="table-card">
             <div class="screen-header">
                 <div>
-                    <h2 class="screen-title" style="font-size:24px;">Findings</h2>
-                    <p class="screen-subtitle">Severity mix, overdue exposure, and remediation action pressure.</p>
-                </div>
-                @if (is_string($findings['section_url'] ?? null))
-                    <a class="button button-secondary" href="{{ $findings['section_url'] }}">Open module</a>
-                @endif
-            </div>
-            <div class="management-summary-grid">
-                <div class="management-summary-item"><span>Findings</span><strong>{{ $findings['metrics']['findings'] ?? 0 }}</strong></div>
-                <div class="management-summary-item"><span>Open</span><strong>{{ $findings['metrics']['open'] ?? 0 }}</strong></div>
-                <div class="management-summary-item"><span>Overdue</span><strong>{{ $findings['metrics']['overdue'] ?? 0 }}</strong></div>
-                <div class="management-summary-item"><span>Open actions</span><strong>{{ $findings['metrics']['open_actions'] ?? 0 }}</strong></div>
-            </div>
-            <div class="overview-grid" style="grid-template-columns:repeat(3, minmax(0, 1fr)); margin-top:16px;">
-                <div class="surface-card" style="padding:14px;">
-                    <div class="eyebrow">Workflow state</div>
-                    <div class="management-breakdown" style="margin-top:10px;">
-                        @forelse ($findings['state_breakdown'] as $row)
-                            <div class="management-breakdown-row"><span>{{ $row['label'] }}</span><strong>{{ $row['count'] }}</strong></div>
-                        @empty
-                            <div class="table-note">{{ $findings['empty_copy'] }}</div>
-                        @endforelse
-                    </div>
-                </div>
-                <div class="surface-card" style="padding:14px;">
-                    <div class="eyebrow">Severity</div>
-                    <div class="management-breakdown" style="margin-top:10px;">
-                        @forelse ($findings['severity_breakdown'] as $row)
-                            <div class="management-breakdown-row"><span>{{ $row['label'] }}</span><strong>{{ $row['count'] }}</strong></div>
-                        @empty
-                            <div class="table-note">{{ $findings['empty_copy'] }}</div>
-                        @endforelse
-                    </div>
-                </div>
-                <div class="surface-card" style="padding:14px;">
-                    <div class="eyebrow">Action status</div>
-                    <div class="management-breakdown" style="margin-top:10px;">
-                        @forelse ($findings['action_breakdown'] as $row)
-                            <div class="management-breakdown-row"><span>{{ $row['label'] }}</span><strong>{{ $row['count'] }}</strong></div>
-                        @empty
-                            <div class="table-note">{{ $findings['empty_copy'] }}</div>
-                        @endforelse
-                    </div>
+                    <h2 class="screen-title" style="font-size:22px;">{{ $findings['attention']['title'] }}</h2>
+                    <p class="screen-subtitle">{{ $findings['attention']['copy'] }}</p>
                 </div>
             </div>
-            <table class="entity-table" style="margin-top:16px;">
+            <table class="entity-table">
                 <thead>
                     <tr>
                         <th>Finding</th>

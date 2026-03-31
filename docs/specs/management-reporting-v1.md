@@ -38,8 +38,9 @@ The reporting page follows the same visibility and tenancy semantics already use
 The page contains:
 
 1. headline metrics spanning all four domains
-2. one section per domain
-3. direct `Open module` / `Open` links back into operational records
+2. one executive summary section per domain
+3. one operational attention section per domain
+4. direct `Open module` / `Open` links back into operational records
 
 Each domain section should stay summary-oriented:
 
@@ -47,6 +48,56 @@ Each domain section should stay summary-oriented:
 - evidence: status mix, review/expiry attention, validation gaps
 - risks: workflow state mix, residual score view, top risks
 - findings: workflow state, severity mix, overdue items, remediation action pressure
+
+## Section Contract
+
+Cross-domain reporting sections should now converge on one shared shape instead of exposing one-off top-level keys per domain.
+
+Minimum section shape:
+
+- `metrics`: raw values still available for service-level rollups
+- `summary_metrics`: ordered label/value pairs used by the section summary strip
+- `breakdowns`: titled grouped rows for status/state/result distributions
+- `rows`: the drill-down list rendered at the bottom of the section
+- `section_url`: link back to the operational module
+- `empty_copy`: shared empty-state copy for the section
+
+This keeps the reporting view generic enough to render sections consistently while still allowing domain-specific row payloads.
+
+The page should also keep a clear visual split between:
+
+- executive summary blocks used for management scanning
+- operational attention queues used for drill-down and follow-up
+
+## KPI Dictionary
+
+Common reporting KPIs should be defined in one shared catalog instead of being handwritten in each reporting surface.
+
+This first slice should at least centralize:
+
+- `active_assessments`
+- `failing_reviews`
+- `evidence_review_due`
+- `risks_in_workflow`
+- `overdue_findings`
+- `review_due`
+- `needs_validation`
+- `open_findings`
+- `open_actions`
+
+The goal is not to build a generic analytics engine. The goal is to keep labels and management-facing copy stable across reporting screens.
+
+## UI Composition
+
+Management reporting should not carry screen-local styling for basic summary primitives.
+
+The page should use shared shell primitives for:
+
+- summary metric strips
+- compact breakdown lists
+- repeated executive section composition
+
+This keeps the reporting screen aligned with the broader shell and reduces one-off layout drift as new reporting pages are added.
 
 ## Non-Goals
 
