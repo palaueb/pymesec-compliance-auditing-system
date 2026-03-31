@@ -833,8 +833,10 @@ class IdentityLocalRepository
 
         $roles = [
             'asset-operator',
+            'actor-viewer',
             'control-operator',
             'risk-operator',
+            'third-party-risk-operator',
             'findings-operator',
             'policy-operator',
             'privacy-operator',

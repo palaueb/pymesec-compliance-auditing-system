@@ -106,6 +106,8 @@ class ShellNavigationTest extends TestCase
             ->assertSee('Workspace Dashboard')
             ->assertSee('Today in your workspace')
             ->assertSee('Assets')
+            ->assertSee('Vendors')
+            ->assertSee('Actors')
             ->assertDontSee('Plugin Runtime');
 
         $membershipId = DB::table('memberships')
@@ -120,6 +122,15 @@ class ShellNavigationTest extends TestCase
             'target_id' => $membershipId,
             'grant_type' => 'role',
             'value' => 'asset-operator',
+            'context_type' => 'organization',
+            'organization_id' => 'org-a',
+        ]);
+
+        $this->assertDatabaseHas('authorization_grants', [
+            'target_type' => 'membership',
+            'target_id' => $membershipId,
+            'grant_type' => 'role',
+            'value' => 'third-party-risk-operator',
             'context_type' => 'organization',
             'organization_id' => 'org-a',
         ]);
