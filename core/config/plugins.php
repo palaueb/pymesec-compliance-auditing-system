@@ -19,6 +19,7 @@ $statePath = is_string($configuredStatePath) && $configuredStatePath !== ''
 
 return [
     'core_version' => env('CORE_VERSION', '0.1.0'),
+    'repository_url' => env('CORE_REPOSITORY_URL', 'https://github.com/palaueb/pymesec-compliance-auditing-system'),
     'paths' => array_values($paths),
     'state_path' => $statePath,
     'enabled' => array_values(array_filter(array_map(

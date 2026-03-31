@@ -40,7 +40,9 @@ class ShellNavigationTest extends TestCase
         $this->get('/app?menu=core.management-reporting&principal_id=principal-admin&organization_id=org-a')
             ->assertOk()
             ->assertSee('Management Reporting')
-            ->assertSee('Cross-domain executive summary');
+            ->assertSee('Cross-domain executive summary')
+            ->assertSee('PymeSec v0.1.0')
+            ->assertSee('Repository');
 
         $this->get('/app?menu=core.governance&principal_id=principal-admin&organization_id=org-a')
             ->assertOk()

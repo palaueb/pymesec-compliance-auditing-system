@@ -190,6 +190,38 @@
             background-size: 42px 42px;
         }
 
+        .workspace-footer {
+            margin-top: 10px;
+            padding-top: 14px;
+            border-top: 1px solid rgba(31,42,34,0.1);
+            display: flex;
+            justify-content: space-between;
+            gap: 12px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+
+        .workspace-footer-meta {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            align-items: center;
+        }
+
+        .workspace-footer-separator {
+            color: var(--muted);
+        }
+
+        .workspace-footer-link {
+            color: var(--accent-alt);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .workspace-footer-link:hover {
+            text-decoration: underline;
+        }
+
         .topbar {
             display: flex;
             justify-content: space-between;
@@ -1267,6 +1299,17 @@
                 @else
                     <div class="muted-note">{{ __('core.shell.no_selection') }}</div>
                 @endif
+
+                <footer class="workspace-footer">
+                    <div class="workspace-footer-meta">
+                        <span class="table-note">PymeSec v{{ $coreVersion }}</span>
+                        <span class="workspace-footer-separator">·</span>
+                        <span class="table-note">{{ strtoupper($shellArea) }}</span>
+                        <span class="workspace-footer-separator">·</span>
+                        <span class="table-note">&copy; {{ $currentYear }}</span>
+                    </div>
+                    <a class="workspace-footer-link" href="{{ $repositoryUrl }}" target="_blank" rel="noreferrer">Repository</a>
+                </footer>
             </article>
         </section>
     </main>

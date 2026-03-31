@@ -567,6 +567,9 @@ $renderShell = function (
             : null,
         'contextBackUrl' => $contextBackUrl,
         'contextLabel' => $contextLabel,
+        'coreVersion' => (string) config('plugins.core_version', '0.1.0'),
+        'repositoryUrl' => (string) config('plugins.repository_url', 'https://github.com/palaueb/pymesec-compliance-auditing-system'),
+        'currentYear' => now()->format('Y'),
     ]);
 };
 
