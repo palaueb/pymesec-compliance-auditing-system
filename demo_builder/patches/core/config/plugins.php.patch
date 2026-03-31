@@ -1,5 +1,5 @@
 diff --git a/core/config/plugins.php b/core/config/plugins.php
-index 344a7ab043ff306546f659906be5bb1c5cdeac92..7fb9b1430d9e8c3ced41898d4465079802f0eeec 100644
+index a8be3ea3e2b5bf5813da93ae000dcf36ed23cfbb..c6d24bfe8e6d6a6dcf2530afae5d184f5e30c1f4 100644
 --- a/core/config/plugins.php
 +++ b/core/config/plugins.php
 @@ -15,7 +15,7 @@
@@ -15,7 +15,7 @@ index 344a7ab043ff306546f659906be5bb1c5cdeac92..7fb9b1430d9e8c3ced41898d44650798
      'state_path' => $statePath,
      'enabled' => array_values(array_filter(array_map(
          static fn (string $pluginId): string => trim($pluginId),
--        explode(',', (string) env('PLUGINS_ENABLED', 'hello-world,asset-catalog,actor-directory,controls-catalog,risk-management,findings-remediation,policy-exceptions,data-flows-privacy,continuity-bcm,assessments-audits,evidence-management,identity-local,identity-ldap,framework-iso27001,framework-nis2'))
-+        explode(',', (string) env('PLUGINS_ENABLED', 'hello-world,asset-catalog,actor-directory,controls-catalog,risk-management,findings-remediation,policy-exceptions,data-flows-privacy,continuity-bcm,assessments-audits,evidence-management,identity-local,framework-iso27001,framework-nis2'))
+-        explode(',', (string) env('PLUGINS_ENABLED', 'hello-world,asset-catalog,actor-directory,controls-catalog,risk-management,third-party-risk,findings-remediation,policy-exceptions,data-flows-privacy,continuity-bcm,assessments-audits,evidence-management,identity-local,identity-ldap,framework-iso27001,framework-nis2'))
++        explode(',', (string) env('PLUGINS_ENABLED', 'hello-world,asset-catalog,actor-directory,controls-catalog,risk-management,third-party-risk,findings-remediation,policy-exceptions,data-flows-privacy,continuity-bcm,assessments-audits,evidence-management,identity-local,framework-iso27001,framework-nis2'))
      ))),
  ];
