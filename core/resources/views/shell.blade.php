@@ -102,15 +102,20 @@
 
         .menu-stack {
             display: grid;
-            gap: 8px;
+            gap: 2px;
             align-content: start;
         }
 
-        .menu-card {
-            border: 1px solid var(--line);
-            border-radius: 6px;
-            background: rgba(255,255,255,0.18);
-            padding: 4px;
+        .menu-group {
+            display: grid;
+            gap: 2px;
+            padding: 4px 0 8px;
+            border-bottom: 1px solid rgba(31,42,34,0.08);
+        }
+
+        .menu-group:last-child {
+            border-bottom: 0;
+            padding-bottom: 0;
         }
 
         .menu-link,
@@ -129,12 +134,19 @@
         }
 
         .menu-link,
-        .menu-link-static { padding: 11px 12px; }
-        .menu-child { padding: 9px 12px 9px 44px; }
+        .menu-link-static {
+            padding: 11px 8px 11px 10px;
+        }
+
+        .menu-child {
+            padding: 8px 8px 8px 52px;
+            margin-left: 10px;
+        }
 
         .menu-link:hover,
+        .menu-link-static:hover,
         .menu-child:hover {
-            background: rgba(255,255,255,0.28);
+            background: rgba(255,255,255,0.22);
         }
 
         .menu-link-static {
@@ -1055,7 +1067,7 @@
                 @php
                     $menuActive = $selectedMenuId === $menu['id'] || collect($menu['children'] ?? [])->contains(fn ($child) => ($child['id'] ?? null) === $selectedMenuId);
                 @endphp
-                <section class="menu-card">
+                <section class="menu-group">
                     @if (is_string($menu['shell_url'] ?? null) && $menu['shell_url'] !== '')
                         <a class="menu-link {{ $menuActive ? 'active' : '' }}" href="{{ $menu['shell_url'] }}">
                             <span class="icon-pill">{{ strtoupper(substr((string) ($menu['icon'] ?? $menu['owner']), 0, 2)) }}</span>

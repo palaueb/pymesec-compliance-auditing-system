@@ -1,8 +1,8 @@
 diff --git a/core/app/Providers/AppServiceProvider.php b/core/app/Providers/AppServiceProvider.php
-index 0a92dde2e76ac7e7533bb412227805bc1bf8b829..2e001650160e80157c3763b5c6b2f0e08cf994ea 100644
+index 24d89ca960c6588fcdf406ecefbe5db9db5acc5f..f3014989d23c7deccf4d2efd38b0ccda8e3660de 100644
 --- a/core/app/Providers/AppServiceProvider.php
 +++ b/core/app/Providers/AppServiceProvider.php
-@@ -1302,13 +1302,15 @@ private function pluginsScreenData(ScreenRenderContext $screenContext): array
+@@ -1361,13 +1361,15 @@ private function pluginsScreenData(ScreenRenderContext $screenContext): array
                  'attention' => collect($plugins)->whereNotNull('reason')->count(),
                  'overrides' => collect($plugins)->whereNotNull('override_state')->count(),
              ],

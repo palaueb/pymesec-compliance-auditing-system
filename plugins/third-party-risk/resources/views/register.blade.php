@@ -7,6 +7,188 @@
 
     details > summary { cursor: pointer; list-style: none; }
     details > summary::-webkit-details-marker { display: none; }
+
+    .vendor-register-grid {
+        display: grid;
+        gap: 16px;
+    }
+
+    .vendor-kpi-strip {
+        display: grid;
+        grid-template-columns: repeat(4, minmax(0, 1fr));
+        gap: 12px;
+    }
+
+    .vendor-kpi {
+        border: 1px solid rgba(31,42,34,0.08);
+        border-radius: 6px;
+        background: rgba(255,255,255,0.52);
+        padding: 14px 16px;
+        display: grid;
+        gap: 6px;
+    }
+
+    .vendor-kpi-value {
+        font-family: var(--font-heading);
+        font-size: 28px;
+        line-height: 1;
+    }
+
+    .vendor-kpi-copy {
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.4;
+    }
+
+    .vendor-register-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1.8fr) minmax(320px, 0.9fr);
+        gap: 16px;
+        align-items: start;
+    }
+
+    .vendor-panel {
+        border: 1px solid rgba(31,42,34,0.08);
+        border-radius: 6px;
+        background: rgba(255,255,255,0.52);
+        padding: 16px;
+        display: grid;
+        gap: 14px;
+    }
+
+    .vendor-panel-header {
+        display: flex;
+        justify-content: space-between;
+        gap: 14px;
+        align-items: flex-start;
+        padding-bottom: 12px;
+        border-bottom: 1px solid rgba(31,42,34,0.08);
+    }
+
+    .vendor-panel-header h3 {
+        margin: 4px 0 0;
+        font-family: var(--font-heading);
+        font-size: 24px;
+        line-height: 1;
+    }
+
+    .vendor-register-table {
+        width: 100%;
+        border-collapse: collapse;
+        background: rgba(255,255,255,0.62);
+        border: 1px solid rgba(31,42,34,0.08);
+    }
+
+    .vendor-register-table th,
+    .vendor-register-table td {
+        padding: 13px 12px;
+        border-bottom: 1px solid rgba(31,42,34,0.08);
+        text-align: left;
+        vertical-align: top;
+    }
+
+    .vendor-register-table thead th {
+        font-size: 11px;
+        letter-spacing: 0.12em;
+        text-transform: uppercase;
+        color: var(--muted);
+        background: rgba(255,255,255,0.76);
+    }
+
+    .vendor-register-table tbody tr:last-child td {
+        border-bottom: 0;
+    }
+
+    .vendor-tier {
+        display: inline-flex;
+        align-items: center;
+        min-height: 28px;
+        padding: 5px 10px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 700;
+        border: 1px solid rgba(31,42,34,0.08);
+        background: rgba(255,255,255,0.86);
+    }
+
+    .vendor-tier-high,
+    .vendor-tier-critical {
+        background: rgba(239,68,68,0.1);
+        color: #991b1b;
+    }
+
+    .vendor-tier-medium {
+        background: rgba(245,158,11,0.12);
+        color: #92400e;
+    }
+
+    .vendor-tier-low {
+        background: rgba(34,197,94,0.12);
+        color: #166534;
+    }
+
+    .vendor-status-badge {
+        display: inline-flex;
+        align-items: center;
+        min-height: 28px;
+        padding: 5px 10px;
+        border-radius: 999px;
+        font-size: 12px;
+        font-weight: 700;
+        border: 1px solid rgba(31,42,34,0.08);
+        background: rgba(255,255,255,0.86);
+    }
+
+    .vendor-status-active {
+        background: rgba(34,197,94,0.12);
+        color: #166534;
+    }
+
+    .vendor-status-prospective {
+        background: rgba(245,158,11,0.12);
+        color: #92400e;
+    }
+
+    .vendor-status-suspended,
+    .vendor-status-inactive {
+        background: rgba(239,68,68,0.1);
+        color: #991b1b;
+    }
+
+    .vendor-mini-stack,
+    .vendor-rail-list {
+        display: grid;
+        gap: 10px;
+    }
+
+    .vendor-mini-item {
+        border: 1px solid rgba(31,42,34,0.08);
+        border-radius: 6px;
+        background: rgba(255,255,255,0.66);
+        padding: 12px 13px;
+        display: grid;
+        gap: 6px;
+    }
+
+    .vendor-mini-top {
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+        align-items: flex-start;
+    }
+
+    .vendor-mini-meta {
+        color: var(--muted);
+        font-size: 12px;
+        line-height: 1.4;
+    }
+
+    @media (max-width: 1200px) {
+        .vendor-register-layout,
+        .vendor-kpi-strip {
+            grid-template-columns: minmax(0, 1fr);
+        }
+    }
 </style>
 
 <section class="module-screen">
@@ -554,6 +736,15 @@
             @endif
         </div>
     @else
+        @php
+            $inReviewCount = collect($vendors)->filter(fn (array $vendor): bool => ($vendor['current_review']['state'] ?? null) === 'in-review')->count();
+            $highExposureCount = collect($vendors)->filter(fn (array $vendor): bool => in_array(($vendor['tier'] ?? null), ['high', 'critical'], true))->count();
+            $openQuestionnaireCount = collect($vendors)->sum(
+                fn (array $vendor): int => collect($vendor['current_review']['questionnaire_items'] ?? [])->whereIn('response_status', ['draft', 'sent', 'submitted', 'under-review', 'needs-follow-up'])->count()
+            );
+            $externalLinkCount = collect($vendors)->sum(fn (array $vendor): int => count($vendor['current_review']['external_links'] ?? []));
+        @endphp
+
         @if ($can_manage_vendors)
             <div class="surface-card" id="vendor-editor" hidden>
                 <div class="row-between" style="margin-bottom:14px;">
@@ -703,49 +894,144 @@
             </div>
         @endif
 
-        <div class="surface-card">
-            <div class="table-shell">
-                <div class="table-shell__header">
-                    <div>
-                        <div class="eyebrow">Register</div>
-                        <h3 class="screen-title" style="font-size:24px;">Vendor register list</h3>
+        <div class="vendor-register-grid">
+            <div class="vendor-kpi-strip">
+                <div class="vendor-kpi">
+                    <div class="metric-label">Vendors</div>
+                    <div class="vendor-kpi-value">{{ count($vendors) }}</div>
+                    <div class="vendor-kpi-copy">Tracked third parties with an active review workspace.</div>
+                </div>
+                <div class="vendor-kpi">
+                    <div class="metric-label">In Review</div>
+                    <div class="vendor-kpi-value">{{ $inReviewCount }}</div>
+                    <div class="vendor-kpi-copy">Reviews currently waiting on due diligence, evidence, or decision work.</div>
+                </div>
+                <div class="vendor-kpi">
+                    <div class="metric-label">High Exposure</div>
+                    <div class="vendor-kpi-value">{{ $highExposureCount }}</div>
+                    <div class="vendor-kpi-copy">High and critical vendors that usually deserve the most attention.</div>
+                </div>
+                <div class="vendor-kpi">
+                    <div class="metric-label">Open Follow-up</div>
+                    <div class="vendor-kpi-value">{{ $openQuestionnaireCount }}</div>
+                    <div class="vendor-kpi-copy">Questionnaire items still open across the current review set.</div>
+                </div>
+            </div>
+
+            <div class="vendor-register-layout">
+                <div class="vendor-panel">
+                    <div class="vendor-panel-header">
+                        <div>
+                            <div class="eyebrow">Register</div>
+                            <h3>Vendor register list</h3>
+                            <div class="table-note" style="margin-top:6px;">This list stays focused on tier, current review, vendor status, owner summary, and Open.</div>
+                        </div>
                     </div>
-                    <div class="table-note">This list stays focused on tier, current review, vendor status, owner summary, and Open.</div>
+
+                    <div>
+                        <table class="vendor-register-table">
+                            <thead>
+                                <tr>
+                                    <th>Vendor</th>
+                                    <th>Tier</th>
+                                    <th>Current review</th>
+                                    <th>Vendor status</th>
+                                    <th>Attention</th>
+                                    <th></th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @forelse ($vendors as $vendor)
+                                    @php
+                                        $review = $vendor['current_review'];
+                                        $tierClass = 'vendor-tier-'.$vendor['tier'];
+                                        $statusClass = 'vendor-status-'.str_replace(' ', '-', strtolower((string) $vendor['vendor_status']));
+                                        $openItems = collect($review['questionnaire_items'] ?? [])->whereIn('response_status', ['draft', 'sent', 'submitted', 'under-review', 'needs-follow-up'])->count();
+                                    @endphp
+                                    <tr>
+                                        <td>
+                                            <div class="entity-title">{{ $vendor['legal_name'] }}</div>
+                                            <div class="table-note">{{ $vendor['service_summary'] }}</div>
+                                            <div class="table-note">{{ $vendor['primary_contact_email'] !== '' ? $vendor['primary_contact_email'] : 'No external contact yet' }}</div>
+                                        </td>
+                                        <td><span class="vendor-tier {{ $tierClass }}">{{ ucfirst($vendor['tier']) }}</span></td>
+                                        <td>
+                                            <div class="entity-title" style="font-size:18px;">{{ $review['title'] }}</div>
+                                            <div class="table-note">{{ $review['state_label'] }} · {{ ucfirst($review['inherent_risk']) }} inherent risk</div>
+                                            <div class="table-note">Next due: {{ $review['next_review_due_on'] !== '' ? $review['next_review_due_on'] : 'Not scheduled' }}</div>
+                                        </td>
+                                        <td>
+                                            <span class="vendor-status-badge {{ $statusClass }}">{{ ucfirst($vendor['vendor_status']) }}</span>
+                                        </td>
+                                        <td>
+                                            <div class="table-note">{{ count($review['owner_assignments']) }} owners</div>
+                                            <div class="table-note">{{ count($review['artifacts']) }} evidence files</div>
+                                            <div class="table-note">{{ $openItems }} open items</div>
+                                        </td>
+                                        <td><a class="button button-ghost" href="{{ $vendor['open_url'] }}">Open</a></td>
+                                    </tr>
+                                @empty
+                                    <tr><td colspan="6" class="table-note">No vendors yet.</td></tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
 
-                <div class="table-shell__body">
-                    <table class="data-table">
-                        <thead>
-                            <tr>
-                                <th>Vendor</th>
-                                <th>Tier</th>
-                                <th>Current review</th>
-                                <th>Status</th>
-                                <th>Owners</th>
-                                <th></th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @forelse ($vendors as $vendor)
-                                <tr>
-                                    <td>
-                                        <div class="entity-title">{{ $vendor['legal_name'] }}</div>
-                                        <div class="table-note">{{ $vendor['service_summary'] }}</div>
-                                    </td>
-                                    <td>{{ ucfirst($vendor['tier']) }}</td>
-                                    <td>
-                                        <div>{{ $vendor['current_review']['title'] }}</div>
-                                        <div class="table-note">{{ $vendor['current_review']['state_label'] }}</div>
-                                    </td>
-                                    <td>{{ ucfirst($vendor['vendor_status']) }}</td>
-                                    <td>{{ count($vendor['current_review']['owner_assignments']) }}</td>
-                                    <td><a class="button button-ghost" href="{{ $vendor['open_url'] }}">Open</a></td>
-                                </tr>
-                            @empty
-                                <tr><td colspan="6" class="table-note">No vendors yet.</td></tr>
-                            @endforelse
-                        </tbody>
-                    </table>
+                <aside class="vendor-panel">
+                    <div class="vendor-panel-header">
+                        <div>
+                            <div class="eyebrow">Review Load</div>
+                            <h3>Attention rail</h3>
+                            <div class="table-note" style="margin-top:6px;">A quick side view of where third-party review work is accumulating.</div>
+                        </div>
+                    </div>
+
+                    <div class="vendor-mini-stack">
+                        <div class="vendor-mini-item">
+                            <div class="vendor-mini-top">
+                                <div class="entity-title">External collaboration</div>
+                                <strong>{{ $externalLinkCount }}</strong>
+                            </div>
+                            <div class="vendor-mini-meta">Issued review links currently tracked across vendor workspaces.</div>
+                        </div>
+                        <div class="vendor-mini-item">
+                            <div class="vendor-mini-top">
+                                <div class="entity-title">Approved posture</div>
+                                <strong>{{ collect($vendors)->filter(fn (array $vendor): bool => in_array(($vendor['current_review']['state'] ?? null), ['approved', 'approved-with-conditions'], true))->count() }}</strong>
+                            </div>
+                            <div class="vendor-mini-meta">Reviews that already reached a decision and can move into follow-up or cadence monitoring.</div>
+                        </div>
+                    </div>
+
+                    <div class="metric-label">Current review posture</div>
+                    <div class="vendor-rail-list">
+                        @forelse (collect($vendors)->sortByDesc(fn (array $vendor): int => collect($vendor['current_review']['questionnaire_items'] ?? [])->whereIn('response_status', ['draft', 'sent', 'submitted', 'under-review', 'needs-follow-up'])->count())->take(4) as $vendor)
+                            @php
+                                $review = $vendor['current_review'];
+                            @endphp
+                            <div class="vendor-mini-item">
+                                <div class="vendor-mini-top">
+                                    <div class="entity-title">{{ $vendor['legal_name'] }}</div>
+                                    <span class="pill {{
+                                        match($review['state']) {
+                                            'prospective' => 'pill-prospective',
+                                            'in-review' => 'pill-in-review',
+                                            'approved' => 'pill-approved',
+                                            'approved-with-conditions' => 'pill-approved-with-conditions',
+                                            'rejected' => 'pill-rejected',
+                                            default => '',
+                                        }
+                                    }}">{{ $review['state_label'] }}</span>
+                                </div>
+                                <div class="vendor-mini-meta">{{ $review['title'] }}</div>
+                                <div class="vendor-mini-meta">{{ count($review['artifacts']) }} evidence · {{ collect($review['questionnaire_items'] ?? [])->whereIn('response_status', ['draft', 'sent', 'submitted', 'under-review', 'needs-follow-up'])->count() }} open items</div>
+                                <div class="vendor-mini-meta">Next due: {{ $review['next_review_due_on'] !== '' ? $review['next_review_due_on'] : 'Not scheduled' }}</div>
+                            </div>
+                        @empty
+                            <div class="muted-note">No vendor reviews available yet.</div>
+                        @endforelse
+                    </div>
                 </div>
             </div>
         </div>
