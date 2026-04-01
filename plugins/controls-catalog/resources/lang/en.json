@@ -1,5 +1,6 @@
 {
   "plugin.controls-catalog.nav.root": "Controls",
+  "plugin.controls-catalog.nav.catalog": "Catalog",
   "plugin.controls-catalog.nav.framework_adoption": "Framework Adoption",
   "plugin.controls-catalog.nav.reviews": "Reviews",
   "plugin.controls-catalog.screen.catalog.title": "Controls Catalog",

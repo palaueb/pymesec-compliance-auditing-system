@@ -20,7 +20,7 @@ class ArtifactsTest extends TestCase
             'principal_id' => 'principal-org-a',
             'organization_id' => 'org-a',
             'locale' => 'en',
-            'menu' => 'plugin.controls-catalog.root',
+            'menu' => 'plugin.controls-catalog.catalog',
             'membership_id' => 'membership-org-a-hello',
             'label' => 'Q1 access review pack',
             'artifact_type' => 'evidence',
@@ -76,7 +76,7 @@ class ArtifactsTest extends TestCase
             'principal_id' => 'principal-org-a',
             'organization_id' => 'org-a',
             'locale' => 'en',
-            'menu' => 'plugin.controls-catalog.root',
+            'menu' => 'plugin.controls-catalog.catalog',
             'membership_id' => 'membership-org-a-hello',
             'label' => 'Control evidence bundle',
             'artifact_type' => 'evidence',
@@ -98,12 +98,12 @@ class ArtifactsTest extends TestCase
     {
         Storage::fake('local');
 
-        $this->from('/app?menu=plugin.controls-catalog.root&principal_id=principal-org-a&organization_id=org-a')
+        $this->from('/app?menu=plugin.controls-catalog.catalog&principal_id=principal-org-a&organization_id=org-a')
             ->post('/plugins/controls/control-access-review/artifacts', [
                 'principal_id' => 'principal-org-a',
                 'organization_id' => 'org-a',
                 'locale' => 'en',
-                'menu' => 'plugin.controls-catalog.root',
+                'menu' => 'plugin.controls-catalog.catalog',
                 'membership_id' => 'membership-org-a-hello',
                 'label' => 'Malicious payload',
                 'artifact_type' => 'evidence',

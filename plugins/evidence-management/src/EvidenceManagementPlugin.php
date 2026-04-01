@@ -259,7 +259,7 @@ class EvidenceManagementPlugin implements PluginInterface
 
         return match ($domainType) {
             'asset' => route('core.shell.index', [...$query, 'menu' => 'plugin.asset-catalog.root', 'asset_id' => $domainId]),
-            'control' => route('core.shell.index', [...$query, 'menu' => 'plugin.controls-catalog.root', 'control_id' => $domainId]),
+            'control' => route('core.shell.index', [...$query, 'menu' => 'plugin.controls-catalog.catalog', 'control_id' => $domainId]),
             'risk' => route('core.shell.index', [...$query, 'menu' => 'plugin.risk-management.root', 'risk_id' => $domainId]),
             'finding' => route('core.shell.index', [...$query, 'menu' => 'plugin.findings-remediation.root', 'finding_id' => $domainId]),
             'policy' => route('core.shell.index', [...$query, 'menu' => 'plugin.policy-exceptions.root', 'policy_id' => $domainId]),

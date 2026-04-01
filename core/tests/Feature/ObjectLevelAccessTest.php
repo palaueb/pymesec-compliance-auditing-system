@@ -268,7 +268,7 @@ class ObjectLevelAccessTest extends TestCase
 
         $this->post('/plugins/controls/control-access-review/transitions/submit-review', [
             ...$payload,
-            'menu' => 'plugin.controls-catalog.root',
+            'menu' => 'plugin.controls-catalog.catalog',
         ])->assertForbidden();
 
         $this->post('/plugins/continuity/services/continuity-service-customer-support/transitions/submit-review', [

@@ -442,7 +442,6 @@ class AppServiceProvider extends ServiceProvider
             routeName: 'core.shell.index',
             icon: 'shield',
             order: 9,
-            permission: 'core.functional-actors.view',
             area: 'app',
         ));
 
@@ -552,6 +551,18 @@ class AppServiceProvider extends ServiceProvider
         ));
 
         $menus->registerCore(new MenuDefinition(
+            id: 'core.assignments',
+            owner: 'core',
+            labelKey: 'core.nav.assignments',
+            routeName: 'core.shell.index',
+            parentId: 'core.governance',
+            icon: 'link',
+            order: 15,
+            permission: 'core.functional-actors.view',
+            area: 'app',
+        ));
+
+        $menus->registerCore(new MenuDefinition(
             id: 'core.object-access',
             owner: 'core',
             labelKey: 'core.nav.object_access',
@@ -601,13 +612,23 @@ class AppServiceProvider extends ServiceProvider
             dataResolver: fn (ScreenRenderContext $screenContext): array => $this->governanceOverviewData($screenContext),
             toolbarResolver: fn (ScreenRenderContext $screenContext): array => [
                 new ToolbarAction(
-                    label: 'Functional directory',
+                    label: 'Actors',
                     url: route('core.shell.index', [...$this->coreScreenQuery($screenContext), 'menu' => 'core.functional-actors']),
                     variant: 'primary',
                 ),
                 new ToolbarAction(
+                    label: 'Assignments',
+                    url: route('core.shell.index', [...$this->coreScreenQuery($screenContext), 'menu' => 'core.assignments']),
+                    variant: 'secondary',
+                ),
+                new ToolbarAction(
                     label: 'Object access matrix',
                     url: route('core.shell.index', [...$this->coreScreenQuery($screenContext), 'menu' => 'core.object-access']),
+                    variant: 'secondary',
+                ),
+                new ToolbarAction(
+                    label: 'Organization access',
+                    url: route('core.shell.index', [...$this->coreScreenQuery($screenContext), 'menu' => 'plugin.identity-local.memberships']),
                     variant: 'secondary',
                 ),
             ],
@@ -977,6 +998,34 @@ class AppServiceProvider extends ServiceProvider
         ));
 
         $screens->register(new ScreenDefinition(
+            menuId: 'core.assignments',
+            owner: 'core',
+            titleKey: 'core.assignments.screen.title',
+            subtitleKey: 'core.assignments.screen.subtitle',
+            viewPath: resource_path('views/functional-assignments.blade.php'),
+            dataResolver: fn (ScreenRenderContext $screenContext): array => $this->functionalAssignmentsScreenData($screenContext),
+            toolbarResolver: function (ScreenRenderContext $screenContext): array {
+                return [
+                    new ToolbarAction(
+                        label: 'Actors',
+                        url: route('core.shell.index', [...$this->coreScreenQuery($screenContext), 'menu' => 'core.functional-actors']),
+                        variant: 'secondary',
+                    ),
+                    new ToolbarAction(
+                        label: 'Object access matrix',
+                        url: route('core.shell.index', [...$this->coreScreenQuery($screenContext), 'menu' => 'core.object-access']),
+                        variant: 'secondary',
+                    ),
+                    new ToolbarAction(
+                        label: 'Organization access',
+                        url: route('core.shell.index', [...$this->coreScreenQuery($screenContext), 'menu' => 'plugin.identity-local.memberships']),
+                        variant: 'secondary',
+                    ),
+                ];
+            },
+        ));
+
+        $screens->register(new ScreenDefinition(
             menuId: 'core.object-access',
             owner: 'core',
             titleKey: 'core.object-access.screen.title',
@@ -1089,14 +1138,24 @@ class AppServiceProvider extends ServiceProvider
             ],
             'quick_links' => [
                 [
-                    'label' => 'Functional directory',
+                    'label' => 'Actors',
                     'copy' => 'Link people to functional profiles and keep accountability independent from login roles.',
                     'url' => route('core.shell.index', [...$query, 'menu' => 'core.functional-actors']),
+                ],
+                [
+                    'label' => 'Assignments',
+                    'copy' => 'Review who owns which governed records without mixing ownership with access grants.',
+                    'url' => route('core.shell.index', [...$query, 'menu' => 'core.assignments']),
                 ],
                 [
                     'label' => 'Object access matrix',
                     'copy' => 'Inspect who can still see governed records once actor links and scoped assignments are applied.',
                     'url' => route('core.shell.index', [...$query, 'menu' => 'core.object-access']),
+                ],
+                [
+                    'label' => 'Organization access',
+                    'copy' => 'Manage memberships, role sets, and scope grants for people who need workspace access.',
+                    'url' => route('core.shell.index', [...$query, 'menu' => 'plugin.identity-local.memberships']),
                 ],
             ],
             'boundaries' => [
@@ -1913,6 +1972,58 @@ class AppServiceProvider extends ServiceProvider
     }
 
     /**
+     * @return array<string, mixed>
+     */
+    private function functionalAssignmentsScreenData(ScreenRenderContext $screenContext): array
+    {
+        $service = $this->app->make(FunctionalActorServiceInterface::class);
+        $query = $this->coreScreenQuery($screenContext);
+        $organizationId = is_string($query['organization_id'] ?? null) && $query['organization_id'] !== ''
+            ? (string) $query['organization_id']
+            : null;
+        $scopeId = is_string($query['scope_id'] ?? null) && $query['scope_id'] !== ''
+            ? (string) $query['scope_id']
+            : null;
+        $actorsById = [];
+
+        foreach ($service->actors($organizationId, $scopeId) as $actor) {
+            $actorsById[$actor->id] = $actor->toArray();
+        }
+
+        $rows = array_map(function ($assignment) use ($actorsById, $screenContext): array {
+            $row = $assignment->toArray();
+
+            return [
+                ...$row,
+                'actor' => $actorsById[$row['functional_actor_id']] ?? null,
+                'subject_url' => $this->domainObjectShellUrl(
+                    screenContext: $screenContext,
+                    domainType: (string) $row['domain_object_type'],
+                    domainId: (string) $row['domain_object_id'],
+                    organizationId: (string) $row['organization_id'],
+                    scopeId: is_string($row['scope_id'] ?? null) && $row['scope_id'] !== '' ? (string) $row['scope_id'] : null,
+                ),
+            ];
+        }, $service->assignments($organizationId, $scopeId));
+
+        return [
+            'rows' => $rows,
+            'query' => $query,
+            'metrics' => [
+                'assignments' => count($rows),
+                'actors' => count(array_unique(array_map(
+                    static fn (array $row): string => (string) $row['functional_actor_id'],
+                    $rows,
+                ))),
+                'domains' => count(array_unique(array_map(
+                    static fn (array $row): string => (string) $row['domain_object_type'],
+                    $rows,
+                ))),
+            ],
+        ];
+    }
+
+    /**
      * @return array<int, array{id: string, label: string}>
      */
     private function functionalActorPrincipalOptions(?string $organizationId): array
@@ -2249,7 +2360,7 @@ class AppServiceProvider extends ServiceProvider
         return match ($domainType) {
             'asset' => route('core.shell.index', [...$query, 'menu' => 'plugin.asset-catalog.root', 'asset_id' => $domainId]),
             'risk' => route('core.shell.index', [...$query, 'menu' => 'plugin.risk-management.root', 'risk_id' => $domainId]),
-            'control' => route('core.shell.index', [...$query, 'menu' => 'plugin.controls-catalog.root', 'control_id' => $domainId]),
+            'control' => route('core.shell.index', [...$query, 'menu' => 'plugin.controls-catalog.catalog', 'control_id' => $domainId]),
             'finding' => route('core.shell.index', [...$query, 'menu' => 'plugin.findings-remediation.root', 'finding_id' => $domainId]),
             'policy' => route('core.shell.index', [...$query, 'menu' => 'plugin.policy-exceptions.root', 'policy_id' => $domainId]),
             'policy-exception' => route('core.shell.index', [...$query, 'menu' => 'plugin.policy-exceptions.exceptions', 'exception_id' => $domainId]),

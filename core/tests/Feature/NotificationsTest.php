@@ -22,7 +22,7 @@ class NotificationsTest extends TestCase
             'principal_id' => 'principal-org-a',
             'organization_id' => 'org-a',
             'locale' => 'en',
-            'menu' => 'plugin.controls-catalog.root',
+            'menu' => 'plugin.controls-catalog.catalog',
             'membership_id' => 'membership-org-a-hello',
         ])->assertFound();
 
@@ -43,7 +43,7 @@ class NotificationsTest extends TestCase
             'principal_id' => 'principal-org-a',
             'organization_id' => 'org-a',
             'locale' => 'en',
-            'menu' => 'plugin.controls-catalog.root',
+            'menu' => 'plugin.controls-catalog.catalog',
             'membership_id' => 'membership-org-a-hello',
         ])->assertFound();
 

@@ -2,19 +2,19 @@
 
 namespace PymeSec\Plugins\IdentityLocal;
 
+use PymeSec\Core\Audit\Contracts\AuditTrailInterface;
 use PymeSec\Core\Contracts\IdentityPluginInterface;
+use PymeSec\Core\Events\Contracts\EventBusInterface;
 use PymeSec\Core\FunctionalActors\Contracts\FunctionalActorServiceInterface;
 use PymeSec\Core\Permissions\AuthorizationContext;
 use PymeSec\Core\Permissions\AuthorizationPresentation;
 use PymeSec\Core\Permissions\Contracts\AuthorizationServiceInterface;
+use PymeSec\Core\Permissions\DatabaseAuthorizationStore;
 use PymeSec\Core\Plugins\PluginContext;
 use PymeSec\Core\Tenancy\Contracts\TenancyServiceInterface;
 use PymeSec\Core\UI\ScreenDefinition;
 use PymeSec\Core\UI\ScreenRenderContext;
 use PymeSec\Core\UI\ToolbarAction;
-use PymeSec\Core\Audit\Contracts\AuditTrailInterface;
-use PymeSec\Core\Events\Contracts\EventBusInterface;
-use PymeSec\Core\Permissions\DatabaseAuthorizationStore;
 
 class IdentityLocalPlugin implements IdentityPluginInterface
 {
@@ -62,7 +62,7 @@ class IdentityLocalPlugin implements IdentityPluginInterface
                             variant: 'secondary',
                         ),
                         new ToolbarAction(
-                            label: 'Access',
+                            label: 'Organization access',
                             url: route('core.admin.index', [...$query, 'menu' => 'plugin.identity-local.memberships']),
                             variant: 'secondary',
                         ),
@@ -81,7 +81,7 @@ class IdentityLocalPlugin implements IdentityPluginInterface
                         variant: 'secondary',
                     ),
                     new ToolbarAction(
-                        label: 'Access',
+                        label: 'Organization access',
                         url: route('core.shell.index', [...$query, 'menu' => 'plugin.identity-local.memberships']),
                         variant: 'secondary',
                     ),
@@ -102,7 +102,7 @@ class IdentityLocalPlugin implements IdentityPluginInterface
                 if (is_string($screenContext->query['selected_membership_id'] ?? null) && ($screenContext->query['selected_membership_id'] ?? '') !== '') {
                     return [
                         new ToolbarAction(
-                            label: 'Back to access',
+                            label: 'Back to organization access',
                             url: route('core.shell.index', [...$query, 'menu' => 'plugin.identity-local.memberships']),
                             variant: 'secondary',
                         ),

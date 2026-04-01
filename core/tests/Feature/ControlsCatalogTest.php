@@ -29,7 +29,7 @@ class ControlsCatalogTest extends TestCase
 
     public function test_the_controls_catalog_screen_renders_inside_the_shell(): void
     {
-        $this->get('/app?menu=plugin.controls-catalog.root&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
+        $this->get('/app?menu=plugin.controls-catalog.catalog&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
             ->assertOk()
             ->assertSee('Controls Catalog')
             ->assertSee('Control list')
@@ -41,7 +41,7 @@ class ControlsCatalogTest extends TestCase
             ->assertSee('Create control')
             ->assertSee('Open');
 
-        $this->get('/app?menu=plugin.controls-catalog.root&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello&control_id=control-access-review')
+        $this->get('/app?menu=plugin.controls-catalog.catalog&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello&control_id=control-access-review')
             ->assertOk()
             ->assertSee('Controls Catalog')
             ->assertSee('Control Detail keeps requirement mappings, ownership, evidence, workflow transitions, and control editing in one workspace.')
@@ -137,7 +137,7 @@ class ControlsCatalogTest extends TestCase
             'principal_id' => 'principal-org-a',
             'organization_id' => 'org-a',
             'locale' => 'en',
-            'menu' => 'plugin.controls-catalog.root',
+            'menu' => 'plugin.controls-catalog.catalog',
             'membership_id' => 'membership-org-a-hello',
         ];
 
@@ -179,7 +179,7 @@ class ControlsCatalogTest extends TestCase
             'principal_id' => 'principal-org-a',
             'organization_id' => 'org-a',
             'locale' => 'en',
-            'menu' => 'plugin.controls-catalog.root',
+            'menu' => 'plugin.controls-catalog.catalog',
             'membership_id' => 'membership-org-a-hello',
         ])->assertFound();
 
@@ -201,14 +201,14 @@ class ControlsCatalogTest extends TestCase
             'principal_id' => 'principal-org-a',
             'organization_id' => 'org-a',
             'locale' => 'en',
-            'menu' => 'plugin.controls-catalog.root',
+            'menu' => 'plugin.controls-catalog.catalog',
             'membership_id' => 'membership-org-a-hello',
             'label' => 'Quarterly export',
             'artifact_type' => 'evidence',
             'artifact' => UploadedFile::fake()->createWithContent('quarterly-export.csv', 'row-1'),
         ])->assertFound();
 
-        $this->get('/app?menu=plugin.controls-catalog.root&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello&control_id=control-access-review')
+        $this->get('/app?menu=plugin.controls-catalog.catalog&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello&control_id=control-access-review')
             ->assertOk()
             ->assertSee('Quarterly export')
             ->assertSee('quarterly-export.csv');
@@ -220,7 +220,7 @@ class ControlsCatalogTest extends TestCase
             'principal_id' => 'principal-org-a',
             'organization_id' => 'org-a',
             'locale' => 'en',
-            'menu' => 'plugin.controls-catalog.root',
+            'menu' => 'plugin.controls-catalog.catalog',
             'membership_id' => 'membership-org-a-hello',
         ];
 
@@ -234,7 +234,7 @@ class ControlsCatalogTest extends TestCase
             'owner_actor_id' => 'actor-ava-mason',
         ])->assertFound();
 
-        $this->get('/app?menu=plugin.controls-catalog.root&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
+        $this->get('/app?menu=plugin.controls-catalog.catalog&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
             ->assertOk()
             ->assertSee('Supplier Access Revalidation')
             ->assertSee('Annual supplier entitlement review');
@@ -249,7 +249,7 @@ class ControlsCatalogTest extends TestCase
             'owner_actor_id' => 'actor-compliance-office',
         ])->assertFound();
 
-        $this->get('/app?menu=plugin.controls-catalog.root&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
+        $this->get('/app?menu=plugin.controls-catalog.catalog&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
             ->assertOk()
             ->assertSee('Supplier Access Recertification')
             ->assertSee('Semi-annual supplier entitlement review')
@@ -262,7 +262,7 @@ class ControlsCatalogTest extends TestCase
             'principal_id' => 'principal-org-a',
             'organization_id' => 'org-a',
             'locale' => 'en',
-            'menu' => 'plugin.controls-catalog.root',
+            'menu' => 'plugin.controls-catalog.catalog',
             'membership_id' => 'membership-org-a-hello',
         ];
 
@@ -283,7 +283,7 @@ class ControlsCatalogTest extends TestCase
             ->where('is_active', true)
             ->count());
 
-        $this->get('/app?menu=plugin.controls-catalog.root&control_id=control-access-review&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
+        $this->get('/app?menu=plugin.controls-catalog.catalog&control_id=control-access-review&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
             ->assertOk()
             ->assertSee('Ava Mason')
             ->assertSee('Compliance Office')
@@ -309,7 +309,7 @@ class ControlsCatalogTest extends TestCase
             'principal_id' => 'principal-org-a',
             'organization_id' => 'org-a',
             'locale' => 'en',
-            'menu' => 'plugin.controls-catalog.root',
+            'menu' => 'plugin.controls-catalog.catalog',
             'membership_id' => 'membership-org-a-hello',
         ];
 
@@ -335,7 +335,7 @@ class ControlsCatalogTest extends TestCase
             'notes' => 'Review ownership and entitlements as part of the quarterly cycle.',
         ])->assertFound();
 
-        $this->get('/app?menu=plugin.controls-catalog.root&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello&control_id=control-access-review')
+        $this->get('/app?menu=plugin.controls-catalog.catalog&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello&control_id=control-access-review')
             ->assertOk()
             ->assertSee('CIS Safeguards v8')
             ->assertSee('Maintain an enterprise asset inventory')

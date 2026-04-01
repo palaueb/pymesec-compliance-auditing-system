@@ -238,11 +238,18 @@ $renderShell = function (
                 'message' => __('core.shell.error.unavailable_message', ['menu' => $requestedMenuId]),
             ];
         } elseif (! $screens->has($requestedMenuId)) {
-            $shellError = [
-                'title' => __('core.shell.error.title'),
-                'subtitle' => __('core.shell.error.unimplemented_subtitle'),
-                'message' => __('core.shell.error.unimplemented_message', ['menu' => $requestedMenuId]),
-            ];
+            $fallbackChild = collect($flatMenus[$requestedMenuId]['children'] ?? [])
+                ->first(fn (array $child): bool => $screens->has((string) ($child['id'] ?? '')));
+
+            if (is_array($fallbackChild) && is_string($fallbackChild['id'] ?? null) && $fallbackChild['id'] !== '') {
+                $selectedMenuId = $fallbackChild['id'];
+            } else {
+                $shellError = [
+                    'title' => __('core.shell.error.title'),
+                    'subtitle' => __('core.shell.error.unimplemented_subtitle'),
+                    'message' => __('core.shell.error.unimplemented_message', ['menu' => $requestedMenuId]),
+                ];
+            }
         }
     }
 
@@ -303,11 +310,11 @@ $renderShell = function (
 
     $decorate = function (array $items) use (&$decorate, $baseQuery, $currentShellRoute): array {
         return array_map(function (array $item) use (&$decorate, $baseQuery, $currentShellRoute): array {
-            $query = [...$baseQuery, 'menu' => $item['id']];
-
             return [
                 ...$item,
-                'shell_url' => route($currentShellRoute, $query),
+                'shell_url' => ($item['route'] ?? null) !== null
+                    ? route($currentShellRoute, [...$baseQuery, 'menu' => $item['id']])
+                    : null,
                 'children' => $decorate($item['children'] ?? []),
             ];
         }, $items);

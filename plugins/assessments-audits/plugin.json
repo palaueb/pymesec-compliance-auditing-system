@@ -54,8 +54,9 @@
       "id": "plugin.assessments-audits.root",
       "label_key": "plugin.assessments-audits.nav.root",
       "route": "plugin.assessments-audits.index",
+      "parent_id": "plugin.controls-catalog.root",
       "icon": "clipboard",
-      "order": 42,
+      "order": 15,
       "permission": "plugin.assessments-audits.assessments.view"
     }
   ],

@@ -92,7 +92,7 @@ Route::post('/plugins/controls', function (
     }
 
     return redirect()->route('core.shell.index', array_filter([
-        'menu' => 'plugin.controls-catalog.root',
+        'menu' => 'plugin.controls-catalog.catalog',
         'principal_id' => $principalId,
         'organization_id' => $control['organization_id'],
         'control_id' => $control['id'],
@@ -118,7 +118,7 @@ Route::post('/plugins/controls/frameworks', function (
     $scopeId = $request->input('scope_id');
     $menu = is_string($request->input('menu')) && $request->input('menu') !== ''
         ? (string) $request->input('menu')
-        : 'plugin.controls-catalog.root';
+        : 'plugin.controls-catalog.catalog';
 
     $repository->createFramework($validated);
 
@@ -235,7 +235,7 @@ Route::post('/plugins/controls/requirements', function (
     $scopeId = $request->input('scope_id');
     $menu = is_string($request->input('menu')) && $request->input('menu') !== ''
         ? (string) $request->input('menu')
-        : 'plugin.controls-catalog.root';
+        : 'plugin.controls-catalog.catalog';
 
     $repository->createRequirement($validated);
 
@@ -283,7 +283,7 @@ Route::post('/plugins/controls/{controlId}/requirements', function (
     );
 
     return redirect()->route('core.shell.index', array_filter([
-        'menu' => 'plugin.controls-catalog.root',
+        'menu' => 'plugin.controls-catalog.catalog',
         'principal_id' => $principalId,
         'organization_id' => $validated['organization_id'],
         'control_id' => $controlId,
@@ -353,7 +353,7 @@ Route::post('/plugins/controls/{controlId}', function (
         ]);
 
     return redirect()->route('core.shell.index', array_filter([
-        'menu' => 'plugin.controls-catalog.root',
+        'menu' => 'plugin.controls-catalog.catalog',
         'principal_id' => $principalId,
         'organization_id' => $control['organization_id'],
         'control_id' => $control['id'],
@@ -400,7 +400,7 @@ Route::post('/plugins/controls/{controlId}/owners/{assignmentId}/remove', functi
     );
 
     return redirect()->route('core.shell.index', array_filter([
-        'menu' => 'plugin.controls-catalog.root',
+        'menu' => 'plugin.controls-catalog.catalog',
         'principal_id' => $principalId,
         'organization_id' => $control['organization_id'],
         'control_id' => $control['id'],
@@ -457,7 +457,7 @@ Route::post('/plugins/controls/{controlId}/artifacts', function (
     ));
 
     return redirect()->route('core.shell.index', array_filter([
-        'menu' => 'plugin.controls-catalog.root',
+        'menu' => 'plugin.controls-catalog.catalog',
         'principal_id' => $principalId,
         'organization_id' => $control['organization_id'],
         'control_id' => $controlId,
@@ -508,7 +508,7 @@ Route::post('/plugins/controls/{controlId}/transitions/{transitionKey}', functio
     );
 
     return redirect()->route('core.shell.index', array_filter([
-        'menu' => 'plugin.controls-catalog.root',
+        'menu' => 'plugin.controls-catalog.catalog',
         'principal_id' => $principalId,
         'organization_id' => $organizationId,
         'control_id' => $controlId,

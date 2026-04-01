@@ -52,9 +52,17 @@
     {
       "id": "plugin.controls-catalog.root",
       "label_key": "plugin.controls-catalog.nav.root",
-      "route": "plugin.controls-catalog.index",
       "icon": "shield",
       "order": 25,
+      "permission": "plugin.controls-catalog.controls.view"
+    },
+    {
+      "id": "plugin.controls-catalog.catalog",
+      "label_key": "plugin.controls-catalog.nav.catalog",
+      "route": "plugin.controls-catalog.index",
+      "parent_id": "plugin.controls-catalog.root",
+      "icon": "shield",
+      "order": 5,
       "permission": "plugin.controls-catalog.controls.view"
     },
     {
@@ -63,7 +71,7 @@
       "route": "plugin.controls-catalog.framework-adoption",
       "parent_id": "plugin.controls-catalog.root",
       "icon": "layers",
-      "order": 5,
+      "order": 10,
       "permission": "plugin.controls-catalog.controls.view"
     },
     {
@@ -72,7 +80,7 @@
       "route": "plugin.controls-catalog.reviews",
       "parent_id": "plugin.controls-catalog.root",
       "icon": "flow",
-      "order": 10,
+      "order": 20,
       "permission": "plugin.controls-catalog.controls.view"
     }
   ],

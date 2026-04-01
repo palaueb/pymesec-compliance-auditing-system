@@ -79,8 +79,9 @@
       "id": "plugin.identity-local.memberships",
       "label_key": "plugin.identity-local.nav.memberships",
       "route": "plugin.identity-local.memberships.index",
+      "parent_id": "core.governance",
       "icon": "shield",
-      "order": 10,
+      "order": 30,
       "permission": "plugin.identity-local.memberships.view",
       "area": "app"
     }

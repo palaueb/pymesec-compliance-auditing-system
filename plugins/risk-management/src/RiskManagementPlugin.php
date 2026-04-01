@@ -198,7 +198,7 @@ class RiskManagementPlugin implements PluginInterface
                     ? route('core.shell.index', [...$baseQuery, 'menu' => 'plugin.asset-catalog.root'])
                     : null,
                 'linked_control_url' => $risk['linked_control_id'] !== ''
-                    ? route('core.shell.index', [...$baseQuery, 'menu' => 'plugin.controls-catalog.root'])
+                    ? route('core.shell.index', [...$baseQuery, 'menu' => 'plugin.controls-catalog.catalog'])
                     : null,
                 'open_url' => route('core.shell.index', [...$baseQuery, 'menu' => 'plugin.risk-management.root', 'risk_id' => $risk['id']]),
             ];

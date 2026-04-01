@@ -53,6 +53,10 @@ class ShellNavigationTest extends TestCase
             ->assertOk()
             ->assertSee('Functional Directory');
 
+        $this->get('/app?menu=core.assignments&principal_id=principal-admin&organization_id=org-a')
+            ->assertOk()
+            ->assertSee('Functional Assignments');
+
         $this->get('/app?menu=core.object-access&principal_id=principal-admin&organization_id=org-a')
             ->assertOk()
             ->assertSee('Object Access Matrix');
@@ -74,6 +78,11 @@ class ShellNavigationTest extends TestCase
             ->assertOk()
             ->assertSee('Screen unavailable')
             ->assertSee('core.functional-actors');
+
+        $this->get('/admin?menu=core.assignments&principal_id=principal-admin&organization_id=org-a')
+            ->assertOk()
+            ->assertSee('Screen unavailable')
+            ->assertSee('core.assignments');
 
         $this->get('/admin?menu=core.object-access&principal_id=principal-admin&organization_id=org-a')
             ->assertOk()

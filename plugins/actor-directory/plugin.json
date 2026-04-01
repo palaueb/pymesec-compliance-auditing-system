@@ -46,25 +46,7 @@
       "permission": "plugin.actor-directory.actors.view"
     }
   ],
-  "menus": [
-    {
-      "id": "plugin.actor-directory.root",
-      "label_key": "plugin.actor-directory.nav.root",
-      "route": "plugin.actor-directory.index",
-      "icon": "users",
-      "order": 40,
-      "permission": "plugin.actor-directory.actors.view"
-    },
-    {
-      "id": "plugin.actor-directory.assignments",
-      "label_key": "plugin.actor-directory.nav.assignments",
-      "route": "plugin.actor-directory.assignments",
-      "parent_id": "plugin.actor-directory.root",
-      "icon": "link",
-      "order": 10,
-      "permission": "plugin.actor-directory.actors.view"
-    }
-  ],
+  "menus": [],
   "migrations": [],
   "translations": {
     "default_locale": "en",

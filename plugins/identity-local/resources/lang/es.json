@@ -1,7 +1,7 @@
 {
   "plugin.identity-local.plugin.name": "Identidad local",
   "plugin.identity-local.nav.users": "Usuarios",
-  "plugin.identity-local.nav.memberships": "Membresias",
+  "plugin.identity-local.nav.memberships": "Acceso organizativo",
   "plugin.identity-local.fields.email.label": "Correo electronico",
   "plugin.identity-local.system.placeholder": "Marcador de posicion"
 }

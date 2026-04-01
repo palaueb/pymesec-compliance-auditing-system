@@ -209,7 +209,7 @@ class FindingsRemediationPlugin implements PluginInterface
                 'linked_control_label' => $controlLabels[$finding['linked_control_id']] ?? null,
                 'linked_risk_label' => $riskLabels[$finding['linked_risk_id']] ?? null,
                 'linked_control_url' => $finding['linked_control_id'] !== ''
-                    ? route('core.shell.index', [...$baseQuery, 'menu' => 'plugin.controls-catalog.root'])
+                    ? route('core.shell.index', [...$baseQuery, 'menu' => 'plugin.controls-catalog.catalog'])
                     : null,
                 'linked_risk_url' => $finding['linked_risk_id'] !== ''
                     ? route('core.shell.index', [...$baseQuery, 'menu' => 'plugin.risk-management.root', 'risk_id' => $finding['linked_risk_id']])

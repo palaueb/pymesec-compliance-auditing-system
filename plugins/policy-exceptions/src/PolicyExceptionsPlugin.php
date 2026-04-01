@@ -270,7 +270,7 @@ class PolicyExceptionsPlugin implements PluginInterface
                 'exception_store_route' => route('plugin.policy-exceptions.exceptions.store', ['policyId' => $policy['id']]),
                 'linked_control_label' => $controlLabels[$policy['linked_control_id']] ?? null,
                 'linked_control_url' => $policy['linked_control_id'] !== ''
-                    ? route('core.shell.index', [...$baseQuery, 'menu' => 'plugin.controls-catalog.root'])
+                    ? route('core.shell.index', [...$baseQuery, 'menu' => 'plugin.controls-catalog.catalog'])
                     : null,
                 'history' => $workflow->history('plugin.policy-exceptions.policy-lifecycle', 'policy', $policy['id']),
                 'open_url' => route('core.shell.index', [...$baseQuery, 'menu' => 'plugin.policy-exceptions.root', 'policy_id' => $policy['id']]),

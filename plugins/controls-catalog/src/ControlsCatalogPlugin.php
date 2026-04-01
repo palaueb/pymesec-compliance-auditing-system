@@ -107,7 +107,7 @@ class ControlsCatalogPlugin implements PluginInterface
         });
 
         $context->registerScreen(new ScreenDefinition(
-            menuId: 'plugin.controls-catalog.root',
+            menuId: 'plugin.controls-catalog.catalog',
             owner: 'controls-catalog',
             titleKey: 'plugin.controls-catalog.screen.catalog.title',
             subtitleKey: 'plugin.controls-catalog.screen.catalog.subtitle',
@@ -121,7 +121,7 @@ class ControlsCatalogPlugin implements PluginInterface
                     return [
                         new ToolbarAction(
                             label: 'Back to controls',
-                            url: route('core.shell.index', [...$query, 'menu' => 'plugin.controls-catalog.root']),
+                            url: route('core.shell.index', [...$query, 'menu' => 'plugin.controls-catalog.catalog']),
                             variant: 'secondary',
                         ),
                         new ToolbarAction(
@@ -167,7 +167,7 @@ class ControlsCatalogPlugin implements PluginInterface
             toolbarResolver: fn (ScreenRenderContext $screenContext): array => [
                 new ToolbarAction(
                     label: 'Control catalog',
-                    url: route('core.shell.index', [...$this->baseQuery($screenContext), 'menu' => 'plugin.controls-catalog.root']),
+                    url: route('core.shell.index', [...$this->baseQuery($screenContext), 'menu' => 'plugin.controls-catalog.catalog']),
                     variant: 'secondary',
                 ),
                 new ToolbarAction(
@@ -188,7 +188,7 @@ class ControlsCatalogPlugin implements PluginInterface
             toolbarResolver: fn (ScreenRenderContext $screenContext): array => [
                 new ToolbarAction(
                     label: 'Control catalog',
-                    url: route('core.shell.index', [...$this->baseQuery($screenContext), 'menu' => 'plugin.controls-catalog.root']),
+                    url: route('core.shell.index', [...$this->baseQuery($screenContext), 'menu' => 'plugin.controls-catalog.catalog']),
                     variant: 'secondary',
                 ),
                 new ToolbarAction(
@@ -249,7 +249,7 @@ class ControlsCatalogPlugin implements PluginInterface
 
             $controls[] = [
                 ...$control,
-                'open_url' => route('core.shell.index', [...$this->baseQuery($screenContext), 'menu' => 'plugin.controls-catalog.root', 'control_id' => $control['id']]),
+                'open_url' => route('core.shell.index', [...$this->baseQuery($screenContext), 'menu' => 'plugin.controls-catalog.catalog', 'control_id' => $control['id']]),
                 'owner_assignments' => $this->ownerAssignments($actors, $control['id'], $organizationId, $screenContext->scopeId),
                 'artifacts' => array_map(
                     static fn ($artifact): array => $artifact->toArray(),
@@ -307,7 +307,7 @@ class ControlsCatalogPlugin implements PluginInterface
                 array_filter($frameworkWorkspace['requirements'], static fn (array $req): bool => ($req['element_type'] ?? '') !== 'domain'),
             )),
             'scope_options' => $frameworkWorkspace['scope_options'],
-            'controls_list_url' => route('core.shell.index', [...$listQuery, 'menu' => 'plugin.controls-catalog.root']),
+            'controls_list_url' => route('core.shell.index', [...$listQuery, 'menu' => 'plugin.controls-catalog.catalog']),
             'frameworks_list_url' => route('core.shell.index', [...$listQuery, 'menu' => 'plugin.controls-catalog.framework-adoption']),
         ];
     }

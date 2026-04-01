@@ -114,16 +114,22 @@
         }
 
         .menu-link,
+        .menu-link-static,
         .menu-child {
             display: flex;
             align-items: center;
             gap: 12px;
-            text-decoration: none;
             color: inherit;
             border-radius: 4px;
         }
 
-        .menu-link { padding: 11px 12px; }
+        .menu-link,
+        .menu-child {
+            text-decoration: none;
+        }
+
+        .menu-link,
+        .menu-link-static { padding: 11px 12px; }
         .menu-child { padding: 9px 12px 9px 44px; }
 
         .menu-link:hover,
@@ -131,7 +137,12 @@
             background: rgba(255,255,255,0.28);
         }
 
+        .menu-link-static {
+            cursor: default;
+        }
+
         .menu-link.active,
+        .menu-link-static.active,
         .menu-child.active {
             background: linear-gradient(90deg, var(--accent-soft), rgba(255,255,255,0.72));
             box-shadow: inset 3px 0 0 var(--accent);
@@ -1041,13 +1052,25 @@
         <nav class="menu-stack" aria-label="{{ __('core.shell.menu_registry') }}">
             @foreach ($menus as $menu)
                 @continue(in_array($menu['id'], ['core.dashboard', 'core.support'], true))
+                @php
+                    $menuActive = $selectedMenuId === $menu['id'] || collect($menu['children'] ?? [])->contains(fn ($child) => ($child['id'] ?? null) === $selectedMenuId);
+                @endphp
                 <section class="menu-card">
-                    <a class="menu-link {{ $selectedMenuId === $menu['id'] ? 'active' : '' }}" href="{{ $menu['shell_url'] }}">
-                        <span class="icon-pill">{{ strtoupper(substr((string) ($menu['icon'] ?? $menu['owner']), 0, 2)) }}</span>
-                        <span class="menu-meta">
-                            <span class="menu-title">{{ $menu['label'] }}</span>
-                        </span>
-                    </a>
+                    @if (is_string($menu['shell_url'] ?? null) && $menu['shell_url'] !== '')
+                        <a class="menu-link {{ $menuActive ? 'active' : '' }}" href="{{ $menu['shell_url'] }}">
+                            <span class="icon-pill">{{ strtoupper(substr((string) ($menu['icon'] ?? $menu['owner']), 0, 2)) }}</span>
+                            <span class="menu-meta">
+                                <span class="menu-title">{{ $menu['label'] }}</span>
+                            </span>
+                        </a>
+                    @else
+                        <div class="menu-link-static {{ $menuActive ? 'active' : '' }}">
+                            <span class="icon-pill">{{ strtoupper(substr((string) ($menu['icon'] ?? $menu['owner']), 0, 2)) }}</span>
+                            <span class="menu-meta">
+                                <span class="menu-title">{{ $menu['label'] }}</span>
+                            </span>
+                        </div>
+                    @endif
 
                     @foreach ($menu['children'] as $child)
                         @continue(in_array($child['id'], ['core.dashboard', 'core.support'], true))

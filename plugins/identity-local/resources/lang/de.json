@@ -1,7 +1,7 @@
 {
   "plugin.identity-local.plugin.name": "Lokale Identitat",
   "plugin.identity-local.nav.users": "Benutzer",
-  "plugin.identity-local.nav.memberships": "Mitgliedschaften",
+  "plugin.identity-local.nav.memberships": "Organisationszugriff",
   "plugin.identity-local.fields.email.label": "E-Mail",
   "plugin.identity-local.system.placeholder": "Platzhalter"
 }
