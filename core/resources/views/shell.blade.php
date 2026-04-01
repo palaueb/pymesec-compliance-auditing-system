@@ -102,14 +102,14 @@
 
         .menu-stack {
             display: grid;
-            gap: 2px;
+            gap: 0;
             align-content: start;
         }
 
         .menu-group {
             display: grid;
-            gap: 2px;
-            padding: 4px 0 8px;
+            gap: 0;
+            padding: 2px 0 5px;
             border-bottom: 1px solid rgba(31,42,34,0.08);
         }
 
@@ -123,7 +123,7 @@
         .menu-child {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 8px;
             color: inherit;
             border-radius: 4px;
         }
@@ -135,11 +135,11 @@
 
         .menu-link,
         .menu-link-static {
-            padding: 11px 8px 11px 10px;
+            padding: 8px 8px 8px 10px;
         }
 
         .menu-child {
-            padding: 8px 8px 8px 52px;
+            padding: 6px 8px 6px 20px;
             margin-left: 10px;
         }
 
@@ -160,22 +160,6 @@
             box-shadow: inset 3px 0 0 var(--accent);
         }
 
-        .icon-pill {
-            width: 30px;
-            height: 30px;
-            border-radius: 4px;
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            border: 1px solid rgba(31, 42, 34, 0.08);
-            background: rgba(31, 42, 34, 0.05);
-            color: var(--accent-alt);
-            font-size: 11px;
-            font-weight: 700;
-            text-transform: uppercase;
-            flex: 0 0 auto;
-        }
-
         .menu-meta {
             display: grid;
             gap: 2px;
@@ -183,7 +167,7 @@
         }
 
         .menu-title {
-            font-size: 15px;
+            font-size: 14px;
             font-weight: 700;
         }
 
@@ -1070,14 +1054,12 @@
                 <section class="menu-group">
                     @if (is_string($menu['shell_url'] ?? null) && $menu['shell_url'] !== '')
                         <a class="menu-link {{ $menuActive ? 'active' : '' }}" href="{{ $menu['shell_url'] }}">
-                            <span class="icon-pill">{{ strtoupper(substr((string) ($menu['icon'] ?? $menu['owner']), 0, 2)) }}</span>
                             <span class="menu-meta">
                                 <span class="menu-title">{{ $menu['label'] }}</span>
                             </span>
                         </a>
                     @else
                         <div class="menu-link-static {{ $menuActive ? 'active' : '' }}">
-                            <span class="icon-pill">{{ strtoupper(substr((string) ($menu['icon'] ?? $menu['owner']), 0, 2)) }}</span>
                             <span class="menu-meta">
                                 <span class="menu-title">{{ $menu['label'] }}</span>
                             </span>
