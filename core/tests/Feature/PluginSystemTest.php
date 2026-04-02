@@ -73,6 +73,14 @@ class PluginSystemTest extends TestCase
                 'runtime_contract_satisfied' => true,
             ])
             ->assertJsonFragment([
+                'id' => 'collaboration',
+                'enabled' => true,
+                'booted' => true,
+                'route_count' => 0,
+                'menu_count' => 0,
+                'runtime_contract_satisfied' => true,
+            ])
+            ->assertJsonFragment([
                 'id' => 'evidence-management',
                 'enabled' => true,
                 'booted' => true,
@@ -265,7 +273,7 @@ class PluginSystemTest extends TestCase
 
         $effective = $this->app->make(PluginStateStore::class)->effectiveEnabled(config('plugins.enabled', []));
 
-        $this->assertSame(['hello-world', 'asset-catalog', 'actor-directory', 'controls-catalog', 'risk-management', 'third-party-risk', 'findings-remediation', 'policy-exceptions', 'data-flows-privacy', 'continuity-bcm', 'assessments-audits', 'evidence-management', 'identity-local', 'identity-ldap'], $effective);
+        $this->assertSame(['hello-world', 'asset-catalog', 'actor-directory', 'controls-catalog', 'risk-management', 'questionnaires', 'collaboration', 'third-party-risk', 'findings-remediation', 'policy-exceptions', 'data-flows-privacy', 'continuity-bcm', 'assessments-audits', 'evidence-management', 'identity-local', 'identity-ldap'], $effective);
     }
 
     public function test_the_plugins_disable_command_persists_a_local_override(): void
@@ -276,7 +284,7 @@ class PluginSystemTest extends TestCase
 
         $effective = $this->app->make(PluginStateStore::class)->effectiveEnabled(config('plugins.enabled', []));
 
-        $this->assertSame(['asset-catalog', 'actor-directory', 'controls-catalog', 'risk-management', 'third-party-risk', 'findings-remediation', 'policy-exceptions', 'data-flows-privacy', 'continuity-bcm', 'assessments-audits', 'evidence-management', 'identity-local', 'identity-ldap'], $effective);
+        $this->assertSame(['asset-catalog', 'actor-directory', 'controls-catalog', 'risk-management', 'questionnaires', 'collaboration', 'third-party-risk', 'findings-remediation', 'policy-exceptions', 'data-flows-privacy', 'continuity-bcm', 'assessments-audits', 'evidence-management', 'identity-local', 'identity-ldap'], $effective);
     }
 
     public function test_the_plugins_disable_command_rejects_disabling_a_required_dependency(): void
@@ -287,7 +295,7 @@ class PluginSystemTest extends TestCase
 
         $effective = $this->app->make(PluginStateStore::class)->effectiveEnabled(config('plugins.enabled', []));
 
-        $this->assertSame(['hello-world', 'asset-catalog', 'actor-directory', 'controls-catalog', 'risk-management', 'third-party-risk', 'findings-remediation', 'policy-exceptions', 'data-flows-privacy', 'continuity-bcm', 'assessments-audits', 'evidence-management', 'identity-local', 'identity-ldap'], $effective);
+        $this->assertSame(['hello-world', 'asset-catalog', 'actor-directory', 'controls-catalog', 'risk-management', 'questionnaires', 'collaboration', 'third-party-risk', 'findings-remediation', 'policy-exceptions', 'data-flows-privacy', 'continuity-bcm', 'assessments-audits', 'evidence-management', 'identity-local', 'identity-ldap'], $effective);
     }
 
     public function test_the_plugins_enable_command_rejects_when_required_dependencies_are_disabled(): void
@@ -304,7 +312,7 @@ class PluginSystemTest extends TestCase
 
         $effective = $this->app->make(PluginStateStore::class)->effectiveEnabled(config('plugins.enabled', []));
 
-        $this->assertSame(['hello-world', 'asset-catalog', 'actor-directory', 'controls-catalog', 'risk-management', 'third-party-risk', 'findings-remediation', 'policy-exceptions', 'data-flows-privacy', 'continuity-bcm', 'assessments-audits', 'evidence-management'], $effective);
+        $this->assertSame(['hello-world', 'asset-catalog', 'actor-directory', 'controls-catalog', 'risk-management', 'questionnaires', 'collaboration', 'third-party-risk', 'findings-remediation', 'policy-exceptions', 'data-flows-privacy', 'continuity-bcm', 'assessments-audits', 'evidence-management'], $effective);
     }
 
     public function test_the_plugins_enable_command_rejects_unknown_plugins(): void

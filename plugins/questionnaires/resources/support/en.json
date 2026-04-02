@@ -1,0 +1,57 @@
+{
+  "guides": [
+    {
+      "id": "questionnaire-engine-overview",
+      "title": "Use questionnaire templates and subject-bound items as a reusable collection layer",
+      "summary": "The questionnaires plugin owns the reusable template and answer model that domain plugins can apply to vendor reviews and future collection workflows.",
+      "body": [
+        "Keep product-specific review logic in the domain plugin, but reuse questionnaire templates, typed response rules, section grouping, subject-bound items, answer library entries, brokered collection requests, and item-level attachment semantics from the questionnaires plugin.",
+        "A template defines the repeatable questionnaire structure. Subject-bound items hold the real answers, statuses, follow-up notes, and any attachment expectations for one concrete workflow subject."
+      ],
+      "related_concepts": [
+        "questionnaire-template",
+        "questionnaire-subject-item",
+        "questionnaire-brokered-request"
+      ]
+    }
+  ],
+  "concepts": [
+    {
+      "id": "questionnaire-template",
+      "label": "Questionnaire template",
+      "summary": "A reusable questionnaire definition that can be applied to one or more workflow subjects.",
+      "when_to_use": [
+        "Use templates to keep recurring reviews and collections consistent.",
+        "Use template items to define question order, section titles, expected response type, and optional guidance."
+      ]
+    },
+    {
+      "id": "questionnaire-subject-item",
+      "label": "Questionnaire subject item",
+      "summary": "One concrete questionnaire item attached to a real workflow subject such as a vendor review.",
+      "when_to_use": [
+        "Use subject items for real answers, review status, and follow-up notes.",
+        "A subject item may be created manually or copied from a questionnaire template item.",
+        "Use item-level attachment settings when a question expects a supporting document or evidence file and you want controlled promotion into governed evidence later."
+      ]
+    },
+    {
+      "id": "questionnaire-answer-library-entry",
+      "label": "Questionnaire answer library entry",
+      "summary": "A reusable answer snippet stored for one organization, subject family, and response type.",
+      "when_to_use": [
+        "Save an answer when reviewers keep reusing the same baseline response across similar questionnaires.",
+        "Use answer library entries as reviewer suggestions, not as automatic truth copied without review."
+      ]
+    },
+    {
+      "id": "questionnaire-brokered-request",
+      "label": "Questionnaire brokered request",
+      "summary": "A brokered collection record used when an internal broker gathers questionnaire answers off-platform for one concrete workflow subject.",
+      "when_to_use": [
+        "Use a brokered request when you do not want to grant direct portal access but still need a tracked collection step.",
+        "Track contact, collection channel, broker, status, and broker notes so the later review still has a traceable intake path."
+      ]
+    }
+  ]
+}

@@ -6,9 +6,14 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Validation\Rule;
 use PymeSec\Core\Artifacts\ArtifactUploadData;
 use PymeSec\Core\Artifacts\Contracts\ArtifactServiceInterface;
+use PymeSec\Core\Audit\AuditRecordData;
+use PymeSec\Core\Audit\Contracts\AuditTrailInterface;
+use PymeSec\Core\Collaboration\Contracts\CollaborationEngineInterface;
 use PymeSec\Core\FunctionalActors\Contracts\FunctionalActorServiceInterface;
 use PymeSec\Core\Principals\MembershipReference;
 use PymeSec\Core\Principals\PrincipalReference;
+use PymeSec\Core\Questionnaires\Contracts\QuestionnaireEngineInterface;
+use PymeSec\Core\Questionnaires\Contracts\QuestionnaireStoreInterface;
 use PymeSec\Core\Workflows\Contracts\WorkflowServiceInterface;
 use PymeSec\Core\Workflows\WorkflowExecutionContext;
 use PymeSec\Plugins\ThirdPartyRisk\ExternalReviewInvitationDeliveryService;
@@ -246,6 +251,379 @@ Route::post('/plugins/vendors/{vendorId}/reviews/{reviewId}/external-links/{link
     ]))->with('status', 'External collaboration link revoked.');
 })->middleware('core.permission:plugin.third-party-risk.vendors.manage')->name('plugin.third-party-risk.external.links.revoke');
 
+Route::post('/plugins/vendors/{vendorId}/reviews/{reviewId}/brokered-requests', function (
+    Request $request,
+    string $vendorId,
+    string $reviewId,
+    ThirdPartyRiskRepository $repository,
+) {
+    $vendor = $repository->find($vendorId);
+    $review = $repository->findReview($reviewId);
+
+    abort_if($vendor === null || $review === null || $review['vendor_id'] !== $vendorId, 404);
+
+    $validated = $request->validate([
+        'contact_name' => ['required', 'string', 'max:120'],
+        'contact_email' => ['nullable', 'email', 'max:160'],
+        'collection_channel' => ['required', Rule::in(['email', 'meeting', 'call', 'uploaded-docs', 'broker-note'])],
+        'instructions' => ['nullable', 'string', 'max:2000'],
+        'broker_principal_id' => ['nullable', 'string', 'max:64'],
+    ]);
+
+    $principalId = (string) $request->input('principal_id', 'principal-org-a');
+    $membershipId = $request->input('membership_id');
+
+    $repository->issueBrokeredRequestForReview($reviewId, [
+        ...$validated,
+        'issued_by_principal_id' => $principalId,
+        'broker_principal_id' => is_string($validated['broker_principal_id'] ?? null) && $validated['broker_principal_id'] !== ''
+            ? $validated['broker_principal_id']
+            : $principalId,
+    ]);
+
+    return redirect()->route('core.shell.index', array_filter([
+        'menu' => 'plugin.third-party-risk.root',
+        'vendor_id' => $vendor['id'],
+        'principal_id' => $principalId,
+        'organization_id' => $vendor['organization_id'],
+        'scope_id' => $vendor['scope_id'] !== '' ? $vendor['scope_id'] : null,
+        'locale' => $request->input('locale', 'en'),
+        'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
+    ]))->with('status', 'Brokered collection request created.');
+})->middleware('core.permission:plugin.third-party-risk.vendors.manage')->name('plugin.third-party-risk.brokered-requests.issue');
+
+Route::post('/plugins/vendors/{vendorId}/reviews/{reviewId}/collaboration/comments', function (
+    Request $request,
+    string $vendorId,
+    string $reviewId,
+    ThirdPartyRiskRepository $repository,
+) {
+    $vendor = $repository->find($vendorId);
+    $review = $repository->findReview($reviewId);
+
+    abort_if($vendor === null || $review === null || $review['vendor_id'] !== $vendorId, 404);
+
+    $validated = $request->validate([
+        'body' => ['required', 'string', 'max:4000'],
+        'mentioned_actor_ids' => ['nullable', 'array'],
+        'mentioned_actor_ids.*' => ['string', 'max:64', 'exists:functional_actors,id'],
+    ]);
+
+    $principalId = (string) $request->input('principal_id', 'principal-org-a');
+    $membershipId = $request->input('membership_id');
+
+    abort_if($repository->addCommentToReview($reviewId, [
+        'author_principal_id' => $principalId,
+        'body' => $validated['body'],
+        'mentioned_actor_ids' => $validated['mentioned_actor_ids'] ?? [],
+    ]) === null, 404);
+
+    return redirect()->route('core.shell.index', array_filter([
+        'menu' => 'plugin.third-party-risk.root',
+        'vendor_id' => $vendor['id'],
+        'principal_id' => $principalId,
+        'organization_id' => $vendor['organization_id'],
+        'scope_id' => $vendor['scope_id'] !== '' ? $vendor['scope_id'] : null,
+        'locale' => $request->input('locale', 'en'),
+        'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
+    ]))->with('status', 'Comment added.');
+})->middleware('core.permission:plugin.third-party-risk.vendors.manage')->name('plugin.third-party-risk.collaboration.comments.store');
+
+Route::post('/plugins/vendors/{vendorId}/reviews/{reviewId}/collaboration/drafts', function (
+    Request $request,
+    string $vendorId,
+    string $reviewId,
+    ThirdPartyRiskRepository $repository,
+    CollaborationEngineInterface $collaboration,
+) {
+    $vendor = $repository->find($vendorId);
+    $review = $repository->findReview($reviewId);
+
+    abort_if($vendor === null || $review === null || $review['vendor_id'] !== $vendorId, 404);
+
+    $validated = $request->validate([
+        'draft_type' => ['required', 'string', Rule::in($collaboration->draftTypeKeys())],
+        'title' => ['nullable', 'string', 'max:200'],
+        'body' => ['nullable', 'string', 'max:4000'],
+        'details' => ['nullable', 'string', 'max:4000'],
+        'priority' => ['nullable', 'string', Rule::in($collaboration->requestPriorityKeys())],
+        'handoff_state' => ['nullable', 'string', Rule::in($collaboration->handoffStateKeys())],
+        'mentioned_actor_ids' => ['nullable', 'array'],
+        'mentioned_actor_ids.*' => ['string', 'max:64', 'exists:functional_actors,id'],
+        'assigned_actor_id' => ['nullable', 'string', 'max:64', 'exists:functional_actors,id'],
+        'due_on' => ['nullable', 'date'],
+    ]);
+
+    if (($validated['draft_type'] ?? 'comment') === 'comment') {
+        abort_if(trim((string) ($validated['body'] ?? '')) === '', 422, 'Comment drafts require body text.');
+    } else {
+        abort_if(trim((string) ($validated['title'] ?? '')) === '', 422, 'Follow-up drafts require a title.');
+    }
+
+    $principalId = (string) $request->input('principal_id', 'principal-org-a');
+    $membershipId = $request->input('membership_id');
+
+    abort_if($repository->createCollaborationDraftForReview($reviewId, [
+        ...$validated,
+        'edited_by_principal_id' => $principalId,
+    ]) === null, 404);
+
+    return redirect()->route('core.shell.index', array_filter([
+        'menu' => 'plugin.third-party-risk.root',
+        'vendor_id' => $vendor['id'],
+        'principal_id' => $principalId,
+        'organization_id' => $vendor['organization_id'],
+        'scope_id' => $vendor['scope_id'] !== '' ? $vendor['scope_id'] : null,
+        'locale' => $request->input('locale', 'en'),
+        'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
+    ]))->with('status', 'Shared draft saved.');
+})->middleware('core.permission:plugin.third-party-risk.vendors.manage')->name('plugin.third-party-risk.collaboration.drafts.store');
+
+Route::post('/plugins/vendors/{vendorId}/reviews/{reviewId}/collaboration/drafts/{draftId}', function (
+    Request $request,
+    string $vendorId,
+    string $reviewId,
+    string $draftId,
+    ThirdPartyRiskRepository $repository,
+    CollaborationEngineInterface $collaboration,
+) {
+    $vendor = $repository->find($vendorId);
+    $review = $repository->findReview($reviewId);
+
+    abort_if($vendor === null || $review === null || $review['vendor_id'] !== $vendorId, 404);
+
+    $validated = $request->validate([
+        'draft_type' => ['required', 'string', Rule::in($collaboration->draftTypeKeys())],
+        'title' => ['nullable', 'string', 'max:200'],
+        'body' => ['nullable', 'string', 'max:4000'],
+        'details' => ['nullable', 'string', 'max:4000'],
+        'priority' => ['nullable', 'string', Rule::in($collaboration->requestPriorityKeys())],
+        'handoff_state' => ['nullable', 'string', Rule::in($collaboration->handoffStateKeys())],
+        'mentioned_actor_ids' => ['nullable', 'array'],
+        'mentioned_actor_ids.*' => ['string', 'max:64', 'exists:functional_actors,id'],
+        'assigned_actor_id' => ['nullable', 'string', 'max:64', 'exists:functional_actors,id'],
+        'due_on' => ['nullable', 'date'],
+    ]);
+
+    if (($validated['draft_type'] ?? 'comment') === 'comment') {
+        abort_if(trim((string) ($validated['body'] ?? '')) === '', 422, 'Comment drafts require body text.');
+    } else {
+        abort_if(trim((string) ($validated['title'] ?? '')) === '', 422, 'Follow-up drafts require a title.');
+    }
+
+    $principalId = (string) $request->input('principal_id', 'principal-org-a');
+    $membershipId = $request->input('membership_id');
+
+    abort_if($repository->updateCollaborationDraftForReview(
+        reviewId: $reviewId,
+        draftId: $draftId,
+        data: [
+            ...$validated,
+            'edited_by_principal_id' => $principalId,
+        ],
+        principalId: $principalId,
+    ) === null, 404);
+
+    return redirect()->route('core.shell.index', array_filter([
+        'menu' => 'plugin.third-party-risk.root',
+        'vendor_id' => $vendor['id'],
+        'principal_id' => $principalId,
+        'organization_id' => $vendor['organization_id'],
+        'scope_id' => $vendor['scope_id'] !== '' ? $vendor['scope_id'] : null,
+        'locale' => $request->input('locale', 'en'),
+        'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
+    ]))->with('status', 'Shared draft updated.');
+})->middleware('core.permission:plugin.third-party-risk.vendors.manage')->name('plugin.third-party-risk.collaboration.drafts.update');
+
+Route::post('/plugins/vendors/{vendorId}/reviews/{reviewId}/collaboration/drafts/{draftId}/promote-comment', function (
+    Request $request,
+    string $vendorId,
+    string $reviewId,
+    string $draftId,
+    ThirdPartyRiskRepository $repository,
+) {
+    $vendor = $repository->find($vendorId);
+    $review = $repository->findReview($reviewId);
+
+    abort_if($vendor === null || $review === null || $review['vendor_id'] !== $vendorId, 404);
+
+    $principalId = (string) $request->input('principal_id', 'principal-org-a');
+    $membershipId = $request->input('membership_id');
+
+    abort_if($repository->promoteCollaborationDraftToComment($reviewId, $draftId, $principalId) === null, 404);
+
+    return redirect()->route('core.shell.index', array_filter([
+        'menu' => 'plugin.third-party-risk.root',
+        'vendor_id' => $vendor['id'],
+        'principal_id' => $principalId,
+        'organization_id' => $vendor['organization_id'],
+        'scope_id' => $vendor['scope_id'] !== '' ? $vendor['scope_id'] : null,
+        'locale' => $request->input('locale', 'en'),
+        'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
+    ]))->with('status', 'Shared draft promoted to comment.');
+})->middleware('core.permission:plugin.third-party-risk.vendors.manage')->name('plugin.third-party-risk.collaboration.drafts.promote-comment');
+
+Route::post('/plugins/vendors/{vendorId}/reviews/{reviewId}/collaboration/drafts/{draftId}/promote-request', function (
+    Request $request,
+    string $vendorId,
+    string $reviewId,
+    string $draftId,
+    ThirdPartyRiskRepository $repository,
+) {
+    $vendor = $repository->find($vendorId);
+    $review = $repository->findReview($reviewId);
+
+    abort_if($vendor === null || $review === null || $review['vendor_id'] !== $vendorId, 404);
+
+    $principalId = (string) $request->input('principal_id', 'principal-org-a');
+    $membershipId = $request->input('membership_id');
+
+    abort_if($repository->promoteCollaborationDraftToRequest($reviewId, $draftId, $principalId) === null, 404);
+
+    return redirect()->route('core.shell.index', array_filter([
+        'menu' => 'plugin.third-party-risk.root',
+        'vendor_id' => $vendor['id'],
+        'principal_id' => $principalId,
+        'organization_id' => $vendor['organization_id'],
+        'scope_id' => $vendor['scope_id'] !== '' ? $vendor['scope_id'] : null,
+        'locale' => $request->input('locale', 'en'),
+        'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
+    ]))->with('status', 'Shared draft promoted to follow-up request.');
+})->middleware('core.permission:plugin.third-party-risk.vendors.manage')->name('plugin.third-party-risk.collaboration.drafts.promote-request');
+
+Route::post('/plugins/vendors/{vendorId}/reviews/{reviewId}/collaboration/requests', function (
+    Request $request,
+    string $vendorId,
+    string $reviewId,
+    ThirdPartyRiskRepository $repository,
+    CollaborationEngineInterface $collaboration,
+) {
+    $vendor = $repository->find($vendorId);
+    $review = $repository->findReview($reviewId);
+
+    abort_if($vendor === null || $review === null || $review['vendor_id'] !== $vendorId, 404);
+
+    $validated = $request->validate([
+        'title' => ['required', 'string', 'max:200'],
+        'details' => ['nullable', 'string', 'max:4000'],
+        'status' => ['required', 'string', Rule::in($collaboration->requestStatusKeys())],
+        'priority' => ['required', 'string', Rule::in($collaboration->requestPriorityKeys())],
+        'handoff_state' => ['required', 'string', Rule::in($collaboration->handoffStateKeys())],
+        'mentioned_actor_ids' => ['nullable', 'array'],
+        'mentioned_actor_ids.*' => ['string', 'max:64', 'exists:functional_actors,id'],
+        'assigned_actor_id' => ['nullable', 'string', 'max:64', 'exists:functional_actors,id'],
+        'due_on' => ['nullable', 'date'],
+    ]);
+
+    $principalId = (string) $request->input('principal_id', 'principal-org-a');
+    $membershipId = $request->input('membership_id');
+
+    abort_if($repository->createCollaborationRequestForReview($reviewId, [
+        ...$validated,
+        'requested_by_principal_id' => $principalId,
+    ]) === null, 404);
+
+    return redirect()->route('core.shell.index', array_filter([
+        'menu' => 'plugin.third-party-risk.root',
+        'vendor_id' => $vendor['id'],
+        'principal_id' => $principalId,
+        'organization_id' => $vendor['organization_id'],
+        'scope_id' => $vendor['scope_id'] !== '' ? $vendor['scope_id'] : null,
+        'locale' => $request->input('locale', 'en'),
+        'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
+    ]))->with('status', 'Follow-up request created.');
+})->middleware('core.permission:plugin.third-party-risk.vendors.manage')->name('plugin.third-party-risk.collaboration.requests.store');
+
+Route::post('/plugins/vendors/{vendorId}/reviews/{reviewId}/collaboration/requests/{requestId}', function (
+    Request $request,
+    string $vendorId,
+    string $reviewId,
+    string $requestId,
+    ThirdPartyRiskRepository $repository,
+    CollaborationEngineInterface $collaboration,
+) {
+    $vendor = $repository->find($vendorId);
+    $review = $repository->findReview($reviewId);
+
+    abort_if($vendor === null || $review === null || $review['vendor_id'] !== $vendorId, 404);
+
+    $validated = $request->validate([
+        'title' => ['required', 'string', 'max:200'],
+        'details' => ['nullable', 'string', 'max:4000'],
+        'status' => ['required', 'string', Rule::in($collaboration->requestStatusKeys())],
+        'priority' => ['required', 'string', Rule::in($collaboration->requestPriorityKeys())],
+        'handoff_state' => ['required', 'string', Rule::in($collaboration->handoffStateKeys())],
+        'mentioned_actor_ids' => ['nullable', 'array'],
+        'mentioned_actor_ids.*' => ['string', 'max:64', 'exists:functional_actors,id'],
+        'assigned_actor_id' => ['nullable', 'string', 'max:64', 'exists:functional_actors,id'],
+        'due_on' => ['nullable', 'date'],
+    ]);
+
+    $principalId = (string) $request->input('principal_id', 'principal-org-a');
+    $membershipId = $request->input('membership_id');
+
+    abort_if($repository->updateCollaborationRequestForReview(
+        reviewId: $reviewId,
+        requestId: $requestId,
+        data: $validated,
+        principalId: $principalId,
+    ) === null, 404);
+
+    return redirect()->route('core.shell.index', array_filter([
+        'menu' => 'plugin.third-party-risk.root',
+        'vendor_id' => $vendor['id'],
+        'principal_id' => $principalId,
+        'organization_id' => $vendor['organization_id'],
+        'scope_id' => $vendor['scope_id'] !== '' ? $vendor['scope_id'] : null,
+        'locale' => $request->input('locale', 'en'),
+        'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
+    ]))->with('status', 'Follow-up request updated.');
+})->middleware('core.permission:plugin.third-party-risk.vendors.manage')->name('plugin.third-party-risk.collaboration.requests.update');
+
+Route::post('/plugins/vendors/{vendorId}/reviews/{reviewId}/brokered-requests/{requestId}', function (
+    Request $request,
+    string $vendorId,
+    string $reviewId,
+    string $requestId,
+    ThirdPartyRiskRepository $repository,
+) {
+    $vendor = $repository->find($vendorId);
+    $review = $repository->findReview($reviewId);
+
+    abort_if($vendor === null || $review === null || $review['vendor_id'] !== $vendorId, 404);
+
+    $validated = $request->validate([
+        'collection_status' => ['required', Rule::in(['queued', 'in-progress', 'submitted', 'completed', 'cancelled'])],
+        'broker_notes' => ['nullable', 'string', 'max:2000'],
+        'broker_principal_id' => ['nullable', 'string', 'max:64'],
+    ]);
+
+    $principalId = (string) $request->input('principal_id', 'principal-org-a');
+    $membershipId = $request->input('membership_id');
+
+    abort_if($repository->updateBrokeredRequestForReview(
+        reviewId: $reviewId,
+        requestId: $requestId,
+        data: [
+            ...$validated,
+            'broker_principal_id' => is_string($validated['broker_principal_id'] ?? null) && $validated['broker_principal_id'] !== ''
+                ? $validated['broker_principal_id']
+                : $principalId,
+        ],
+        principalId: $principalId,
+    ) === null, 404);
+
+    return redirect()->route('core.shell.index', array_filter([
+        'menu' => 'plugin.third-party-risk.root',
+        'vendor_id' => $vendor['id'],
+        'principal_id' => $principalId,
+        'organization_id' => $vendor['organization_id'],
+        'scope_id' => $vendor['scope_id'] !== '' ? $vendor['scope_id'] : null,
+        'locale' => $request->input('locale', 'en'),
+        'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
+    ]))->with('status', 'Brokered collection request updated.');
+})->middleware('core.permission:plugin.third-party-risk.vendors.manage')->name('plugin.third-party-risk.brokered-requests.update');
+
 Route::post('/plugins/vendors/{vendorId}/reviews/{reviewId}/owners/{assignmentId}/remove', function (
     Request $request,
     string $vendorId,
@@ -343,6 +721,8 @@ Route::post('/plugins/vendors/{vendorId}/reviews/{reviewId}/questionnaire-items'
     string $vendorId,
     string $reviewId,
     ThirdPartyRiskRepository $repository,
+    QuestionnaireEngineInterface $questionnaires,
+    QuestionnaireStoreInterface $questionnaireStore,
 ) {
     $vendor = $repository->find($vendorId);
     $review = $repository->findReview($reviewId);
@@ -350,17 +730,37 @@ Route::post('/plugins/vendors/{vendorId}/reviews/{reviewId}/questionnaire-items'
     abort_if($vendor === null || $review === null || $review['vendor_id'] !== $vendorId, 404);
 
     $validated = $request->validate([
+        'section_title' => ['nullable', 'string', 'max:120'],
         'prompt' => ['required', 'string', 'max:255'],
-        'response_type' => ['required', 'string', Rule::in(['yes-no', 'long-text', 'date', 'evidence-list'])],
-        'response_status' => ['nullable', 'string', Rule::in(['draft', 'sent', 'submitted', 'under-review', 'accepted', 'needs-follow-up'])],
+        'response_type' => ['required', 'string', Rule::in($questionnaires->responseTypeKeys())],
+        'attachment_mode' => ['nullable', 'string', Rule::in($questionnaires->attachmentModeKeys())],
+        'attachment_upload_profile' => ['nullable', 'string', Rule::in(['documents_only', 'documents_and_spreadsheets', 'images_only', 'review_artifacts'])],
+        'promote_attachments_to_evidence' => ['nullable', 'in:1'],
+        'response_status' => ['nullable', 'string', Rule::in($questionnaires->responseStatusKeys())],
         'answer_text' => ['nullable', 'string', 'max:4000'],
         'follow_up_notes' => ['nullable', 'string', 'max:1000'],
+        'save_to_answer_library' => ['nullable', 'in:1'],
     ]);
 
     $principalId = (string) $request->input('principal_id', 'principal-org-a');
     $membershipId = $request->input('membership_id');
 
-    $repository->addQuestionnaireItem($reviewId, $validated);
+    $saved = $repository->addQuestionnaireItem($reviewId, $validated);
+
+    if (($validated['save_to_answer_library'] ?? null) === '1' && ($saved['answer_text'] ?? '') !== '') {
+        $questionnaireStore->saveAnswerLibraryEntry(
+            organizationId: $vendor['organization_id'],
+            scopeId: $vendor['scope_id'] !== '' ? $vendor['scope_id'] : null,
+            ownerComponent: 'third-party-risk',
+            subjectType: 'vendor-review',
+            data: [
+                'prompt' => $saved['prompt'],
+                'response_type' => $saved['response_type'],
+                'answer_text' => $saved['answer_text'],
+                'notes' => $saved['follow_up_notes'],
+            ],
+        );
+    }
 
     return redirect()->route('core.shell.index', array_filter([
         'menu' => 'plugin.third-party-risk.root',
@@ -379,6 +779,8 @@ Route::post('/plugins/vendors/{vendorId}/reviews/{reviewId}/questionnaire-items/
     string $reviewId,
     string $itemId,
     ThirdPartyRiskRepository $repository,
+    QuestionnaireEngineInterface $questionnaires,
+    QuestionnaireStoreInterface $questionnaireStore,
 ) {
     $vendor = $repository->find($vendorId);
     $review = $repository->findReview($reviewId);
@@ -387,17 +789,37 @@ Route::post('/plugins/vendors/{vendorId}/reviews/{reviewId}/questionnaire-items/
     abort_if($vendor === null || $review === null || $review['vendor_id'] !== $vendorId || $item === null || $item['review_id'] !== $reviewId, 404);
 
     $validated = $request->validate([
+        'section_title' => ['nullable', 'string', 'max:120'],
         'prompt' => ['required', 'string', 'max:255'],
-        'response_type' => ['required', 'string', Rule::in(['yes-no', 'long-text', 'date', 'evidence-list'])],
-        'response_status' => ['required', 'string', Rule::in(['draft', 'sent', 'submitted', 'under-review', 'accepted', 'needs-follow-up'])],
+        'response_type' => ['required', 'string', Rule::in($questionnaires->responseTypeKeys())],
+        'attachment_mode' => ['nullable', 'string', Rule::in($questionnaires->attachmentModeKeys())],
+        'attachment_upload_profile' => ['nullable', 'string', Rule::in(['documents_only', 'documents_and_spreadsheets', 'images_only', 'review_artifacts'])],
+        'promote_attachments_to_evidence' => ['nullable', 'in:1'],
+        'response_status' => ['required', 'string', Rule::in($questionnaires->responseStatusKeys())],
         'answer_text' => ['nullable', 'string', 'max:4000'],
         'follow_up_notes' => ['nullable', 'string', 'max:1000'],
+        'save_to_answer_library' => ['nullable', 'in:1'],
     ]);
 
     $principalId = (string) $request->input('principal_id', 'principal-org-a');
     $membershipId = $request->input('membership_id');
 
-    $repository->updateQuestionnaireItem($reviewId, $itemId, $validated);
+    $saved = $repository->updateQuestionnaireItem($reviewId, $itemId, $validated);
+
+    if (($validated['save_to_answer_library'] ?? null) === '1' && is_array($saved) && ($saved['answer_text'] ?? '') !== '') {
+        $questionnaireStore->saveAnswerLibraryEntry(
+            organizationId: $vendor['organization_id'],
+            scopeId: $vendor['scope_id'] !== '' ? $vendor['scope_id'] : null,
+            ownerComponent: 'third-party-risk',
+            subjectType: 'vendor-review',
+            data: [
+                'prompt' => $saved['prompt'],
+                'response_type' => $saved['response_type'],
+                'answer_text' => $saved['answer_text'],
+                'notes' => $saved['follow_up_notes'],
+            ],
+        );
+    }
 
     return redirect()->route('core.shell.index', array_filter([
         'menu' => 'plugin.third-party-risk.root',
@@ -409,6 +831,123 @@ Route::post('/plugins/vendors/{vendorId}/reviews/{reviewId}/questionnaire-items/
         'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
     ]))->with('status', 'Questionnaire item updated.');
 })->middleware('core.permission:plugin.third-party-risk.vendors.manage')->name('plugin.third-party-risk.questionnaire-items.update');
+
+Route::post('/plugins/vendors/{vendorId}/reviews/{reviewId}/questionnaire-items/{itemId}/artifacts', function (
+    Request $request,
+    string $vendorId,
+    string $reviewId,
+    string $itemId,
+    ThirdPartyRiskRepository $repository,
+    ArtifactServiceInterface $artifacts,
+    AuditTrailInterface $audit,
+) {
+    $vendor = $repository->find($vendorId);
+    $review = $repository->findReview($reviewId);
+    $item = $repository->findQuestionnaireItem($itemId);
+
+    abort_if($vendor === null || $review === null || $review['vendor_id'] !== $vendorId || $item === null || $item['review_id'] !== $reviewId || ($item['attachment_mode'] ?? 'none') === 'none', 404);
+
+    $validated = $request->validate([
+        'artifact' => ['required', 'file', 'max:10240'],
+        'label' => ['nullable', 'string', 'max:120'],
+    ]);
+
+    $principalId = (string) $request->input('principal_id', 'principal-org-a');
+    $membershipId = $request->input('membership_id');
+
+    $record = $artifacts->store(new ArtifactUploadData(
+        ownerComponent: 'questionnaires',
+        subjectType: 'questionnaire-subject-item',
+        subjectId: $itemId,
+        artifactType: ($item['attachment_mode'] ?? 'none') === 'supporting-evidence' ? 'evidence' : 'document',
+        label: (string) ($validated['label'] ?? 'Questionnaire attachment'),
+        file: $validated['artifact'],
+        principalId: $principalId,
+        membershipId: is_string($membershipId) && $membershipId !== '' ? $membershipId : null,
+        organizationId: $vendor['organization_id'],
+        scopeId: $vendor['scope_id'] !== '' ? $vendor['scope_id'] : null,
+        uploadProfile: ($item['attachment_upload_profile'] ?? '') !== '' ? $item['attachment_upload_profile'] : 'documents_only',
+        metadata: [
+            'plugin' => 'questionnaires',
+            'questionnaire_owner_component' => 'third-party-risk',
+            'questionnaire_subject_type' => 'vendor-review',
+            'questionnaire_subject_id' => $reviewId,
+            'questionnaire_item_id' => $itemId,
+            'questionnaire_prompt' => $item['prompt'],
+            'vendor_id' => $vendorId,
+            'review_id' => $reviewId,
+        ],
+        executionOrigin: 'third-party-risk-questionnaire-item',
+    ));
+
+    $audit->record(new AuditRecordData(
+        eventType: 'plugin.third-party-risk.questionnaire-item.artifact-uploaded',
+        outcome: 'success',
+        originComponent: 'third-party-risk',
+        principalId: $principalId,
+        membershipId: is_string($membershipId) && $membershipId !== '' ? $membershipId : null,
+        organizationId: $vendor['organization_id'],
+        scopeId: $vendor['scope_id'] !== '' ? $vendor['scope_id'] : null,
+        targetType: 'artifact',
+        targetId: $record->id,
+        summary: [
+            'review_id' => $reviewId,
+            'questionnaire_item_id' => $itemId,
+            'label' => $record->label,
+        ],
+        executionOrigin: 'third-party-risk',
+    ));
+
+    return redirect()->route('core.shell.index', array_filter([
+        'menu' => 'plugin.third-party-risk.root',
+        'vendor_id' => $vendor['id'],
+        'principal_id' => $principalId,
+        'organization_id' => $vendor['organization_id'],
+        'scope_id' => $vendor['scope_id'] !== '' ? $vendor['scope_id'] : null,
+        'locale' => $request->input('locale', 'en'),
+        'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
+    ]))->with('status', 'Questionnaire attachment uploaded.');
+})->middleware('core.permission:plugin.third-party-risk.vendors.manage')->name('plugin.third-party-risk.questionnaire-items.artifacts.store');
+
+Route::post('/plugins/vendors/{vendorId}/reviews/{reviewId}/questionnaire-items/{itemId}/review', function (
+    Request $request,
+    string $vendorId,
+    string $reviewId,
+    string $itemId,
+    ThirdPartyRiskRepository $repository,
+) {
+    $vendor = $repository->find($vendorId);
+    $review = $repository->findReview($reviewId);
+    $item = $repository->findQuestionnaireItem($itemId);
+
+    abort_if($vendor === null || $review === null || $review['vendor_id'] !== $vendorId || $item === null || $item['review_id'] !== $reviewId, 404);
+
+    $validated = $request->validate([
+        'response_status' => ['required', 'string', Rule::in(['under-review', 'accepted', 'needs-follow-up'])],
+        'review_notes' => ['nullable', 'string', 'max:2000'],
+    ]);
+
+    $principalId = (string) $request->input('principal_id', 'principal-org-a');
+    $membershipId = $request->input('membership_id');
+
+    $repository->reviewQuestionnaireItem(
+        reviewId: $reviewId,
+        itemId: $itemId,
+        responseStatus: $validated['response_status'],
+        reviewNotes: $validated['review_notes'] ?? null,
+        reviewedByPrincipalId: $principalId !== '' ? $principalId : null,
+    );
+
+    return redirect()->route('core.shell.index', array_filter([
+        'menu' => 'plugin.third-party-risk.root',
+        'vendor_id' => $vendor['id'],
+        'principal_id' => $principalId,
+        'organization_id' => $vendor['organization_id'],
+        'scope_id' => $vendor['scope_id'] !== '' ? $vendor['scope_id'] : null,
+        'locale' => $request->input('locale', 'en'),
+        'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
+    ]))->with('status', 'Questionnaire review updated.');
+})->middleware('core.permission:plugin.third-party-risk.vendors.manage')->name('plugin.third-party-risk.questionnaire-items.review');
 
 Route::post('/plugins/vendors/{vendorId}/reviews/{reviewId}/questionnaire-template/apply', function (
     Request $request,

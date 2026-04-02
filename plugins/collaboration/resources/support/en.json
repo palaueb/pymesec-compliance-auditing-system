@@ -1,0 +1,100 @@
+{
+  "guide": [
+    {
+      "id": "collaboration-primitives-overview",
+      "title": "Collaboration primitives",
+      "summary": "Use collaboration drafts, comments, and follow-up requests to keep subject-bound operational discussion and next steps inside the workspace where the work is happening.",
+      "body": [
+        "Shared drafts keep unfinished comments or follow-up requests visible to other users before they are published.",
+        "Comments are lightweight discussion notes tied to one concrete record such as a vendor review.",
+        "Follow-up requests turn the next step into an explicit tracked item with status, priority, assignee, and due date.",
+        "Plugins can consume these primitives without inventing their own local comment or task model."
+      ],
+      "concept_ids": [
+        "collaboration-draft",
+        "collaboration-comment",
+        "collaboration-request"
+      ],
+      "order": 420
+    }
+  ],
+  "concepts": [
+    {
+      "id": "collaboration-draft",
+      "label": "Collaboration draft",
+      "category": "operations",
+      "summary": "A shared unfinished collaboration record that can later be promoted into a published comment or follow-up request.",
+      "why_it_exists": "It preserves continuity when one user starts the work but another user needs to finish or publish it later in the same workspace.",
+      "how_to_use": [
+        "Save a draft when the note or follow-up request is not ready to publish yet.",
+        "Use shared drafts to keep unfinished work visible across reviewers instead of hiding it in personal notes.",
+        "Promote the draft to a comment or follow-up request when the content is ready to become part of the operational record."
+      ],
+      "relations": [
+        {
+          "type": "may-be-promoted-to",
+          "target": "collaboration-comment",
+          "summary": "A draft can become a published collaboration comment."
+        },
+        {
+          "type": "may-be-promoted-to",
+          "target": "collaboration-request",
+          "summary": "A draft can become a published follow-up request."
+        }
+      ],
+      "order": 419
+    },
+    {
+      "id": "collaboration-comment",
+      "label": "Collaboration comment",
+      "category": "operations",
+      "summary": "A lightweight discussion note stored against one concrete subject record.",
+      "why_it_exists": "It keeps operational context close to the record instead of scattering short discussion points across email or chat.",
+      "how_to_use": [
+        "Add comments for clarifications, reviewer notes, decision rationale, or small coordination updates.",
+        "Mention functional actors when you want the note to create an explicit cue for the principals linked to those actors.",
+        "Use comments for discussion and context, not for structured follow-up work that needs an owner and due date."
+      ],
+      "relations": [
+        {
+          "type": "may-support",
+          "target": "collaboration-request",
+          "summary": "Comments can explain why a follow-up request was created or updated."
+        },
+        {
+          "type": "may-come-from",
+          "target": "collaboration-draft",
+          "summary": "Some comments start as shared drafts before they are published."
+        }
+      ],
+      "order": 420
+    },
+    {
+      "id": "collaboration-request",
+      "label": "Collaboration request",
+      "category": "operations",
+      "summary": "A tracked follow-up item tied to one concrete record, with priority, assignee, status, and optional due date.",
+      "why_it_exists": "It moves the product from passive recordkeeping into explicit operational follow-up without forcing every plugin to build its own task model.",
+      "how_to_use": [
+        "Create a request when the next step needs ownership or due date tracking.",
+        "Update status as work moves from open to in progress, waiting, done, or cancelled.",
+        "Use the handoff stage to show whether the request currently belongs to review, remediation, approval, or closed-loop follow-up.",
+        "Use mentioned actors when several governed roles should receive a visible cue even if only one actor owns the request.",
+        "Assign the request to a functional actor when accountability should stay anchored to a governed role rather than one login."
+      ],
+      "relations": [
+        {
+          "type": "may-be-explained-by",
+          "target": "collaboration-comment",
+          "summary": "Comments can capture the reasoning or context around a request."
+        },
+        {
+          "type": "may-come-from",
+          "target": "collaboration-draft",
+          "summary": "Some follow-up requests start as shared drafts before they are published."
+        }
+      ],
+      "order": 421
+    }
+  ]
+}

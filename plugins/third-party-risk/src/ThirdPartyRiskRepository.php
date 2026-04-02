@@ -6,6 +6,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use PymeSec\Core\Audit\AuditRecordData;
 use PymeSec\Core\Audit\Contracts\AuditTrailInterface;
+use PymeSec\Core\Collaboration\Contracts\CollaborationStoreInterface;
+use PymeSec\Core\Questionnaires\Contracts\QuestionnaireStoreInterface;
 use PymeSec\Core\Security\ContextualReferenceValidator;
 
 class ThirdPartyRiskRepository
@@ -13,6 +15,8 @@ class ThirdPartyRiskRepository
     public function __construct(
         private readonly ContextualReferenceValidator $references,
         private readonly AuditTrailInterface $audit,
+        private readonly QuestionnaireStoreInterface $questionnaires,
+        private readonly CollaborationStoreInterface $collaboration,
     ) {}
 
     /**
@@ -101,24 +105,13 @@ class ThirdPartyRiskRepository
      */
     public function allQuestionnaireTemplates(string $organizationId, ?string $scopeId = null, ?string $profileId = null): array
     {
-        $query = DB::table('vendor_questionnaire_templates')
-            ->where('organization_id', $organizationId)
-            ->orderByDesc('is_default')
-            ->orderBy('name');
-
-        if ($scopeId !== null && $scopeId !== '') {
-            $query->where(function ($nested) use ($scopeId): void {
-                $nested->where('scope_id', $scopeId)->orWhereNull('scope_id');
-            });
-        }
-
-        if ($profileId !== null && $profileId !== '') {
-            $query->where('profile_id', $profileId);
-        }
-
-        return $query->get()
-            ->map(fn ($template): array => $this->mapQuestionnaireTemplate($template))
-            ->all();
+        return $this->questionnaires->allTemplates(
+            organizationId: $organizationId,
+            scopeId: $scopeId,
+            ownerComponent: 'third-party-risk',
+            subjectType: 'vendor-review',
+            profileId: $profileId,
+        );
     }
 
     /**
@@ -126,9 +119,13 @@ class ThirdPartyRiskRepository
      */
     public function findQuestionnaireTemplate(string $templateId): ?array
     {
-        $template = DB::table('vendor_questionnaire_templates')->where('id', $templateId)->first();
+        $template = $this->questionnaires->findTemplate($templateId);
 
-        return $template !== null ? $this->mapQuestionnaireTemplate($template) : null;
+        if ($template === null || $template['owner_component'] !== 'third-party-risk' || $template['subject_type'] !== 'vendor-review') {
+            return null;
+        }
+
+        return $template;
     }
 
     /**
@@ -136,13 +133,7 @@ class ThirdPartyRiskRepository
      */
     public function questionnaireTemplateItems(string $templateId): array
     {
-        return DB::table('vendor_questionnaire_template_items')
-            ->where('template_id', $templateId)
-            ->orderBy('position')
-            ->orderBy('created_at')
-            ->get()
-            ->map(fn ($item): array => $this->mapQuestionnaireTemplateItem($item))
-            ->all();
+        return $this->questionnaires->templateItems($templateId);
     }
 
     /**
@@ -311,49 +302,19 @@ class ThirdPartyRiskRepository
     public function applyQuestionnaireTemplateToReview(string $reviewId, string $templateId): int
     {
         $review = $this->findReview($reviewId);
-        $template = $this->findQuestionnaireTemplate($templateId);
 
-        if ($review === null || $template === null) {
+        if ($review === null || $this->findQuestionnaireTemplate($templateId) === null) {
             abort(404);
         }
 
-        $currentPosition = (int) DB::table('vendor_review_questionnaire_items')
-            ->where('review_id', $reviewId)
-            ->max('position');
-
-        $existingTemplateItemIds = DB::table('vendor_review_questionnaire_items')
-            ->where('review_id', $reviewId)
-            ->whereNotNull('source_template_item_id')
-            ->pluck('source_template_item_id')
-            ->filter()
-            ->all();
-
-        $created = 0;
-
-        foreach ($this->questionnaireTemplateItems($templateId) as $templateItem) {
-            if (in_array($templateItem['id'], $existingTemplateItemIds, true)) {
-                continue;
-            }
-
-            $currentPosition++;
-            $created++;
-
-            DB::table('vendor_review_questionnaire_items')->insert([
-                'id' => 'vendor-question-'.Str::lower(Str::ulid()),
-                'review_id' => $reviewId,
-                'organization_id' => $review['organization_id'],
-                'scope_id' => $review['scope_id'] !== '' ? $review['scope_id'] : null,
-                'source_template_item_id' => $templateItem['id'],
-                'position' => $currentPosition,
-                'prompt' => $templateItem['prompt'],
-                'response_type' => $templateItem['response_type'],
-                'response_status' => 'draft',
-                'answer_text' => null,
-                'follow_up_notes' => $templateItem['guidance_text'] !== '' ? $templateItem['guidance_text'] : null,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]);
-        }
+        $created = $this->questionnaires->applyTemplateToSubject(
+            ownerComponent: 'third-party-risk',
+            subjectType: 'vendor-review',
+            subjectId: $reviewId,
+            organizationId: $review['organization_id'],
+            scopeId: $review['scope_id'] !== '' ? $review['scope_id'] : null,
+            templateId: $templateId,
+        );
 
         DB::table('vendor_reviews')
             ->where('id', $reviewId)
@@ -520,16 +481,507 @@ class ThirdPartyRiskRepository
             return null;
         }
 
-        DB::table('vendor_review_questionnaire_items')
-            ->where('id', $itemId)
-            ->where('review_id', $reviewId)
-            ->update([
-                'answer_text' => $answerText,
-                'response_status' => 'submitted',
-                'updated_at' => now(),
-            ]);
+        return $this->questionnaires->submitSubjectAnswer('third-party-risk', 'vendor-review', $reviewId, $itemId, $answerText);
+    }
 
-        return $this->findQuestionnaireItem($itemId);
+    /**
+     * @return array<int, array<string, string>>
+     */
+    public function brokeredRequestsForReview(string $reviewId): array
+    {
+        return $this->questionnaires->brokeredRequestsForSubject(
+            ownerComponent: 'third-party-risk',
+            subjectType: 'vendor-review',
+            subjectId: $reviewId,
+        );
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, string>
+     */
+    public function issueBrokeredRequestForReview(string $reviewId, array $data): array
+    {
+        $review = $this->findReview($reviewId);
+
+        if ($review === null) {
+            abort(404);
+        }
+
+        $request = $this->questionnaires->issueBrokeredRequest(
+            ownerComponent: 'third-party-risk',
+            subjectType: 'vendor-review',
+            subjectId: $reviewId,
+            organizationId: $review['organization_id'],
+            scopeId: $review['scope_id'] !== '' ? $review['scope_id'] : null,
+            data: $data,
+        );
+
+        $this->audit->record(new AuditRecordData(
+            eventType: 'plugin.third-party-risk.brokered-request.issued',
+            outcome: 'success',
+            originComponent: 'third-party-risk',
+            principalId: ($data['issued_by_principal_id'] ?? null) ?: null,
+            organizationId: $review['organization_id'],
+            scopeId: $review['scope_id'] !== '' ? $review['scope_id'] : null,
+            targetType: 'questionnaire_brokered_request',
+            targetId: $request['id'],
+            summary: [
+                'review_id' => $reviewId,
+                'contact_name' => $request['contact_name'],
+                'contact_email' => $request['contact_email'],
+                'collection_channel' => $request['collection_channel'],
+                'collection_status' => $request['collection_status'],
+                'broker_principal_id' => $request['broker_principal_id'],
+            ],
+            executionOrigin: 'third-party-risk',
+        ));
+
+        return $request;
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, string>|null
+     */
+    public function updateBrokeredRequestForReview(
+        string $reviewId,
+        string $requestId,
+        array $data,
+        ?string $principalId = null,
+    ): ?array {
+        $review = $this->findReview($reviewId);
+        $current = $this->questionnaires->findBrokeredRequest($requestId);
+
+        if ($review === null || $current === null || $current['subject_id'] !== $reviewId || $current['owner_component'] !== 'third-party-risk' || $current['subject_type'] !== 'vendor-review') {
+            return null;
+        }
+
+        $updated = $this->questionnaires->updateBrokeredRequest(
+            ownerComponent: 'third-party-risk',
+            subjectType: 'vendor-review',
+            subjectId: $reviewId,
+            requestId: $requestId,
+            data: $data,
+        );
+
+        if ($updated === null) {
+            return null;
+        }
+
+        $eventType = match ($updated['collection_status']) {
+            'in-progress' => 'plugin.third-party-risk.brokered-request.started',
+            'submitted' => 'plugin.third-party-risk.brokered-request.submitted',
+            'completed' => 'plugin.third-party-risk.brokered-request.completed',
+            'cancelled' => 'plugin.third-party-risk.brokered-request.cancelled',
+            default => 'plugin.third-party-risk.brokered-request.updated',
+        };
+
+        $this->audit->record(new AuditRecordData(
+            eventType: $eventType,
+            outcome: 'success',
+            originComponent: 'third-party-risk',
+            principalId: $principalId,
+            organizationId: $review['organization_id'],
+            scopeId: $review['scope_id'] !== '' ? $review['scope_id'] : null,
+            targetType: 'questionnaire_brokered_request',
+            targetId: $updated['id'],
+            summary: [
+                'review_id' => $reviewId,
+                'contact_name' => $updated['contact_name'],
+                'contact_email' => $updated['contact_email'],
+                'collection_channel' => $updated['collection_channel'],
+                'collection_status' => $updated['collection_status'],
+                'broker_principal_id' => $updated['broker_principal_id'],
+            ],
+            executionOrigin: 'third-party-risk',
+        ));
+
+        return $updated;
+    }
+
+    /**
+     * @return array<int, array<string, string>>
+     */
+    public function commentsForReview(string $reviewId): array
+    {
+        return $this->collaboration->commentsForSubject(
+            ownerComponent: 'third-party-risk',
+            subjectType: 'vendor-review',
+            subjectId: $reviewId,
+        );
+    }
+
+    /**
+     * @return array<int, array<string, string>>
+     */
+    public function collaborationDraftsForReview(string $reviewId): array
+    {
+        return $this->collaboration->draftsForSubject(
+            ownerComponent: 'third-party-risk',
+            subjectType: 'vendor-review',
+            subjectId: $reviewId,
+        );
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, string>|null
+     */
+    public function createCollaborationDraftForReview(string $reviewId, array $data): ?array
+    {
+        $review = $this->findReview($reviewId);
+
+        if ($review === null) {
+            return null;
+        }
+
+        $draft = $this->collaboration->createDraft(
+            ownerComponent: 'third-party-risk',
+            subjectType: 'vendor-review',
+            subjectId: $reviewId,
+            organizationId: $review['organization_id'],
+            scopeId: $review['scope_id'] !== '' ? $review['scope_id'] : null,
+            data: $data,
+        );
+
+        $this->audit->record(new AuditRecordData(
+            eventType: 'plugin.third-party-risk.collaboration-draft.saved',
+            outcome: 'success',
+            originComponent: 'third-party-risk',
+            principalId: ($data['edited_by_principal_id'] ?? null) ?: null,
+            organizationId: $review['organization_id'],
+            scopeId: $review['scope_id'] !== '' ? $review['scope_id'] : null,
+            targetType: 'collaboration_draft',
+            targetId: $draft['id'],
+            summary: [
+                'review_id' => $reviewId,
+                'draft_type' => $draft['draft_type'],
+                'title' => $draft['title'],
+                'mentioned_actor_ids' => $draft['mentioned_actor_ids'],
+                'assigned_actor_id' => $draft['assigned_actor_id'],
+            ],
+            executionOrigin: 'third-party-risk',
+        ));
+
+        return $draft;
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, string>|null
+     */
+    public function updateCollaborationDraftForReview(
+        string $reviewId,
+        string $draftId,
+        array $data,
+        ?string $principalId = null,
+    ): ?array {
+        $review = $this->findReview($reviewId);
+        $current = $this->collaboration->findDraft($draftId);
+
+        if ($review === null || $current === null || $current['owner_component'] !== 'third-party-risk' || $current['subject_type'] !== 'vendor-review' || $current['subject_id'] !== $reviewId) {
+            return null;
+        }
+
+        $updated = $this->collaboration->updateDraft(
+            ownerComponent: 'third-party-risk',
+            subjectType: 'vendor-review',
+            subjectId: $reviewId,
+            draftId: $draftId,
+            data: $data,
+        );
+
+        if ($updated === null) {
+            return null;
+        }
+
+        $this->audit->record(new AuditRecordData(
+            eventType: 'plugin.third-party-risk.collaboration-draft.updated',
+            outcome: 'success',
+            originComponent: 'third-party-risk',
+            principalId: $principalId,
+            organizationId: $review['organization_id'],
+            scopeId: $review['scope_id'] !== '' ? $review['scope_id'] : null,
+            targetType: 'collaboration_draft',
+            targetId: $updated['id'],
+            summary: [
+                'review_id' => $reviewId,
+                'draft_type' => $updated['draft_type'],
+                'title' => $updated['title'],
+                'mentioned_actor_ids' => $updated['mentioned_actor_ids'],
+                'assigned_actor_id' => $updated['assigned_actor_id'],
+            ],
+            executionOrigin: 'third-party-risk',
+        ));
+
+        return $updated;
+    }
+
+    public function promoteCollaborationDraftToComment(
+        string $reviewId,
+        string $draftId,
+        ?string $principalId = null,
+    ): ?array {
+        $review = $this->findReview($reviewId);
+        $draft = $this->collaboration->findDraft($draftId);
+
+        if ($review === null || $draft === null || $draft['owner_component'] !== 'third-party-risk' || $draft['subject_type'] !== 'vendor-review' || $draft['subject_id'] !== $reviewId || $draft['draft_type'] !== 'comment') {
+            return null;
+        }
+
+        $comment = $this->addCommentToReview($reviewId, [
+            'author_principal_id' => $principalId,
+            'body' => $draft['body'],
+            'mentioned_actor_ids' => $this->csvList($draft['mentioned_actor_ids']),
+        ]);
+
+        if ($comment === null) {
+            return null;
+        }
+
+        $this->collaboration->deleteDraft('third-party-risk', 'vendor-review', $reviewId, $draftId);
+
+        $this->audit->record(new AuditRecordData(
+            eventType: 'plugin.third-party-risk.collaboration-draft.promoted-comment',
+            outcome: 'success',
+            originComponent: 'third-party-risk',
+            principalId: $principalId,
+            organizationId: $review['organization_id'],
+            scopeId: $review['scope_id'] !== '' ? $review['scope_id'] : null,
+            targetType: 'collaboration_draft',
+            targetId: $draftId,
+            summary: [
+                'review_id' => $reviewId,
+                'draft_type' => 'comment',
+                'promoted_comment_id' => $comment['id'],
+            ],
+            executionOrigin: 'third-party-risk',
+        ));
+
+        return $comment;
+    }
+
+    public function promoteCollaborationDraftToRequest(
+        string $reviewId,
+        string $draftId,
+        ?string $principalId = null,
+    ): ?array {
+        $review = $this->findReview($reviewId);
+        $draft = $this->collaboration->findDraft($draftId);
+
+        if ($review === null || $draft === null || $draft['owner_component'] !== 'third-party-risk' || $draft['subject_type'] !== 'vendor-review' || $draft['subject_id'] !== $reviewId || $draft['draft_type'] !== 'request') {
+            return null;
+        }
+
+        $request = $this->createCollaborationRequestForReview($reviewId, [
+            'title' => $draft['title'],
+            'details' => $draft['details'],
+            'status' => 'open',
+            'priority' => $draft['priority'],
+            'handoff_state' => $draft['handoff_state'],
+            'mentioned_actor_ids' => $this->csvList($draft['mentioned_actor_ids']),
+            'assigned_actor_id' => $draft['assigned_actor_id'] !== '' ? $draft['assigned_actor_id'] : null,
+            'due_on' => $draft['due_on'] !== '' ? $draft['due_on'] : null,
+            'requested_by_principal_id' => $principalId,
+        ]);
+
+        if ($request === null) {
+            return null;
+        }
+
+        $this->collaboration->deleteDraft('third-party-risk', 'vendor-review', $reviewId, $draftId);
+
+        $this->audit->record(new AuditRecordData(
+            eventType: 'plugin.third-party-risk.collaboration-draft.promoted-request',
+            outcome: 'success',
+            originComponent: 'third-party-risk',
+            principalId: $principalId,
+            organizationId: $review['organization_id'],
+            scopeId: $review['scope_id'] !== '' ? $review['scope_id'] : null,
+            targetType: 'collaboration_draft',
+            targetId: $draftId,
+            summary: [
+                'review_id' => $reviewId,
+                'draft_type' => 'request',
+                'promoted_request_id' => $request['id'],
+                'title' => $request['title'],
+            ],
+            executionOrigin: 'third-party-risk',
+        ));
+
+        return $request;
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, string>|null
+     */
+    public function addCommentToReview(string $reviewId, array $data): ?array
+    {
+        $review = $this->findReview($reviewId);
+
+        if ($review === null) {
+            return null;
+        }
+
+        $comment = $this->collaboration->addComment(
+            ownerComponent: 'third-party-risk',
+            subjectType: 'vendor-review',
+            subjectId: $reviewId,
+            organizationId: $review['organization_id'],
+            scopeId: $review['scope_id'] !== '' ? $review['scope_id'] : null,
+            data: $data,
+        );
+
+        $this->audit->record(new AuditRecordData(
+            eventType: 'plugin.third-party-risk.collaboration-comment.added',
+            outcome: 'success',
+            originComponent: 'third-party-risk',
+            principalId: ($data['author_principal_id'] ?? null) ?: null,
+            organizationId: $review['organization_id'],
+            scopeId: $review['scope_id'] !== '' ? $review['scope_id'] : null,
+            targetType: 'collaboration_comment',
+            targetId: $comment['id'],
+            summary: [
+                'review_id' => $reviewId,
+                'body_excerpt' => Str::limit($comment['body'], 140),
+                'mentioned_actor_ids' => $comment['mentioned_actor_ids'],
+            ],
+            executionOrigin: 'third-party-risk',
+        ));
+
+        return $comment;
+    }
+
+    /**
+     * @return array<int, array<string, string>>
+     */
+    public function collaborationRequestsForReview(string $reviewId): array
+    {
+        return $this->collaboration->requestsForSubject(
+            ownerComponent: 'third-party-risk',
+            subjectType: 'vendor-review',
+            subjectId: $reviewId,
+        );
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, string>|null
+     */
+    public function createCollaborationRequestForReview(string $reviewId, array $data): ?array
+    {
+        $review = $this->findReview($reviewId);
+
+        if ($review === null) {
+            return null;
+        }
+
+        $request = $this->collaboration->createRequest(
+            ownerComponent: 'third-party-risk',
+            subjectType: 'vendor-review',
+            subjectId: $reviewId,
+            organizationId: $review['organization_id'],
+            scopeId: $review['scope_id'] !== '' ? $review['scope_id'] : null,
+            data: $data,
+        );
+
+        $this->audit->record(new AuditRecordData(
+            eventType: 'plugin.third-party-risk.collaboration-request.created',
+            outcome: 'success',
+            originComponent: 'third-party-risk',
+            principalId: ($data['requested_by_principal_id'] ?? null) ?: null,
+            organizationId: $review['organization_id'],
+            scopeId: $review['scope_id'] !== '' ? $review['scope_id'] : null,
+            targetType: 'collaboration_request',
+            targetId: $request['id'],
+            summary: [
+                'review_id' => $reviewId,
+                'title' => $request['title'],
+                'status' => $request['status'],
+                'priority' => $request['priority'],
+                'handoff_state' => $request['handoff_state'],
+                'mentioned_actor_ids' => $request['mentioned_actor_ids'],
+                'assigned_actor_id' => $request['assigned_actor_id'],
+            ],
+            executionOrigin: 'third-party-risk',
+        ));
+
+        return $request;
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, string>|null
+     */
+    public function updateCollaborationRequestForReview(
+        string $reviewId,
+        string $requestId,
+        array $data,
+        ?string $principalId = null,
+    ): ?array {
+        $review = $this->findReview($reviewId);
+        $current = $this->collaboration->findRequest($requestId);
+
+        if ($review === null || $current === null || $current['owner_component'] !== 'third-party-risk' || $current['subject_type'] !== 'vendor-review' || $current['subject_id'] !== $reviewId) {
+            return null;
+        }
+
+        $updated = $this->collaboration->updateRequest(
+            ownerComponent: 'third-party-risk',
+            subjectType: 'vendor-review',
+            subjectId: $reviewId,
+            requestId: $requestId,
+            data: $data,
+        );
+
+        if ($updated === null) {
+            return null;
+        }
+
+        $eventType = match ($updated['status']) {
+            'in-progress' => 'plugin.third-party-risk.collaboration-request.started',
+            'waiting' => 'plugin.third-party-risk.collaboration-request.waiting',
+            'done' => 'plugin.third-party-risk.collaboration-request.completed',
+            'cancelled' => 'plugin.third-party-risk.collaboration-request.cancelled',
+            default => 'plugin.third-party-risk.collaboration-request.updated',
+        };
+
+        $this->audit->record(new AuditRecordData(
+            eventType: $eventType,
+            outcome: 'success',
+            originComponent: 'third-party-risk',
+            principalId: $principalId,
+            organizationId: $review['organization_id'],
+            scopeId: $review['scope_id'] !== '' ? $review['scope_id'] : null,
+            targetType: 'collaboration_request',
+            targetId: $updated['id'],
+            summary: [
+                'review_id' => $reviewId,
+                'title' => $updated['title'],
+                'status' => $updated['status'],
+                'priority' => $updated['priority'],
+                'handoff_state' => $updated['handoff_state'],
+                'mentioned_actor_ids' => $updated['mentioned_actor_ids'],
+                'assigned_actor_id' => $updated['assigned_actor_id'],
+            ],
+            executionOrigin: 'third-party-risk',
+        ));
+
+        return $updated;
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function csvList(string $value): array
+    {
+        if ($value === '') {
+            return [];
+        }
+
+        return array_values(array_filter(array_map('trim', explode(',', $value))));
     }
 
     public function syncVendorStatusForReview(string $reviewId, string $transitionKey): void
@@ -563,13 +1015,12 @@ class ThirdPartyRiskRepository
      */
     public function questionnaireItemsForReview(string $reviewId): array
     {
-        return DB::table('vendor_review_questionnaire_items')
-            ->where('review_id', $reviewId)
-            ->orderBy('position')
-            ->orderBy('created_at')
-            ->get()
-            ->map(fn ($item): array => $this->mapQuestionnaireItem($item))
-            ->all();
+        return array_map(function (array $item) use ($reviewId): array {
+            return [
+                ...$item,
+                'review_id' => $reviewId,
+            ];
+        }, $this->questionnaires->itemsForSubject('third-party-risk', 'vendor-review', $reviewId));
     }
 
     /**
@@ -584,32 +1035,20 @@ class ThirdPartyRiskRepository
             abort(404);
         }
 
-        $position = (int) DB::table('vendor_review_questionnaire_items')
-            ->where('review_id', $reviewId)
-            ->max('position');
-
-        $id = 'vendor-question-'.Str::lower(Str::ulid());
-
-        DB::table('vendor_review_questionnaire_items')->insert([
-            'id' => $id,
-            'review_id' => $reviewId,
-            'organization_id' => $review['organization_id'],
-            'scope_id' => $review['scope_id'] !== '' ? $review['scope_id'] : null,
-            'source_template_item_id' => null,
-            'position' => $position + 1,
-            'prompt' => $data['prompt'],
-            'response_type' => $data['response_type'],
-            'response_status' => ($data['response_status'] ?? 'draft') ?: 'draft',
-            'answer_text' => ($data['answer_text'] ?? null) ?: null,
-            'follow_up_notes' => ($data['follow_up_notes'] ?? null) ?: null,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-
         /** @var array<string, string> $item */
-        $item = $this->findQuestionnaireItem($id);
+        $item = $this->questionnaires->addSubjectItem(
+            ownerComponent: 'third-party-risk',
+            subjectType: 'vendor-review',
+            subjectId: $reviewId,
+            organizationId: $review['organization_id'],
+            scopeId: $review['scope_id'] !== '' ? $review['scope_id'] : null,
+            data: $data,
+        );
 
-        return $item;
+        return [
+            ...$item,
+            'review_id' => $reviewId,
+        ];
     }
 
     /**
@@ -624,19 +1063,48 @@ class ThirdPartyRiskRepository
             return null;
         }
 
-        DB::table('vendor_review_questionnaire_items')
-            ->where('id', $itemId)
-            ->where('review_id', $reviewId)
-            ->update([
-                'prompt' => $data['prompt'],
-                'response_type' => $data['response_type'],
-                'response_status' => $data['response_status'],
-                'answer_text' => ($data['answer_text'] ?? null) ?: null,
-                'follow_up_notes' => ($data['follow_up_notes'] ?? null) ?: null,
-                'updated_at' => now(),
-            ]);
+        $item = $this->questionnaires->updateSubjectItem(
+            ownerComponent: 'third-party-risk',
+            subjectType: 'vendor-review',
+            subjectId: $reviewId,
+            itemId: $itemId,
+            data: $data,
+        );
 
-        return $this->findQuestionnaireItem($itemId);
+        return $item !== null
+            ? [...$item, 'review_id' => $reviewId]
+            : null;
+    }
+
+    /**
+     * @return array<string, string>|null
+     */
+    public function reviewQuestionnaireItem(
+        string $reviewId,
+        string $itemId,
+        string $responseStatus,
+        ?string $reviewNotes = null,
+        ?string $reviewedByPrincipalId = null,
+    ): ?array {
+        $review = $this->findReview($reviewId);
+
+        if ($review === null) {
+            return null;
+        }
+
+        $item = $this->questionnaires->reviewSubjectItem(
+            ownerComponent: 'third-party-risk',
+            subjectType: 'vendor-review',
+            subjectId: $reviewId,
+            itemId: $itemId,
+            responseStatus: $responseStatus,
+            reviewNotes: $reviewNotes,
+            reviewedByPrincipalId: $reviewedByPrincipalId,
+        );
+
+        return $item !== null
+            ? [...$item, 'review_id' => $reviewId]
+            : null;
     }
 
     /**
@@ -644,9 +1112,16 @@ class ThirdPartyRiskRepository
      */
     public function findQuestionnaireItem(string $itemId): ?array
     {
-        $item = DB::table('vendor_review_questionnaire_items')->where('id', $itemId)->first();
+        $item = $this->questionnaires->findSubjectItem($itemId);
 
-        return $item !== null ? $this->mapQuestionnaireItem($item) : null;
+        if ($item === null || $item['owner_component'] !== 'third-party-risk' || $item['subject_type'] !== 'vendor-review') {
+            return null;
+        }
+
+        return [
+            ...$item,
+            'review_id' => $item['subject_id'],
+        ];
     }
 
     /**
@@ -830,6 +1305,8 @@ class ThirdPartyRiskRepository
             'linked_risk_id' => is_string($review->linked_risk_id) ? $review->linked_risk_id : '',
             'linked_finding_id' => is_string($review->linked_finding_id) ? $review->linked_finding_id : '',
             'next_review_due_on' => is_string($review->next_review_due_on) ? $review->next_review_due_on : '',
+            'created_at' => $review->created_at !== null ? (string) $review->created_at : '',
+            'updated_at' => $review->updated_at !== null ? (string) $review->updated_at : '',
         ];
     }
 
@@ -845,11 +1322,14 @@ class ThirdPartyRiskRepository
             'scope_id' => is_string($item->scope_id) ? $item->scope_id : '',
             'source_template_item_id' => is_string($item->source_template_item_id) ? $item->source_template_item_id : '',
             'position' => (string) $item->position,
+            'section_title' => is_string($item->section_title ?? null) ? $item->section_title : '',
             'prompt' => (string) $item->prompt,
             'response_type' => (string) $item->response_type,
             'response_status' => (string) $item->response_status,
             'answer_text' => is_string($item->answer_text) ? $item->answer_text : '',
             'follow_up_notes' => is_string($item->follow_up_notes) ? $item->follow_up_notes : '',
+            'created_at' => $item->created_at !== null ? (string) $item->created_at : '',
+            'updated_at' => $item->updated_at !== null ? (string) $item->updated_at : '',
         ];
     }
 
@@ -897,6 +1377,7 @@ class ThirdPartyRiskRepository
             'organization_id' => (string) $item->organization_id,
             'scope_id' => is_string($item->scope_id) ? $item->scope_id : '',
             'position' => (string) $item->position,
+            'section_title' => is_string($item->section_title ?? null) ? $item->section_title : '',
             'prompt' => (string) $item->prompt,
             'response_type' => (string) $item->response_type,
             'guidance_text' => is_string($item->guidance_text) ? $item->guidance_text : '',

@@ -29,6 +29,7 @@ class ManagementReportingService
                 'evidence' => $this->emptySection(),
                 'risks' => $this->emptySection(),
                 'findings' => $this->emptySection(),
+                'vendors' => $this->emptySection(),
             ];
         }
 
@@ -41,6 +42,7 @@ class ManagementReportingService
         $evidence = $this->evidenceSection($organizationId, $scopeId, $scopeLabels, $baseQuery);
         $risks = $this->riskSection($organizationId, $scopeId, $visibleRiskIds, $scopeLabels, $baseQuery);
         $findings = $this->findingSection($organizationId, $scopeId, $visibleFindingIds, $scopeLabels, $baseQuery);
+        $vendors = $this->vendorSection($organizationId, $scopeId, $scopeLabels, $baseQuery);
 
         return [
             'headline_metrics' => [
@@ -49,11 +51,13 @@ class ManagementReportingService
                 $this->metricCatalog->headline('evidence_review_due', $evidence['metrics']['review_due'] ?? 0),
                 $this->metricCatalog->headline('risks_in_workflow', $risks['metrics']['in_workflow'] ?? 0),
                 $this->metricCatalog->headline('overdue_findings', $findings['metrics']['overdue'] ?? 0),
+                $this->metricCatalog->headline('vendor_decision_pending', $vendors['metrics']['decision_pending'] ?? 0),
             ],
             'assessments' => $assessments,
             'evidence' => $evidence,
             'risks' => $risks,
             'findings' => $findings,
+            'vendors' => $vendors,
         ];
     }
 
@@ -578,6 +582,218 @@ class ManagementReportingService
             'rows' => array_slice($rows, 0, 5),
             'empty_copy' => 'No findings are visible in the current workspace context.',
             'section_url' => route('core.shell.index', [...$baseQuery, 'menu' => 'plugin.findings-remediation.root']),
+        ];
+    }
+
+    /**
+     * @param  array<string, string>  $scopeLabels
+     * @param  array<string, mixed>  $baseQuery
+     * @return array<string, mixed>
+     */
+    private function vendorSection(
+        string $organizationId,
+        ?string $scopeId,
+        array $scopeLabels,
+        array $baseQuery,
+    ): array {
+        if (! Schema::hasTable('vendors') || ! Schema::hasTable('vendor_reviews')) {
+            return $this->emptySection();
+        }
+
+        $today = now()->toDateString();
+        $windowEnd = now()->addDays(14)->toDateString();
+        $vendors = $this->workspaceContext
+            ->scopedQuery('vendors', $organizationId, $scopeId, false)
+            ->orderBy('legal_name')
+            ->get([
+                'id',
+                'scope_id',
+                'legal_name',
+                'vendor_status',
+                'tier',
+            ]);
+
+        if ($vendors->isEmpty()) {
+            return [
+                ...$this->emptySection(),
+                'attention' => [
+                    'title' => 'Vendor review attention',
+                    'copy' => 'No vendor reviews are visible in the current workspace context.',
+                ],
+                'section_url' => route('core.shell.index', [...$baseQuery, 'menu' => 'plugin.third-party-risk.root']),
+            ];
+        }
+
+        $reviews = DB::table('vendor_reviews')
+            ->whereIn('vendor_id', $vendors->pluck('id')->all())
+            ->orderByDesc('created_at')
+            ->get([
+                'id',
+                'vendor_id',
+                'scope_id',
+                'title',
+                'inherent_risk',
+                'linked_finding_id',
+                'next_review_due_on',
+            ])
+            ->groupBy('vendor_id');
+
+        $questionnaireItemsByReview = [];
+        $openActionsByFinding = [];
+        $findingIds = DB::table('vendor_reviews')
+            ->whereIn('vendor_id', $vendors->pluck('id')->all())
+            ->whereNotNull('linked_finding_id')
+            ->pluck('linked_finding_id')
+            ->filter()
+            ->map(static fn ($id): string => (string) $id)
+            ->unique()
+            ->values()
+            ->all();
+
+        if ($reviews->flatten(1)->isNotEmpty() && Schema::hasTable('questionnaire_subject_items')) {
+            foreach (DB::table('questionnaire_subject_items')
+                ->where('owner_component', 'third-party-risk')
+                ->where('subject_type', 'vendor-review')
+                ->whereIn('subject_id', $reviews->flatten(1)->pluck('id')->all())
+                ->get(['subject_id', 'response_status']) as $item) {
+                $status = is_string($item->response_status ?? null) ? (string) $item->response_status : 'draft';
+
+                if (in_array($status, ['draft', 'sent', 'submitted', 'under-review', 'needs-follow-up'], true)) {
+                    $questionnaireItemsByReview[(string) $item->subject_id] = ($questionnaireItemsByReview[(string) $item->subject_id] ?? 0) + 1;
+                }
+            }
+        }
+
+        if ($findingIds !== [] && Schema::hasTable('remediation_actions')) {
+            foreach (DB::table('remediation_actions')
+                ->whereIn('finding_id', $findingIds)
+                ->get(['finding_id', 'status']) as $action) {
+                $status = is_string($action->status ?? null) ? (string) $action->status : 'planned';
+
+                if ($status !== 'done') {
+                    $openActionsByFinding[(string) $action->finding_id] = ($openActionsByFinding[(string) $action->finding_id] ?? 0) + 1;
+                }
+            }
+        }
+
+        $tierCounts = [
+            'low' => 0,
+            'medium' => 0,
+            'high' => 0,
+            'critical' => 0,
+        ];
+        $decisionPending = 0;
+        $dueSoon = 0;
+        $overdue = 0;
+        $rows = [];
+
+        foreach ($vendors as $vendor) {
+            $tier = (string) $vendor->tier;
+            $tierCounts[$tier] = ($tierCounts[$tier] ?? 0) + 1;
+            $review = $reviews[(string) $vendor->id][0] ?? null;
+
+            if ($review === null) {
+                continue;
+            }
+
+            $state = $this->workflowState(
+                workflowKey: 'plugin.third-party-risk.review-lifecycle',
+                subjectType: 'vendor-review',
+                subjectId: (string) $review->id,
+                organizationId: $organizationId,
+                scopeId: is_string($review->scope_id ?? null) && $review->scope_id !== '' ? (string) $review->scope_id : $scopeId,
+                fallbackState: 'prospective',
+            );
+
+            $isDecisionPending = in_array($state, ['prospective', 'in-review'], true);
+            $nextDueOn = is_string($review->next_review_due_on ?? null) ? (string) $review->next_review_due_on : '';
+            $isOverdue = $nextDueOn !== '' && $nextDueOn < $today;
+            $isDueSoon = $nextDueOn !== '' && ! $isOverdue && $nextDueOn <= $windowEnd;
+
+            if ($isDecisionPending) {
+                $decisionPending++;
+            }
+
+            if ($isDueSoon) {
+                $dueSoon++;
+            }
+
+            if ($isOverdue) {
+                $overdue++;
+            }
+
+            $rows[] = [
+                'title' => (string) $vendor->legal_name,
+                'scope_label' => $this->scopeLabel(is_string($vendor->scope_id ?? null) ? $vendor->scope_id : null, $scopeLabels),
+                'vendor_status_label' => $this->humanize((string) $vendor->vendor_status),
+                'tier_label' => $this->humanize($tier),
+                'review_title' => (string) $review->title,
+                'decision_state' => $state,
+                'decision_state_label' => $this->humanize($state),
+                'next_review_due_on' => $nextDueOn,
+                'open_questionnaire_count' => (int) ($questionnaireItemsByReview[(string) $review->id] ?? 0),
+                'open_action_count' => (int) ($openActionsByFinding[(string) ($review->linked_finding_id ?? '')] ?? 0),
+                'attention_reason' => $isOverdue ? 'Overdue reassessment' : ($isDueSoon ? 'Due soon' : ($isDecisionPending ? 'Decision pending' : 'Monitoring')),
+                'open_url' => route('core.shell.index', [...$baseQuery, 'menu' => 'plugin.third-party-risk.root', 'vendor_id' => (string) $vendor->id]),
+            ];
+        }
+
+        usort($rows, static function (array $left, array $right): int {
+            $score = static function (array $row): int {
+                return match ($row['attention_reason']) {
+                    'Overdue reassessment' => 40,
+                    'Due soon' => 30,
+                    'Decision pending' => 20,
+                    default => 10,
+                } + ((int) $row['open_questionnaire_count']) + ((int) $row['open_action_count']);
+            };
+
+            return $score($right) <=> $score($left);
+        });
+
+        $tierBreakdown = [];
+
+        foreach ($tierCounts as $tier => $count) {
+            $tierBreakdown[] = [
+                'id' => $tier,
+                'label' => $this->humanize($tier),
+                'count' => $count,
+            ];
+        }
+
+        $postureBreakdown = [
+            ['id' => 'decision-pending', 'label' => 'Decision pending', 'count' => $decisionPending],
+            ['id' => 'due-soon', 'label' => 'Due soon', 'count' => $dueSoon],
+            ['id' => 'overdue', 'label' => 'Overdue', 'count' => $overdue],
+            ['id' => 'approved-posture', 'label' => 'Approved posture', 'count' => count(array_filter($rows, static fn (array $row): bool => in_array($row['decision_state'], ['approved', 'approved-with-conditions'], true)))],
+        ];
+
+        return [
+            'metrics' => [
+                'vendors' => $vendors->count(),
+                'decision_pending' => $decisionPending,
+                'due_soon' => $dueSoon,
+                'overdue' => $overdue,
+                'high_critical' => ($tierCounts['high'] ?? 0) + ($tierCounts['critical'] ?? 0),
+                'open_follow_up' => array_sum(array_map(static fn (array $row): int => $row['open_questionnaire_count'] + $row['open_action_count'], $rows)),
+            ],
+            'summary_metrics' => [
+                $this->metricCatalog->summary('vendors', $vendors->count()),
+                $this->metricCatalog->summary('vendor_decision_pending', $decisionPending),
+                $this->metricCatalog->summary('vendor_due_soon', $dueSoon),
+                $this->metricCatalog->summary('vendor_overdue', $overdue),
+            ],
+            'breakdowns' => [
+                $this->breakdown('Tier mix', $tierBreakdown),
+                $this->breakdown('Review posture', $postureBreakdown),
+            ],
+            'attention' => [
+                'title' => 'Vendor review load',
+                'copy' => 'Use this queue to move from executive posture into the vendor reviews carrying pending decisions or reassessment pressure.',
+            ],
+            'rows' => array_slice($rows, 0, 5),
+            'empty_copy' => 'No vendor reviews are visible in the current workspace context.',
+            'section_url' => route('core.shell.index', [...$baseQuery, 'menu' => 'plugin.third-party-risk.root']),
         ];
     }
 

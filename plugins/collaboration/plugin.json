@@ -1,0 +1,42 @@
+{
+  "plugin": {
+    "id": "collaboration",
+    "name": "Collaboration",
+    "version": "0.1.0",
+    "type": "domain",
+    "description": "Shared comments and follow-up request primitives for subject-bound operational collaboration.",
+    "vendor": "pymesec",
+    "license": "AGPL-3.0-or-later"
+  },
+  "compatibility": {
+    "core": "^0.1.0",
+    "sdk": "^0.1.0"
+  },
+  "dependencies": [],
+  "permissions": [],
+  "routes": [],
+  "menus": [],
+  "migrations": [],
+  "translations": {
+    "default_locale": "en",
+    "supported_locales": [
+      "en"
+    ],
+    "path": "resources/lang"
+  },
+  "support": {
+    "path": "resources/support",
+    "supported_locales": [
+      "en"
+    ]
+  },
+  "lifecycle": {},
+  "runtime": {
+    "class": "PymeSec\\Plugins\\Collaboration\\CollaborationPlugin",
+    "autoload": {
+      "psr-4": {
+        "PymeSec\\Plugins\\Collaboration\\": "src"
+      }
+    }
+  }
+}

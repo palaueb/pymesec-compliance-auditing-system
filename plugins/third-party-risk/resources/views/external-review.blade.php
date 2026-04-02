@@ -205,45 +205,82 @@
                 <h2>Questionnaire</h2>
                 <p class="muted">Only the questions explicitly shared in this review are available here.</p>
 
-                @forelse ($questionnaire_items as $item)
-                    <article class="item">
-                        <div>
-                            <div class="eyebrow">Question {{ $item['position'] }}</div>
-                            <h3>{{ $item['prompt'] }}</h3>
-                        </div>
-                        <div class="actions">
-                            <span class="status">{{ ucwords(str_replace('-', ' ', $item['response_status'])) }}</span>
-                            <span class="status">{{ ucwords(str_replace('-', ' ', $item['response_type'])) }}</span>
-                        </div>
-                        @if ($link['can_answer_questionnaire'] === '1' && $item['response_status'] !== 'accepted')
-                            <form method="POST" action="{{ route('plugin.third-party-risk.external.questionnaire-items.update', ['token' => $token, 'itemId' => $item['id']]) }}">
-                                @csrf
-                                <div class="field">
-                                    <label>Answer</label>
-                                    @if ($item['response_type'] === 'yes-no')
-                                        <select name="answer_text" required>
-                                            <option value="">Choose an answer</option>
-                                            @foreach (['yes' => 'Yes', 'no' => 'No', 'not-applicable' => 'Not applicable'] as $value => $label)
-                                                <option value="{{ $value }}" @selected($item['answer_text'] === $value)>{{ $label }}</option>
-                                            @endforeach
-                                        </select>
-                                    @elseif ($item['response_type'] === 'date')
-                                        <input type="date" name="answer_text" value="{{ $item['answer_text'] }}">
-                                    @else
-                                        <textarea name="answer_text" required>{{ $item['answer_text'] }}</textarea>
-                                    @endif
-                                </div>
-                                <div class="actions">
-                                    <button type="submit">Submit answer</button>
-                                </div>
-                            </form>
-                        @else
-                            <div class="field">
-                                <label>Current answer</label>
-                                <div>{{ $item['answer_text'] !== '' ? $item['answer_text'] : 'No answer recorded yet.' }}</div>
+                @forelse ($questionnaire_sections as $section)
+                    <div class="eyebrow">{{ $section['title'] }}</div>
+                    @foreach ($section['items'] as $item)
+                        <article class="item">
+                            <div>
+                                <div class="eyebrow">Question {{ $item['position'] }}</div>
+                                <h3>{{ $item['prompt'] }}</h3>
                             </div>
-                        @endif
-                    </article>
+                            <div class="actions">
+                                <span class="status">{{ $item['response_status_label'] ?? ucwords(str_replace('-', ' ', $item['response_status'])) }}</span>
+                                <span class="status">{{ $item['response_type_label'] ?? ucwords(str_replace('-', ' ', $item['response_type'])) }}</span>
+                            </div>
+                            @if (($item['supports_attachments'] ?? false) === true)
+                                <div class="field">
+                                    <label>Attachment request</label>
+                                    <div>{{ $item['attachment_mode_label'] ?? 'Attachment requested' }} · {{ $item['attachment_upload_profile_label'] ?? 'Default review artifacts' }}</div>
+                                </div>
+                            @endif
+                            @if ($link['can_answer_questionnaire'] === '1' && $item['response_status'] !== 'accepted')
+                                <form method="POST" action="{{ route('plugin.third-party-risk.external.questionnaire-items.update', ['token' => $token, 'itemId' => $item['id']]) }}">
+                                    @csrf
+                                    <div class="field">
+                                        <label>Answer</label>
+                                        @if ($item['response_type'] === 'yes-no')
+                                            <select name="answer_text" required>
+                                                <option value="">Choose an answer</option>
+                                                @foreach (['yes' => 'Yes', 'no' => 'No', 'not-applicable' => 'Not applicable'] as $value => $label)
+                                                    <option value="{{ $value }}" @selected($item['answer_text'] === $value)>{{ $label }}</option>
+                                                @endforeach
+                                            </select>
+                                        @elseif ($item['response_type'] === 'date')
+                                            <input type="date" name="answer_text" value="{{ $item['answer_text'] }}">
+                                        @else
+                                            <textarea name="answer_text" required>{{ $item['answer_text'] }}</textarea>
+                                        @endif
+                                    </div>
+                                    <div class="actions">
+                                        <button type="submit">Submit answer</button>
+                                    </div>
+                                </form>
+                            @else
+                                    <div class="field">
+                                        <label>Current answer</label>
+                                        <div>{{ $item['answer_text'] !== '' ? $item['answer_text'] : 'No answer recorded yet.' }}</div>
+                                    </div>
+                            @endif
+                            @if (($item['supports_attachments'] ?? false) === true)
+                                <div class="field">
+                                    <label>Current attachments</label>
+                                    <div>
+                                        @forelse ($item['artifacts'] as $artifact)
+                                            <div>{{ $artifact['label'] }} · {{ $artifact['original_filename'] }}</div>
+                                        @empty
+                                            No attachment recorded yet.
+                                        @endforelse
+                                    </div>
+                                </div>
+                                @if ($link['can_upload_artifacts'] === '1')
+                                    <form method="POST" action="{{ route('plugin.third-party-risk.external.questionnaire-items.artifacts.store', ['token' => $token, 'itemId' => $item['id']]) }}" enctype="multipart/form-data">
+                                        @csrf
+                                        <div class="field">
+                                            <label>Attachment label</label>
+                                            <input type="text" name="label" required>
+                                        </div>
+                                        <div class="field">
+                                            <label>File</label>
+                                            <input type="file" name="artifact" required>
+                                        </div>
+                                        <div class="actions">
+                                            <button type="submit">Upload question attachment</button>
+                                        </div>
+                                    </form>
+                                @endif
+                            @endif
+                        </article>
+                    @endforeach
                 @empty
                     <div class="muted">No questionnaire items have been shared on this review yet.</div>
                 @endforelse

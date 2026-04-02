@@ -57,6 +57,10 @@ class ReportingMetricCatalog
                 'label' => 'Overdue findings',
                 'copy' => 'Findings past due and not yet resolved.',
             ],
+            'vendor_decision_pending' => [
+                'label' => 'Vendor decisions pending',
+                'copy' => 'Vendor reviews still waiting on approval or rejection.',
+            ],
             default => [
                 'label' => $this->humanize($key),
                 'copy' => '',
@@ -83,6 +87,10 @@ class ReportingMetricCatalog
             'open_findings' => 'Open',
             'overdue_findings' => 'Overdue',
             'open_actions' => 'Open actions',
+            'vendors' => 'Vendors',
+            'vendor_decision_pending' => 'Decision pending',
+            'vendor_due_soon' => 'Due soon',
+            'vendor_overdue' => 'Overdue',
             default => $this->humanize($key),
         };
     }

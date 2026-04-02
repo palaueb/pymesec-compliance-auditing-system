@@ -19,6 +19,9 @@ class ManagementReportingTest extends TestCase
             ->assertSee('Restore bridge monthly test record')
             ->assertSee('Privileged access drift')
             ->assertSee('Access review evidence gap')
+            ->assertSee('Vendors')
+            ->assertSee('Northbridge Payroll Services')
+            ->assertSee('Vendor decisions pending')
             ->assertDontSee('Restore assurance gap')
             ->assertDontSee('Restore test traceability gap');
     }
@@ -31,6 +34,8 @@ class ManagementReportingTest extends TestCase
             ->assertSee('Q2 Access and Resilience Review')
             ->assertSee('Privileged access drift')
             ->assertSee('Access review evidence gap')
+            ->assertSee('Northbridge Payroll Services')
+            ->assertDontSee('Restore Labs Ltd')
             ->assertDontSee('Restore bridge monthly test record')
             ->assertDontSee('Restore assurance gap')
             ->assertDontSee('Restore test traceability gap');

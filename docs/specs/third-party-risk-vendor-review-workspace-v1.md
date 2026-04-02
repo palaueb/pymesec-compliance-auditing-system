@@ -80,6 +80,8 @@ The review workspace should keep together:
 - overview
 - tiering snapshot
 - questionnaire state
+- collaboration comments
+- follow-up requests
 - evidence requests
 - uploaded artifacts and promoted evidence
 - findings raised from the review
@@ -124,6 +126,17 @@ The current implementation now also includes:
 - persisted questionnaire templates linked to one review profile
 - template items that can be copied into a concrete review without duplicating already-applied template questions
 - review-level selection of profile and template on create and edit
+- section titles on questionnaire template items and review-bound questionnaire items
+- grouped questionnaire rendering in both the internal workspace and the external vendor portal
+- questionnaire engine and storage now provided by the transversal `questionnaires` plugin instead of being owned directly by `third-party-risk`
+- opt-in answer library suggestions for reusable reviewer responses on questionnaire items
+- dedicated internal review / accept actions on questionnaire responses with review notes and reviewer metadata
+- brokered collection requests for off-platform answer gathering without granting external portal access
+- item-level attachment requirements with explicit upload profiles and optional promotion of questionnaire attachments into governed evidence
+- reassessment-focused register filters for:
+  - decision pending
+  - due soon
+  - overdue
 
 ### 5. Evidence and Artifact Handling
 
@@ -157,6 +170,16 @@ The review should be able to raise:
 These should link directly into the existing findings/remediation model wherever possible.
 
 The vendor review should not invent a second issue-management subsystem if the current one is already sufficient.
+
+The current implementation now also includes:
+
+- linked-finding continuity inside the vendor review workspace
+- rendering of the linked finding summary inside the review
+- rendering of linked remediation actions inside the same workspace so follow-up can be reviewed without leaving the vendor review
+- record comments rendered as a first-class collaboration section inside the review
+- follow-up requests rendered inside the same workspace with status, priority, handoff stage, actor assignment, and due date
+- a first-class timeline/activity section in the review workspace
+- unified rendering of review creation, workflow transitions, questionnaire updates, evidence uploads, external collaboration events, and collaboration events
 
 ### 7. Decision and Approval
 

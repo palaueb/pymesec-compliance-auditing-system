@@ -6,15 +6,20 @@
       "summary": "Use the vendor review workspace to keep intake, questionnaire answers, evidence, linked records, and approval decisions together for one third-party review.",
       "body": [
         "The vendor register stays lightweight and is mainly for browsing vendors, current status, and opening the active review.",
-        "The review workspace is where the real work happens: capture questionnaire responses, attach artifacts, link internal records, and move the review through approval states."
+        "Use the register filters to focus on reviews that are decision pending, due soon, or already overdue for reassessment.",
+        "The review workspace is where the real work happens: capture questionnaire responses, attach artifacts, review linked findings and remediation actions, move the review through approval states, coordinate shared drafts, comments, and follow-up requests, choose direct external access or brokered collection, and use the activity timeline to understand what happened recently."
       ],
       "concept_ids": [
         "vendor-record",
         "vendor-review",
         "vendor-review-profile",
         "vendor-questionnaire-template",
+        "vendor-brokered-collection-request",
         "vendor-external-review-link",
-        "vendor-questionnaire-item"
+        "vendor-questionnaire-item",
+        "collaboration-draft",
+        "collaboration-comment",
+        "collaboration-request"
       ],
       "order": 255
     }
@@ -47,7 +52,13 @@
       "why_it_exists": "It gives the team one place to perform due diligence and record a clear decision before approval or reassessment.",
       "how_to_use": [
         "Open the vendor review when you need to assess a new vendor or revisit an approved one.",
-        "Use it to collect answers, evidence, follow-up notes, and linked findings or risks."
+        "Use it to collect answers, evidence, follow-up notes, and linked findings or risks.",
+        "When a finding is already linked, use the workspace summary to follow remediation actions without losing vendor review context.",
+        "Use shared drafts when one reviewer starts a note or follow-up item and another reviewer may need to finish or publish it later.",
+        "Use comments and follow-up requests to keep reviewer coordination inside the same workspace as the review evidence and decisions.",
+        "Use follow-up handoff stages to show whether the next action belongs to review, remediation, approval, or the closed loop after decision.",
+        "Mention functional actors when you want linked principals to see an explicit cue without changing formal request ownership.",
+        "Use the timeline section to review workflow transitions, evidence uploads, questionnaire changes, external collaboration events, and collaboration events in one place."
       ],
       "relations": [
         {
@@ -69,6 +80,21 @@
           "type": "may-link-to",
           "target": "finding",
           "summary": "A review can link or lead to findings when due diligence identifies a concrete gap."
+        },
+        {
+          "type": "may-include",
+          "target": "collaboration-draft",
+          "summary": "Shared drafts keep unfinished collaboration visible inside the review before publication."
+        },
+        {
+          "type": "may-include",
+          "target": "collaboration-comment",
+          "summary": "Comments keep reviewer discussion and operational context inside the review."
+        },
+        {
+          "type": "may-include",
+          "target": "collaboration-request",
+          "summary": "Follow-up requests keep the next action explicit inside the review workspace."
         }
       ],
       "order": 256
@@ -105,7 +131,9 @@
       "why_it_exists": "Templates keep recurring third-party reviews consistent without forcing every review to start from a blank questionnaire.",
       "how_to_use": [
         "Select a questionnaire template for the review and apply it to create review-bound question items.",
-        "Use review-bound items for actual answers, status, and follow-up notes after the template has been copied."
+        "Use review-bound items for actual answers, status, and follow-up notes after the template has been copied.",
+        "Use section titles to group related questions such as access governance, incident handling, or subprocessors.",
+        "The shared storage and response semantics now come from the transversal questionnaires plugin even though this workspace still owns the vendor-review workflow."
       ],
       "relations": [
         {
@@ -126,10 +154,14 @@
       "label": "Vendor questionnaire item",
       "category": "operations",
       "summary": "One review-bound question and answer entry used to capture due diligence responses, their review status, and follow-up notes.",
-      "why_it_exists": "It lets the team gather structured review answers before a full external questionnaire engine or template catalogue is introduced.",
+      "why_it_exists": "It lets the team gather structured review answers inside one concrete vendor review while reusing the shared questionnaires plugin for storage and answer semantics.",
       "how_to_use": [
         "Add one item per question you need to track during the review.",
-        "Update the answer, response status, and follow-up notes as the review progresses."
+        "Update the answer, response status, and follow-up notes as the review progresses.",
+        "Assign a section title when you want related questions to render together for both internal reviewers and external vendors.",
+        "Save stable answers to the questionnaire library when you want similar vendor reviews to reuse the same baseline response.",
+        "Use the dedicated review action to mark answers as accepted or needing follow-up and keep reviewer notes on the item itself.",
+        "Set an attachment mode and upload profile when the question expects a supporting file, and use evidence promotion only where the attachment should become governed evidence."
       ],
       "relations": [
         {
@@ -144,6 +176,31 @@
         }
       ],
       "order": 259
+    },
+    {
+      "id": "vendor-brokered-collection-request",
+      "label": "Vendor brokered collection request",
+      "category": "operations",
+      "summary": "A tracked collection request where an internal broker gathers vendor answers or supporting material off-platform without opening the external portal.",
+      "why_it_exists": "It provides a controlled middle path between fully internal completion and direct external portal access.",
+      "how_to_use": [
+        "Create a brokered request when the vendor should answer by email, meeting, call, or uploaded document exchange rather than through the portal.",
+        "Assign or confirm the broker principal, capture collection instructions, and update the request status as the intake progresses.",
+        "Use broker notes to explain what was collected and what still needs review before the answer can be accepted."
+      ],
+      "relations": [
+        {
+          "type": "belongs-to",
+          "target": "vendor-review",
+          "summary": "Each brokered request is scoped to one concrete vendor review."
+        },
+        {
+          "type": "supports",
+          "target": "vendor-questionnaire-item",
+          "summary": "Brokered requests provide the off-platform collection path for review-bound questionnaire answers."
+        }
+      ],
+      "order": 260
     },
     {
       "id": "vendor-external-review-link",
@@ -179,7 +236,7 @@
           "summary": "Email invitation delivery for the link uses the organization outbound mail connector when enabled."
         }
       ],
-      "order": 260
+      "order": 261
     }
   ]
 }

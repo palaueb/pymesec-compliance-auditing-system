@@ -2,6 +2,10 @@
 
 namespace PymeSec\Plugins\EvidenceManagement;
 
+use PymeSec\Core\Artifacts\Contracts\ArtifactServiceInterface;
+use PymeSec\Core\Audit\Contracts\AuditTrailInterface;
+use PymeSec\Core\Events\Contracts\EventBusInterface;
+use PymeSec\Core\Notifications\Contracts\NotificationServiceInterface;
 use PymeSec\Core\Permissions\AuthorizationContext;
 use PymeSec\Core\Permissions\Contracts\AuthorizationServiceInterface;
 use PymeSec\Core\Plugins\Contracts\PluginInterface;
@@ -16,10 +20,10 @@ class EvidenceManagementPlugin implements PluginInterface
     public function register(PluginContext $context): void
     {
         $context->app()->singleton(EvidenceManagementRepository::class, fn ($app) => new EvidenceManagementRepository(
-            artifacts: $app->make(\PymeSec\Core\Artifacts\Contracts\ArtifactServiceInterface::class),
-            audit: $app->make(\PymeSec\Core\Audit\Contracts\AuditTrailInterface::class),
-            events: $app->make(\PymeSec\Core\Events\Contracts\EventBusInterface::class),
-            notifications: $app->make(\PymeSec\Core\Notifications\Contracts\NotificationServiceInterface::class),
+            artifacts: $app->make(ArtifactServiceInterface::class),
+            audit: $app->make(AuditTrailInterface::class),
+            events: $app->make(EventBusInterface::class),
+            notifications: $app->make(NotificationServiceInterface::class),
         ));
 
         $context->registerScreen(new ScreenDefinition(
@@ -269,6 +273,7 @@ class EvidenceManagementPlugin implements PluginInterface
             'continuity-service' => route('core.shell.index', [...$query, 'menu' => 'plugin.continuity-bcm.root', 'service_id' => $domainId]),
             'recovery-plan' => route('core.shell.index', [...$query, 'menu' => 'plugin.continuity-bcm.plans', 'plan_id' => $domainId]),
             'assessment' => route('core.shell.index', [...$query, 'menu' => 'plugin.assessments-audits.root', 'assessment_id' => $domainId]),
+            'vendor-review' => route('core.shell.index', [...$query, 'menu' => 'plugin.third-party-risk.root', 'vendor_id' => $domainId]),
             default => null,
         };
     }

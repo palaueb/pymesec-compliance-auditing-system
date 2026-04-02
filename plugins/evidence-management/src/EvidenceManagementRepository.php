@@ -406,7 +406,7 @@ class EvidenceManagementRepository
             ->where('organization_id', $organizationId)
             ->whereIn('status', ['active', 'approved'])
             ->where(function ($nested) use ($today, $windowEnd): void {
-                $nested->where(function ($query) use ($today, $windowEnd): void {
+                $nested->where(function ($query) use ($windowEnd): void {
                     $query->whereNotNull('review_due_on')
                         ->where('review_due_on', '<=', $windowEnd);
                 })->orWhere(function ($query) use ($today, $windowEnd): void {
@@ -855,6 +855,20 @@ class EvidenceManagementRepository
         return is_string($value) && trim($value) !== '' ? trim($value) : null;
     }
 
+    /**
+     * @return array<string, mixed>
+     */
+    private function decodeJson(mixed $value): array
+    {
+        if (! is_string($value) || $value === '') {
+            return [];
+        }
+
+        $decoded = json_decode($value, true);
+
+        return is_array($decoded) ? $decoded : [];
+    }
+
     private function shouldResetReminderTimestamp(mixed $previousDate, ?string $nextDate, mixed $reminderTimestamp): bool
     {
         if (! is_string($reminderTimestamp) || $reminderTimestamp === '') {
@@ -1092,6 +1106,14 @@ class EvidenceManagementRepository
             }
         }
 
+        if ($subjectType === 'vendor-review' && Schema::hasTable('vendor_reviews')) {
+            $links = [...$links, ...$this->vendorReviewLinkTargets($subjectId)];
+        }
+
+        if ($subjectType === 'questionnaire-subject-item') {
+            $links = [...$links, ...$this->questionnaireItemLinkTargets($artifact)];
+        }
+
         return array_values(array_unique($links, SORT_REGULAR));
     }
 
@@ -1114,6 +1136,8 @@ class EvidenceManagementRepository
             'recovery-plan' => $this->resolveDomainTarget($organizationId, 'recovery-plan', (string) $artifact->subject_id),
             'assessment' => $this->resolveDomainTarget($organizationId, 'assessment', (string) $artifact->subject_id),
             'assessment-review' => $this->resolveAssessmentReviewTarget((string) $artifact->subject_id, $organizationId),
+            'vendor-review' => $this->resolveVendorReviewTarget((string) $artifact->subject_id, $organizationId),
+            'questionnaire-subject-item' => $this->resolveQuestionnaireItemTarget($artifact, $organizationId),
             default => null,
         };
     }
@@ -1147,6 +1171,107 @@ class EvidenceManagementRepository
             'domain_label' => (string) $row->assessment_title,
             'scope_id' => is_string($row->scope_id ?? null) ? $row->scope_id : null,
         ];
+    }
+
+    /**
+     * @return array<string, string|null>|null
+     */
+    private function resolveVendorReviewTarget(string $reviewId, string $organizationId): ?array
+    {
+        if (! Schema::hasTable('vendor_reviews')) {
+            return null;
+        }
+
+        $row = DB::table('vendor_reviews as reviews')
+            ->join('vendors', 'vendors.id', '=', 'reviews.vendor_id')
+            ->where('reviews.id', $reviewId)
+            ->where('reviews.organization_id', $organizationId)
+            ->first([
+                'reviews.title as review_title',
+                'reviews.scope_id',
+                'reviews.vendor_id',
+            ]);
+
+        if ($row === null) {
+            return null;
+        }
+
+        return [
+            'domain_type' => 'vendor-review',
+            'domain_id' => (string) $row->vendor_id,
+            'domain_label' => (string) $row->review_title,
+            'scope_id' => is_string($row->scope_id ?? null) ? $row->scope_id : null,
+        ];
+    }
+
+    /**
+     * @return array<string, string|null>|null
+     */
+    private function resolveQuestionnaireItemTarget(object $artifact, string $organizationId): ?array
+    {
+        $metadata = $this->decodeJson($artifact->metadata ?? null);
+        $ownerComponent = is_string($metadata['questionnaire_owner_component'] ?? null) ? $metadata['questionnaire_owner_component'] : '';
+        $subjectType = is_string($metadata['questionnaire_subject_type'] ?? null) ? $metadata['questionnaire_subject_type'] : '';
+        $subjectId = is_string($metadata['questionnaire_subject_id'] ?? null) ? $metadata['questionnaire_subject_id'] : '';
+
+        if ($ownerComponent === 'third-party-risk' && $subjectType === 'vendor-review' && $subjectId !== '') {
+            return $this->resolveVendorReviewTarget($subjectId, $organizationId);
+        }
+
+        return null;
+    }
+
+    /**
+     * @return array<int, array<string, string>>
+     */
+    private function vendorReviewLinkTargets(string $reviewId): array
+    {
+        if (! Schema::hasTable('vendor_reviews')) {
+            return [];
+        }
+
+        $review = DB::table('vendor_reviews')->where('id', $reviewId)->first();
+
+        if ($review === null) {
+            return [];
+        }
+
+        $links = [];
+
+        if (is_string($review->linked_asset_id ?? null) && $review->linked_asset_id !== '') {
+            $links[] = ['domain_type' => 'asset', 'domain_id' => $review->linked_asset_id];
+        }
+
+        if (is_string($review->linked_control_id ?? null) && $review->linked_control_id !== '') {
+            $links[] = ['domain_type' => 'control', 'domain_id' => $review->linked_control_id];
+        }
+
+        if (is_string($review->linked_risk_id ?? null) && $review->linked_risk_id !== '') {
+            $links[] = ['domain_type' => 'risk', 'domain_id' => $review->linked_risk_id];
+        }
+
+        if (is_string($review->linked_finding_id ?? null) && $review->linked_finding_id !== '') {
+            $links[] = ['domain_type' => 'finding', 'domain_id' => $review->linked_finding_id];
+        }
+
+        return $links;
+    }
+
+    /**
+     * @return array<int, array<string, string>>
+     */
+    private function questionnaireItemLinkTargets(object $artifact): array
+    {
+        $metadata = $this->decodeJson($artifact->metadata ?? null);
+        $ownerComponent = is_string($metadata['questionnaire_owner_component'] ?? null) ? $metadata['questionnaire_owner_component'] : '';
+        $subjectType = is_string($metadata['questionnaire_subject_type'] ?? null) ? $metadata['questionnaire_subject_type'] : '';
+        $subjectId = is_string($metadata['questionnaire_subject_id'] ?? null) ? $metadata['questionnaire_subject_id'] : '';
+
+        if ($ownerComponent === 'third-party-risk' && $subjectType === 'vendor-review' && $subjectId !== '') {
+            return $this->vendorReviewLinkTargets($subjectId);
+        }
+
+        return [];
     }
 
     /**

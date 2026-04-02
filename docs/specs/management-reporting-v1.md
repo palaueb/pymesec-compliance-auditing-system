@@ -8,6 +8,7 @@ Add a dedicated workspace reporting page that gives management a cross-domain vi
 - evidence
 - risks
 - findings
+- vendor reviews
 
 This is intentionally a management summary, not a replacement for the operational modules themselves.
 
@@ -63,6 +64,13 @@ Minimum section shape:
 - `empty_copy`: shared empty-state copy for the section
 
 This keeps the reporting view generic enough to render sections consistently while still allowing domain-specific row payloads.
+
+The current implementation now also includes a vendor-review reporting slice that summarizes:
+
+- vendor review load
+- decision pending posture
+- due soon / overdue reassessment timing
+- unresolved questionnaire and remediation follow-up
 
 The page should also keep a clear visual split between:
 

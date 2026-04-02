@@ -5,7 +5,7 @@
         <p class="screen-subtitle">Use this page to understand current delivery pressure before going into one operational module.</p>
     </div>
 
-    <div class="overview-grid" style="grid-template-columns:repeat(5, minmax(0, 1fr));">
+    <div class="overview-grid" style="grid-template-columns:repeat(6, minmax(0, 1fr));">
         @foreach ($headline_metrics as $metric)
             <div class="metric-card">
                 <div class="metric-label">{{ $metric['label'] }}</div>
@@ -60,6 +60,14 @@
             'title' => 'Findings',
             'subtitle' => 'Severity mix, overdue exposure, and remediation action pressure.',
             'section' => $findings,
+        ])
+    </div>
+
+    <div class="overview-grid" style="grid-template-columns:repeat(1, minmax(0, 1fr)); align-items:start;">
+        @include('partials.management-reporting-executive-section', [
+            'title' => 'Vendors',
+            'subtitle' => 'Vendor review load, decision posture, reassessment timing, and unresolved third-party follow-up.',
+            'section' => $vendors,
         ])
     </div>
 
@@ -217,6 +225,48 @@
                     @empty
                         <tr>
                             <td colspan="4" class="muted-note">{{ $findings['empty_copy'] }}</td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <div class="overview-grid" style="grid-template-columns:repeat(1, minmax(0, 1fr)); align-items:start;">
+        <div class="table-card">
+            <div class="screen-header">
+                <div>
+                    <h2 class="screen-title" style="font-size:22px;">{{ $vendors['attention']['title'] }}</h2>
+                    <p class="screen-subtitle">{{ $vendors['attention']['copy'] }}</p>
+                </div>
+            </div>
+            <table class="entity-table">
+                <thead>
+                    <tr>
+                        <th>Vendor</th>
+                        <th>Review posture</th>
+                        <th>Follow-up</th>
+                        <th></th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse ($vendors['rows'] as $row)
+                        <tr>
+                            <td>
+                                <div class="entity-title">{{ $row['title'] }}</div>
+                                <div class="entity-meta">{{ $row['scope_label'] }} · {{ $row['tier_label'] }} tier · {{ $row['vendor_status_label'] }}</div>
+                            </td>
+                            <td>
+                                {{ $row['decision_state_label'] }} · {{ $row['attention_reason'] }}
+                                <br>
+                                Next review {{ $row['next_review_due_on'] !== '' ? $row['next_review_due_on'] : 'n/a' }}
+                            </td>
+                            <td>{{ $row['open_questionnaire_count'] }} questionnaire · {{ $row['open_action_count'] }} remediation</td>
+                            <td class="table-actions"><a class="button button-ghost" href="{{ $row['open_url'] }}">Open</a></td>
+                        </tr>
+                    @empty
+                        <tr>
+                            <td colspan="4" class="muted-note">{{ $vendors['empty_copy'] }}</td>
                         </tr>
                     @endforelse
                 </tbody>
