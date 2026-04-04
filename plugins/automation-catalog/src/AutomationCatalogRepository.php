@@ -14,7 +14,7 @@ class AutomationCatalogRepository
     {
         $query = DB::table('automation_packs')
             ->where('organization_id', $organizationId)
-            ->orderByRaw("case when is_enabled then 0 when is_installed then 1 else 2 end")
+            ->orderByRaw('case when is_enabled then 0 when is_installed then 1 else 2 end')
             ->orderBy('name');
 
         if ($scopeId !== null && $scopeId !== '') {
@@ -457,6 +457,10 @@ class AutomationCatalogRepository
             ->where('repository_id', $repositoryId)
             ->delete();
 
+        $repositoryUrl = (string) (DB::table('automation_pack_repositories')
+            ->where('id', $repositoryId)
+            ->value('repository_url') ?? '');
+
         $releaseRows = 0;
         $latestRows = [];
 
@@ -511,6 +515,7 @@ class AutomationCatalogRepository
 
                 if ($isLatest) {
                     $latestRows[] = [
+                        'repository_url' => $repositoryUrl,
                         'pack_key' => $packKey,
                         'pack_name' => $packName,
                         'pack_description' => $packDescription,
@@ -819,6 +824,21 @@ class AutomationCatalogRepository
      */
     private function resolvePackSourceRef(array $latest): ?string
     {
+        $packKey = trim((string) ($latest['pack_key'] ?? ''));
+        $repositoryUrl = trim((string) ($latest['repository_url'] ?? ''));
+        if ($packKey !== '' && $repositoryUrl !== '') {
+            $cleanRepositoryUrl = preg_replace('/[?#].*$/', '', $repositoryUrl);
+            $cleanRepositoryUrl = is_string($cleanRepositoryUrl) ? $cleanRepositoryUrl : $repositoryUrl;
+            $lastSlash = strrpos($cleanRepositoryUrl, '/');
+
+            if ($lastSlash !== false) {
+                $repositoryRoot = substr($cleanRepositoryUrl, 0, $lastSlash);
+                if ($repositoryRoot !== '') {
+                    return rtrim($repositoryRoot, '/').'/?pack='.rawurlencode($packKey);
+                }
+            }
+        }
+
         $manifestUrl = trim((string) ($latest['pack_manifest_url'] ?? ''));
         if ($manifestUrl !== '') {
             if (str_ends_with($manifestUrl, '/pack.json')) {

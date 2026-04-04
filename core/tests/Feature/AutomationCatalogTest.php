@@ -269,7 +269,7 @@ class AutomationCatalogTest extends TestCase
             'name' => 'Hello World',
             'version' => '1.0.1',
             'provenance_type' => 'marketplace',
-            'source_ref' => 'https://packages.example.org/deploy/utility.hello-world/',
+            'source_ref' => 'https://packages.example.org/deploy/?pack=utility.hello-world',
             'lifecycle_state' => 'discovered',
             'is_installed' => false,
             'is_enabled' => false,
@@ -515,7 +515,7 @@ class AutomationCatalogTest extends TestCase
             'organization_id' => 'org-a',
             'scope_id' => 'scope-eu',
             'pack_key' => 'utility.hello-world',
-            'source_ref' => 'https://repository.pimesec.com/utility.hello-world/',
+            'source_ref' => 'https://repository.pimesec.com/?pack=utility.hello-world',
         ]);
     }
 
