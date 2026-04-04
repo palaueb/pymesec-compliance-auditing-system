@@ -102,8 +102,19 @@ class AutomationPackageRepositorySyncService
             return $asPem;
         }
 
-        if (str_starts_with($candidate, 'ssh-rsa ')) {
-            $pem = $this->convertOpenSshRsaToPem($candidate);
+        $singleLine = preg_replace('/\s+/', ' ', $candidate);
+        $singleLine = is_string($singleLine) ? trim($singleLine) : '';
+
+        if (str_starts_with($singleLine, 'ssh-') && ! str_starts_with($singleLine, 'ssh-rsa ')) {
+            $keyType = strtok($singleLine, ' ') ?: 'unknown';
+            throw new RuntimeException(sprintf(
+                'OpenSSH key type [%s] is not supported for repository signatures. Use ssh-rsa or PEM.',
+                $keyType
+            ));
+        }
+
+        if (str_starts_with($singleLine, 'ssh-rsa ')) {
+            $pem = $this->convertOpenSshRsaToPem($singleLine);
             $converted = $this->loadOpenSslPublicKey($pem);
             if ($converted !== false) {
                 return $converted;
@@ -129,7 +140,20 @@ class AutomationPackageRepositorySyncService
             throw new RuntimeException('OpenSSH public key must start with ssh-rsa.');
         }
 
-        $blob = base64_decode((string) $parts[1], true);
+        $base64Chunks = [];
+        foreach (array_slice($parts, 1) as $part) {
+            if (preg_match('/^[A-Za-z0-9+\/=]+$/', $part) !== 1) {
+                break;
+            }
+            $base64Chunks[] = $part;
+        }
+
+        $base64Payload = implode('', $base64Chunks);
+        if ($base64Payload === '') {
+            throw new RuntimeException('OpenSSH public key payload is missing.');
+        }
+
+        $blob = base64_decode($base64Payload, true);
         if (! is_string($blob) || $blob === '') {
             throw new RuntimeException('OpenSSH public key payload is not valid base64.');
         }

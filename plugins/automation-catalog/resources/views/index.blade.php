@@ -450,21 +450,21 @@
                     <tbody>
                         @forelse ($repositories as $repo)
                             <tr>
-                                <td>
+                                <td style="min-width:360px; vertical-align:top;">
                                     <div class="entity-title">{{ $repo['label'] }}</div>
                                     <div class="table-note" style="overflow-wrap:anywhere;">{{ $repo['repository_url'] }}</div>
                                     <div class="table-note">Scope: {{ $repo['scope_id'] !== '' ? $repo['scope_id'] : 'Org-wide' }}</div>
                                 </td>
-                                <td>{{ $trust_tier_options[$repo['trust_tier']] ?? $repo['trust_tier'] }}</td>
-                                <td>{{ $repo['last_refreshed_at'] !== '' ? $repo['last_refreshed_at'] : 'Never' }}</td>
-                                <td>
+                                <td style="min-width:160px; vertical-align:top;">{{ $trust_tier_options[$repo['trust_tier']] ?? $repo['trust_tier'] }}</td>
+                                <td style="min-width:170px; vertical-align:top;">{{ $repo['last_refreshed_at'] !== '' ? $repo['last_refreshed_at'] : 'Never' }}</td>
+                                <td style="min-width:340px; vertical-align:top;">
                                     <div class="table-note">{{ $repo['last_status_label'] }}</div>
                                     @if ($repo['last_error'] !== '')
                                         <div class="table-note" style="overflow-wrap:anywhere;">{{ $repo['last_error'] }}</div>
                                     @endif
                                 </td>
-                                <td>{{ $repo['is_enabled'] === '1' ? 'Enabled' : 'Disabled' }}</td>
-                                <td>
+                                <td style="min-width:120px; vertical-align:top;">{{ $repo['is_enabled'] === '1' ? 'Enabled' : 'Disabled' }}</td>
+                                <td style="min-width:120px; vertical-align:top;">
                                     @if ($can_manage_packs)
                                         <form method="POST" action="{{ $repo['refresh_route'] }}">
                                             @csrf
@@ -510,20 +510,20 @@
                     <tbody>
                         @forelse ($external_catalog_rows as $row)
                             <tr>
-                                <td>
+                                <td style="min-width:320px; vertical-align:top;">
                                     <div class="entity-title">{{ $row['pack_name'] }}</div>
                                     <div class="table-note" style="overflow-wrap:anywhere;">{{ $row['pack_key'] }}</div>
                                     @if ($row['pack_description'] !== '')
                                         <div class="table-note" style="overflow-wrap:anywhere;">{{ $row['pack_description'] }}</div>
                                     @endif
                                 </td>
-                                <td>
+                                <td style="min-width:190px; vertical-align:top;">
                                     <div class="table-note" style="overflow-wrap:anywhere;">{{ $row['repository_label'] }}</div>
                                     <div class="table-note">{{ $row['repository_last_status'] === 'success' ? 'Synced' : ($row['repository_last_status'] === 'failed' ? 'Failed' : 'Never') }}</div>
                                 </td>
-                                <td>{{ $row['latest_version'] }}</td>
-                                <td>{{ $row['versions_available'] }}</td>
-                                <td>
+                                <td style="min-width:120px; vertical-align:top;">{{ $row['latest_version'] }}</td>
+                                <td style="min-width:100px; vertical-align:top;">{{ $row['versions_available'] }}</td>
+                                <td style="min-width:250px; vertical-align:top;">
                                     <a href="{{ $row['artifact_url'] }}" target="_blank" rel="noreferrer">Artifact</a>
                                     @if ($row['artifact_signature_url'] !== '')
                                         <div class="table-note" style="overflow-wrap:anywhere;"><a href="{{ $row['artifact_signature_url'] }}" target="_blank" rel="noreferrer">Signature</a></div>

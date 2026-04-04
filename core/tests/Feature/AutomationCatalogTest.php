@@ -362,6 +362,7 @@ class AutomationCatalogTest extends TestCase
 
         [$privateKeyPem, $publicKeyPem] = $this->buildKeyPair();
         $openSshPublicKey = $this->toOpenSshRsaPublicKey($publicKeyPem);
+        $openSshPublicKeyWrapped = $this->wrapOpenSshPublicKey($openSshPublicKey);
 
         $repositoryJson = json_encode([
             'repository' => [
@@ -407,7 +408,7 @@ class AutomationCatalogTest extends TestCase
             'label' => 'OpenSSH key repo',
             'repository_url' => 'https://packages.openssh.example/deploy/repository.json',
             'repository_sign_url' => 'https://packages.openssh.example/deploy/repository.sign',
-            'public_key_pem' => $openSshPublicKey,
+            'public_key_pem' => $openSshPublicKeyWrapped,
             'trust_tier' => 'community-reviewed',
             'is_enabled' => '1',
         ])->assertFound();
@@ -496,5 +497,17 @@ class AutomationCatalogTest extends TestCase
         }
 
         return $normalized;
+    }
+
+    private function wrapOpenSshPublicKey(string $key): string
+    {
+        $parts = preg_split('/\s+/', trim($key), 3);
+        $this->assertIsArray($parts);
+        $this->assertSame('ssh-rsa', $parts[0] ?? null);
+        $this->assertNotSame('', $parts[1] ?? '');
+
+        $payload = chunk_split((string) $parts[1], 48, "\n");
+
+        return "ssh-rsa\n".trim($payload);
     }
 }
