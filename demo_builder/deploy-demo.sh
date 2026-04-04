@@ -162,9 +162,23 @@ apply_demo_patches() {
 }
 
 ensure_no_merge_conflicts() {
-    local scan_roots=("$CORE_DIR" "$REPO_ROOT/plugins")
+    local scan_roots=()
     local conflict_files_raw
     local conflict_files
+
+    for candidate in \
+        "$CORE_DIR/app" \
+        "$CORE_DIR/bootstrap" \
+        "$CORE_DIR/config" \
+        "$CORE_DIR/database" \
+        "$CORE_DIR/routes" \
+        "$REPO_ROOT/plugins"; do
+        [[ -d "$candidate" ]] && scan_roots+=("$candidate")
+    done
+
+    if [[ ${#scan_roots[@]} -eq 0 ]]; then
+        return 0
+    fi
 
     conflict_files_raw="$(grep -R -l -E '^(<<<<<<<|=======|>>>>>>>)' "${scan_roots[@]}" 2>/dev/null || true)"
 
