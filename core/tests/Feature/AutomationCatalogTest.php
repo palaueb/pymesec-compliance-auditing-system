@@ -435,6 +435,88 @@ class AutomationCatalogTest extends TestCase
         ]);
     }
 
+    public function test_official_repository_can_be_installed_with_one_click_and_refreshed(): void
+    {
+        if (! function_exists('openssl_sign')) {
+            $this->markTestSkipped('OpenSSL extension is required for repository signature tests.');
+        }
+
+        [$privateKeyPem, $publicKeyPem] = $this->buildKeyPair();
+
+        $repositoryJson = json_encode([
+            'repository' => [
+                'id' => 'pymesec-community',
+                'name' => 'PymeSec Community',
+            ],
+            'packs' => [
+                [
+                    'id' => 'utility.hello-world',
+                    'name' => 'Hello World',
+                    'latest_version' => '1.0.1',
+                    'versions' => [
+                        [
+                            'version' => '1.0.1',
+                            'artifact_url' => 'utility.hello-world/utility.hello-world-latest.zip',
+                        ],
+                    ],
+                ],
+            ],
+        ], JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
+
+        $signature = '';
+        openssl_sign($repositoryJson, $signature, $privateKeyPem, OPENSSL_ALGO_SHA256);
+        $repositorySignature = base64_encode($signature);
+
+        Http::fake([
+            'https://repository.pimesec.com/repository.json' => Http::response($repositoryJson, 200),
+            'https://repository.pimesec.com/repository.json.sign' => Http::response($repositorySignature, 200),
+        ]);
+
+        config()->set('plugins.automation_catalog.official_repository', [
+            'label' => 'PymeSec Official Repository',
+            'url' => 'https://repository.pimesec.com/repository.json',
+            'sign_url' => 'https://repository.pimesec.com/repository.json.sign',
+            'trust_tier' => 'trusted-first-party',
+            'public_key_pem' => $publicKeyPem,
+            'public_key_path' => '',
+        ]);
+
+        $payload = [
+            'principal_id' => 'principal-org-a',
+            'organization_id' => 'org-a',
+            'scope_id' => 'scope-eu',
+            'locale' => 'en',
+            'menu' => 'plugin.automation-catalog.root',
+            'membership_id' => 'membership-org-a-hello',
+            'automation_panel' => 'repository-editor',
+        ];
+
+        $this->post('/plugins/automation-catalog/repositories/install-official', $payload)
+            ->assertFound();
+
+        $repositoryId = (string) DB::table('automation_pack_repositories')
+            ->where('organization_id', 'org-a')
+            ->where('scope_id', 'scope-eu')
+            ->where('repository_url', 'https://repository.pimesec.com/repository.json')
+            ->value('id');
+
+        $this->assertNotSame('', $repositoryId);
+
+        $this->assertDatabaseHas('automation_pack_repositories', [
+            'id' => $repositoryId,
+            'label' => 'PymeSec Official Repository',
+            'repository_sign_url' => 'https://repository.pimesec.com/repository.json.sign',
+            'trust_tier' => 'trusted-first-party',
+            'last_status' => 'success',
+        ]);
+        $this->assertDatabaseHas('automation_pack_releases', [
+            'repository_id' => $repositoryId,
+            'pack_key' => 'utility.hello-world',
+            'version' => '1.0.1',
+            'is_latest' => true,
+        ]);
+    }
+
     /**
      * @return array{string, string}
      */

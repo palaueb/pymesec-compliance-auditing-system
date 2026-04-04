@@ -7,6 +7,69 @@ use PymeSec\Plugins\AutomationCatalog\AutomationCatalogRepository;
 use PymeSec\Plugins\AutomationCatalog\AutomationOutputMappingDeliveryService;
 use PymeSec\Plugins\AutomationCatalog\AutomationPackageRepositorySyncService;
 
+if (! function_exists('automationCatalogOfficialRepositoryPreset')) {
+    /**
+     * @return array{label: string, repository_url: string, repository_sign_url: string, trust_tier: string, public_key_pem: string}
+     */
+    function automationCatalogOfficialRepositoryPreset(): array
+    {
+        $config = config('plugins.automation_catalog.official_repository');
+        $label = trim((string) (is_array($config) ? ($config['label'] ?? '') : ''));
+        $repositoryUrl = trim((string) (is_array($config) ? ($config['url'] ?? '') : ''));
+        $repositorySignUrl = trim((string) (is_array($config) ? ($config['sign_url'] ?? '') : ''));
+        $trustTier = trim((string) (is_array($config) ? ($config['trust_tier'] ?? '') : ''));
+        $publicKeyPem = trim((string) (is_array($config) ? ($config['public_key_pem'] ?? '') : ''));
+        $publicKeyPath = trim((string) (is_array($config) ? ($config['public_key_path'] ?? '') : ''));
+
+        if ($publicKeyPem === '' && $publicKeyPath !== '' && is_file($publicKeyPath)) {
+            $publicKeyPem = trim((string) file_get_contents($publicKeyPath));
+        }
+
+        if ($publicKeyPem === '') {
+            $publicKeyPem = automationCatalogOfficialRepositoryDefaultPublicKey();
+        }
+
+        if (str_contains($publicKeyPem, '\n')) {
+            $publicKeyPem = str_replace('\n', "\n", $publicKeyPem);
+        }
+
+        if ($repositorySignUrl === '' && $repositoryUrl !== '') {
+            $repositorySignUrl = rtrim($repositoryUrl, '/').'.sign';
+        }
+
+        return [
+            'label' => $label !== '' ? $label : 'PymeSec Official Repository',
+            'repository_url' => $repositoryUrl,
+            'repository_sign_url' => $repositorySignUrl,
+            'trust_tier' => in_array($trustTier, ['trusted-first-party', 'trusted-partner', 'community-reviewed', 'untrusted'], true)
+                ? $trustTier
+                : 'trusted-first-party',
+            'public_key_pem' => $publicKeyPem,
+        ];
+    }
+}
+
+if (! function_exists('automationCatalogOfficialRepositoryDefaultPublicKey')) {
+    function automationCatalogOfficialRepositoryDefaultPublicKey(): string
+    {
+        return <<<'PEM'
+-----BEGIN RSA PUBLIC KEY-----
+MIICCgKCAgEA2WQiwlwaQoPs4c0s9VzozAx3RiOkMSyR9R5d7vn7VTsnRiH45SNj
+8tSEPRATL4Ef8w03hcWG3Vx9Wcnk2AdC3N6B5D6NcocXMVPUaRGf1ctqAdKj0EQL
+lXRZlWql/wbZeKFJhSDaO690AcePIctmPVC3ppI60PPQff0aCcgtiPnceSNl38AY
+YV4t2dJJX57L1UDyMwfmAxJtul34/GP/r5RH0sVrj3aDz8A0TwbPPwfQzDfIoIIy
+4xArAy5y92hDalDKu3luW+xidTMVaNgjYQloBR1/hXEVX4zQsp/uV7fKdnSfIACT
+1rc2CmETbBgPNgmkRR5Bn4qIGIa6UPtgfBd0ba8QDG0c7ckgPx1UEXwYMZJGyn9S
+HPKh3N2NWYMV12ZV4irLNUnMkcwfkweXCyRH1uOISqBG1U7u0PWyCGUim7bp/jcX
+TGmu4GFOlMtTXjlur/mZcvc/9y0ywWI6PxmojWak4En1fnyjuMLfugmcgR+jr2FM
+/MNMfv48XW4/f3gCQ2pnVPaIOKXCkTJK/BPzfFerhug72bmxfwoC0CcfynNyj6jw
+r7nKPZYWPw9xz/QkVbnRqRVYPZp8zNWFvaVABwVKU6d5NYabk5GHHXAkmWqgkr0e
+rwG53Dj9ah8+8aRf1qVUZXC/YLsVWw0BPI5Aj1CqessRndNee8zYdh8CAwEAAQ==
+-----END RSA PUBLIC KEY-----
+PEM;
+    }
+}
+
 Route::get('/plugins/automation-catalog', function (Request $request, AutomationCatalogRepository $repository) {
     $organizationId = (string) $request->query('organization_id', 'org-a');
     $scopeId = $request->query('scope_id');
@@ -170,6 +233,70 @@ Route::post('/plugins/automation-catalog/repositories', function (
         'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
     ]))->with('status', 'Automation package repository saved.');
 })->middleware('core.permission:plugin.automation-catalog.packs.manage')->name('plugin.automation-catalog.repositories.store');
+
+Route::post('/plugins/automation-catalog/repositories/install-official', function (
+    Request $request,
+    AutomationCatalogRepository $repository,
+    AutomationPackageRepositorySyncService $syncService,
+) {
+    $principalId = (string) $request->input('principal_id', 'principal-org-a');
+    $membershipId = $request->input('membership_id');
+    $organizationId = (string) $request->input('organization_id', 'org-a');
+    $scopeId = $request->input('scope_id');
+    $automationPanel = $request->input('automation_panel');
+    $official = automationCatalogOfficialRepositoryPreset();
+
+    if ($official['repository_url'] === '' || $official['repository_sign_url'] === '' || $official['public_key_pem'] === '') {
+        return redirect()->route('core.shell.index', array_filter([
+            'menu' => 'plugin.automation-catalog.root',
+            'principal_id' => $principalId,
+            'organization_id' => $organizationId,
+            'scope_id' => is_string($scopeId) && $scopeId !== '' ? $scopeId : null,
+            'locale' => $request->input('locale', 'en'),
+            'automation_panel' => is_string($automationPanel) && $automationPanel !== '' ? $automationPanel : 'repository-editor',
+            'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
+        ]))->with('status', 'Official repository is not configured. Set repository URL/sign/public key in plugin config.');
+    }
+
+    $repositoryRecord = $repository->saveRepository([
+        'label' => $official['label'],
+        'repository_url' => $official['repository_url'],
+        'repository_sign_url' => $official['repository_sign_url'],
+        'public_key_pem' => $official['public_key_pem'],
+        'trust_tier' => $official['trust_tier'],
+        'scope_id' => is_string($scopeId) && $scopeId !== '' ? $scopeId : null,
+        'organization_id' => $organizationId,
+        'created_by_principal_id' => $principalId,
+        'updated_by_principal_id' => $principalId,
+        'is_enabled' => true,
+    ]);
+
+    try {
+        $result = $syncService->sync($repositoryRecord);
+        $repository->markRepositorySyncResult((string) $repositoryRecord['id'], 'success');
+        $statusMessage = sprintf(
+            'Official repository installed and refreshed: %d releases and %d latest pack rows.',
+            (int) ($result['release_rows'] ?? 0),
+            (int) ($result['latest_rows'] ?? 0),
+        );
+    } catch (Throwable $exception) {
+        $repository->markRepositorySyncResult((string) $repositoryRecord['id'], 'failed', $exception->getMessage());
+        $statusMessage = sprintf(
+            'Official repository installed but refresh failed: %s',
+            $exception->getMessage()
+        );
+    }
+
+    return redirect()->route('core.shell.index', array_filter([
+        'menu' => 'plugin.automation-catalog.root',
+        'principal_id' => $principalId,
+        'organization_id' => $organizationId,
+        'scope_id' => is_string($scopeId) && $scopeId !== '' ? $scopeId : null,
+        'locale' => $request->input('locale', 'en'),
+        'automation_panel' => is_string($automationPanel) && $automationPanel !== '' ? $automationPanel : 'repository-editor',
+        'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
+    ]))->with('status', $statusMessage);
+})->middleware('core.permission:plugin.automation-catalog.packs.manage')->name('plugin.automation-catalog.repositories.install-official');
 
 Route::post('/plugins/automation-catalog/repositories/{repositoryId}/refresh', function (
     Request $request,

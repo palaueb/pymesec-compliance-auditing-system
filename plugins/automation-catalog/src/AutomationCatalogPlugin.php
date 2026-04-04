@@ -174,6 +174,7 @@ class AutomationCatalogPlugin implements PluginInterface
             'packs_list_url' => route('core.shell.index', [...$this->baseQuery($screenContext, false), 'menu' => 'plugin.automation-catalog.root']),
             'pack_store_route' => route('plugin.automation-catalog.store'),
             'repository_store_route' => route('plugin.automation-catalog.repositories.store'),
+            'official_repository_install_route' => route('plugin.automation-catalog.repositories.install-official'),
             'output_mapping_store_route' => is_array($selectedPack)
                 ? route('plugin.automation-catalog.output-mappings.store', ['packId' => $selectedPack['id']])
                 : null,

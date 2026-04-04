@@ -380,8 +380,23 @@
     @if ($show_repository_panel)
         <div class="surface-card" style="margin-top:14px; padding:14px;">
             <div class="row-between">
-                <div class="entity-title">External package repositories</div>
-                <span class="table-note">Register signed repository indexes and refresh discovered packs.</span>
+                <div>
+                    <div class="entity-title">External package repositories</div>
+                    <span class="table-note">Register signed repository indexes and refresh discovered packs.</span>
+                </div>
+                @if ($can_manage_packs)
+                    <form method="POST" action="{{ $official_repository_install_route }}">
+                        @csrf
+                        <input type="hidden" name="principal_id" value="{{ $query['principal_id'] ?? '' }}">
+                        <input type="hidden" name="organization_id" value="{{ $query['organization_id'] }}">
+                        <input type="hidden" name="scope_id" value="{{ $query['scope_id'] ?? '' }}">
+                        <input type="hidden" name="locale" value="{{ $query['locale'] }}">
+                        <input type="hidden" name="menu" value="plugin.automation-catalog.root">
+                        <input type="hidden" name="automation_panel" value="repository-editor">
+                        <input type="hidden" name="membership_id" value="{{ $query['membership_ids'][0] ?? 'membership-org-a-hello' }}">
+                        <button class="button button-secondary" type="submit">Install PymeSec Official Repository</button>
+                    </form>
+                @endif
             </div>
 
             @if ($can_manage_packs)

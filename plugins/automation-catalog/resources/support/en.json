@@ -9,7 +9,8 @@
         "The catalog separates lifecycle control from pack implementation details so operators can manage only what is installed and enabled.",
         "Ownership and provenance metadata make each pack traceable to a responsible principal and source.",
         "Output mappings let operators route automation results into evidence refresh records or workflow transitions using explicit target scopes.",
-        "External package repositories can be registered with trust tier and public key so repository indexes are validated before ingestion."
+        "External package repositories can be registered with trust tier and public key so repository indexes are validated before ingestion.",
+        "The catalog can install the official PymeSec repository in one click and run an immediate refresh to populate latest releases."
       ],
       "concept_ids": [
         "automation-pack",
@@ -102,6 +103,7 @@
       "why_it_exists": "It enables operators to discover packs from external catalogs without loading every pack as a Laravel plugin.",
       "how_to_use": [
         "Register repository URL, repository signature URL, trust tier, and public key.",
+        "Use the one-click official repository install when you want a preconfigured trusted-first-party source.",
         "Refresh repository metadata so the catalog validates signature and ingests latest releases.",
         "Review discovered releases before install/enable decisions."
       ],

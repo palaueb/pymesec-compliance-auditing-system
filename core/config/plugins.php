@@ -20,6 +20,16 @@ $statePath = is_string($configuredStatePath) && $configuredStatePath !== ''
 return [
     'core_version' => env('CORE_VERSION', '0.1.0'),
     'repository_url' => env('CORE_REPOSITORY_URL', 'https://github.com/palaueb/pymesec-compliance-auditing-system'),
+    'automation_catalog' => [
+        'official_repository' => [
+            'label' => env('AUTOMATION_CATALOG_OFFICIAL_REPOSITORY_LABEL', 'PymeSec Official Repository'),
+            'url' => env('AUTOMATION_CATALOG_OFFICIAL_REPOSITORY_URL', 'https://repository.pimesec.com/repository.json'),
+            'sign_url' => env('AUTOMATION_CATALOG_OFFICIAL_REPOSITORY_SIGN_URL', ''),
+            'trust_tier' => env('AUTOMATION_CATALOG_OFFICIAL_REPOSITORY_TRUST_TIER', 'trusted-first-party'),
+            'public_key_pem' => env('AUTOMATION_CATALOG_OFFICIAL_REPOSITORY_PUBLIC_KEY_PEM', ''),
+            'public_key_path' => env('AUTOMATION_CATALOG_OFFICIAL_REPOSITORY_PUBLIC_KEY_PATH', ''),
+        ],
+    ],
     'paths' => array_values($paths),
     'state_path' => $statePath,
     'enabled' => array_values(array_filter(array_map(
