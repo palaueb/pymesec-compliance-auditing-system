@@ -97,7 +97,14 @@
             <div class="table-note" style="margin-top:12px;">
                 Provider {{ ucfirst($selected_pack['provider_type']) }} · Provenance {{ ucfirst($selected_pack['provenance_type']) }} · Owner {{ $selected_pack['owner_principal_id'] !== '' ? $selected_pack['owner_principal_id'] : 'Not set' }}
             </div>
-            <div class="table-note">Source: {{ $selected_pack['source_ref'] !== '' ? $selected_pack['source_ref'] : 'Not set' }}</div>
+            <div class="table-note">
+                Source:
+                @if ($selected_pack['source_ref'] !== '')
+                    <a href="{{ $selected_pack['source_ref'] }}" target="_blank" rel="noreferrer">{{ $selected_pack['source_ref'] }}</a>
+                @else
+                    Not set
+                @endif
+            </div>
             @if ($selected_pack['last_failure_reason'] !== '')
                 <div class="table-note">Last failure reason: {{ $selected_pack['last_failure_reason'] }}</div>
             @endif

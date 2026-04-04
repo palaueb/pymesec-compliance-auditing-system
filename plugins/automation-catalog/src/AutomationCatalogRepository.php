@@ -516,6 +516,7 @@ class AutomationCatalogRepository
                         'pack_description' => $packDescription,
                         'version' => $version,
                         'artifact_url' => $artifactUrl,
+                        'pack_manifest_url' => (string) ($versionRow['pack_manifest_url'] ?? ''),
                     ];
                 }
             }
@@ -753,6 +754,7 @@ class AutomationCatalogRepository
     {
         foreach ($latestRows as $latest) {
             $packKey = (string) ($latest['pack_key'] ?? '');
+            $sourceRef = $this->resolvePackSourceRef($latest);
 
             if ($packKey === '') {
                 continue;
@@ -774,7 +776,7 @@ class AutomationCatalogRepository
                         'version' => ($latest['version'] ?? null) ?: null,
                         'provider_type' => 'community',
                         'provenance_type' => 'marketplace',
-                        'source_ref' => ($latest['artifact_url'] ?? null) ?: null,
+                        'source_ref' => $sourceRef,
                         'last_sync_at' => now(),
                         'updated_at' => now(),
                     ]);
@@ -791,7 +793,7 @@ class AutomationCatalogRepository
                 'summary' => ($latest['pack_description'] ?? null) ?: null,
                 'version' => ($latest['version'] ?? null) ?: null,
                 'provider_type' => 'community',
-                'source_ref' => ($latest['artifact_url'] ?? null) ?: null,
+                'source_ref' => $sourceRef,
                 'provenance_type' => 'marketplace',
                 'owner_principal_id' => null,
                 'lifecycle_state' => 'discovered',
@@ -810,6 +812,36 @@ class AutomationCatalogRepository
                 'updated_at' => now(),
             ]);
         }
+    }
+
+    /**
+     * @param  array<string, string>  $latest
+     */
+    private function resolvePackSourceRef(array $latest): ?string
+    {
+        $manifestUrl = trim((string) ($latest['pack_manifest_url'] ?? ''));
+        if ($manifestUrl !== '') {
+            if (str_ends_with($manifestUrl, '/pack.json')) {
+                return substr($manifestUrl, 0, -strlen('/pack.json')).'/';
+            }
+
+            return rtrim($manifestUrl, '/').'/';
+        }
+
+        $artifactUrl = trim((string) ($latest['artifact_url'] ?? ''));
+        if ($artifactUrl === '') {
+            return null;
+        }
+
+        $cleanArtifact = preg_replace('/[?#].*$/', '', $artifactUrl);
+        $cleanArtifact = is_string($cleanArtifact) ? $cleanArtifact : $artifactUrl;
+        $lastSlash = strrpos($cleanArtifact, '/');
+
+        if ($lastSlash === false) {
+            return null;
+        }
+
+        return substr($cleanArtifact, 0, $lastSlash + 1);
     }
 
     /**
