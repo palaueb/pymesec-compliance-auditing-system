@@ -134,6 +134,16 @@
                         <input type="hidden" name="membership_id" value="{{ $query['membership_ids'][0] ?? 'membership-org-a-hello' }}">
                         <button class="button button-ghost" type="submit">Disable</button>
                     </form>
+                    <form method="POST" action="{{ route('plugin.automation-catalog.uninstall', ['packId' => $selected_pack['id']]) }}">
+                        @csrf
+                        <input type="hidden" name="principal_id" value="{{ $query['principal_id'] ?? '' }}">
+                        <input type="hidden" name="organization_id" value="{{ $query['organization_id'] }}">
+                        <input type="hidden" name="scope_id" value="{{ $query['scope_id'] ?? '' }}">
+                        <input type="hidden" name="locale" value="{{ $query['locale'] }}">
+                        <input type="hidden" name="menu" value="plugin.automation-catalog.root">
+                        <input type="hidden" name="membership_id" value="{{ $query['membership_ids'][0] ?? 'membership-org-a-hello' }}">
+                        <button class="button button-ghost" type="submit">Uninstall</button>
+                    </form>
                 </div>
 
                 <form class="upload-form" method="POST" action="{{ route('plugin.automation-catalog.health.update', ['packId' => $selected_pack['id']]) }}" style="margin-top:12px;">

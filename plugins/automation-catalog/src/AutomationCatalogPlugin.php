@@ -162,6 +162,7 @@ class AutomationCatalogPlugin implements PluginInterface
                     'install_route' => route('plugin.automation-catalog.install', ['packId' => $pack['id']]),
                     'enable_route' => route('plugin.automation-catalog.enable', ['packId' => $pack['id']]),
                     'disable_route' => route('plugin.automation-catalog.disable', ['packId' => $pack['id']]),
+                    'uninstall_route' => route('plugin.automation-catalog.uninstall', ['packId' => $pack['id']]),
                     'health_route' => route('plugin.automation-catalog.health.update', ['packId' => $pack['id']]),
                 ];
             }, $packs),

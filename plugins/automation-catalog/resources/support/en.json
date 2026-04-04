@@ -57,7 +57,8 @@
       "how_to_use": [
         "Install packs before enabling them in production workflows.",
         "Enable only packs that are required for the current operating model.",
-        "Disable packs that are not currently needed without deleting metadata history."
+        "Disable packs that are not currently needed.",
+        "Use uninstall to remove a pack record from the local catalog when you no longer want it."
       ],
       "order": 432
     },

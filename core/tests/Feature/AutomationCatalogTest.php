@@ -89,15 +89,10 @@ class AutomationCatalogTest extends TestCase
             'last_failure_reason' => 'Connector token rejected by upstream API.',
         ])->assertFound();
         $this->post("/plugins/automation-catalog/{$packId}/disable", $payload)->assertFound();
+        $this->post("/plugins/automation-catalog/{$packId}/uninstall", $payload)->assertFound();
 
-        $this->assertDatabaseHas('automation_packs', [
-            'id' => $packId,
-            'lifecycle_state' => 'disabled',
-            'is_installed' => true,
-            'is_enabled' => false,
-            'health_state' => 'failing',
-            'last_failure_reason' => 'Connector token rejected by upstream API.',
-        ]);
+        $this->assertDatabaseMissing('automation_packs', ['id' => $packId]);
+        $this->assertDatabaseMissing('automation_pack_output_mappings', ['automation_pack_id' => $packId]);
     }
 
     public function test_output_mappings_can_apply_evidence_refresh_and_workflow_transition(): void

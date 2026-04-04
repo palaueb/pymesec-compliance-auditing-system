@@ -188,6 +188,27 @@ class AutomationCatalogRepository
         return $this->find($packId);
     }
 
+    public function uninstallPack(string $packId): bool
+    {
+        $current = $this->find($packId);
+
+        if ($current === null) {
+            return false;
+        }
+
+        DB::transaction(function () use ($packId): void {
+            DB::table('automation_pack_output_mappings')
+                ->where('automation_pack_id', $packId)
+                ->delete();
+
+            DB::table('automation_packs')
+                ->where('id', $packId)
+                ->delete();
+        });
+
+        return true;
+    }
+
     /**
      * @param  array<string, mixed>  $data
      * @return array<string, string>|null

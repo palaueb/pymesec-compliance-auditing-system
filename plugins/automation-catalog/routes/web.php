@@ -173,6 +173,24 @@ Route::post('/plugins/automation-catalog/{packId}/disable', function (Request $r
     ]))->with('status', 'Automation pack disabled.');
 })->middleware('core.permission:plugin.automation-catalog.packs.manage')->name('plugin.automation-catalog.disable');
 
+Route::post('/plugins/automation-catalog/{packId}/uninstall', function (Request $request, string $packId, AutomationCatalogRepository $repository) {
+    $principalId = (string) $request->input('principal_id', 'principal-org-a');
+    $membershipId = $request->input('membership_id');
+    $organizationId = (string) $request->input('organization_id', 'org-a');
+    $scopeId = $request->input('scope_id');
+
+    abort_if($repository->uninstallPack($packId) === false, 404);
+
+    return redirect()->route('core.shell.index', array_filter([
+        'menu' => 'plugin.automation-catalog.root',
+        'principal_id' => $principalId,
+        'organization_id' => $organizationId,
+        'scope_id' => is_string($scopeId) && $scopeId !== '' ? $scopeId : null,
+        'locale' => $request->input('locale', 'en'),
+        'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
+    ]))->with('status', 'Automation pack uninstalled and removed.');
+})->middleware('core.permission:plugin.automation-catalog.packs.manage')->name('plugin.automation-catalog.uninstall');
+
 Route::post('/plugins/automation-catalog/{packId}/health', function (Request $request, string $packId, AutomationCatalogRepository $repository) {
     $validated = $request->validate([
         'health_state' => ['required', 'string', Rule::in(['unknown', 'healthy', 'degraded', 'failing'])],
