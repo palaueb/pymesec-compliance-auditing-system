@@ -16,7 +16,7 @@ class AutomationCatalogPlugin implements PluginInterface
 {
     public function register(PluginContext $context): void
     {
-        $context->app()->singleton(AutomationCatalogRepository::class, fn () => new AutomationCatalogRepository());
+        $context->app()->singleton(AutomationCatalogRepository::class, fn () => new AutomationCatalogRepository);
         $context->app()->singleton(AutomationOutputMappingDeliveryService::class);
         $context->app()->singleton(AutomationPackageRepositorySyncService::class);
 
@@ -40,9 +40,14 @@ class AutomationCatalogPlugin implements PluginInterface
 
                 return [
                     new ToolbarAction(
-                        label: 'Register automation pack',
-                        url: '#automation-pack-editor',
+                        label: 'Add repository of packs',
+                        url: route('core.shell.index', [...$this->baseQuery($screenContext, false), 'menu' => 'plugin.automation-catalog.root', 'automation_panel' => 'repository-editor']),
                         variant: 'primary',
+                    ),
+                    new ToolbarAction(
+                        label: 'Register local pack',
+                        url: route('core.shell.index', [...$this->baseQuery($screenContext, false), 'menu' => 'plugin.automation-catalog.root', 'automation_panel' => 'pack-editor']),
+                        variant: 'secondary',
                     ),
                 ];
             },
@@ -102,7 +107,7 @@ class AutomationCatalogPlugin implements PluginInterface
         }
 
         $selectedPackMappings = is_array($selectedPack)
-            ? array_map(function (array $mapping) use ($screenContext): array {
+            ? array_map(function (array $mapping): array {
                 return [
                     ...$mapping,
                     'mapping_kind_label' => $mapping['mapping_kind'] === 'workflow-transition' ? 'Workflow transition' : 'Evidence refresh',
@@ -145,6 +150,9 @@ class AutomationCatalogPlugin implements PluginInterface
         }, $repository->repositories($organizationId, $screenContext->scopeId));
 
         $externalCatalogRows = $repository->externalCatalogRows($organizationId, $screenContext->scopeId);
+        $activePanel = is_string($screenContext->query['automation_panel'] ?? null)
+            ? trim((string) $screenContext->query['automation_panel'])
+            : '';
 
         return [
             'packs' => array_map(function (array $pack) use ($screenContext): array {
@@ -169,6 +177,8 @@ class AutomationCatalogPlugin implements PluginInterface
             'output_mapping_store_route' => is_array($selectedPack)
                 ? route('plugin.automation-catalog.output-mappings.store', ['packId' => $selectedPack['id']])
                 : null,
+            'show_pack_editor' => $activePanel === 'pack-editor',
+            'show_repository_panel' => $activePanel === 'repository-editor',
             'repositories' => $repositories,
             'external_catalog_rows' => $externalCatalogRows,
             'trust_tier_options' => [

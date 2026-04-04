@@ -32,6 +32,7 @@ Route::post('/plugins/automation-catalog', function (Request $request, Automatio
     $principalId = (string) $request->input('principal_id', 'principal-org-a');
     $membershipId = $request->input('membership_id');
     $organizationId = (string) $request->input('organization_id', 'org-a');
+    $automationPanel = $request->input('automation_panel');
 
     $pack = $repository->createPack([
         ...$validated,
@@ -46,6 +47,7 @@ Route::post('/plugins/automation-catalog', function (Request $request, Automatio
         'organization_id' => $organizationId,
         'scope_id' => is_string($validated['scope_id'] ?? null) && ($validated['scope_id'] ?? '') !== '' ? $validated['scope_id'] : null,
         'locale' => $request->input('locale', 'en'),
+        'automation_panel' => is_string($automationPanel) && $automationPanel !== '' ? $automationPanel : null,
         'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
     ]))->with('status', 'Automation pack saved.');
 })->middleware('core.permission:plugin.automation-catalog.packs.manage')->name('plugin.automation-catalog.store');
@@ -148,6 +150,7 @@ Route::post('/plugins/automation-catalog/repositories', function (
     $principalId = (string) $request->input('principal_id', 'principal-org-a');
     $membershipId = $request->input('membership_id');
     $organizationId = (string) $request->input('organization_id', 'org-a');
+    $automationPanel = $request->input('automation_panel');
 
     $repository->saveRepository([
         ...$validated,
@@ -163,6 +166,7 @@ Route::post('/plugins/automation-catalog/repositories', function (
         'organization_id' => $organizationId,
         'scope_id' => is_string($validated['scope_id'] ?? null) && ($validated['scope_id'] ?? '') !== '' ? $validated['scope_id'] : null,
         'locale' => $request->input('locale', 'en'),
+        'automation_panel' => is_string($automationPanel) && $automationPanel !== '' ? $automationPanel : 'repository-editor',
         'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
     ]))->with('status', 'Automation package repository saved.');
 })->middleware('core.permission:plugin.automation-catalog.packs.manage')->name('plugin.automation-catalog.repositories.store');
@@ -177,6 +181,7 @@ Route::post('/plugins/automation-catalog/repositories/{repositoryId}/refresh', f
     $membershipId = $request->input('membership_id');
     $organizationId = (string) $request->input('organization_id', 'org-a');
     $scopeId = $request->input('scope_id');
+    $automationPanel = $request->input('automation_panel');
 
     $repositoryRecord = $repository->findRepository($repositoryId);
     abort_if($repositoryRecord === null, 404);
@@ -200,6 +205,7 @@ Route::post('/plugins/automation-catalog/repositories/{repositoryId}/refresh', f
         'organization_id' => $organizationId,
         'scope_id' => is_string($scopeId) && $scopeId !== '' ? $scopeId : null,
         'locale' => $request->input('locale', 'en'),
+        'automation_panel' => is_string($automationPanel) && $automationPanel !== '' ? $automationPanel : 'repository-editor',
         'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
     ]))->with('status', $statusMessage);
 })->middleware('core.permission:plugin.automation-catalog.packs.manage')->name('plugin.automation-catalog.repositories.refresh');

@@ -34,7 +34,8 @@ class AutomationCatalogTest extends TestCase
             ->assertSee('Automation pack catalog')
             ->assertSee('AWS Config Baseline Collector')
             ->assertSee('Entra ID Joiner-Mover-Leaver Sync')
-            ->assertSee('Register automation pack');
+            ->assertSee('Add repository of packs')
+            ->assertSee('Register local pack');
 
         $this->get('/app?menu=plugin.automation-catalog.root&pack_id=automation-pack-entra-joiner-mover-leaver&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
             ->assertOk()

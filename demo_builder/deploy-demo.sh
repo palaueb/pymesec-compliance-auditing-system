@@ -11,6 +11,14 @@ COMPOSER_BIN="${COMPOSER_BIN:-composer}"
 APP_URL="${APP_URL:-https://demo.pimesec.com}"
 WEB_ROOT="${WEB_ROOT:-}"
 WEB_PREFIX="${WEB_PREFIX:-}"
+DEMO_AUTOMATION_REPOSITORY_LABEL="${DEMO_AUTOMATION_REPOSITORY_LABEL:-PymeSec Official Repository}"
+DEMO_AUTOMATION_REPOSITORY_URL="${DEMO_AUTOMATION_REPOSITORY_URL:-http://repository.pimesec.com/repository.json}"
+DEMO_AUTOMATION_REPOSITORY_SIGN_URL="${DEMO_AUTOMATION_REPOSITORY_SIGN_URL:-}"
+DEMO_AUTOMATION_REPOSITORY_TRUST_TIER="${DEMO_AUTOMATION_REPOSITORY_TRUST_TIER:-trusted-first-party}"
+DEMO_AUTOMATION_REPOSITORY_ORGANIZATION_ID="${DEMO_AUTOMATION_REPOSITORY_ORGANIZATION_ID:-org-a}"
+DEMO_AUTOMATION_REPOSITORY_SCOPE_ID="${DEMO_AUTOMATION_REPOSITORY_SCOPE_ID:-}"
+DEMO_AUTOMATION_REPOSITORY_OWNER_PRINCIPAL_ID="${DEMO_AUTOMATION_REPOSITORY_OWNER_PRINCIPAL_ID:-principal-org-a}"
+DEMO_AUTOMATION_REPOSITORY_PUBLIC_KEY_PATH="${DEMO_AUTOMATION_REPOSITORY_PUBLIC_KEY_PATH:-$CORE_DIR/storage/app/demo/repository-public.pem}"
 SKIP_COMPOSER=0
 
 usage() {
@@ -22,6 +30,16 @@ Options:
   --app-url URL          Public URL for the demo installation.
   --web-root PATH        Absolute project root as seen by the web server.
   --web-prefix PREFIX    Prefix added to the SSH-visible repo root to derive the web-visible root.
+  --demo-pack-repo-url URL
+                         External automation repository index URL.
+  --demo-pack-repo-sign-url URL
+                         Signature URL for the external repository index.
+  --demo-pack-repo-label LABEL
+                         Repository label shown in the demo.
+  --demo-pack-repo-trust-tier TIER
+                         Trust tier for the seeded repository.
+  --demo-pack-repo-public-key-path PATH
+                         Path where the demo repository public key is written/read.
   --php-bin BIN          PHP binary to use. Defaults to php.
   --composer-bin BIN     Composer binary to use. Defaults to composer.
   --skip-composer        Skip composer install.
@@ -76,6 +94,26 @@ parse_args() {
                 WEB_PREFIX="${2:-}"
                 shift 2
                 ;;
+            --demo-pack-repo-url)
+                DEMO_AUTOMATION_REPOSITORY_URL="${2:-}"
+                shift 2
+                ;;
+            --demo-pack-repo-sign-url)
+                DEMO_AUTOMATION_REPOSITORY_SIGN_URL="${2:-}"
+                shift 2
+                ;;
+            --demo-pack-repo-label)
+                DEMO_AUTOMATION_REPOSITORY_LABEL="${2:-}"
+                shift 2
+                ;;
+            --demo-pack-repo-trust-tier)
+                DEMO_AUTOMATION_REPOSITORY_TRUST_TIER="${2:-}"
+                shift 2
+                ;;
+            --demo-pack-repo-public-key-path)
+                DEMO_AUTOMATION_REPOSITORY_PUBLIC_KEY_PATH="${2:-}"
+                shift 2
+                ;;
             --php-bin)
                 PHP_BIN="${2:-}"
                 shift 2
@@ -97,6 +135,15 @@ parse_args() {
                 ;;
         esac
     done
+}
+
+resolve_repository_sign_url() {
+    if [[ -n "$DEMO_AUTOMATION_REPOSITORY_SIGN_URL" ]]; then
+        printf '%s\n' "$DEMO_AUTOMATION_REPOSITORY_SIGN_URL"
+        return 0
+    fi
+
+    printf '%s.sign\n' "$DEMO_AUTOMATION_REPOSITORY_URL"
 }
 
 resolve_web_root() {
@@ -234,6 +281,8 @@ set_env_value() {
 
 configure_env() {
     local env_file="$CORE_DIR/.env"
+    local repository_sign_url
+    repository_sign_url="$(resolve_repository_sign_url)"
 
     set_env_value "$env_file" "APP_ENV" "production"
     set_env_value "$env_file" "APP_DEBUG" "false"
@@ -250,6 +299,14 @@ configure_env() {
     set_env_value "$env_file" "DEMO_LOGIN_PASSWORD" "demo"
     set_env_value "$env_file" "DEMO_LOGIN_PRINCIPAL_ID" "principal-org-a"
     set_env_value "$env_file" "DEMO_LOGIN_ORGANIZATION_ID" "org-a"
+    set_env_value "$env_file" "DEMO_AUTOMATION_REPOSITORY_LABEL" "$DEMO_AUTOMATION_REPOSITORY_LABEL"
+    set_env_value "$env_file" "DEMO_AUTOMATION_REPOSITORY_URL" "$DEMO_AUTOMATION_REPOSITORY_URL"
+    set_env_value "$env_file" "DEMO_AUTOMATION_REPOSITORY_SIGN_URL" "$repository_sign_url"
+    set_env_value "$env_file" "DEMO_AUTOMATION_REPOSITORY_TRUST_TIER" "$DEMO_AUTOMATION_REPOSITORY_TRUST_TIER"
+    set_env_value "$env_file" "DEMO_AUTOMATION_REPOSITORY_ORGANIZATION_ID" "$DEMO_AUTOMATION_REPOSITORY_ORGANIZATION_ID"
+    set_env_value "$env_file" "DEMO_AUTOMATION_REPOSITORY_SCOPE_ID" "$DEMO_AUTOMATION_REPOSITORY_SCOPE_ID"
+    set_env_value "$env_file" "DEMO_AUTOMATION_REPOSITORY_OWNER_PRINCIPAL_ID" "$DEMO_AUTOMATION_REPOSITORY_OWNER_PRINCIPAL_ID"
+    set_env_value "$env_file" "DEMO_AUTOMATION_REPOSITORY_PUBLIC_KEY_PATH" "$DEMO_AUTOMATION_REPOSITORY_PUBLIC_KEY_PATH"
 
     log "configured core/.env for demo deployment"
 }
@@ -282,6 +339,32 @@ prepare_storage() {
     log "prepared writable storage directories"
 }
 
+write_demo_repository_public_key() {
+    local public_key_path="$DEMO_AUTOMATION_REPOSITORY_PUBLIC_KEY_PATH"
+    local public_key_dir
+    public_key_dir="$(dirname "$public_key_path")"
+
+    mkdir -p "$public_key_dir"
+
+    cat >"$public_key_path" <<'EOF'
+-----BEGIN RSA PUBLIC KEY-----
+MIICCgKCAgEA2WQiwlwaQoPs4c0s9VzozAx3RiOkMSyR9R5d7vn7VTsnRiH45SNj
+8tSEPRATL4Ef8w03hcWG3Vx9Wcnk2AdC3N6B5D6NcocXMVPUaRGf1ctqAdKj0EQL
+lXRZlWql/wbZeKFJhSDaO690AcePIctmPVC3ppI60PPQff0aCcgtiPnceSNl38AY
+YV4t2dJJX57L1UDyMwfmAxJtul34/GP/r5RH0sVrj3aDz8A0TwbPPwfQzDfIoIIy
+4xArAy5y92hDalDKu3luW+xidTMVaNgjYQloBR1/hXEVX4zQsp/uV7fKdnSfIACT
+1rc2CmETbBgPNgmkRR5Bn4qIGIa6UPtgfBd0ba8QDG0c7ckgPx1UEXwYMZJGyn9S
+HPKh3N2NWYMV12ZV4irLNUnMkcwfkweXCyRH1uOISqBG1U7u0PWyCGUim7bp/jcX
+TGmu4GFOlMtTXjlur/mZcvc/9y0ywWI6PxmojWak4En1fnyjuMLfugmcgR+jr2FM
+/MNMfv48XW4/f3gCQ2pnVPaIOKXCkTJK/BPzfFerhug72bmxfwoC0CcfynNyj6jw
+r7nKPZYWPw9xz/QkVbnRqRVYPZp8zNWFvaVABwVKU6d5NYabk5GHHXAkmWqgkr0e
+rwG53Dj9ah8+8aRf1qVUZXC/YLsVWw0BPI5Aj1CqessRndNee8zYdh8CAwEAAQ==
+-----END RSA PUBLIC KEY-----
+EOF
+
+    chmod 600 "$public_key_path"
+}
+
 run_artisan() {
     (
         cd "$CORE_DIR"
@@ -293,6 +376,164 @@ build_demo_template() {
     run_artisan key:generate --force
     run_artisan optimize:clear
     run_artisan demo:build-template
+}
+
+configure_demo_automation_defaults() {
+    local repository_sign_url
+    repository_sign_url="$(resolve_repository_sign_url)"
+
+    "$PHP_BIN" -r '
+        $templateDatabase = $argv[1];
+        $label = $argv[2];
+        $repositoryUrl = $argv[3];
+        $repositorySignUrl = $argv[4];
+        $trustTier = $argv[5];
+        $organizationId = $argv[6];
+        $scopeId = $argv[7];
+        $ownerPrincipalId = $argv[8];
+        $publicKeyPath = $argv[9];
+
+        if (! is_file($templateDatabase)) {
+            fwrite(STDERR, "Template database not found.\n");
+            exit(1);
+        }
+
+        if (! is_file($publicKeyPath)) {
+            fwrite(STDERR, "Repository public key file not found.\n");
+            exit(1);
+        }
+
+        $publicKeyPem = trim((string) file_get_contents($publicKeyPath));
+        if ($publicKeyPem === "") {
+            fwrite(STDERR, "Repository public key file is empty.\n");
+            exit(1);
+        }
+
+        $pdo = new PDO("sqlite:".$templateDatabase);
+        $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+
+        $tableExists = (int) $pdo->query("SELECT count(*) FROM sqlite_master WHERE type = '\''table'\'' AND name = '\''automation_pack_repositories'\''")->fetchColumn();
+        if ($tableExists === 0) {
+            exit(0);
+        }
+
+        $now = (new DateTimeImmutable("now"))->format("Y-m-d H:i:s");
+
+        $pdo->beginTransaction();
+
+        $deleteMappings = $pdo->prepare("DELETE FROM automation_pack_output_mappings WHERE organization_id = :organization_id");
+        $deleteMappings->execute([
+            ":organization_id" => $organizationId,
+        ]);
+
+        $deletePacks = $pdo->prepare("DELETE FROM automation_packs WHERE organization_id = :organization_id");
+        $deletePacks->execute([
+            ":organization_id" => $organizationId,
+        ]);
+
+        $existing = $pdo->prepare("SELECT id FROM automation_pack_repositories WHERE organization_id = :organization_id AND repository_url = :repository_url LIMIT 1");
+        $existing->execute([
+            ":organization_id" => $organizationId,
+            ":repository_url" => $repositoryUrl,
+        ]);
+
+        $existingId = $existing->fetchColumn();
+
+        if (is_string($existingId) && $existingId !== "") {
+            $update = $pdo->prepare("
+                UPDATE automation_pack_repositories
+                SET scope_id = :scope_id,
+                    label = :label,
+                    repository_sign_url = :repository_sign_url,
+                    public_key_pem = :public_key_pem,
+                    trust_tier = :trust_tier,
+                    is_enabled = 1,
+                    last_refreshed_at = NULL,
+                    last_status = '\''never'\'',
+                    last_error = NULL,
+                    updated_by_principal_id = :updated_by_principal_id,
+                    updated_at = :updated_at
+                WHERE id = :id
+            ");
+
+            $update->execute([
+                ":id" => $existingId,
+                ":scope_id" => $scopeId !== "" ? $scopeId : null,
+                ":label" => $label,
+                ":repository_sign_url" => $repositorySignUrl,
+                ":public_key_pem" => $publicKeyPem,
+                ":trust_tier" => $trustTier,
+                ":updated_by_principal_id" => $ownerPrincipalId !== "" ? $ownerPrincipalId : null,
+                ":updated_at" => $now,
+            ]);
+        } else {
+            $id = "automation-pack-repository-official";
+
+            $insert = $pdo->prepare("
+                INSERT INTO automation_pack_repositories (
+                    id,
+                    organization_id,
+                    scope_id,
+                    label,
+                    repository_url,
+                    repository_sign_url,
+                    public_key_pem,
+                    trust_tier,
+                    is_enabled,
+                    last_refreshed_at,
+                    last_status,
+                    last_error,
+                    created_by_principal_id,
+                    updated_by_principal_id,
+                    created_at,
+                    updated_at
+                ) VALUES (
+                    :id,
+                    :organization_id,
+                    :scope_id,
+                    :label,
+                    :repository_url,
+                    :repository_sign_url,
+                    :public_key_pem,
+                    :trust_tier,
+                    1,
+                    NULL,
+                    '\''never'\'',
+                    NULL,
+                    :created_by_principal_id,
+                    :updated_by_principal_id,
+                    :created_at,
+                    :updated_at
+                )
+            ");
+
+            $insert->execute([
+                ":id" => $id,
+                ":organization_id" => $organizationId,
+                ":scope_id" => $scopeId !== "" ? $scopeId : null,
+                ":label" => $label,
+                ":repository_url" => $repositoryUrl,
+                ":repository_sign_url" => $repositorySignUrl,
+                ":public_key_pem" => $publicKeyPem,
+                ":trust_tier" => $trustTier,
+                ":created_by_principal_id" => $ownerPrincipalId !== "" ? $ownerPrincipalId : null,
+                ":updated_by_principal_id" => $ownerPrincipalId !== "" ? $ownerPrincipalId : null,
+                ":created_at" => $now,
+                ":updated_at" => $now,
+            ]);
+        }
+
+        $pdo->commit();
+    ' \
+    "$CORE_DIR/storage/app/demo/template.sqlite" \
+    "$DEMO_AUTOMATION_REPOSITORY_LABEL" \
+    "$DEMO_AUTOMATION_REPOSITORY_URL" \
+    "$repository_sign_url" \
+    "$DEMO_AUTOMATION_REPOSITORY_TRUST_TIER" \
+    "$DEMO_AUTOMATION_REPOSITORY_ORGANIZATION_ID" \
+    "$DEMO_AUTOMATION_REPOSITORY_SCOPE_ID" \
+    "$DEMO_AUTOMATION_REPOSITORY_OWNER_PRINCIPAL_ID" \
+    "$DEMO_AUTOMATION_REPOSITORY_PUBLIC_KEY_PATH"
 }
 
 print_summary() {
@@ -341,6 +582,7 @@ main() {
 
     log "preparing environment"
     ensure_env_file
+    write_demo_repository_public_key
     configure_env
     prepare_storage
 
@@ -349,6 +591,9 @@ main() {
 
     log "building demo template"
     build_demo_template
+
+    log "applying demo automation defaults"
+    configure_demo_automation_defaults
 
     print_summary
 }

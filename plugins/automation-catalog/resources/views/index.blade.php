@@ -22,230 +22,6 @@
         </div>
     </div>
 
-    @if ($can_manage_packs)
-        <details id="automation-pack-editor" class="surface-card" style="margin-top:14px; padding:14px;">
-            <summary class="button button-ghost" style="display:inline-flex;">Register automation pack</summary>
-            <form class="upload-form" method="POST" action="{{ $pack_store_route }}" style="margin-top:12px;">
-                @csrf
-                <input type="hidden" name="principal_id" value="{{ $query['principal_id'] ?? '' }}">
-                <input type="hidden" name="organization_id" value="{{ $query['organization_id'] }}">
-                <input type="hidden" name="locale" value="{{ $query['locale'] }}">
-                <input type="hidden" name="menu" value="plugin.automation-catalog.root">
-                <input type="hidden" name="membership_id" value="{{ $query['membership_ids'][0] ?? 'membership-org-a-hello' }}">
-                <div class="overview-grid" style="grid-template-columns:repeat(2, minmax(0, 1fr));">
-                    <div class="field">
-                        <label class="field-label">Pack key</label>
-                        <input class="field-input" name="pack_key" placeholder="connector.aws.config-baseline" required>
-                    </div>
-                    <div class="field">
-                        <label class="field-label">Name</label>
-                        <input class="field-input" name="name" placeholder="AWS Config Baseline Collector" required>
-                    </div>
-                    <div class="field">
-                        <label class="field-label">Version</label>
-                        <input class="field-input" name="version" placeholder="0.1.0">
-                    </div>
-                    <div class="field">
-                        <label class="field-label">Scope</label>
-                        <select class="field-select" name="scope_id">
-                            <option value="">Org-wide</option>
-                            @foreach ($scope_options as $scope)
-                                <option value="{{ $scope['id'] }}">{{ $scope['name'] }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div class="field">
-                        <label class="field-label">Provider type</label>
-                        <select class="field-select" name="provider_type" required>
-                            @foreach ($provider_type_options as $key => $label)
-                                <option value="{{ $key }}">{{ $label }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div class="field">
-                        <label class="field-label">Provenance type</label>
-                        <select class="field-select" name="provenance_type" required>
-                            @foreach ($provenance_type_options as $key => $label)
-                                <option value="{{ $key }}">{{ $label }}</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div class="field" style="grid-column:1 / -1;">
-                        <label class="field-label">Source URL</label>
-                        <input class="field-input" type="url" name="source_ref" placeholder="https://github.com/example/automation-pack">
-                    </div>
-                    <div class="field" style="grid-column:1 / -1;">
-                        <label class="field-label">Summary</label>
-                        <textarea class="field-textarea" name="summary" rows="3"></textarea>
-                    </div>
-                </div>
-                <div class="action-cluster" style="margin-top:12px;">
-                    <button class="button button-secondary" type="submit">Save pack</button>
-                </div>
-            </form>
-        </details>
-    @endif
-
-    <div class="surface-card" style="margin-top:14px; padding:14px;">
-        <div class="row-between">
-            <div class="entity-title">External package repositories</div>
-            <span class="table-note">Register signed repository indexes and refresh discovered packs.</span>
-        </div>
-
-        @if ($can_manage_packs)
-            <details style="margin-top:12px;">
-                <summary class="button button-ghost" style="display:inline-flex;">Add repository</summary>
-                <form class="upload-form" method="POST" action="{{ $repository_store_route }}" style="margin-top:12px;">
-                    @csrf
-                    <input type="hidden" name="principal_id" value="{{ $query['principal_id'] ?? '' }}">
-                    <input type="hidden" name="organization_id" value="{{ $query['organization_id'] }}">
-                    <input type="hidden" name="locale" value="{{ $query['locale'] }}">
-                    <input type="hidden" name="menu" value="plugin.automation-catalog.root">
-                    <input type="hidden" name="membership_id" value="{{ $query['membership_ids'][0] ?? 'membership-org-a-hello' }}">
-                    <input type="hidden" name="is_enabled" value="1">
-                    <div class="overview-grid" style="grid-template-columns:repeat(2, minmax(0, 1fr));">
-                        <div class="field">
-                            <label class="field-label">Label</label>
-                            <input class="field-input" name="label" placeholder="PymeSec Community Packs" required>
-                        </div>
-                        <div class="field">
-                            <label class="field-label">Scope</label>
-                            <select class="field-select" name="scope_id">
-                                <option value="">Org-wide</option>
-                                @foreach ($scope_options as $scope)
-                                    <option value="{{ $scope['id'] }}">{{ $scope['name'] }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="field" style="grid-column:1 / -1;">
-                            <label class="field-label">Repository index URL</label>
-                            <input class="field-input" type="url" name="repository_url" placeholder="https://packages.example.org/deploy/repository.json" required>
-                        </div>
-                        <div class="field" style="grid-column:1 / -1;">
-                            <label class="field-label">Repository signature URL</label>
-                            <input class="field-input" type="url" name="repository_sign_url" placeholder="https://packages.example.org/deploy/repository.sign">
-                        </div>
-                        <div class="field">
-                            <label class="field-label">Trust tier</label>
-                            <select class="field-select" name="trust_tier" required>
-                                @foreach ($trust_tier_options as $trustTier => $trustLabel)
-                                    <option value="{{ $trustTier }}">{{ $trustLabel }}</option>
-                                @endforeach
-                            </select>
-                        </div>
-                        <div class="field" style="grid-column:1 / -1;">
-                            <label class="field-label">Public key (PEM)</label>
-                            <textarea class="field-textarea" rows="8" name="public_key_pem" placeholder="-----BEGIN PUBLIC KEY-----" required></textarea>
-                        </div>
-                    </div>
-                    <div class="action-cluster" style="margin-top:12px;">
-                        <button class="button button-secondary" type="submit">Save repository</button>
-                    </div>
-                </form>
-            </details>
-        @endif
-
-        <table class="table" style="margin-top:10px;">
-            <thead>
-                <tr>
-                    <th>Repository</th>
-                    <th>Trust tier</th>
-                    <th>Last sync</th>
-                    <th>Status</th>
-                    <th>Open packs</th>
-                    <th>Actions</th>
-                </tr>
-            </thead>
-            <tbody>
-                @forelse ($repositories as $repo)
-                    <tr>
-                        <td>
-                            <div class="entity-title">{{ $repo['label'] }}</div>
-                            <div class="table-note">{{ $repo['repository_url'] }}</div>
-                            <div class="table-note">Scope: {{ $repo['scope_id'] !== '' ? $repo['scope_id'] : 'Org-wide' }}</div>
-                        </td>
-                        <td>{{ $trust_tier_options[$repo['trust_tier']] ?? $repo['trust_tier'] }}</td>
-                        <td>{{ $repo['last_refreshed_at'] !== '' ? $repo['last_refreshed_at'] : 'Never' }}</td>
-                        <td>
-                            <div class="table-note">{{ $repo['last_status_label'] }}</div>
-                            @if ($repo['last_error'] !== '')
-                                <div class="table-note">{{ $repo['last_error'] }}</div>
-                            @endif
-                        </td>
-                        <td>{{ $repo['is_enabled'] === '1' ? 'Enabled' : 'Disabled' }}</td>
-                        <td>
-                            @if ($can_manage_packs)
-                                <form method="POST" action="{{ $repo['refresh_route'] }}">
-                                    @csrf
-                                    <input type="hidden" name="principal_id" value="{{ $query['principal_id'] ?? '' }}">
-                                    <input type="hidden" name="organization_id" value="{{ $query['organization_id'] }}">
-                                    <input type="hidden" name="scope_id" value="{{ $query['scope_id'] ?? '' }}">
-                                    <input type="hidden" name="locale" value="{{ $query['locale'] }}">
-                                    <input type="hidden" name="menu" value="plugin.automation-catalog.root">
-                                    <input type="hidden" name="membership_id" value="{{ $query['membership_ids'][0] ?? 'membership-org-a-hello' }}">
-                                    <button class="button button-ghost" type="submit">Refresh</button>
-                                </form>
-                            @else
-                                <span class="table-note">No actions</span>
-                            @endif
-                        </td>
-                    </tr>
-                @empty
-                    <tr><td colspan="6">No repositories registered yet.</td></tr>
-                @endforelse
-            </tbody>
-        </table>
-    </div>
-
-    <div class="surface-card" style="margin-top:14px; padding:14px;">
-        <div class="row-between">
-            <div class="entity-title">External catalog (latest releases)</div>
-            <span class="table-note">Discovered latest pack versions from enabled repositories.</span>
-        </div>
-
-        <table class="table" style="margin-top:10px;">
-            <thead>
-                <tr>
-                    <th>Pack</th>
-                    <th>Repository</th>
-                    <th>Latest version</th>
-                    <th>Versions</th>
-                    <th>Artifact</th>
-                </tr>
-            </thead>
-            <tbody>
-                @forelse ($external_catalog_rows as $row)
-                    <tr>
-                        <td>
-                            <div class="entity-title">{{ $row['pack_name'] }}</div>
-                            <div class="table-note">{{ $row['pack_key'] }}</div>
-                            @if ($row['pack_description'] !== '')
-                                <div class="table-note">{{ $row['pack_description'] }}</div>
-                            @endif
-                        </td>
-                        <td>
-                            <div class="table-note">{{ $row['repository_label'] }}</div>
-                            <div class="table-note">{{ $row['repository_last_status'] === 'success' ? 'Synced' : ($row['repository_last_status'] === 'failed' ? 'Failed' : 'Never') }}</div>
-                        </td>
-                        <td>{{ $row['latest_version'] }}</td>
-                        <td>{{ $row['versions_available'] }}</td>
-                        <td>
-                            <a href="{{ $row['artifact_url'] }}" target="_blank" rel="noreferrer">Artifact</a>
-                            @if ($row['artifact_signature_url'] !== '')
-                                <div class="table-note"><a href="{{ $row['artifact_signature_url'] }}" target="_blank" rel="noreferrer">Signature</a></div>
-                            @endif
-                            @if ($row['artifact_sha256'] !== '')
-                                <div class="table-note">SHA256: {{ $row['artifact_sha256'] }}</div>
-                            @endif
-                        </td>
-                    </tr>
-                @empty
-                    <tr><td colspan="5">No external releases discovered yet.</td></tr>
-                @endforelse
-            </tbody>
-        </table>
-    </div>
-
     <div class="surface-card" style="margin-top:14px; padding:14px;">
         <div class="row-between">
             <div class="entity-title">Automation pack catalog</div>
@@ -529,6 +305,234 @@
                     </datalist>
                 </div>
             @endif
+        </div>
+    @endif
+
+    @if ($can_manage_packs && $show_pack_editor)
+        <div id="automation-pack-editor" class="surface-card" style="margin-top:14px; padding:14px;">
+            <div class="row-between">
+                <div class="entity-title">Register local pack</div>
+            </div>
+            <form class="upload-form" method="POST" action="{{ $pack_store_route }}" style="margin-top:12px;">
+                @csrf
+                <input type="hidden" name="principal_id" value="{{ $query['principal_id'] ?? '' }}">
+                <input type="hidden" name="organization_id" value="{{ $query['organization_id'] }}">
+                <input type="hidden" name="locale" value="{{ $query['locale'] }}">
+                <input type="hidden" name="menu" value="plugin.automation-catalog.root">
+                <input type="hidden" name="automation_panel" value="pack-editor">
+                <input type="hidden" name="membership_id" value="{{ $query['membership_ids'][0] ?? 'membership-org-a-hello' }}">
+                <div class="overview-grid" style="grid-template-columns:repeat(2, minmax(0, 1fr));">
+                    <div class="field">
+                        <label class="field-label">Pack key</label>
+                        <input class="field-input" name="pack_key" placeholder="connector.aws.config-baseline" required>
+                    </div>
+                    <div class="field">
+                        <label class="field-label">Name</label>
+                        <input class="field-input" name="name" placeholder="AWS Config Baseline Collector" required>
+                    </div>
+                    <div class="field">
+                        <label class="field-label">Version</label>
+                        <input class="field-input" name="version" placeholder="0.1.0">
+                    </div>
+                    <div class="field">
+                        <label class="field-label">Scope</label>
+                        <select class="field-select" name="scope_id">
+                            <option value="">Org-wide</option>
+                            @foreach ($scope_options as $scope)
+                                <option value="{{ $scope['id'] }}">{{ $scope['name'] }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label class="field-label">Provider type</label>
+                        <select class="field-select" name="provider_type" required>
+                            @foreach ($provider_type_options as $key => $label)
+                                <option value="{{ $key }}">{{ $label }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="field">
+                        <label class="field-label">Provenance type</label>
+                        <select class="field-select" name="provenance_type" required>
+                            @foreach ($provenance_type_options as $key => $label)
+                                <option value="{{ $key }}">{{ $label }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="field" style="grid-column:1 / -1;">
+                        <label class="field-label">Source URL</label>
+                        <input class="field-input" type="url" name="source_ref" placeholder="https://github.com/example/automation-pack">
+                    </div>
+                    <div class="field" style="grid-column:1 / -1;">
+                        <label class="field-label">Summary</label>
+                        <textarea class="field-textarea" name="summary" rows="3"></textarea>
+                    </div>
+                </div>
+                <div class="action-cluster" style="margin-top:12px;">
+                    <button class="button button-secondary" type="submit">Save pack</button>
+                </div>
+            </form>
+        </div>
+    @endif
+
+    @if ($show_repository_panel)
+        <div class="surface-card" style="margin-top:14px; padding:14px;">
+            <div class="row-between">
+                <div class="entity-title">External package repositories</div>
+                <span class="table-note">Register signed repository indexes and refresh discovered packs.</span>
+            </div>
+
+            @if ($can_manage_packs)
+                <form class="upload-form" method="POST" action="{{ $repository_store_route }}" style="margin-top:12px;">
+                        @csrf
+                        <input type="hidden" name="principal_id" value="{{ $query['principal_id'] ?? '' }}">
+                        <input type="hidden" name="organization_id" value="{{ $query['organization_id'] }}">
+                        <input type="hidden" name="locale" value="{{ $query['locale'] }}">
+                        <input type="hidden" name="menu" value="plugin.automation-catalog.root">
+                        <input type="hidden" name="automation_panel" value="repository-editor">
+                        <input type="hidden" name="membership_id" value="{{ $query['membership_ids'][0] ?? 'membership-org-a-hello' }}">
+                        <input type="hidden" name="is_enabled" value="1">
+                        <div class="overview-grid" style="grid-template-columns:repeat(2, minmax(0, 1fr));">
+                            <div class="field">
+                                <label class="field-label">Label</label>
+                                <input class="field-input" name="label" placeholder="PymeSec Community Packs" required>
+                            </div>
+                            <div class="field">
+                                <label class="field-label">Scope</label>
+                                <select class="field-select" name="scope_id">
+                                    <option value="">Org-wide</option>
+                                    @foreach ($scope_options as $scope)
+                                        <option value="{{ $scope['id'] }}">{{ $scope['name'] }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="field" style="grid-column:1 / -1;">
+                                <label class="field-label">Repository index URL</label>
+                                <input class="field-input" type="url" name="repository_url" placeholder="https://packages.example.org/deploy/repository.json" required>
+                            </div>
+                            <div class="field" style="grid-column:1 / -1;">
+                                <label class="field-label">Repository signature URL</label>
+                                <input class="field-input" type="url" name="repository_sign_url" placeholder="https://packages.example.org/deploy/repository.sign">
+                            </div>
+                            <div class="field">
+                                <label class="field-label">Trust tier</label>
+                                <select class="field-select" name="trust_tier" required>
+                                    @foreach ($trust_tier_options as $trustTier => $trustLabel)
+                                        <option value="{{ $trustTier }}">{{ $trustLabel }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="field" style="grid-column:1 / -1;">
+                                <label class="field-label">Public key (PEM)</label>
+                                <textarea class="field-textarea" rows="8" name="public_key_pem" placeholder="-----BEGIN PUBLIC KEY-----" required></textarea>
+                            </div>
+                        </div>
+                        <div class="action-cluster" style="margin-top:12px;">
+                            <button class="button button-secondary" type="submit">Save repository</button>
+                        </div>
+                </form>
+            @endif
+
+            <table class="table" style="margin-top:10px;">
+                <thead>
+                    <tr>
+                        <th>Repository</th>
+                        <th>Trust tier</th>
+                        <th>Last sync</th>
+                        <th>Status</th>
+                        <th>Open packs</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse ($repositories as $repo)
+                        <tr>
+                            <td>
+                                <div class="entity-title">{{ $repo['label'] }}</div>
+                                <div class="table-note">{{ $repo['repository_url'] }}</div>
+                                <div class="table-note">Scope: {{ $repo['scope_id'] !== '' ? $repo['scope_id'] : 'Org-wide' }}</div>
+                            </td>
+                            <td>{{ $trust_tier_options[$repo['trust_tier']] ?? $repo['trust_tier'] }}</td>
+                            <td>{{ $repo['last_refreshed_at'] !== '' ? $repo['last_refreshed_at'] : 'Never' }}</td>
+                            <td>
+                                <div class="table-note">{{ $repo['last_status_label'] }}</div>
+                                @if ($repo['last_error'] !== '')
+                                    <div class="table-note">{{ $repo['last_error'] }}</div>
+                                @endif
+                            </td>
+                            <td>{{ $repo['is_enabled'] === '1' ? 'Enabled' : 'Disabled' }}</td>
+                            <td>
+                                @if ($can_manage_packs)
+                                    <form method="POST" action="{{ $repo['refresh_route'] }}">
+                                        @csrf
+                                        <input type="hidden" name="principal_id" value="{{ $query['principal_id'] ?? '' }}">
+                                        <input type="hidden" name="organization_id" value="{{ $query['organization_id'] }}">
+                                        <input type="hidden" name="scope_id" value="{{ $query['scope_id'] ?? '' }}">
+                                        <input type="hidden" name="locale" value="{{ $query['locale'] }}">
+                                        <input type="hidden" name="menu" value="plugin.automation-catalog.root">
+                                        <input type="hidden" name="automation_panel" value="repository-editor">
+                                        <input type="hidden" name="membership_id" value="{{ $query['membership_ids'][0] ?? 'membership-org-a-hello' }}">
+                                        <button class="button button-ghost" type="submit">Refresh</button>
+                                    </form>
+                                @else
+                                    <span class="table-note">No actions</span>
+                                @endif
+                            </td>
+                        </tr>
+                    @empty
+                        <tr><td colspan="6">No repositories registered yet.</td></tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
+
+        <div class="surface-card" style="margin-top:14px; padding:14px;">
+            <div class="row-between">
+                <div class="entity-title">External catalog (latest releases)</div>
+                <span class="table-note">Discovered latest pack versions from enabled repositories.</span>
+            </div>
+
+            <table class="table" style="margin-top:10px;">
+                <thead>
+                    <tr>
+                        <th>Pack</th>
+                        <th>Repository</th>
+                        <th>Latest version</th>
+                        <th>Versions</th>
+                        <th>Artifact</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse ($external_catalog_rows as $row)
+                        <tr>
+                            <td>
+                                <div class="entity-title">{{ $row['pack_name'] }}</div>
+                                <div class="table-note">{{ $row['pack_key'] }}</div>
+                                @if ($row['pack_description'] !== '')
+                                    <div class="table-note">{{ $row['pack_description'] }}</div>
+                                @endif
+                            </td>
+                            <td>
+                                <div class="table-note">{{ $row['repository_label'] }}</div>
+                                <div class="table-note">{{ $row['repository_last_status'] === 'success' ? 'Synced' : ($row['repository_last_status'] === 'failed' ? 'Failed' : 'Never') }}</div>
+                            </td>
+                            <td>{{ $row['latest_version'] }}</td>
+                            <td>{{ $row['versions_available'] }}</td>
+                            <td>
+                                <a href="{{ $row['artifact_url'] }}" target="_blank" rel="noreferrer">Artifact</a>
+                                @if ($row['artifact_signature_url'] !== '')
+                                    <div class="table-note"><a href="{{ $row['artifact_signature_url'] }}" target="_blank" rel="noreferrer">Signature</a></div>
+                                @endif
+                                @if ($row['artifact_sha256'] !== '')
+                                    <div class="table-note">SHA256: {{ $row['artifact_sha256'] }}</div>
+                                @endif
+                            </td>
+                        </tr>
+                    @empty
+                        <tr><td colspan="5">No external releases discovered yet.</td></tr>
+                    @endforelse
+                </tbody>
+            </table>
         </div>
     @endif
 </section>
