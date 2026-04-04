@@ -161,6 +161,22 @@ apply_demo_patches() {
     (( found == 1 )) || fail "no patch files found under [$PATCH_DIR]."
 }
 
+ensure_no_merge_conflicts() {
+    local scan_roots=("$CORE_DIR" "$REPO_ROOT/plugins")
+    local conflict_matches
+    local conflict_files
+
+    conflict_matches="$(grep -R -n -E '^(<<<<<<<|=======|>>>>>>>)' "${scan_roots[@]}" 2>/dev/null || true)"
+
+    if [[ -z "$conflict_matches" ]]; then
+        return 0
+    fi
+
+    conflict_files="$(printf '%s\n' "$conflict_matches" | cut -d: -f1 | sort -u | paste -sd ', ' -)"
+
+    fail "merge conflict markers detected after applying demo patches. Resolve or reset these files first: $conflict_files"
+}
+
 ensure_env_file() {
     if [[ ! -f "$CORE_DIR/.env" ]]; then
         cp "$CORE_DIR/.env.example" "$CORE_DIR/.env"
@@ -300,6 +316,7 @@ main() {
 
     log "applying demo patch pack"
     apply_demo_patches
+    ensure_no_merge_conflicts
 
     log "preparing environment"
     ensure_env_file
