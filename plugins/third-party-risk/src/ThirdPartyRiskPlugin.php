@@ -271,6 +271,17 @@ class ThirdPartyRiskPlugin implements PluginInterface
             );
             $workflowHistory = $workflow->history('plugin.third-party-risk.review-lifecycle', 'vendor-review', $currentReview['id']);
             $externalLinks = $repository->externalLinksForReview($currentReview['id']);
+            $externalCollaborators = array_map(function (array $collaborator) use ($vendor, $currentReview, $collaboration): array {
+                return [
+                    ...$collaborator,
+                    'lifecycle_state_label' => $collaboration->collaboratorLifecycleStateLabel($collaborator['lifecycle_state']),
+                    'lifecycle_update_route' => route('plugin.third-party-risk.external.collaborators.update', [
+                        'vendorId' => $vendor['id'],
+                        'reviewId' => $currentReview['id'],
+                        'collaboratorId' => $collaborator['id'],
+                    ]),
+                ];
+            }, $repository->externalCollaboratorsForReview($currentReview['id']));
             $collaborationComments = array_map(function (array $comment) use ($actorLabels, $principalActorIds): array {
                 $mentionedActorIds = $this->csvList($comment['mentioned_actor_ids']);
 
@@ -389,6 +400,9 @@ class ThirdPartyRiskPlugin implements PluginInterface
                     'external_links' => array_map(function (array $link) use ($vendor, $currentReview): array {
                         return [
                             ...$link,
+                            'collaborator_lifecycle_state_label' => $link['collaborator_lifecycle_state'] !== ''
+                                ? ucwords(str_replace('-', ' ', $link['collaborator_lifecycle_state']))
+                                : 'Active',
                             'portal_url' => route('plugin.third-party-risk.external.portal.show', ['token' => '__TOKEN__']),
                             'revoke_route' => route('plugin.third-party-risk.external.links.revoke', [
                                 'vendorId' => $vendor['id'],
@@ -397,6 +411,7 @@ class ThirdPartyRiskPlugin implements PluginInterface
                             ]),
                         ];
                     }, $externalLinks),
+                    'external_collaborators' => $externalCollaborators,
                     'brokered_requests' => $brokeredRequests,
                     'collaboration_drafts' => $collaborationDrafts,
                     'collaboration_comments' => $collaborationComments,
@@ -534,6 +549,7 @@ class ThirdPartyRiskPlugin implements PluginInterface
             'collaboration_request_status_options' => $collaboration->requestStatuses(),
             'collaboration_request_priority_options' => $collaboration->requestPriorities(),
             'collaboration_request_handoff_state_options' => $collaboration->handoffStates(),
+            'collaboration_collaborator_lifecycle_state_options' => $collaboration->collaboratorLifecycleStates(),
             'current_principal_actor_ids' => $principalActorIds,
             'vendors_list_url' => route('core.shell.index', [...$baseQuery, 'menu' => 'plugin.third-party-risk.root']),
         ];
@@ -705,6 +721,9 @@ class ThirdPartyRiskPlugin implements PluginInterface
                 'plugin.third-party-risk.external-link.artifact-submitted' => 'External evidence uploaded',
                 'plugin.third-party-risk.questionnaire-item.artifact-uploaded' => 'Questionnaire attachment uploaded',
                 'plugin.third-party-risk.external-link.questionnaire-artifact-submitted' => 'External questionnaire attachment uploaded',
+                'plugin.third-party-risk.external-collaborator.blocked' => 'External collaborator blocked',
+                'plugin.third-party-risk.external-collaborator.activated' => 'External collaborator activated',
+                'plugin.third-party-risk.external-collaborator.updated' => 'External collaborator updated',
                 'plugin.third-party-risk.brokered-request.issued' => 'Brokered request issued',
                 'plugin.third-party-risk.brokered-request.updated' => 'Brokered request updated',
                 'plugin.third-party-risk.brokered-request.started' => 'Brokered request started',

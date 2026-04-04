@@ -6,12 +6,14 @@ Documentation rule:
 
 - Updating the in-application `HELP` is mandatory whenever a feature, workflow, screen, object, or governed record type is added, changed, improved, or removed.
 - A slice is not considered complete if specs change but the user-facing `support` content remains stale.
+- Execution status source of truth is `status-index-v1.md` + `longer-term-execution-todo-v1.md`.
 
 Current notable documents:
 
 The following specification documents are available in the [`specs`](./) folder:
 
 - [project-todo.md](./project-todo.md)
+- [status-index-v1.md](./status-index-v1.md)
 - [tenancy-model-v1.md](./tenancy-model-v1.md)
 - [audit-trail-v1.md](./audit-trail-v1.md)
 - [artifacts-and-attachments-v1.md](./artifacts-and-attachments-v1.md)
@@ -56,7 +58,11 @@ The following specification documents are available in the [`specs`](./) folder:
 - [framework-packs-and-reporting-depth-v1.md](./framework-packs-and-reporting-depth-v1.md)
 - [management-reporting-v1.md](./management-reporting-v1.md)
 - [collaboration-layer-v1.md](./collaboration-layer-v1.md)
+- [external-collaboration-security-hardening-v1.md](./external-collaboration-security-hardening-v1.md)
 - [questionnaire-engine-v1.md](./questionnaire-engine-v1.md)
+- [automation-catalog-v1.md](./automation-catalog-v1.md)
+- [automation-packages-repository-and-publish-v1.md](./automation-packages-repository-and-publish-v1.md)
+- [automation-pack-security-policy-v1.md](./automation-pack-security-policy-v1.md)
 - [information-architecture-and-data-contract-review-2026-03.md](./information-architecture-and-data-contract-review-2026-03.md)
 - [next-product-backlog-v1.md](./next-product-backlog-v1.md)
 - [longer-term-execution-todo-v1.md](./longer-term-execution-todo-v1.md)

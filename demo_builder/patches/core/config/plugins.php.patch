@@ -16,6 +16,6 @@ index e89396c57b61be0bde555a771e3e1603465226b8..11b6dcf4938ac547964a41f6f2f1fef4
      'enabled' => array_values(array_filter(array_map(
          static fn (string $pluginId): string => trim($pluginId),
 -        explode(',', (string) env('PLUGINS_ENABLED', 'hello-world,asset-catalog,actor-directory,controls-catalog,risk-management,questionnaires,collaboration,third-party-risk,findings-remediation,policy-exceptions,data-flows-privacy,continuity-bcm,assessments-audits,evidence-management,identity-local,identity-ldap,framework-iso27001,framework-nis2'))
-+        explode(',', (string) env('PLUGINS_ENABLED', 'hello-world,asset-catalog,actor-directory,controls-catalog,risk-management,questionnaires,collaboration,third-party-risk,findings-remediation,policy-exceptions,data-flows-privacy,continuity-bcm,assessments-audits,evidence-management,identity-local,framework-iso27001,framework-nis2'))
++        explode(',', (string) env('PLUGINS_ENABLED', 'hello-world,asset-catalog,actor-directory,controls-catalog,risk-management,questionnaires,collaboration,third-party-risk,findings-remediation,policy-exceptions,data-flows-privacy,continuity-bcm,automation-catalog,assessments-audits,evidence-management,identity-local,framework-iso27001,framework-nis2'))
      ))),
  ];

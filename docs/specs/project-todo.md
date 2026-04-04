@@ -2,6 +2,11 @@
 
 Simple list of the main pending items.
 
+Status note:
+
+- High-level status in this file mirrors `status-index-v1.md`.
+- Execution-level status and checklists live in `longer-term-execution-todo-v1.md`.
+
 ## Delivery Rules
 
 - [x] Keep the public demo alive as a first-class maintained surface.
@@ -51,8 +56,8 @@ Simple list of the main pending items.
 
 ## Longer-Term
 
-- [ ] Third-party risk / vendor review workspace.
-- [ ] Secure external collaboration model for vendors and other third parties.
-- [ ] Questionnaire engine with internal, brokered, and direct secure external collection modes.
-- [ ] Automation catalog with installable automation packs and connector-backed evidence refresh.
-- [ ] Collaboration layer for comments, requests, handoffs, tasks, and shared draft continuity.
+- [x] Third-party risk / vendor review workspace.
+- [x] Secure external collaboration model generalized beyond third-party-risk and link-only flows.
+- [x] Questionnaire engine with internal, brokered, and direct secure external collection modes.
+- [ ] Automation catalog with the first installable pack and connector-backed autonomous execution runs.
+- [x] Collaboration layer for comments, requests, handoffs, tasks, and shared draft continuity.

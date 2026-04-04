@@ -8,6 +8,274 @@ use PymeSec\Core\Collaboration\Contracts\CollaborationStoreInterface;
 
 class CollaborationStore implements CollaborationStoreInterface
 {
+    public function externalCollaboratorsForSubject(string $ownerComponent, string $subjectType, string $subjectId): array
+    {
+        return DB::table('collaboration_external_collaborators')
+            ->where('owner_component', $ownerComponent)
+            ->where('subject_type', $subjectType)
+            ->where('subject_id', $subjectId)
+            ->orderByRaw("case when lifecycle_state = 'active' then 0 else 1 end")
+            ->orderByDesc('updated_at')
+            ->get()
+            ->map(fn ($collaborator): array => $this->mapExternalCollaborator($collaborator))
+            ->all();
+    }
+
+    public function upsertExternalCollaborator(
+        string $ownerComponent,
+        string $subjectType,
+        string $subjectId,
+        string $organizationId,
+        ?string $scopeId,
+        array $data,
+    ): array {
+        $email = $this->normalizeExternalCollaboratorEmail((string) ($data['contact_email'] ?? ''));
+        $contactName = ($data['contact_name'] ?? null) ?: null;
+
+        $existing = DB::table('collaboration_external_collaborators')
+            ->where('owner_component', $ownerComponent)
+            ->where('subject_type', $subjectType)
+            ->where('subject_id', $subjectId)
+            ->where('contact_email', $email)
+            ->first();
+
+        if ($existing !== null) {
+            DB::table('collaboration_external_collaborators')
+                ->where('id', $existing->id)
+                ->update([
+                    'contact_name' => $contactName !== null ? $contactName : (is_string($existing->contact_name) ? $existing->contact_name : null),
+                    'organization_id' => $organizationId,
+                    'scope_id' => $scopeId,
+                    'updated_at' => now(),
+                ]);
+
+            /** @var array<string, string> $collaborator */
+            $collaborator = $this->findExternalCollaborator((string) $existing->id);
+
+            return $collaborator;
+        }
+
+        $id = 'external-collaborator-'.Str::lower(Str::ulid());
+
+        DB::table('collaboration_external_collaborators')->insert([
+            'id' => $id,
+            'owner_component' => $ownerComponent,
+            'subject_type' => $subjectType,
+            'subject_id' => $subjectId,
+            'organization_id' => $organizationId,
+            'scope_id' => $scopeId,
+            'contact_name' => $contactName,
+            'contact_email' => $email,
+            'lifecycle_state' => $this->normalizeExternalCollaboratorLifecycleState((string) ($data['lifecycle_state'] ?? 'active')),
+            'blocked_at' => null,
+            'blocked_by_principal_id' => null,
+            'last_link_issued_at' => null,
+            'last_link_id' => null,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        /** @var array<string, string> $collaborator */
+        $collaborator = $this->findExternalCollaborator($id);
+
+        return $collaborator;
+    }
+
+    public function findExternalCollaborator(string $collaboratorId): ?array
+    {
+        $collaborator = DB::table('collaboration_external_collaborators')
+            ->where('id', $collaboratorId)
+            ->first();
+
+        return $collaborator !== null ? $this->mapExternalCollaborator($collaborator) : null;
+    }
+
+    public function updateExternalCollaboratorLifecycle(
+        string $ownerComponent,
+        string $subjectType,
+        string $subjectId,
+        string $collaboratorId,
+        string $lifecycleState,
+        ?string $updatedByPrincipalId = null,
+    ): ?array {
+        $current = $this->findExternalCollaborator($collaboratorId);
+
+        if ($current === null || $current['owner_component'] !== $ownerComponent || $current['subject_type'] !== $subjectType || $current['subject_id'] !== $subjectId) {
+            return null;
+        }
+
+        $normalizedState = $this->normalizeExternalCollaboratorLifecycleState($lifecycleState);
+
+        DB::table('collaboration_external_collaborators')
+            ->where('id', $collaboratorId)
+            ->where('owner_component', $ownerComponent)
+            ->where('subject_type', $subjectType)
+            ->where('subject_id', $subjectId)
+            ->update([
+                'lifecycle_state' => $normalizedState,
+                'blocked_at' => $normalizedState === 'blocked' ? now() : null,
+                'blocked_by_principal_id' => $normalizedState === 'blocked' ? $updatedByPrincipalId : null,
+                'updated_at' => now(),
+            ]);
+
+        return $this->findExternalCollaborator($collaboratorId);
+    }
+
+    public function externalLinksForSubject(string $ownerComponent, string $subjectType, string $subjectId): array
+    {
+        return $this->externalLinksQuery()
+            ->where('collaboration_external_links.owner_component', $ownerComponent)
+            ->where('collaboration_external_links.subject_type', $subjectType)
+            ->where('collaboration_external_links.subject_id', $subjectId)
+            ->orderByDesc('collaboration_external_links.created_at')
+            ->get()
+            ->map(fn ($link): array => $this->mapExternalLink($link))
+            ->all();
+    }
+
+    public function issueExternalLink(
+        string $ownerComponent,
+        string $subjectType,
+        string $subjectId,
+        string $organizationId,
+        ?string $scopeId,
+        array $data,
+    ): array {
+        $token = Str::random(64);
+        $id = 'external-link-'.Str::lower(Str::ulid());
+        $collaborator = $this->upsertExternalCollaborator(
+            ownerComponent: $ownerComponent,
+            subjectType: $subjectType,
+            subjectId: $subjectId,
+            organizationId: $organizationId,
+            scopeId: $scopeId,
+            data: $data,
+        );
+
+        DB::table('collaboration_external_links')->insert([
+            'id' => $id,
+            'owner_component' => $ownerComponent,
+            'subject_type' => $subjectType,
+            'subject_id' => $subjectId,
+            'collaborator_id' => $collaborator['id'],
+            'organization_id' => $organizationId,
+            'scope_id' => $scopeId,
+            'contact_name' => ($data['contact_name'] ?? null) ?: null,
+            'contact_email' => $this->normalizeExternalCollaboratorEmail((string) ($data['contact_email'] ?? '')),
+            'token_hash' => hash('sha256', $token),
+            'can_answer_questionnaire' => (bool) ($data['can_answer_questionnaire'] ?? false),
+            'can_upload_artifacts' => (bool) ($data['can_upload_artifacts'] ?? false),
+            'issued_by_principal_id' => ($data['issued_by_principal_id'] ?? null) ?: null,
+            'email_delivery_status' => 'manual-only',
+            'email_delivery_error' => null,
+            'email_last_attempted_at' => null,
+            'email_sent_at' => null,
+            'expires_at' => ($data['expires_at'] ?? null) ?: null,
+            'last_accessed_at' => null,
+            'revoked_at' => null,
+            'revoked_by_principal_id' => null,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        DB::table('collaboration_external_collaborators')
+            ->where('id', $collaborator['id'])
+            ->update([
+                'last_link_issued_at' => now(),
+                'last_link_id' => $id,
+                'updated_at' => now(),
+            ]);
+
+        /** @var array<string, string> $link */
+        $link = $this->findExternalLink($id);
+
+        return [$link, $token];
+    }
+
+    public function findExternalLink(string $linkId): ?array
+    {
+        $link = $this->externalLinksQuery()
+            ->where('collaboration_external_links.id', $linkId)
+            ->first();
+
+        return $link !== null ? $this->mapExternalLink($link) : null;
+    }
+
+    public function resolveExternalLinkByToken(string $ownerComponent, string $subjectType, string $token): ?array
+    {
+        $link = $this->externalLinksQuery()
+            ->where('collaboration_external_links.owner_component', $ownerComponent)
+            ->where('collaboration_external_links.subject_type', $subjectType)
+            ->where('collaboration_external_links.token_hash', hash('sha256', $token))
+            ->first();
+
+        if ($link === null) {
+            return null;
+        }
+
+        $mapped = $this->mapExternalLink($link);
+
+        return $this->externalLinkIsActive($mapped) ? $mapped : null;
+    }
+
+    public function revokeExternalLink(
+        string $ownerComponent,
+        string $subjectType,
+        string $subjectId,
+        string $linkId,
+        ?string $revokedByPrincipalId = null,
+    ): ?array {
+        $current = $this->findExternalLink($linkId);
+
+        if ($current === null || $current['owner_component'] !== $ownerComponent || $current['subject_type'] !== $subjectType || $current['subject_id'] !== $subjectId) {
+            return null;
+        }
+
+        DB::table('collaboration_external_links')
+            ->where('id', $linkId)
+            ->where('owner_component', $ownerComponent)
+            ->where('subject_type', $subjectType)
+            ->where('subject_id', $subjectId)
+            ->update([
+                'revoked_by_principal_id' => $revokedByPrincipalId,
+                'revoked_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+        return $this->findExternalLink($linkId);
+    }
+
+    public function touchExternalLinkAccess(string $linkId): void
+    {
+        DB::table('collaboration_external_links')
+            ->where('id', $linkId)
+            ->update([
+                'last_accessed_at' => now(),
+                'updated_at' => now(),
+            ]);
+    }
+
+    public function recordExternalLinkDelivery(string $linkId, string $status, ?string $error = null): ?array
+    {
+        $current = $this->findExternalLink($linkId);
+
+        if ($current === null) {
+            return null;
+        }
+
+        DB::table('collaboration_external_links')
+            ->where('id', $linkId)
+            ->update([
+                'email_delivery_status' => trim($status) !== '' ? trim($status) : 'manual-only',
+                'email_delivery_error' => $error !== null && trim($error) !== '' ? trim($error) : null,
+                'email_last_attempted_at' => now(),
+                'email_sent_at' => $status === 'sent' ? now() : null,
+                'updated_at' => now(),
+            ]);
+
+        return $this->findExternalLink($linkId);
+    }
+
     public function draftsForSubject(string $ownerComponent, string $subjectType, string $subjectId): array
     {
         return DB::table('collaboration_drafts')
@@ -293,6 +561,66 @@ class CollaborationStore implements CollaborationStoreInterface
     /**
      * @return array<string, string>
      */
+    private function mapExternalLink(object $link): array
+    {
+        return [
+            'id' => (string) $link->id,
+            'owner_component' => (string) $link->owner_component,
+            'subject_type' => (string) $link->subject_type,
+            'subject_id' => (string) $link->subject_id,
+            'collaborator_id' => is_string($link->link_collaborator_id ?? null)
+                ? $link->link_collaborator_id
+                : (is_string($link->collaborator_record_id ?? null) ? $link->collaborator_record_id : ''),
+            'collaborator_lifecycle_state' => is_string($link->collaborator_lifecycle_state ?? null) ? $link->collaborator_lifecycle_state : 'active',
+            'collaborator_blocked_at' => $link->collaborator_blocked_at !== null ? (string) $link->collaborator_blocked_at : '',
+            'collaborator_blocked_by_principal_id' => is_string($link->collaborator_blocked_by_principal_id ?? null) ? $link->collaborator_blocked_by_principal_id : '',
+            'organization_id' => (string) $link->organization_id,
+            'scope_id' => is_string($link->scope_id) ? $link->scope_id : '',
+            'contact_name' => is_string($link->contact_name) ? $link->contact_name : '',
+            'contact_email' => (string) $link->contact_email,
+            'can_answer_questionnaire' => (bool) $link->can_answer_questionnaire ? '1' : '0',
+            'can_upload_artifacts' => (bool) $link->can_upload_artifacts ? '1' : '0',
+            'issued_by_principal_id' => is_string($link->issued_by_principal_id) ? $link->issued_by_principal_id : '',
+            'revoked_by_principal_id' => is_string($link->revoked_by_principal_id) ? $link->revoked_by_principal_id : '',
+            'email_delivery_status' => is_string($link->email_delivery_status ?? null) ? $link->email_delivery_status : 'manual-only',
+            'email_delivery_error' => is_string($link->email_delivery_error ?? null) ? $link->email_delivery_error : '',
+            'email_last_attempted_at' => $link->email_last_attempted_at !== null ? (string) $link->email_last_attempted_at : '',
+            'email_sent_at' => $link->email_sent_at !== null ? (string) $link->email_sent_at : '',
+            'expires_at' => $link->expires_at !== null ? (string) $link->expires_at : '',
+            'last_accessed_at' => $link->last_accessed_at !== null ? (string) $link->last_accessed_at : '',
+            'revoked_at' => $link->revoked_at !== null ? (string) $link->revoked_at : '',
+            'created_at' => $link->created_at !== null ? (string) $link->created_at : '',
+            'updated_at' => $link->updated_at !== null ? (string) $link->updated_at : '',
+        ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function mapExternalCollaborator(object $collaborator): array
+    {
+        return [
+            'id' => (string) $collaborator->id,
+            'owner_component' => (string) $collaborator->owner_component,
+            'subject_type' => (string) $collaborator->subject_type,
+            'subject_id' => (string) $collaborator->subject_id,
+            'organization_id' => (string) $collaborator->organization_id,
+            'scope_id' => is_string($collaborator->scope_id) ? $collaborator->scope_id : '',
+            'contact_name' => is_string($collaborator->contact_name) ? $collaborator->contact_name : '',
+            'contact_email' => (string) $collaborator->contact_email,
+            'lifecycle_state' => is_string($collaborator->lifecycle_state ?? null) ? $collaborator->lifecycle_state : 'active',
+            'blocked_at' => $collaborator->blocked_at !== null ? (string) $collaborator->blocked_at : '',
+            'blocked_by_principal_id' => is_string($collaborator->blocked_by_principal_id ?? null) ? $collaborator->blocked_by_principal_id : '',
+            'last_link_issued_at' => $collaborator->last_link_issued_at !== null ? (string) $collaborator->last_link_issued_at : '',
+            'last_link_id' => is_string($collaborator->last_link_id ?? null) ? $collaborator->last_link_id : '',
+            'created_at' => $collaborator->created_at !== null ? (string) $collaborator->created_at : '',
+            'updated_at' => $collaborator->updated_at !== null ? (string) $collaborator->updated_at : '',
+        ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
     private function mapDraft(object $draft): array
     {
         return [
@@ -366,6 +694,38 @@ class CollaborationStore implements CollaborationStoreInterface
             : 'comment';
     }
 
+    /**
+     * @param  array<string, string>  $link
+     */
+    private function externalLinkIsActive(array $link): bool
+    {
+        if (($link['collaborator_lifecycle_state'] ?? 'active') === 'blocked') {
+            return false;
+        }
+
+        if (($link['revoked_at'] ?? '') !== '') {
+            return false;
+        }
+
+        if (($link['expires_at'] ?? '') === '') {
+            return true;
+        }
+
+        return now()->lte($link['expires_at']);
+    }
+
+    private function normalizeExternalCollaboratorLifecycleState(string $lifecycleState): string
+    {
+        return in_array($lifecycleState, ['active', 'blocked'], true)
+            ? $lifecycleState
+            : 'active';
+    }
+
+    private function normalizeExternalCollaboratorEmail(string $email): string
+    {
+        return Str::lower(trim($email));
+    }
+
     private function normalizeHandoffState(string $handoffState): string
     {
         return in_array($handoffState, ['review', 'remediation', 'approval', 'closed-loop'], true)
@@ -388,5 +748,24 @@ class CollaborationStore implements CollaborationStoreInterface
         ))));
 
         return $values !== [] ? implode(',', $values) : null;
+    }
+
+    private function externalLinksQuery()
+    {
+        return DB::table('collaboration_external_links')
+            ->leftJoin(
+                'collaboration_external_collaborators',
+                'collaboration_external_collaborators.id',
+                '=',
+                'collaboration_external_links.collaborator_id',
+            )
+            ->select([
+                'collaboration_external_links.*',
+                'collaboration_external_links.collaborator_id as link_collaborator_id',
+                'collaboration_external_collaborators.id as collaborator_record_id',
+                'collaboration_external_collaborators.lifecycle_state as collaborator_lifecycle_state',
+                'collaboration_external_collaborators.blocked_at as collaborator_blocked_at',
+                'collaboration_external_collaborators.blocked_by_principal_id as collaborator_blocked_by_principal_id',
+            ]);
     }
 }

@@ -141,12 +141,21 @@ class ThirdPartyRiskRepository
      */
     public function externalLinksForReview(string $reviewId): array
     {
-        return DB::table('vendor_review_external_links')
-            ->where('review_id', $reviewId)
-            ->orderByDesc('created_at')
-            ->get()
-            ->map(fn ($link): array => $this->mapExternalLink($link))
-            ->all();
+        return array_map(
+            fn (array $link): array => $this->mapCollaborationExternalLinkForReview($link),
+            $this->collaboration->externalLinksForSubject('third-party-risk', 'vendor-review', $reviewId),
+        );
+    }
+
+    /**
+     * @return array<int, array<string, string>>
+     */
+    public function externalCollaboratorsForReview(string $reviewId): array
+    {
+        return array_map(
+            fn (array $collaborator): array => $this->mapCollaborationExternalCollaboratorForReview($collaborator),
+            $this->collaboration->externalCollaboratorsForSubject('third-party-risk', 'vendor-review', $reviewId),
+        );
     }
 
     /**
@@ -154,9 +163,13 @@ class ThirdPartyRiskRepository
      */
     public function findExternalLink(string $linkId): ?array
     {
-        $link = DB::table('vendor_review_external_links')->where('id', $linkId)->first();
+        $link = $this->collaboration->findExternalLink($linkId);
 
-        return $link !== null ? $this->mapExternalLink($link) : null;
+        if ($link === null || $link['owner_component'] !== 'third-party-risk' || $link['subject_type'] !== 'vendor-review') {
+            return null;
+        }
+
+        return $this->mapCollaborationExternalLinkForReview($link);
     }
 
     /**
@@ -164,22 +177,13 @@ class ThirdPartyRiskRepository
      */
     public function resolveExternalLinkByToken(string $token): ?array
     {
-        $tokenHash = hash('sha256', $token);
-        $link = DB::table('vendor_review_external_links')
-            ->where('token_hash', $tokenHash)
-            ->first();
+        $link = $this->collaboration->resolveExternalLinkByToken('third-party-risk', 'vendor-review', $token);
 
         if ($link === null) {
             return null;
         }
 
-        $mapped = $this->mapExternalLink($link);
-
-        if (! $this->externalLinkIsActive($mapped)) {
-            return null;
-        }
-
-        return $mapped;
+        return $this->mapCollaborationExternalLinkForReview($link);
     }
 
     /**
@@ -338,26 +342,15 @@ class ThirdPartyRiskRepository
             abort(404);
         }
 
-        $token = Str::random(64);
-        $linkId = 'vendor-external-link-'.Str::lower(Str::ulid());
-
-        DB::table('vendor_review_external_links')->insert([
-            'id' => $linkId,
-            'review_id' => $reviewId,
-            'organization_id' => $review['organization_id'],
-            'scope_id' => $review['scope_id'] !== '' ? $review['scope_id'] : null,
-            'contact_name' => ($data['contact_name'] ?? null) ?: null,
-            'contact_email' => $data['contact_email'],
-            'token_hash' => hash('sha256', $token),
-            'can_answer_questionnaire' => (bool) ($data['can_answer_questionnaire'] ?? false),
-            'can_upload_artifacts' => (bool) ($data['can_upload_artifacts'] ?? false),
-            'issued_by_principal_id' => ($data['issued_by_principal_id'] ?? null) ?: null,
-            'expires_at' => ($data['expires_at'] ?? null) ?: null,
-            'created_at' => now(),
-            'updated_at' => now(),
-        ]);
-
-        $link = $this->findExternalLink($linkId);
+        [$link, $token] = $this->collaboration->issueExternalLink(
+            ownerComponent: 'third-party-risk',
+            subjectType: 'vendor-review',
+            subjectId: $reviewId,
+            organizationId: $review['organization_id'],
+            scopeId: $review['scope_id'] !== '' ? $review['scope_id'] : null,
+            data: $data,
+        );
+        $link = $this->mapCollaborationExternalLinkForReview($link);
 
         $this->audit->record(new AuditRecordData(
             eventType: 'plugin.third-party-risk.external-link.issued',
@@ -367,7 +360,7 @@ class ThirdPartyRiskRepository
             organizationId: $review['organization_id'],
             scopeId: $review['scope_id'] !== '' ? $review['scope_id'] : null,
             targetType: 'vendor_review_external_link',
-            targetId: $linkId,
+            targetId: $link['id'],
             summary: [
                 'review_id' => $reviewId,
                 'contact_email' => $data['contact_email'],
@@ -390,13 +383,17 @@ class ThirdPartyRiskRepository
             return null;
         }
 
-        DB::table('vendor_review_external_links')
-            ->where('id', $linkId)
-            ->update([
-                'revoked_at' => now(),
-                'revoked_by_principal_id' => $principalId,
-                'updated_at' => now(),
-            ]);
+        $updated = $this->collaboration->revokeExternalLink(
+            ownerComponent: 'third-party-risk',
+            subjectType: 'vendor-review',
+            subjectId: $reviewId,
+            linkId: $linkId,
+            revokedByPrincipalId: $principalId,
+        );
+
+        if ($updated === null) {
+            return null;
+        }
 
         $this->audit->record(new AuditRecordData(
             eventType: 'plugin.third-party-risk.external-link.revoked',
@@ -414,7 +411,61 @@ class ThirdPartyRiskRepository
             executionOrigin: 'third-party-risk',
         ));
 
-        return $this->findExternalLink($linkId);
+        return $this->mapCollaborationExternalLinkForReview($updated);
+    }
+
+    /**
+     * @return array<string, string>|null
+     */
+    public function updateExternalCollaboratorLifecycleForReview(
+        string $reviewId,
+        string $collaboratorId,
+        string $lifecycleState,
+        ?string $principalId = null,
+    ): ?array {
+        $review = $this->findReview($reviewId);
+
+        if ($review === null) {
+            return null;
+        }
+
+        $updated = $this->collaboration->updateExternalCollaboratorLifecycle(
+            ownerComponent: 'third-party-risk',
+            subjectType: 'vendor-review',
+            subjectId: $reviewId,
+            collaboratorId: $collaboratorId,
+            lifecycleState: $lifecycleState,
+            updatedByPrincipalId: $principalId,
+        );
+
+        if ($updated === null) {
+            return null;
+        }
+
+        $eventType = match ($updated['lifecycle_state']) {
+            'blocked' => 'plugin.third-party-risk.external-collaborator.blocked',
+            'active' => 'plugin.third-party-risk.external-collaborator.activated',
+            default => 'plugin.third-party-risk.external-collaborator.updated',
+        };
+
+        $this->audit->record(new AuditRecordData(
+            eventType: $eventType,
+            outcome: 'success',
+            originComponent: 'third-party-risk',
+            principalId: $principalId,
+            organizationId: $review['organization_id'],
+            scopeId: $review['scope_id'] !== '' ? $review['scope_id'] : null,
+            targetType: 'external_collaborator',
+            targetId: $updated['id'],
+            summary: [
+                'review_id' => $reviewId,
+                'contact_email' => $updated['contact_email'],
+                'lifecycle_state' => $updated['lifecycle_state'],
+            ],
+            executionOrigin: 'third-party-risk',
+        ));
+
+        return $this->mapCollaborationExternalCollaboratorForReview($updated);
     }
 
     public function touchExternalLinkAccess(string $linkId): void
@@ -425,12 +476,7 @@ class ThirdPartyRiskRepository
             return;
         }
 
-        DB::table('vendor_review_external_links')
-            ->where('id', $linkId)
-            ->update([
-                'last_accessed_at' => now(),
-                'updated_at' => now(),
-            ]);
+        $this->collaboration->touchExternalLinkAccess($linkId);
 
         $this->audit->record(new AuditRecordData(
             eventType: 'plugin.third-party-risk.external-link.accessed',
@@ -459,17 +505,9 @@ class ThirdPartyRiskRepository
             return null;
         }
 
-        DB::table('vendor_review_external_links')
-            ->where('id', $linkId)
-            ->update([
-                'email_delivery_status' => $status,
-                'email_delivery_error' => $error !== null && trim($error) !== '' ? trim($error) : null,
-                'email_last_attempted_at' => now(),
-                'email_sent_at' => $status === 'sent' ? now() : null,
-                'updated_at' => now(),
-            ]);
+        $updated = $this->collaboration->recordExternalLinkDelivery($linkId, $status, $error);
 
-        return $this->findExternalLink($linkId);
+        return $updated !== null ? $this->mapCollaborationExternalLinkForReview($updated) : null;
     }
 
     public function submitExternalQuestionnaireAnswer(string $reviewId, string $itemId, string $answerText): ?array
@@ -1225,22 +1263,6 @@ class ThirdPartyRiskRepository
         return $recordScopeId === '' || $recordScopeId === $requestedScopeId;
     }
 
-    /**
-     * @param  array<string, string>  $link
-     */
-    private function externalLinkIsActive(array $link): bool
-    {
-        if ($link['revoked_at'] !== '') {
-            return false;
-        }
-
-        if ($link['expires_at'] === '') {
-            return true;
-        }
-
-        return now()->lte($link['expires_at']);
-    }
-
     private function nextVendorId(string $legalName): string
     {
         $base = 'vendor-'.Str::slug($legalName);
@@ -1385,29 +1407,26 @@ class ThirdPartyRiskRepository
     }
 
     /**
+     * @param  array<string, string>  $link
      * @return array<string, string>
      */
-    private function mapExternalLink(object $link): array
+    private function mapCollaborationExternalLinkForReview(array $link): array
     {
         return [
-            'id' => (string) $link->id,
-            'review_id' => (string) $link->review_id,
-            'organization_id' => (string) $link->organization_id,
-            'scope_id' => is_string($link->scope_id) ? $link->scope_id : '',
-            'contact_name' => is_string($link->contact_name) ? $link->contact_name : '',
-            'contact_email' => (string) $link->contact_email,
-            'can_answer_questionnaire' => (bool) $link->can_answer_questionnaire ? '1' : '0',
-            'can_upload_artifacts' => (bool) $link->can_upload_artifacts ? '1' : '0',
-            'issued_by_principal_id' => is_string($link->issued_by_principal_id) ? $link->issued_by_principal_id : '',
-            'revoked_by_principal_id' => is_string($link->revoked_by_principal_id) ? $link->revoked_by_principal_id : '',
-            'email_delivery_status' => is_string($link->email_delivery_status ?? null) ? $link->email_delivery_status : 'manual-only',
-            'email_delivery_error' => is_string($link->email_delivery_error ?? null) ? $link->email_delivery_error : '',
-            'email_last_attempted_at' => $link->email_last_attempted_at !== null ? (string) $link->email_last_attempted_at : '',
-            'email_sent_at' => $link->email_sent_at !== null ? (string) $link->email_sent_at : '',
-            'expires_at' => $link->expires_at !== null ? (string) $link->expires_at : '',
-            'last_accessed_at' => $link->last_accessed_at !== null ? (string) $link->last_accessed_at : '',
-            'revoked_at' => $link->revoked_at !== null ? (string) $link->revoked_at : '',
-            'created_at' => $link->created_at !== null ? (string) $link->created_at : '',
+            ...$link,
+            'review_id' => $link['subject_id'],
+        ];
+    }
+
+    /**
+     * @param  array<string, string>  $collaborator
+     * @return array<string, string>
+     */
+    private function mapCollaborationExternalCollaboratorForReview(array $collaborator): array
+    {
+        return [
+            ...$collaborator,
+            'review_id' => $collaborator['subject_id'],
         ];
     }
 }

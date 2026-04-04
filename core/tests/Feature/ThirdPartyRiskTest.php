@@ -442,8 +442,10 @@ class ThirdPartyRiskTest extends TestCase
         $response = $this->post('/plugins/vendors/vendor-northbridge-payroll/reviews/vendor-review-northbridge-payroll-2026/external-links', $payload)
             ->assertFound();
 
-        $this->assertDatabaseHas('vendor_review_external_links', [
-            'review_id' => 'vendor-review-northbridge-payroll-2026',
+        $this->assertDatabaseHas('collaboration_external_links', [
+            'owner_component' => 'third-party-risk',
+            'subject_type' => 'vendor-review',
+            'subject_id' => 'vendor-review-northbridge-payroll-2026',
             'contact_email' => 'nina.walsh@northbridge-payroll.test',
             'email_delivery_status' => 'manual-only',
         ]);
@@ -660,8 +662,10 @@ class ThirdPartyRiskTest extends TestCase
 
         $response->assertSessionHas('status', 'External collaboration link issued and email invitation sent.');
 
-        $record = DB::table('vendor_review_external_links')
-            ->where('review_id', 'vendor-review-northbridge-payroll-2026')
+        $record = DB::table('collaboration_external_links')
+            ->where('owner_component', 'third-party-risk')
+            ->where('subject_type', 'vendor-review')
+            ->where('subject_id', 'vendor-review-northbridge-payroll-2026')
             ->where('contact_email', 'nina.walsh@northbridge-payroll.test')
             ->latest('created_at')
             ->first();
@@ -671,6 +675,69 @@ class ThirdPartyRiskTest extends TestCase
         $this->assertNotNull($record->email_last_attempted_at);
         $this->assertNotNull($record->email_sent_at);
         $this->assertNull($record->email_delivery_error);
+    }
+
+    public function test_external_collaborator_lifecycle_can_block_and_restore_portal_access(): void
+    {
+        $payload = [
+            'principal_id' => 'principal-org-a',
+            'organization_id' => 'org-a',
+            'locale' => 'en',
+            'menu' => 'plugin.third-party-risk.root',
+            'membership_id' => 'membership-org-a-hello',
+            'contact_name' => 'Nina Walsh',
+            'contact_email' => 'nina.walsh@northbridge-payroll.test',
+            'expires_at' => now()->addDay()->format('Y-m-d\TH:i'),
+            'can_answer_questionnaire' => '1',
+            'can_upload_artifacts' => '1',
+        ];
+
+        $response = $this->post('/plugins/vendors/vendor-northbridge-payroll/reviews/vendor-review-northbridge-payroll-2026/external-links', $payload)
+            ->assertFound();
+
+        $portalUrl = (string) $response->getSession()->get('third_party_risk_external_portal_url');
+        $portalPath = (string) parse_url($portalUrl, PHP_URL_PATH);
+
+        $collaboratorId = (string) DB::table('collaboration_external_collaborators')
+            ->where('owner_component', 'third-party-risk')
+            ->where('subject_type', 'vendor-review')
+            ->where('subject_id', 'vendor-review-northbridge-payroll-2026')
+            ->where('contact_email', 'nina.walsh@northbridge-payroll.test')
+            ->value('id');
+
+        $this->assertNotSame('', $collaboratorId);
+
+        $this->post("/plugins/vendors/vendor-northbridge-payroll/reviews/vendor-review-northbridge-payroll-2026/external-collaborators/{$collaboratorId}", [
+            'principal_id' => 'principal-org-a',
+            'organization_id' => 'org-a',
+            'locale' => 'en',
+            'menu' => 'plugin.third-party-risk.root',
+            'membership_id' => 'membership-org-a-hello',
+            'lifecycle_state' => 'blocked',
+        ])->assertFound();
+
+        $this->assertDatabaseHas('collaboration_external_collaborators', [
+            'id' => $collaboratorId,
+            'lifecycle_state' => 'blocked',
+        ]);
+
+        $this->get($portalPath)->assertNotFound();
+
+        $this->post("/plugins/vendors/vendor-northbridge-payroll/reviews/vendor-review-northbridge-payroll-2026/external-collaborators/{$collaboratorId}", [
+            'principal_id' => 'principal-org-a',
+            'organization_id' => 'org-a',
+            'locale' => 'en',
+            'menu' => 'plugin.third-party-risk.root',
+            'membership_id' => 'membership-org-a-hello',
+            'lifecycle_state' => 'active',
+        ])->assertFound();
+
+        $this->assertDatabaseHas('collaboration_external_collaborators', [
+            'id' => $collaboratorId,
+            'lifecycle_state' => 'active',
+        ]);
+
+        $this->get($portalPath)->assertOk();
     }
 
     public function test_external_collaboration_link_can_be_revoked(): void
@@ -694,8 +761,10 @@ class ThirdPartyRiskTest extends TestCase
         $portalUrl = (string) $response->getSession()->get('third_party_risk_external_portal_url');
         $portalPath = (string) parse_url($portalUrl, PHP_URL_PATH);
 
-        $linkId = (string) DB::table('vendor_review_external_links')
-            ->where('review_id', 'vendor-review-northbridge-payroll-2026')
+        $linkId = (string) DB::table('collaboration_external_links')
+            ->where('owner_component', 'third-party-risk')
+            ->where('subject_type', 'vendor-review')
+            ->where('subject_id', 'vendor-review-northbridge-payroll-2026')
             ->where('contact_email', 'nina.walsh@northbridge-payroll.test')
             ->value('id');
 

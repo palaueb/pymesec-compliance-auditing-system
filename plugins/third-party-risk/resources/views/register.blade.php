@@ -923,6 +923,54 @@
                     </details>
                 @endif
 
+                <div class="surface-card" style="padding:12px; margin-top:12px;">
+                    <div class="row-between">
+                        <div class="entity-title">External collaborators</div>
+                        <span class="table-note">{{ count($review['external_collaborators']) }} tracked</span>
+                    </div>
+                    <div class="data-stack" style="margin-top:10px;">
+                        @forelse ($review['external_collaborators'] as $collaborator)
+                            <div class="data-item">
+                                <div class="row-between" style="align-items:flex-start; gap:12px;">
+                                    <div>
+                                        <div class="entity-title">{{ $collaborator['contact_name'] !== '' ? $collaborator['contact_name'] : $collaborator['contact_email'] }}</div>
+                                        <div class="table-note">{{ $collaborator['contact_email'] }}</div>
+                                        <div class="table-note">Lifecycle: {{ $collaborator['lifecycle_state_label'] }}</div>
+                                        <div class="table-note">Last link: {{ $collaborator['last_link_issued_at'] !== '' ? $collaborator['last_link_issued_at'] : 'No links issued yet' }}</div>
+                                        @if ($collaborator['blocked_at'] !== '')
+                                            <div class="table-note">Blocked at: {{ $collaborator['blocked_at'] }}</div>
+                                        @endif
+                                    </div>
+                                    @if ($can_manage_vendors)
+                                        <form method="POST" action="{{ $collaborator['lifecycle_update_route'] }}" style="min-width:220px;">
+                                            @csrf
+                                            <input type="hidden" name="principal_id" value="{{ $query['principal_id'] ?? '' }}">
+                                            <input type="hidden" name="organization_id" value="{{ $query['organization_id'] }}">
+                                            <input type="hidden" name="locale" value="{{ $query['locale'] }}">
+                                            <input type="hidden" name="menu" value="plugin.third-party-risk.root">
+                                            <input type="hidden" name="vendor_id" value="{{ $selected_vendor['id'] }}">
+                                            <input type="hidden" name="membership_id" value="{{ $query['membership_ids'][0] ?? 'membership-org-a-hello' }}">
+                                            <div class="field">
+                                                <label class="field-label">Lifecycle state</label>
+                                                <select class="field-select" name="lifecycle_state">
+                                                    @foreach ($collaboration_collaborator_lifecycle_state_options as $stateKey => $stateLabel)
+                                                        <option value="{{ $stateKey }}" @selected($collaborator['lifecycle_state'] === $stateKey)>{{ $stateLabel }}</option>
+                                                    @endforeach
+                                                </select>
+                                            </div>
+                                            <div class="action-cluster" style="margin-top:8px;">
+                                                <button class="button button-ghost" type="submit">Update state</button>
+                                            </div>
+                                        </form>
+                                    @endif
+                                </div>
+                            </div>
+                        @empty
+                            <span class="muted-note">No external collaborators yet</span>
+                        @endforelse
+                    </div>
+                </div>
+
                 <div class="data-stack" style="margin-top:12px;">
                     @forelse ($review['external_links'] as $externalLink)
                         @php
@@ -951,6 +999,7 @@
                                     @if ($externalLink['email_delivery_error'] !== '')
                                         <div class="table-note">Delivery error: {{ $externalLink['email_delivery_error'] }}</div>
                                     @endif
+                                    <div class="table-note">Collaborator state: {{ $externalLink['collaborator_lifecycle_state_label'] }}</div>
                                     <div class="table-note">State: {{ $externalLink['revoked_at'] === '' ? 'Active' : 'Revoked' }}</div>
                                 </div>
                                 @if ($can_manage_vendors && $externalLink['revoked_at'] === '')

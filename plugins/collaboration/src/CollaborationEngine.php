@@ -6,6 +6,24 @@ use PymeSec\Core\Collaboration\Contracts\CollaborationEngineInterface;
 
 class CollaborationEngine implements CollaborationEngineInterface
 {
+    public function collaboratorLifecycleStates(): array
+    {
+        return [
+            'active' => 'Active',
+            'blocked' => 'Blocked',
+        ];
+    }
+
+    public function collaboratorLifecycleStateKeys(): array
+    {
+        return array_keys($this->collaboratorLifecycleStates());
+    }
+
+    public function collaboratorLifecycleStateLabel(string $state): string
+    {
+        return $this->collaboratorLifecycleStates()[$state] ?? ucwords(str_replace('-', ' ', $state));
+    }
+
     public function draftTypes(): array
     {
         return [

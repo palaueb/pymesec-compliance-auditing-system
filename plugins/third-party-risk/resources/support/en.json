@@ -10,6 +10,7 @@
         "The review workspace is where the real work happens: capture questionnaire responses, attach artifacts, review linked findings and remediation actions, move the review through approval states, coordinate shared drafts, comments, and follow-up requests, choose direct external access or brokered collection, and use the activity timeline to understand what happened recently."
       ],
       "concept_ids": [
+        "vendor-external-collaboration-hardening",
         "vendor-record",
         "vendor-review",
         "vendor-review-profile",
@@ -25,6 +26,32 @@
     }
   ],
   "concepts": [
+    {
+      "id": "vendor-external-collaboration-hardening",
+      "label": "Vendor external collaboration hardening",
+      "category": "security",
+      "summary": "Operational and deployment controls required before exposing the vendor review external portal.",
+      "why_it_exists": "Vendor reviews can contain sensitive controls, evidence, and findings context, so external routes need explicit hardening guidance.",
+      "how_to_use": [
+        "Expose the portal only over HTTPS and keep internal review routes behind authenticated access.",
+        "Use collaborator lifecycle state and link revocation to stop access immediately when needed.",
+        "Keep upload type and size validation enabled and block executable file types.",
+        "Monitor audit trail records for external-link issuance, access, and failed delivery events."
+      ],
+      "relations": [
+        {
+          "type": "applies-to",
+          "target": "vendor-external-collaborator",
+          "summary": "Collaborator lifecycle is part of the security baseline."
+        },
+        {
+          "type": "applies-to",
+          "target": "vendor-external-review-link",
+          "summary": "External link issuance and use must follow the hardening baseline."
+        }
+      ],
+      "order": 254
+    },
     {
       "id": "vendor-record",
       "label": "Vendor record",
@@ -203,6 +230,32 @@
       "order": 260
     },
     {
+      "id": "vendor-external-collaborator",
+      "label": "Vendor external collaborator",
+      "category": "operations",
+      "summary": "A review-scoped external participant identity with an explicit lifecycle state.",
+      "why_it_exists": "It allows the team to suspend or restore one collaborator across all their review links without deleting historical records.",
+      "how_to_use": [
+        "Use one collaborator record per contact email inside each vendor review.",
+        "Set lifecycle to blocked when external access must stop immediately across current links.",
+        "Restore lifecycle to active when collaboration can continue under the same scoped identity.",
+        "Portal access enforcement is runtime-based, so blocking is immediate and does not depend on CRON execution."
+      ],
+      "relations": [
+        {
+          "type": "belongs-to",
+          "target": "vendor-review",
+          "summary": "Each collaborator is scoped to one concrete vendor review."
+        },
+        {
+          "type": "has-many",
+          "target": "vendor-external-review-link",
+          "summary": "A collaborator can have multiple issued links over time for the same review."
+        }
+      ],
+      "order": 261
+    },
+    {
       "id": "vendor-external-review-link",
       "label": "Vendor external review link",
       "category": "operations",
@@ -212,9 +265,15 @@
         "Issue an external review link only for the concrete review you want to share.",
         "Choose whether the recipient may answer questionnaire items, upload evidence, or both.",
         "Decide whether the link stays manual-only or whether the workspace should send the invitation through the organization SMTP connector.",
-        "Revoke the link when the collaboration window is over or when access should end immediately."
+        "Revoke the link when the collaboration window is over or when access should end immediately.",
+        "Use collaborator lifecycle state to block or restore all portal access for one external contact."
       ],
       "relations": [
+        {
+          "type": "belongs-to",
+          "target": "vendor-external-collaborator",
+          "summary": "Each link belongs to one external collaborator identity for lifecycle control."
+        },
         {
           "type": "belongs-to",
           "target": "vendor-review",
@@ -236,7 +295,7 @@
           "summary": "Email invitation delivery for the link uses the organization outbound mail connector when enabled."
         }
       ],
-      "order": 261
+      "order": 262
     }
   ]
 }

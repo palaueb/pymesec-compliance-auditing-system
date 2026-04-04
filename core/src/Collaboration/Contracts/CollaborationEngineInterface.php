@@ -7,6 +7,18 @@ interface CollaborationEngineInterface
     /**
      * @return array<string, string>
      */
+    public function collaboratorLifecycleStates(): array;
+
+    /**
+     * @return array<int, string>
+     */
+    public function collaboratorLifecycleStateKeys(): array;
+
+    public function collaboratorLifecycleStateLabel(string $state): string;
+
+    /**
+     * @return array<string, string>
+     */
     public function draftTypes(): array;
 
     /**

@@ -1,0 +1,88 @@
+{
+  "plugin": {
+    "id": "automation-catalog",
+    "name": "Automation Catalog",
+    "version": "0.1.0",
+    "type": "automation",
+    "description": "Catalog and lifecycle workspace for compliance automation packs.",
+    "vendor": "pymesec",
+    "license": "AGPL-3.0-or-later"
+  },
+  "compatibility": {
+    "core": "^0.1.0",
+    "sdk": "^0.1.0"
+  },
+  "dependencies": [
+    {
+      "target": "evidence-management",
+      "type": "required"
+    }
+  ],
+  "permissions": [
+    {
+      "key": "plugin.automation-catalog.packs.view",
+      "label": "View automation catalog",
+      "description": "View automation packs and operational state.",
+      "feature_area": "automation",
+      "operation": "view",
+      "contexts": [
+        "organization"
+      ]
+    },
+    {
+      "key": "plugin.automation-catalog.packs.manage",
+      "label": "Manage automation catalog",
+      "description": "Create packs and manage install, enable, disable, and health updates.",
+      "feature_area": "automation",
+      "operation": "manage",
+      "contexts": [
+        "organization"
+      ]
+    }
+  ],
+  "routes": [
+    {
+      "id": "automation-catalog.web",
+      "type": "web",
+      "file": "routes/web.php",
+      "middleware": [
+        "web"
+      ],
+      "permission": "plugin.automation-catalog.packs.view"
+    }
+  ],
+  "menus": [
+    {
+      "id": "plugin.automation-catalog.root",
+      "label_key": "plugin.automation-catalog.nav.root",
+      "route": "plugin.automation-catalog.index",
+      "icon": "zap",
+      "order": 52,
+      "permission": "plugin.automation-catalog.packs.view"
+    }
+  ],
+  "migrations": [],
+  "translations": {
+    "default_locale": "en",
+    "supported_locales": [
+      "en",
+      "es"
+    ],
+    "path": "resources/lang"
+  },
+  "support": {
+    "path": "resources/support",
+    "supported_locales": [
+      "en"
+    ]
+  },
+  "lifecycle": {},
+  "runtime": {
+    "class": "PymeSec\\Plugins\\AutomationCatalog\\AutomationCatalogPlugin",
+    "autoload": {
+      "psr-4": {
+        "PymeSec\\Plugins\\AutomationCatalog\\": "src"
+      }
+    }
+  }
+}

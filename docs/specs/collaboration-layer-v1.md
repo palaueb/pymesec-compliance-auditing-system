@@ -6,6 +6,7 @@ Introduce a transversal collaboration capability that domain plugins can reuse i
 
 This first slice is intentionally narrow and operational:
 
+- reusable external collaboration link storage/lifecycle primitive
 - shared drafts for continuity between users
 - record comments
 - follow-up requests / task objects
@@ -36,8 +37,10 @@ This matches the same architectural pattern already used for `questionnaires`:
 
 ## Generic Data Model
 
-This slice introduces three generic tables:
+This slice introduces generic collaboration tables:
 
+- `collaboration_external_collaborators`
+- `collaboration_external_links`
 - `collaboration_drafts`
 - `collaboration_comments`
 - `collaboration_requests`
@@ -72,6 +75,46 @@ A collaboration draft stores:
 - timestamps
 
 This is the continuity primitive that allows one user to start a collaboration record and another user to finish or publish it later.
+
+### Collaboration External Link
+
+A collaboration external link stores:
+
+- owner component + subject scope
+- linked collaborator identity
+- contact name/email
+- token hash
+- capability flags
+- lifecycle fields for expiry, revocation, and last access
+- invitation delivery state and error metadata
+
+This is the reusable external access primitive consumed by domain plugins.
+
+### Collaboration External Collaborator
+
+A collaboration external collaborator stores:
+
+- owner component + subject scope
+- collaborator contact identity (`contact_email`, optional name)
+- lifecycle state (`active` / `blocked`)
+- lifecycle audit fields (`blocked_at`, `blocked_by_principal_id`)
+- latest link pointers (`last_link_issued_at`, `last_link_id`)
+
+This is the reusable lifecycle primitive that allows blocking one external identity across all active links for one scoped object.
+
+## Runtime Enforcement and Scheduling
+
+Access enforcement does not depend on CRON:
+
+- token resolution validates collaborator lifecycle state on each portal request
+- blocked collaborators are denied immediately, even if link token is otherwise valid
+- expiry and revocation are evaluated at runtime when token is resolved
+
+Recommended CRONs are operational, not required for correctness:
+
+- optional reminder job for links close to expiry
+- optional digest/reporting job for operators (issued/active/expired/revoked/blocked counts)
+- optional cleanup/archive job for old revoked/expired links according to retention policy
 
 ### Collaboration Comment
 
@@ -131,6 +174,7 @@ The first consumer is `third-party-risk`.
 
 Vendor review now uses the collaboration plugin for:
 
+- external collaboration link storage and lifecycle tracking
 - shared drafts that can later be promoted into published comments or follow-up requests
 - subject-bound comments
 - subject-bound follow-up requests
@@ -147,4 +191,4 @@ This does not yet complete the whole collaboration backlog.
 
 Still missing after this slice:
 
-- generalized external collaborator lifecycle beyond vendor review links
+- generalized cross-plugin consumer adoption of the external collaborator lifecycle model

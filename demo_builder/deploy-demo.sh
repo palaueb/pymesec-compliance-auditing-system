@@ -127,6 +127,11 @@ apply_patch_file() {
         return 0
     fi
 
+    if git -C "$REPO_ROOT" apply --3way "$patch_file" >/dev/null 2>&1; then
+        log "applied with 3-way merge $(relative_to_repo "$patch_file")"
+        return 0
+    fi
+
     fail "patch cannot be applied cleanly: $patch_file"
 }
 
@@ -202,7 +207,7 @@ configure_env() {
     set_env_value "$env_file" "CACHE_STORE" "file"
     set_env_value "$env_file" "QUEUE_CONNECTION" "sync"
     set_env_value "$env_file" "MAIL_MAILER" "log"
-    set_env_value "$env_file" "PLUGINS_ENABLED" "hello-world,asset-catalog,actor-directory,controls-catalog,risk-management,questionnaires,collaboration,third-party-risk,findings-remediation,policy-exceptions,data-flows-privacy,continuity-bcm,assessments-audits,evidence-management,identity-local"
+    set_env_value "$env_file" "PLUGINS_ENABLED" "hello-world,asset-catalog,actor-directory,controls-catalog,risk-management,questionnaires,collaboration,third-party-risk,findings-remediation,policy-exceptions,data-flows-privacy,continuity-bcm,automation-catalog,assessments-audits,evidence-management,identity-local"
     set_env_value "$env_file" "DEMO_LOGIN_USERNAME" "admin"
     set_env_value "$env_file" "DEMO_LOGIN_PASSWORD" "demo"
     set_env_value "$env_file" "DEMO_LOGIN_PRINCIPAL_ID" "principal-admin"

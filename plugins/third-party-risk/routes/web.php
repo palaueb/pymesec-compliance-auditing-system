@@ -251,6 +251,44 @@ Route::post('/plugins/vendors/{vendorId}/reviews/{reviewId}/external-links/{link
     ]))->with('status', 'External collaboration link revoked.');
 })->middleware('core.permission:plugin.third-party-risk.vendors.manage')->name('plugin.third-party-risk.external.links.revoke');
 
+Route::post('/plugins/vendors/{vendorId}/reviews/{reviewId}/external-collaborators/{collaboratorId}', function (
+    Request $request,
+    string $vendorId,
+    string $reviewId,
+    string $collaboratorId,
+    ThirdPartyRiskRepository $repository,
+    CollaborationEngineInterface $collaboration,
+) {
+    $vendor = $repository->find($vendorId);
+    $review = $repository->findReview($reviewId);
+
+    abort_if($vendor === null || $review === null || $review['vendor_id'] !== $vendorId, 404);
+
+    $validated = $request->validate([
+        'lifecycle_state' => ['required', 'string', Rule::in($collaboration->collaboratorLifecycleStateKeys())],
+    ]);
+
+    $principalId = (string) $request->input('principal_id', 'principal-org-a');
+    $membershipId = $request->input('membership_id');
+
+    abort_if($repository->updateExternalCollaboratorLifecycleForReview(
+        reviewId: $reviewId,
+        collaboratorId: $collaboratorId,
+        lifecycleState: $validated['lifecycle_state'],
+        principalId: $principalId,
+    ) === null, 404);
+
+    return redirect()->route('core.shell.index', array_filter([
+        'menu' => 'plugin.third-party-risk.root',
+        'vendor_id' => $vendor['id'],
+        'principal_id' => $principalId,
+        'organization_id' => $vendor['organization_id'],
+        'scope_id' => $vendor['scope_id'] !== '' ? $vendor['scope_id'] : null,
+        'locale' => $request->input('locale', 'en'),
+        'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
+    ]))->with('status', 'External collaborator lifecycle updated.');
+})->middleware('core.permission:plugin.third-party-risk.vendors.manage')->name('plugin.third-party-risk.external.collaborators.update');
+
 Route::post('/plugins/vendors/{vendorId}/reviews/{reviewId}/brokered-requests', function (
     Request $request,
     string $vendorId,

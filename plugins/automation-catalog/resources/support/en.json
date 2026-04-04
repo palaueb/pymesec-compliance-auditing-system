@@ -1,0 +1,118 @@
+{
+  "guide": [
+    {
+      "id": "automation-catalog-overview",
+      "title": "Automation catalog",
+      "summary": "Use the automation catalog to register pack metadata, control install and enable state, track operational health posture, and map outputs into evidence and workflow actions.",
+      "body": [
+        "An automation pack is a governed deployment unit for connectors, evidence collection jobs, or operational compliance tasks.",
+        "The catalog separates lifecycle control from pack implementation details so operators can manage only what is installed and enabled.",
+        "Ownership and provenance metadata make each pack traceable to a responsible principal and source.",
+        "Output mappings let operators route automation results into evidence refresh records or workflow transitions using explicit target scopes.",
+        "External package repositories can be registered with trust tier and public key so repository indexes are validated before ingestion."
+      ],
+      "concept_ids": [
+        "automation-pack",
+        "automation-pack-lifecycle",
+        "automation-pack-health",
+        "automation-output-mapping",
+        "automation-package-repository"
+      ],
+      "order": 430
+    }
+  ],
+  "concepts": [
+    {
+      "id": "automation-pack",
+      "label": "Automation pack",
+      "category": "operations",
+      "summary": "A cataloged automation unit identified by pack key, version, source, provider type, and ownership metadata.",
+      "why_it_exists": "It establishes a reusable object model so automation features can be managed as first-class product entities instead of implicit scripts.",
+      "how_to_use": [
+        "Register packs with stable keys and meaningful names.",
+        "Record source and provenance to keep the supply chain explicit.",
+        "Assign ownership so operational accountability is clear."
+      ],
+      "relations": [
+        {
+          "type": "has-lifecycle",
+          "target": "automation-pack-lifecycle",
+          "summary": "Each pack has a managed lifecycle state."
+        },
+        {
+          "type": "has-health",
+          "target": "automation-pack-health",
+          "summary": "Each pack has tracked runtime health posture."
+        }
+      ],
+      "order": 431
+    },
+    {
+      "id": "automation-pack-lifecycle",
+      "label": "Automation pack lifecycle",
+      "category": "operations",
+      "summary": "Lifecycle state records whether a pack is discovered, installed, enabled, or disabled.",
+      "why_it_exists": "It allows operators to control active automation surface area instead of loading every available pack.",
+      "how_to_use": [
+        "Install packs before enabling them in production workflows.",
+        "Enable only packs that are required for the current operating model.",
+        "Disable packs that are not currently needed without deleting metadata history."
+      ],
+      "order": 432
+    },
+    {
+      "id": "automation-pack-health",
+      "label": "Automation pack health",
+      "category": "operations",
+      "summary": "Operational health tracks latest run, latest success/failure, and current health state.",
+      "why_it_exists": "It gives operators first-line visibility into whether installed automation is healthy, degraded, or failing.",
+      "how_to_use": [
+        "Track unknown, healthy, degraded, and failing states.",
+        "Keep last run timestamps and failure reasons up to date.",
+        "Use health posture to prioritize remediation and deactivation decisions."
+      ],
+      "order": 433
+    },
+    {
+      "id": "automation-output-mapping",
+      "label": "Automation output mapping",
+      "category": "operations",
+      "summary": "A pack-bound rule that maps automation output into evidence refresh or workflow transition execution.",
+      "why_it_exists": "It turns raw automation output into governed operational effects without requiring ad-hoc manual copy/paste procedures.",
+      "how_to_use": [
+        "Define one mapping per operational intent, such as evidence refresh for one control or transition for one workflow subject.",
+        "Use evidence mappings to upload or reference output artifacts and promote them into governed evidence records.",
+        "Use workflow mappings to apply a specific transition against a specific subject id with explicit workflow key and transition key.",
+        "Track last delivery status and message so operators can diagnose mapping failures quickly."
+      ],
+      "relations": [
+        {
+          "type": "owned-by",
+          "target": "automation-pack",
+          "summary": "Each output mapping belongs to exactly one automation pack."
+        }
+      ],
+      "order": 434
+    },
+    {
+      "id": "automation-package-repository",
+      "label": "Automation package repository",
+      "category": "operations",
+      "summary": "A signed external index source that publishes automation pack releases and metadata.",
+      "why_it_exists": "It enables operators to discover packs from external catalogs without loading every pack as a Laravel plugin.",
+      "how_to_use": [
+        "Register repository URL, repository signature URL, trust tier, and public key.",
+        "Refresh repository metadata so the catalog validates signature and ingests latest releases.",
+        "Review discovered releases before install/enable decisions."
+      ],
+      "relations": [
+        {
+          "type": "feeds",
+          "target": "automation-pack",
+          "summary": "Latest discovered releases are mirrored into local automation pack records."
+        }
+      ],
+      "order": 435
+    }
+  ]
+}

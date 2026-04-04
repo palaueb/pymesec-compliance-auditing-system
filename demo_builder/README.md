@@ -193,6 +193,7 @@ If the SSH-visible root differs from the web-server-visible root, pass one of:
 
 What this script does:
 - applies the patch pack under `demo_builder/patches/`
+- retries patch application with `git apply --3way` when a clean apply is not possible
 - creates or updates `core/.env`
 - configures demo environment values
 - prepares writable storage directories
@@ -207,6 +208,7 @@ Check:
 - `git status` on the server will normally be dirty again after deploy
 - the application opens at the demo URL
 - login works with `admin / demo`
+- the `Automation Catalog` menu is visible (enabled by default in demo env)
 - the document root points to `core/public`
 
 ### 10. Practical rule of thumb

@@ -14,6 +14,85 @@ class CollaborationStoreTest extends TestCase
     {
         $store = $this->app->make(CollaborationStoreInterface::class);
 
+        [$externalLink, $token] = $store->issueExternalLink(
+            ownerComponent: 'third-party-risk',
+            subjectType: 'vendor-review',
+            subjectId: 'vendor-review-northbridge-payroll-2026',
+            organizationId: 'org-a',
+            scopeId: 'scope-eu',
+            data: [
+                'contact_name' => 'Nina Walsh',
+                'contact_email' => 'nina.walsh@northbridge-payroll.test',
+                'can_answer_questionnaire' => true,
+                'can_upload_artifacts' => true,
+                'issued_by_principal_id' => 'principal-org-a',
+                'expires_at' => now()->addDay()->toDateTimeString(),
+            ],
+        );
+
+        $this->assertNotSame('', $token);
+        $this->assertSame('vendor-review-northbridge-payroll-2026', $externalLink['subject_id']);
+        $this->assertSame('manual-only', $externalLink['email_delivery_status']);
+        $this->assertNotSame('', $externalLink['collaborator_id']);
+        $this->assertNotEmpty($store->externalLinksForSubject('third-party-risk', 'vendor-review', 'vendor-review-northbridge-payroll-2026'));
+
+        $collaborators = $store->externalCollaboratorsForSubject('third-party-risk', 'vendor-review', 'vendor-review-northbridge-payroll-2026');
+        $this->assertCount(1, $collaborators);
+        $this->assertSame('active', $collaborators[0]['lifecycle_state']);
+        $this->assertSame('nina.walsh@northbridge-payroll.test', $collaborators[0]['contact_email']);
+
+        $resolved = $store->resolveExternalLinkByToken('third-party-risk', 'vendor-review', $token);
+        $this->assertNotNull($resolved);
+        $this->assertSame($externalLink['id'], $resolved['id']);
+
+        $blockedCollaborator = $store->updateExternalCollaboratorLifecycle(
+            ownerComponent: 'third-party-risk',
+            subjectType: 'vendor-review',
+            subjectId: 'vendor-review-northbridge-payroll-2026',
+            collaboratorId: $collaborators[0]['id'],
+            lifecycleState: 'blocked',
+            updatedByPrincipalId: 'principal-org-a',
+        );
+        $this->assertNotNull($blockedCollaborator);
+        $this->assertSame('blocked', $blockedCollaborator['lifecycle_state']);
+
+        $resolvedWhenBlocked = $store->resolveExternalLinkByToken('third-party-risk', 'vendor-review', $token);
+        $this->assertNull($resolvedWhenBlocked);
+
+        $reactivatedCollaborator = $store->updateExternalCollaboratorLifecycle(
+            ownerComponent: 'third-party-risk',
+            subjectType: 'vendor-review',
+            subjectId: 'vendor-review-northbridge-payroll-2026',
+            collaboratorId: $collaborators[0]['id'],
+            lifecycleState: 'active',
+            updatedByPrincipalId: 'principal-org-a',
+        );
+        $this->assertNotNull($reactivatedCollaborator);
+        $this->assertSame('active', $reactivatedCollaborator['lifecycle_state']);
+
+        $store->touchExternalLinkAccess($externalLink['id']);
+        $touched = $store->findExternalLink($externalLink['id']);
+        $this->assertNotNull($touched);
+        $this->assertNotSame('', $touched['last_accessed_at']);
+
+        $delivery = $store->recordExternalLinkDelivery($externalLink['id'], 'sent');
+        $this->assertNotNull($delivery);
+        $this->assertSame('sent', $delivery['email_delivery_status']);
+        $this->assertNotSame('', $delivery['email_sent_at']);
+
+        $revoked = $store->revokeExternalLink(
+            ownerComponent: 'third-party-risk',
+            subjectType: 'vendor-review',
+            subjectId: 'vendor-review-northbridge-payroll-2026',
+            linkId: $externalLink['id'],
+            revokedByPrincipalId: 'principal-org-a',
+        );
+        $this->assertNotNull($revoked);
+        $this->assertNotSame('', $revoked['revoked_at']);
+
+        $resolvedAfterRevoke = $store->resolveExternalLinkByToken('third-party-risk', 'vendor-review', $token);
+        $this->assertNull($resolvedAfterRevoke);
+
         $draft = $store->createDraft(
             ownerComponent: 'third-party-risk',
             subjectType: 'vendor-review',

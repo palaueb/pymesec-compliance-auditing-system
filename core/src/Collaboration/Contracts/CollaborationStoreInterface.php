@@ -7,6 +7,87 @@ interface CollaborationStoreInterface
     /**
      * @return array<int, array<string, string>>
      */
+    public function externalCollaboratorsForSubject(string $ownerComponent, string $subjectType, string $subjectId): array;
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, string>
+     */
+    public function upsertExternalCollaborator(
+        string $ownerComponent,
+        string $subjectType,
+        string $subjectId,
+        string $organizationId,
+        ?string $scopeId,
+        array $data,
+    ): array;
+
+    /**
+     * @return array<string, string>|null
+     */
+    public function findExternalCollaborator(string $collaboratorId): ?array;
+
+    /**
+     * @return array<string, string>|null
+     */
+    public function updateExternalCollaboratorLifecycle(
+        string $ownerComponent,
+        string $subjectType,
+        string $subjectId,
+        string $collaboratorId,
+        string $lifecycleState,
+        ?string $updatedByPrincipalId = null,
+    ): ?array;
+
+    /**
+     * @return array<int, array<string, string>>
+     */
+    public function externalLinksForSubject(string $ownerComponent, string $subjectType, string $subjectId): array;
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array{0: array<string, string>, 1: string}
+     */
+    public function issueExternalLink(
+        string $ownerComponent,
+        string $subjectType,
+        string $subjectId,
+        string $organizationId,
+        ?string $scopeId,
+        array $data,
+    ): array;
+
+    /**
+     * @return array<string, string>|null
+     */
+    public function findExternalLink(string $linkId): ?array;
+
+    /**
+     * @return array<string, string>|null
+     */
+    public function resolveExternalLinkByToken(string $ownerComponent, string $subjectType, string $token): ?array;
+
+    /**
+     * @return array<string, string>|null
+     */
+    public function revokeExternalLink(
+        string $ownerComponent,
+        string $subjectType,
+        string $subjectId,
+        string $linkId,
+        ?string $revokedByPrincipalId = null,
+    ): ?array;
+
+    public function touchExternalLinkAccess(string $linkId): void;
+
+    /**
+     * @return array<string, string>|null
+     */
+    public function recordExternalLinkDelivery(string $linkId, string $status, ?string $error = null): ?array;
+
+    /**
+     * @return array<int, array<string, string>>
+     */
     public function draftsForSubject(string $ownerComponent, string $subjectType, string $subjectId): array;
 
     /**

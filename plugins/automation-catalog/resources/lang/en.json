@@ -1,0 +1,5 @@
+{
+    "plugin.automation-catalog.nav.root": "Automation",
+    "plugin.automation-catalog.screen.root.title": "Automation Catalog",
+    "plugin.automation-catalog.screen.root.subtitle": "Manage automation packs, lifecycle state, ownership, provenance, operational health, and output mappings."
+}

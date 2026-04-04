@@ -11,6 +11,9 @@
         "Plugins can consume these primitives without inventing their own local comment or task model."
       ],
       "concept_ids": [
+        "collaboration-external-collaboration-hardening",
+        "collaboration-external-collaborator",
+        "collaboration-external-link",
         "collaboration-draft",
         "collaboration-comment",
         "collaboration-request"
@@ -19,6 +22,83 @@
     }
   ],
   "concepts": [
+    {
+      "id": "collaboration-external-collaboration-hardening",
+      "label": "External collaboration hardening baseline",
+      "category": "security",
+      "summary": "Minimum deployment and runtime controls required when exposing collaboration portals on the Internet.",
+      "why_it_exists": "External collaboration routes handle sensitive review data and must not rely on default hosting assumptions.",
+      "how_to_use": [
+        "Enforce HTTPS-only access and protect deployment secrets.",
+        "Keep upload controls strict and block executable payload types.",
+        "Use runtime lifecycle enforcement for collaborator blocking and link expiry.",
+        "Treat reminder/digest/cleanup schedulers as operational improvements, not access-security controls."
+      ],
+      "relations": [
+        {
+          "type": "applies-to",
+          "target": "collaboration-external-collaborator",
+          "summary": "Collaborator lifecycle controls are part of the hardening baseline."
+        },
+        {
+          "type": "applies-to",
+          "target": "collaboration-external-link",
+          "summary": "External link issuance and access flows must follow the hardening baseline."
+        }
+      ],
+      "order": 416
+    },
+    {
+      "id": "collaboration-external-collaborator",
+      "label": "Collaboration external collaborator",
+      "category": "operations",
+      "summary": "An object-scoped external participant identity used to group issued links and enforce lifecycle controls.",
+      "why_it_exists": "It separates collaborator lifecycle state from individual links so one blocked collaborator cannot keep accessing through an older token.",
+      "how_to_use": [
+        "Track one collaborator record per contact email within each shared object scope.",
+        "Move lifecycle state between active and blocked depending on risk or review decisions.",
+        "Use collaborator lifecycle control when you need to suspend access without deleting historical links and audit records.",
+        "Access enforcement is runtime-based on each portal request and does not require background CRON jobs."
+      ],
+      "relations": [
+        {
+          "type": "has-many",
+          "target": "collaboration-external-link",
+          "summary": "A collaborator can own multiple issued links over time for the same scoped object."
+        }
+      ],
+      "order": 417
+    },
+    {
+      "id": "collaboration-external-link",
+      "label": "Collaboration external link",
+      "category": "operations",
+      "summary": "A revocable, expirable token link scoped to one subject record and owned by one plugin component.",
+      "why_it_exists": "It provides a reusable external access primitive that any domain plugin can consume without creating custom link tables.",
+      "how_to_use": [
+        "Issue links per concrete subject record and owner component.",
+        "Scope permissions explicitly so the external participant can only perform allowed actions.",
+        "Track delivery, access, expiry, and revocation lifecycle from one shared model."
+      ],
+      "relations": [
+        {
+          "type": "belongs-to",
+          "target": "collaboration-external-collaborator",
+          "summary": "Each external link belongs to one scoped collaborator identity."
+        },
+        {
+          "type": "may-support",
+          "target": "collaboration-comment",
+          "summary": "External links can support comment or request workflows through domain-specific portals."
+        },
+        {
+          "type": "may-support",
+          "target": "collaboration-request",
+          "summary": "Domain plugins can map external link participation into follow-up request workflows."
+        }
+      ],
+      "order": 418
+    },
     {
       "id": "collaboration-draft",
       "label": "Collaboration draft",

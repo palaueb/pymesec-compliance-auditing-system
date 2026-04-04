@@ -48,10 +48,16 @@ This document tracks only the active post-baseline backlog that still belongs to
 
 ### Still missing
 
-- [ ] Generalize the external collaboration model beyond third-party-risk.
-- [ ] Add a dedicated external collaborator model instead of relying only on links.
-- [ ] Add stronger operator-facing lifecycle views for issued, active, expired, and revoked external access.
-- [ ] Add explicit deployment hardening guidance inside product-facing docs and HELP where relevant.
+- [x] Generalize the external collaboration model beyond third-party-risk.
+- [x] Add a dedicated external collaborator model instead of relying only on links.
+- [x] Add stronger operator-facing lifecycle views for issued, active, expired, and revoked external access.
+- [x] Add explicit deployment hardening guidance inside product-facing docs and HELP where relevant.
+
+### Operational scheduling (recommended, not required for access enforcement)
+
+- [ ] Add optional scheduled reminder notifications for links near expiry.
+- [ ] Add optional scheduled operator digest for external collaboration lifecycle posture.
+- [ ] Add optional scheduled retention cleanup/archive policy for old revoked/expired links.
 
 ## 3. Questionnaire Engine
 
@@ -81,14 +87,29 @@ This document tracks only the active post-baseline backlog that still belongs to
 
 ### Current state
 
-- [ ] Define the automation-pack object model.
-- [ ] Add a catalog UI for install / enable / disable.
-- [ ] Add automation ownership and provenance metadata.
-- [ ] Add health, last-run, and failure-state tracking.
-- [ ] Add mapping from automation output to evidence refresh or review workflow updates.
-- [ ] Add the first installable automation pack.
+- [x] Define the automation-pack object model.
+- [x] Add a catalog UI for install / enable / disable.
+- [x] Add automation ownership and provenance metadata.
+- [x] Add health, last-run, and failure-state tracking.
+- [x] Add mapping from automation output to evidence refresh or review workflow updates.
+- [x] Add the first installable automation pack (`utility.hello-world` external sample pack).
 
-This block is still mostly greenfield.
+### Packaging and supply-chain model (next required cut)
+
+- [x] Add external package repository ingestion (`repository.json`) with multi-URL support.
+- [ ] Add package artifact install flow (`download -> verify -> register -> enable`).
+- [x] Add source-to-deploy publish pipeline in the packs repository (`src -> deploy` with `latest` + versioned zip history).
+- [ ] Add first `pack.json` manifest schema and validation gate in platform install flow.
+
+### Security policy implementation (next required cut)
+
+- [ ] Add static inspection gate for forbidden functions/patterns before install.
+- [ ] Add capability/permission approval view so operator can review requested scope before enabling a pack.
+- [ ] Add brokered runtime contract (no direct DB access from pack code).
+- [ ] Add generated config forms from pack metadata and per-pack encrypted secret storage.
+- [ ] Add kill switch and repository-level revocation controls as first-class operator actions.
+
+This block now has the foundational catalog and mapping layer, but still needs the first installable pack and run-level telemetry depth.
 
 ## 5. Collaboration Layer
 
@@ -100,17 +121,14 @@ This block is still mostly greenfield.
 - [x] Add handoff states between review, remediation, and approval work.
 - [x] Add shared drafts or continuity between users.
 
-This block is also still mostly greenfield.
+This block now has a reusable baseline and no open checklist items in this wave.
 
 ## Suggested Delivery Order
 
 If we continue this wave pragmatically, the clean order is:
 
-1. Finish the missing pieces of `third-party risk`
-2. Generalize the `external collaboration model`
-3. Extract the `questionnaire engine`
-4. Start `automation catalog`
-5. Start `collaboration layer`
+1. Ship the first installable automation pack.
+2. Extend pack-level health into run-level execution history and telemetry.
 
 ## Positioning Note
 
