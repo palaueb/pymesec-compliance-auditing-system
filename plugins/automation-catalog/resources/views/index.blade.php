@@ -29,30 +29,30 @@
         </div>
 
         <div style="overflow-x:auto; margin-top:10px;">
-            <table class="table" style="min-width:900px; margin-top:0;">
+            <table class="entity-table" style="min-width:1180px; margin-top:0;">
                 <thead>
                     <tr>
-                        <th>Pack</th>
-                        <th>Lifecycle</th>
-                        <th>Health</th>
-                        <th>Version</th>
-                        <th>Scope</th>
-                        <th>Open</th>
+                        <th style="min-width:420px;">Pack</th>
+                        <th style="min-width:140px;">Lifecycle</th>
+                        <th style="min-width:130px;">Health</th>
+                        <th style="min-width:120px;">Version</th>
+                        <th style="min-width:140px;">Scope</th>
+                        <th style="min-width:100px;">Open</th>
                     </tr>
                 </thead>
                 <tbody>
                     @forelse ($packs as $pack)
                         <tr>
-                            <td>
+                            <td style="min-width:420px; vertical-align:top;">
                                 <div class="entity-title">{{ $pack['name'] }}</div>
                                 <div class="table-note" style="overflow-wrap:anywhere;">{{ $pack['pack_key'] }}</div>
                                 <div class="table-note" style="overflow-wrap:anywhere;">{{ $pack['summary'] !== '' ? $pack['summary'] : 'No summary' }}</div>
                             </td>
-                            <td>{{ $pack['lifecycle_state_label'] }}</td>
-                            <td>{{ $pack['health_state_label'] }}</td>
-                            <td>{{ $pack['version'] !== '' ? $pack['version'] : 'Not set' }}</td>
-                            <td>{{ $pack['scope_id'] !== '' ? $pack['scope_id'] : 'Org-wide' }}</td>
-                            <td><a class="button button-ghost" href="{{ $pack['open_url'] }}">Open</a></td>
+                            <td style="min-width:140px; vertical-align:top;">{{ $pack['lifecycle_state_label'] }}</td>
+                            <td style="min-width:130px; vertical-align:top;">{{ $pack['health_state_label'] }}</td>
+                            <td style="min-width:120px; vertical-align:top;">{{ $pack['version'] !== '' ? $pack['version'] : 'Not set' }}</td>
+                            <td style="min-width:140px; vertical-align:top;">{{ $pack['scope_id'] !== '' ? $pack['scope_id'] : 'Org-wide' }}</td>
+                            <td style="min-width:100px; vertical-align:top;"><a class="button button-ghost" href="{{ $pack['open_url'] }}">Open</a></td>
                         </tr>
                     @empty
                         <tr><td colspan="6">No automation packs registered yet.</td></tr>
@@ -169,7 +169,7 @@
                         <span class="table-note">Map outputs into evidence refresh and workflow transitions.</span>
                     </div>
 
-                    <table class="table" style="margin-top:10px;">
+                    <table class="entity-table" style="margin-top:10px;">
                         <thead>
                             <tr>
                                 <th>Mapping</th>
@@ -233,7 +233,7 @@
                                     </td>
                                 </tr>
                             @empty
-                                <tr><td colspan="4">No output mappings for this pack yet.</td></tr>
+                            <tr><td colspan="4">No output mappings for this pack yet.</td></tr>
                             @endforelse
                         </tbody>
                     </table>
@@ -451,7 +451,7 @@
             @endif
 
             <div style="overflow-x:auto; margin-top:10px;">
-                <table class="table" style="min-width:1080px; margin-top:0;">
+                <table class="entity-table" style="min-width:1080px; margin-top:0;">
                     <thead>
                         <tr>
                             <th>Repository</th>
@@ -512,7 +512,7 @@
             </div>
 
             <div style="overflow-x:auto; margin-top:10px;">
-                <table class="table" style="min-width:980px; margin-top:0;">
+                <table class="entity-table" style="min-width:980px; margin-top:0;">
                     <thead>
                         <tr>
                             <th>Pack</th>

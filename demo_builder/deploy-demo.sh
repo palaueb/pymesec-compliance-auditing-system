@@ -347,20 +347,21 @@ write_demo_repository_public_key() {
 
     mkdir -p "$public_key_dir"
 
-    cat >"$public_key_path" <<'EOF'
------BEGIN RSA PUBLIC KEY-----
-MIICCgKCAgEA2WQiwlwaQoPs4c0s9VzozAx3RiOkMSyR9R5d7vn7VTsnRiH45SNj
-8tSEPRATL4Ef8w03hcWG3Vx9Wcnk2AdC3N6B5D6NcocXMVPUaRGf1ctqAdKj0EQL
-lXRZlWql/wbZeKFJhSDaO690AcePIctmPVC3ppI60PPQff0aCcgtiPnceSNl38AY
-YV4t2dJJX57L1UDyMwfmAxJtul34/GP/r5RH0sVrj3aDz8A0TwbPPwfQzDfIoIIy
-4xArAy5y92hDalDKu3luW+xidTMVaNgjYQloBR1/hXEVX4zQsp/uV7fKdnSfIACT
-1rc2CmETbBgPNgmkRR5Bn4qIGIa6UPtgfBd0ba8QDG0c7ckgPx1UEXwYMZJGyn9S
-HPKh3N2NWYMV12ZV4irLNUnMkcwfkweXCyRH1uOISqBG1U7u0PWyCGUim7bp/jcX
-TGmu4GFOlMtTXjlur/mZcvc/9y0ywWI6PxmojWak4En1fnyjuMLfugmcgR+jr2FM
-/MNMfv48XW4/f3gCQ2pnVPaIOKXCkTJK/BPzfFerhug72bmxfwoC0CcfynNyj6jw
-r7nKPZYWPw9xz/QkVbnRqRVYPZp8zNWFvaVABwVKU6d5NYabk5GHHXAkmWqgkr0e
-rwG53Dj9ah8+8aRf1qVUZXC/YLsVWw0BPI5Aj1CqessRndNee8zYdh8CAwEAAQ==
------END RSA PUBLIC KEY-----
+cat >"$public_key_path" <<'EOF'
+-----BEGIN PUBLIC KEY-----
+MIICIjANBgkqhkiG9w0BAQEFAAOCAg8AMIICCgKCAgEAwfsOim5JGN+PpVjZDPdZ
+q35+S46276kE8RwT7eJz6zfZ3TrgDAIbX2h02AFK8HY2k8g0xm9IDPvjwDOAmGhU
+GmOzStg3DLmxxlTvmX32UPFfc8vbNmbsggW+wLwh1lUGAYy6WJOfxg8JslpbVc3p
+7xKsAgn68+ww3Lr9gvM0moHN3xzj+0JbqzVxEFzAgpR+BUgpiONLhauWBXOJ1AuO
+fgyUk0hPQ/CskW2I+P5keqeJ66DqxwFH+G+VqnNhS0X8z61xVVBXWj96+nkLYSYI
+M0+lQA9E7TpLjy9Am3LQIif/77N3+tqGHmoaGyIFrBuPbHd2WGUStzMkyUhZESRO
+d8qiRiWV6iUk2aeFfYPKB+sVPWfiN/Dp/kEEX+yKcI6OT6DtHEacH5H106fhDKXY
+jGCUKIs2TenzSiPDzMjQuX9y/tjqgFDKkYtBPfLBl0t8KRLjEI0ezlfiKcNWwBCu
+ZuzK4SnX6aH72Wv3IkzsofxvsKjPu0nkQQ1efz1lcdACoL68FkJhvAhftiSPOjBz
+xrAg5o6UJUSkClx2AsNCctAgXxnNVB/inzFXlHa3AsIwB9qY9q/hGWR44jDxV97l
+4fBdFQyJM6th9diU0h+2+pol0IN/7RtLPPlR2rrNdqka1mX+U7zbvQlLo+KIE0yf
+PdIw9rMdRdW+UuCpagE9m48CAwEAAQ==
+-----END PUBLIC KEY-----
 EOF
 
     chmod 600 "$public_key_path"
