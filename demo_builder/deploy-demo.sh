@@ -263,16 +263,17 @@ set_env_value() {
         $value = $argv[3];
         $lines = file_exists($file) ? file($file, FILE_IGNORE_NEW_LINES) : [];
         $updated = false;
+        $encodedValue = "\"".addcslashes($value, "\\\"\n\r\t")."\"";
 
         foreach ($lines as $index => $line) {
             if (preg_match("/^\s*".preg_quote($key, "/")."=/", $line) === 1) {
-                $lines[$index] = $key."=".$value;
+                $lines[$index] = $key."=".$encodedValue;
                 $updated = true;
             }
         }
 
         if (! $updated) {
-            $lines[] = $key."=".$value;
+            $lines[] = $key."=".$encodedValue;
         }
 
         file_put_contents($file, implode(PHP_EOL, $lines).PHP_EOL);
