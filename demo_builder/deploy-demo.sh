@@ -163,16 +163,23 @@ apply_demo_patches() {
 
 ensure_no_merge_conflicts() {
     local scan_roots=("$CORE_DIR" "$REPO_ROOT/plugins")
-    local conflict_matches
+    local conflict_files_raw
     local conflict_files
 
-    conflict_matches="$(grep -R -n -E '^(<<<<<<<|=======|>>>>>>>)' "${scan_roots[@]}" 2>/dev/null || true)"
+    conflict_files_raw="$(grep -R -l -E '^(<<<<<<<|=======|>>>>>>>)' "${scan_roots[@]}" 2>/dev/null || true)"
 
-    if [[ -z "$conflict_matches" ]]; then
+    if [[ -z "$conflict_files_raw" ]]; then
         return 0
     fi
 
-    conflict_files="$(printf '%s\n' "$conflict_matches" | cut -d: -f1 | sort -u | paste -sd ', ' -)"
+    conflict_files=""
+    while IFS= read -r file; do
+        [[ -z "$file" ]] && continue
+        if [[ -n "$conflict_files" ]]; then
+            conflict_files+=", "
+        fi
+        conflict_files+="$file"
+    done <<<"$conflict_files_raw"
 
     fail "merge conflict markers detected after applying demo patches. Resolve or reset these files first: $conflict_files"
 }
