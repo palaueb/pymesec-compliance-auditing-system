@@ -28,36 +28,38 @@
             <span class="table-note">Install/enable/disable packs and track health posture</span>
         </div>
 
-        <table class="table" style="margin-top:10px;">
-            <thead>
-                <tr>
-                    <th>Pack</th>
-                    <th>Lifecycle</th>
-                    <th>Health</th>
-                    <th>Version</th>
-                    <th>Scope</th>
-                    <th>Open</th>
-                </tr>
-            </thead>
-            <tbody>
-                @forelse ($packs as $pack)
+        <div style="overflow-x:auto; margin-top:10px;">
+            <table class="table" style="min-width:900px; margin-top:0;">
+                <thead>
                     <tr>
-                        <td>
-                            <div class="entity-title">{{ $pack['name'] }}</div>
-                            <div class="table-note">{{ $pack['pack_key'] }}</div>
-                            <div class="table-note">{{ $pack['summary'] !== '' ? $pack['summary'] : 'No summary' }}</div>
-                        </td>
-                        <td>{{ $pack['lifecycle_state_label'] }}</td>
-                        <td>{{ $pack['health_state_label'] }}</td>
-                        <td>{{ $pack['version'] !== '' ? $pack['version'] : 'Not set' }}</td>
-                        <td>{{ $pack['scope_id'] !== '' ? $pack['scope_id'] : 'Org-wide' }}</td>
-                        <td><a class="button button-ghost" href="{{ $pack['open_url'] }}">Open</a></td>
+                        <th>Pack</th>
+                        <th>Lifecycle</th>
+                        <th>Health</th>
+                        <th>Version</th>
+                        <th>Scope</th>
+                        <th>Open</th>
                     </tr>
-                @empty
-                    <tr><td colspan="6">No automation packs registered yet.</td></tr>
-                @endforelse
-            </tbody>
-        </table>
+                </thead>
+                <tbody>
+                    @forelse ($packs as $pack)
+                        <tr>
+                            <td>
+                                <div class="entity-title">{{ $pack['name'] }}</div>
+                                <div class="table-note" style="overflow-wrap:anywhere;">{{ $pack['pack_key'] }}</div>
+                                <div class="table-note" style="overflow-wrap:anywhere;">{{ $pack['summary'] !== '' ? $pack['summary'] : 'No summary' }}</div>
+                            </td>
+                            <td>{{ $pack['lifecycle_state_label'] }}</td>
+                            <td>{{ $pack['health_state_label'] }}</td>
+                            <td>{{ $pack['version'] !== '' ? $pack['version'] : 'Not set' }}</td>
+                            <td>{{ $pack['scope_id'] !== '' ? $pack['scope_id'] : 'Org-wide' }}</td>
+                            <td><a class="button button-ghost" href="{{ $pack['open_url'] }}">Open</a></td>
+                        </tr>
+                    @empty
+                        <tr><td colspan="6">No automation packs registered yet.</td></tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
     </div>
 
     @if (is_array($selected_pack))
@@ -433,57 +435,59 @@
                 </form>
             @endif
 
-            <table class="table" style="margin-top:10px;">
-                <thead>
-                    <tr>
-                        <th>Repository</th>
-                        <th>Trust tier</th>
-                        <th>Last sync</th>
-                        <th>Status</th>
-                        <th>Open packs</th>
-                        <th>Actions</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse ($repositories as $repo)
+            <div style="overflow-x:auto; margin-top:10px;">
+                <table class="table" style="min-width:1080px; margin-top:0;">
+                    <thead>
                         <tr>
-                            <td>
-                                <div class="entity-title">{{ $repo['label'] }}</div>
-                                <div class="table-note">{{ $repo['repository_url'] }}</div>
-                                <div class="table-note">Scope: {{ $repo['scope_id'] !== '' ? $repo['scope_id'] : 'Org-wide' }}</div>
-                            </td>
-                            <td>{{ $trust_tier_options[$repo['trust_tier']] ?? $repo['trust_tier'] }}</td>
-                            <td>{{ $repo['last_refreshed_at'] !== '' ? $repo['last_refreshed_at'] : 'Never' }}</td>
-                            <td>
-                                <div class="table-note">{{ $repo['last_status_label'] }}</div>
-                                @if ($repo['last_error'] !== '')
-                                    <div class="table-note">{{ $repo['last_error'] }}</div>
-                                @endif
-                            </td>
-                            <td>{{ $repo['is_enabled'] === '1' ? 'Enabled' : 'Disabled' }}</td>
-                            <td>
-                                @if ($can_manage_packs)
-                                    <form method="POST" action="{{ $repo['refresh_route'] }}">
-                                        @csrf
-                                        <input type="hidden" name="principal_id" value="{{ $query['principal_id'] ?? '' }}">
-                                        <input type="hidden" name="organization_id" value="{{ $query['organization_id'] }}">
-                                        <input type="hidden" name="scope_id" value="{{ $query['scope_id'] ?? '' }}">
-                                        <input type="hidden" name="locale" value="{{ $query['locale'] }}">
-                                        <input type="hidden" name="menu" value="plugin.automation-catalog.root">
-                                        <input type="hidden" name="automation_panel" value="repository-editor">
-                                        <input type="hidden" name="membership_id" value="{{ $query['membership_ids'][0] ?? 'membership-org-a-hello' }}">
-                                        <button class="button button-ghost" type="submit">Refresh</button>
-                                    </form>
-                                @else
-                                    <span class="table-note">No actions</span>
-                                @endif
-                            </td>
+                            <th>Repository</th>
+                            <th>Trust tier</th>
+                            <th>Last sync</th>
+                            <th>Status</th>
+                            <th>Open packs</th>
+                            <th>Actions</th>
                         </tr>
-                    @empty
-                        <tr><td colspan="6">No repositories registered yet.</td></tr>
-                    @endforelse
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        @forelse ($repositories as $repo)
+                            <tr>
+                                <td>
+                                    <div class="entity-title">{{ $repo['label'] }}</div>
+                                    <div class="table-note" style="overflow-wrap:anywhere;">{{ $repo['repository_url'] }}</div>
+                                    <div class="table-note">Scope: {{ $repo['scope_id'] !== '' ? $repo['scope_id'] : 'Org-wide' }}</div>
+                                </td>
+                                <td>{{ $trust_tier_options[$repo['trust_tier']] ?? $repo['trust_tier'] }}</td>
+                                <td>{{ $repo['last_refreshed_at'] !== '' ? $repo['last_refreshed_at'] : 'Never' }}</td>
+                                <td>
+                                    <div class="table-note">{{ $repo['last_status_label'] }}</div>
+                                    @if ($repo['last_error'] !== '')
+                                        <div class="table-note" style="overflow-wrap:anywhere;">{{ $repo['last_error'] }}</div>
+                                    @endif
+                                </td>
+                                <td>{{ $repo['is_enabled'] === '1' ? 'Enabled' : 'Disabled' }}</td>
+                                <td>
+                                    @if ($can_manage_packs)
+                                        <form method="POST" action="{{ $repo['refresh_route'] }}">
+                                            @csrf
+                                            <input type="hidden" name="principal_id" value="{{ $query['principal_id'] ?? '' }}">
+                                            <input type="hidden" name="organization_id" value="{{ $query['organization_id'] }}">
+                                            <input type="hidden" name="scope_id" value="{{ $query['scope_id'] ?? '' }}">
+                                            <input type="hidden" name="locale" value="{{ $query['locale'] }}">
+                                            <input type="hidden" name="menu" value="plugin.automation-catalog.root">
+                                            <input type="hidden" name="automation_panel" value="repository-editor">
+                                            <input type="hidden" name="membership_id" value="{{ $query['membership_ids'][0] ?? 'membership-org-a-hello' }}">
+                                            <button class="button button-ghost" type="submit">Refresh</button>
+                                        </form>
+                                    @else
+                                        <span class="table-note">No actions</span>
+                                    @endif
+                                </td>
+                            </tr>
+                        @empty
+                            <tr><td colspan="6">No repositories registered yet.</td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
         </div>
 
         <div class="surface-card" style="margin-top:14px; padding:14px;">
@@ -492,47 +496,49 @@
                 <span class="table-note">Discovered latest pack versions from enabled repositories.</span>
             </div>
 
-            <table class="table" style="margin-top:10px;">
-                <thead>
-                    <tr>
-                        <th>Pack</th>
-                        <th>Repository</th>
-                        <th>Latest version</th>
-                        <th>Versions</th>
-                        <th>Artifact</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse ($external_catalog_rows as $row)
+            <div style="overflow-x:auto; margin-top:10px;">
+                <table class="table" style="min-width:980px; margin-top:0;">
+                    <thead>
                         <tr>
-                            <td>
-                                <div class="entity-title">{{ $row['pack_name'] }}</div>
-                                <div class="table-note">{{ $row['pack_key'] }}</div>
-                                @if ($row['pack_description'] !== '')
-                                    <div class="table-note">{{ $row['pack_description'] }}</div>
-                                @endif
-                            </td>
-                            <td>
-                                <div class="table-note">{{ $row['repository_label'] }}</div>
-                                <div class="table-note">{{ $row['repository_last_status'] === 'success' ? 'Synced' : ($row['repository_last_status'] === 'failed' ? 'Failed' : 'Never') }}</div>
-                            </td>
-                            <td>{{ $row['latest_version'] }}</td>
-                            <td>{{ $row['versions_available'] }}</td>
-                            <td>
-                                <a href="{{ $row['artifact_url'] }}" target="_blank" rel="noreferrer">Artifact</a>
-                                @if ($row['artifact_signature_url'] !== '')
-                                    <div class="table-note"><a href="{{ $row['artifact_signature_url'] }}" target="_blank" rel="noreferrer">Signature</a></div>
-                                @endif
-                                @if ($row['artifact_sha256'] !== '')
-                                    <div class="table-note">SHA256: {{ $row['artifact_sha256'] }}</div>
-                                @endif
-                            </td>
+                            <th>Pack</th>
+                            <th>Repository</th>
+                            <th>Latest version</th>
+                            <th>Versions</th>
+                            <th>Artifact</th>
                         </tr>
-                    @empty
-                        <tr><td colspan="5">No external releases discovered yet.</td></tr>
-                    @endforelse
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        @forelse ($external_catalog_rows as $row)
+                            <tr>
+                                <td>
+                                    <div class="entity-title">{{ $row['pack_name'] }}</div>
+                                    <div class="table-note" style="overflow-wrap:anywhere;">{{ $row['pack_key'] }}</div>
+                                    @if ($row['pack_description'] !== '')
+                                        <div class="table-note" style="overflow-wrap:anywhere;">{{ $row['pack_description'] }}</div>
+                                    @endif
+                                </td>
+                                <td>
+                                    <div class="table-note" style="overflow-wrap:anywhere;">{{ $row['repository_label'] }}</div>
+                                    <div class="table-note">{{ $row['repository_last_status'] === 'success' ? 'Synced' : ($row['repository_last_status'] === 'failed' ? 'Failed' : 'Never') }}</div>
+                                </td>
+                                <td>{{ $row['latest_version'] }}</td>
+                                <td>{{ $row['versions_available'] }}</td>
+                                <td>
+                                    <a href="{{ $row['artifact_url'] }}" target="_blank" rel="noreferrer">Artifact</a>
+                                    @if ($row['artifact_signature_url'] !== '')
+                                        <div class="table-note" style="overflow-wrap:anywhere;"><a href="{{ $row['artifact_signature_url'] }}" target="_blank" rel="noreferrer">Signature</a></div>
+                                    @endif
+                                    @if ($row['artifact_sha256'] !== '')
+                                        <div class="table-note" style="overflow-wrap:anywhere;">SHA256: {{ $row['artifact_sha256'] }}</div>
+                                    @endif
+                                </td>
+                            </tr>
+                        @empty
+                            <tr><td colspan="5">No external releases discovered yet.</td></tr>
+                        @endforelse
+                    </tbody>
+                </table>
+            </div>
         </div>
     @endif
 </section>

@@ -354,6 +354,86 @@ class AutomationCatalogTest extends TestCase
         $this->assertSame(0, DB::table('automation_pack_releases')->where('repository_id', $repositoryId)->count());
     }
 
+    public function test_external_repository_refresh_accepts_openssh_rsa_public_keys(): void
+    {
+        if (! function_exists('openssl_sign')) {
+            $this->markTestSkipped('OpenSSL extension is required for repository signature tests.');
+        }
+
+        [$privateKeyPem, $publicKeyPem] = $this->buildKeyPair();
+        $openSshPublicKey = $this->toOpenSshRsaPublicKey($publicKeyPem);
+
+        $repositoryJson = json_encode([
+            'repository' => [
+                'id' => 'pymesec-community',
+                'name' => 'PymeSec Community',
+            ],
+            'packs' => [
+                [
+                    'id' => 'utility.hello-world',
+                    'name' => 'Hello World',
+                    'latest_version' => '1.0.0',
+                    'versions' => [
+                        [
+                            'version' => '1.0.0',
+                            'artifact_url' => 'utility.hello-world/utility.hello-world-latest.zip',
+                            'artifact_signature_url' => 'utility.hello-world/utility.hello-world-latest.zip.sign',
+                        ],
+                    ],
+                ],
+            ],
+        ], JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
+
+        $signature = '';
+        openssl_sign($repositoryJson, $signature, $privateKeyPem, OPENSSL_ALGO_SHA256);
+        $repositorySignature = base64_encode($signature);
+
+        Http::fake([
+            'https://packages.openssh.example/deploy/repository.json' => Http::response($repositoryJson, 200),
+            'https://packages.openssh.example/deploy/repository.sign' => Http::response($repositorySignature, 200),
+        ]);
+
+        $payload = [
+            'principal_id' => 'principal-org-a',
+            'organization_id' => 'org-a',
+            'scope_id' => 'scope-eu',
+            'locale' => 'en',
+            'menu' => 'plugin.automation-catalog.root',
+            'membership_id' => 'membership-org-a-hello',
+        ];
+
+        $this->post('/plugins/automation-catalog/repositories', [
+            ...$payload,
+            'label' => 'OpenSSH key repo',
+            'repository_url' => 'https://packages.openssh.example/deploy/repository.json',
+            'repository_sign_url' => 'https://packages.openssh.example/deploy/repository.sign',
+            'public_key_pem' => $openSshPublicKey,
+            'trust_tier' => 'community-reviewed',
+            'is_enabled' => '1',
+        ])->assertFound();
+
+        $repositoryId = (string) DB::table('automation_pack_repositories')
+            ->where('organization_id', 'org-a')
+            ->where('scope_id', 'scope-eu')
+            ->where('repository_url', 'https://packages.openssh.example/deploy/repository.json')
+            ->value('id');
+
+        $this->assertNotSame('', $repositoryId);
+
+        $this->post("/plugins/automation-catalog/repositories/{$repositoryId}/refresh", $payload)
+            ->assertFound();
+
+        $this->assertDatabaseHas('automation_pack_repositories', [
+            'id' => $repositoryId,
+            'last_status' => 'success',
+        ]);
+        $this->assertDatabaseHas('automation_pack_releases', [
+            'repository_id' => $repositoryId,
+            'pack_key' => 'utility.hello-world',
+            'version' => '1.0.0',
+        ]);
+    }
+
     /**
      * @return array{string, string}
      */
@@ -378,5 +458,43 @@ class AutomationCatalogTest extends TestCase
         $this->assertNotSame('', $publicKeyPem);
 
         return [$privateKeyPem, $publicKeyPem];
+    }
+
+    private function toOpenSshRsaPublicKey(string $publicKeyPem): string
+    {
+        $key = openssl_pkey_get_public($publicKeyPem);
+        $this->assertNotFalse($key);
+
+        $details = openssl_pkey_get_details($key);
+        $this->assertIsArray($details);
+        $this->assertIsArray($details['rsa'] ?? null);
+
+        /** @var array{n: string, e: string} $rsa */
+        $rsa = $details['rsa'];
+        $modulus = $this->normalizeMpint((string) $rsa['n']);
+        $exponent = $this->normalizeMpint((string) $rsa['e']);
+
+        $blob = $this->sshString('ssh-rsa').$this->sshString($exponent).$this->sshString($modulus);
+
+        return 'ssh-rsa '.base64_encode($blob);
+    }
+
+    private function sshString(string $value): string
+    {
+        return pack('N', strlen($value)).$value;
+    }
+
+    private function normalizeMpint(string $value): string
+    {
+        $normalized = ltrim($value, "\x00");
+        if ($normalized === '') {
+            return "\x00";
+        }
+
+        if ((ord($normalized[0]) & 0x80) !== 0) {
+            return "\x00".$normalized;
+        }
+
+        return $normalized;
     }
 }

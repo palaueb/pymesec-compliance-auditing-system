@@ -3,6 +3,7 @@
 namespace PymeSec\Plugins\AutomationCatalog;
 
 use Illuminate\Support\Facades\Http;
+use OpenSSLAsymmetricKey;
 use RuntimeException;
 
 class AutomationPackageRepositorySyncService
@@ -77,11 +78,199 @@ class AutomationPackageRepositorySyncService
             throw new RuntimeException('Repository signature is not valid base64.');
         }
 
-        $verifyResult = openssl_verify($repositoryJson, $decodedSignature, $publicKeyPem, OPENSSL_ALGO_SHA256);
+        $verificationKey = $this->resolveVerificationKey($publicKeyPem);
+        $verifyResult = openssl_verify($repositoryJson, $decodedSignature, $verificationKey, OPENSSL_ALGO_SHA256);
 
         if ($verifyResult !== 1) {
             throw new RuntimeException('Repository signature validation failed.');
         }
+    }
+
+    private function resolveVerificationKey(string $rawPublicKey): OpenSSLAsymmetricKey|string
+    {
+        $candidate = trim(str_replace(["\r\n", "\r"], "\n", $rawPublicKey));
+        if (str_contains($candidate, '\n')) {
+            $candidate = str_replace('\n', "\n", $candidate);
+        }
+
+        if ($candidate === '') {
+            throw new RuntimeException('Repository public key is empty.');
+        }
+
+        $asPem = $this->loadOpenSslPublicKey($candidate);
+        if ($asPem !== false) {
+            return $asPem;
+        }
+
+        if (str_starts_with($candidate, 'ssh-rsa ')) {
+            $pem = $this->convertOpenSshRsaToPem($candidate);
+            $converted = $this->loadOpenSslPublicKey($pem);
+            if ($converted !== false) {
+                return $converted;
+            }
+        }
+
+        throw new RuntimeException(
+            'Repository public key is invalid. Use PEM format (BEGIN PUBLIC KEY) or OpenSSH ssh-rsa.'
+        );
+    }
+
+    private function loadOpenSslPublicKey(string $candidate): OpenSSLAsymmetricKey|false
+    {
+        $key = openssl_pkey_get_public($candidate);
+
+        return $key instanceof OpenSSLAsymmetricKey ? $key : false;
+    }
+
+    private function convertOpenSshRsaToPem(string $openSshKey): string
+    {
+        $parts = preg_split('/\s+/', trim($openSshKey));
+        if (! is_array($parts) || count($parts) < 2 || $parts[0] !== 'ssh-rsa') {
+            throw new RuntimeException('OpenSSH public key must start with ssh-rsa.');
+        }
+
+        $blob = base64_decode((string) $parts[1], true);
+        if (! is_string($blob) || $blob === '') {
+            throw new RuntimeException('OpenSSH public key payload is not valid base64.');
+        }
+
+        $offset = 0;
+        $algorithm = $this->readSshString($blob, $offset);
+        if ($algorithm !== 'ssh-rsa') {
+            throw new RuntimeException('Only ssh-rsa OpenSSH keys are supported for repository signatures.');
+        }
+
+        $exponent = $this->readSshString($blob, $offset);
+        $modulus = $this->readSshString($blob, $offset);
+
+        $rsaPublicKey = $this->asn1Sequence(
+            $this->asn1Integer($this->normalizeMpintForDer($modulus)).
+            $this->asn1Integer($this->normalizeMpintForDer($exponent))
+        );
+
+        $subjectPublicKeyInfo = $this->asn1Sequence(
+            $this->asn1Sequence(
+                $this->asn1ObjectIdentifier('1.2.840.113549.1.1.1').
+                $this->asn1Null()
+            ).
+            $this->asn1BitString($rsaPublicKey)
+        );
+
+        return "-----BEGIN PUBLIC KEY-----\n"
+            .chunk_split(base64_encode($subjectPublicKeyInfo), 64, "\n")
+            ."-----END PUBLIC KEY-----\n";
+    }
+
+    private function readSshString(string $blob, int &$offset): string
+    {
+        if (strlen($blob) < $offset + 4) {
+            throw new RuntimeException('OpenSSH key payload is truncated.');
+        }
+
+        $length = unpack('N', substr($blob, $offset, 4));
+        $offset += 4;
+        $valueLength = is_array($length) ? (int) ($length[1] ?? 0) : 0;
+
+        if ($valueLength < 0 || strlen($blob) < $offset + $valueLength) {
+            throw new RuntimeException('OpenSSH key payload is malformed.');
+        }
+
+        $value = substr($blob, $offset, $valueLength);
+        $offset += $valueLength;
+
+        return $value;
+    }
+
+    private function normalizeMpintForDer(string $value): string
+    {
+        $normalized = ltrim($value, "\x00");
+        if ($normalized === '') {
+            return "\x00";
+        }
+
+        if ((ord($normalized[0]) & 0x80) !== 0) {
+            return "\x00".$normalized;
+        }
+
+        return $normalized;
+    }
+
+    private function asn1Sequence(string $value): string
+    {
+        return "\x30".$this->asn1Length(strlen($value)).$value;
+    }
+
+    private function asn1Integer(string $value): string
+    {
+        return "\x02".$this->asn1Length(strlen($value)).$value;
+    }
+
+    private function asn1BitString(string $value): string
+    {
+        $payload = "\x00".$value;
+
+        return "\x03".$this->asn1Length(strlen($payload)).$payload;
+    }
+
+    private function asn1Null(): string
+    {
+        return "\x05\x00";
+    }
+
+    private function asn1ObjectIdentifier(string $oid): string
+    {
+        $parts = array_map(static fn (string $part): int => (int) $part, explode('.', $oid));
+        if (count($parts) < 2) {
+            throw new RuntimeException('Invalid ASN.1 OID.');
+        }
+
+        $encoded = chr((40 * $parts[0]) + $parts[1]);
+        foreach (array_slice($parts, 2) as $part) {
+            $encoded .= $this->encodeBase128($part);
+        }
+
+        return "\x06".$this->asn1Length(strlen($encoded)).$encoded;
+    }
+
+    private function encodeBase128(int $value): string
+    {
+        if ($value === 0) {
+            return "\x00";
+        }
+
+        $chunks = '';
+        while ($value > 0) {
+            $chunks = chr($value & 0x7F).$chunks;
+            $value >>= 7;
+        }
+
+        $length = strlen($chunks);
+        $result = '';
+        for ($index = 0; $index < $length; $index++) {
+            $byte = ord($chunks[$index]);
+            if ($index < $length - 1) {
+                $byte |= 0x80;
+            }
+            $result .= chr($byte);
+        }
+
+        return $result;
+    }
+
+    private function asn1Length(int $length): string
+    {
+        if ($length < 0x80) {
+            return chr($length);
+        }
+
+        $encoded = '';
+        $value = $length;
+        while ($value > 0) {
+            $encoded = chr($value & 0xFF).$encoded;
+            $value >>= 8;
+        }
+
+        return chr(0x80 | strlen($encoded)).$encoded;
     }
 
     /**
