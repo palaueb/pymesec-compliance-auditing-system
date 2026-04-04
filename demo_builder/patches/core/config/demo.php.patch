@@ -14,7 +14,7 @@ index 0000000000000000000000000000000000000000..84c532f4faee01ebe333d5b3e7b61f5c
 +    'login' => [
 +        'username' => env('DEMO_LOGIN_USERNAME', 'admin'),
 +        'password' => env('DEMO_LOGIN_PASSWORD', 'demo'),
-+        'principal_id' => env('DEMO_LOGIN_PRINCIPAL_ID', 'principal-admin'),
++        'principal_id' => env('DEMO_LOGIN_PRINCIPAL_ID', 'principal-org-a'),
 +        'organization_id' => env('DEMO_LOGIN_ORGANIZATION_ID', 'org-a'),
 +    ],
 +];

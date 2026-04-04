@@ -841,6 +841,7 @@ class IdentityLocalRepository
             'policy-operator',
             'privacy-operator',
             'continuity-operator',
+            'automation-operator',
             'assessment-operator',
             'evidence-operator',
             'identity-operator',
