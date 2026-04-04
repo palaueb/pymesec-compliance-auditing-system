@@ -203,6 +203,7 @@ configure_env() {
     set_env_value "$env_file" "APP_URL" "$APP_URL"
     set_env_value "$env_file" "DEMO_MODE" "true"
     set_env_value "$env_file" "DB_CONNECTION" "demo_template"
+    set_env_value "$env_file" "PLUGIN_STATE_PATH" "app/private/plugin-state.demo.json"
     set_env_value "$env_file" "SESSION_DRIVER" "file"
     set_env_value "$env_file" "CACHE_STORE" "file"
     set_env_value "$env_file" "QUEUE_CONNECTION" "sync"
