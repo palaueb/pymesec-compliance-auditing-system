@@ -34,6 +34,7 @@ class AutomationCatalogTest extends TestCase
             ->assertSee('Automation pack catalog')
             ->assertSee('AWS Config Baseline Collector')
             ->assertSee('Entra ID Joiner-Mover-Leaver Sync')
+            ->assertSee('Install your first package repository')
             ->assertSee('Add repository of packs')
             ->assertSee('Register local pack');
 
@@ -42,6 +43,9 @@ class AutomationCatalogTest extends TestCase
             ->assertSee('Automation pack')
             ->assertSee('connector.microsoft.entra-jml')
             ->assertSee('Degraded')
+            ->assertSee('Back to automations')
+            ->assertDontSee('Install your first package repository')
+            ->assertDontSee('Automation pack catalog')
             ->assertSee('Rate limit from upstream directory API on full sync.');
     }
 

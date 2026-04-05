@@ -91,6 +91,7 @@ class AutomationCatalogPlugin implements PluginInterface
                 'health_state_label' => ucwords(str_replace('-', ' ', $pack['health_state'])),
             ];
         }, $repository->all($organizationId, $screenContext->scopeId));
+        $installedPacks = array_values(array_filter($packs, static fn (array $pack): bool => $pack['is_installed'] === '1'));
 
         $selectedPackId = is_string($screenContext->query['pack_id'] ?? null) && $screenContext->query['pack_id'] !== ''
             ? (string) $screenContext->query['pack_id']
@@ -149,10 +150,60 @@ class AutomationCatalogPlugin implements PluginInterface
             ];
         }, $repository->repositories($organizationId, $screenContext->scopeId));
 
-        $externalCatalogRows = $repository->externalCatalogRows($organizationId, $screenContext->scopeId);
+        $requestedScopeId = is_string($screenContext->scopeId) ? $screenContext->scopeId : '';
+        $packByKey = [];
+
+        foreach ($packs as $pack) {
+            $packKey = (string) ($pack['pack_key'] ?? '');
+            if ($packKey === '') {
+                continue;
+            }
+
+            $existing = $packByKey[$packKey] ?? null;
+            if (! is_array($existing)) {
+                $packByKey[$packKey] = $pack;
+
+                continue;
+            }
+
+            $existingInstalled = ($existing['is_installed'] ?? '0') === '1';
+            $candidateInstalled = ($pack['is_installed'] ?? '0') === '1';
+            if ($candidateInstalled && ! $existingInstalled) {
+                $packByKey[$packKey] = $pack;
+
+                continue;
+            }
+
+            $existingScopeId = is_string($existing['scope_id'] ?? null) ? (string) $existing['scope_id'] : '';
+            $candidateScopeId = is_string($pack['scope_id'] ?? null) ? (string) $pack['scope_id'] : '';
+            if ($requestedScopeId !== '' && $candidateScopeId === $requestedScopeId && $existingScopeId !== $requestedScopeId) {
+                $packByKey[$packKey] = $pack;
+            }
+        }
+
+        $externalCatalogRows = array_map(function (array $row) use ($packByKey, $screenContext, $canManagePacks): array {
+            $pack = $packByKey[$row['pack_key']] ?? null;
+            $packId = is_array($pack) ? (string) ($pack['id'] ?? '') : '';
+            $isInstalled = is_array($pack) && ($pack['is_installed'] ?? '0') === '1';
+
+            return [
+                ...$row,
+                'local_pack_id' => $packId,
+                'local_pack_installed' => $isInstalled ? '1' : '0',
+                'local_pack_enabled' => is_array($pack) && ($pack['is_enabled'] ?? '0') === '1' ? '1' : '0',
+                'open_url' => $packId !== ''
+                    ? route('core.shell.index', [...$this->baseQuery($screenContext, false), 'menu' => 'plugin.automation-catalog.root', 'pack_id' => $packId])
+                    : '',
+                'install_route' => $packId !== '' ? route('plugin.automation-catalog.install', ['packId' => $packId]) : '',
+                'can_install' => ($canManagePacks && $packId !== '' && ! $isInstalled) ? '1' : '0',
+            ];
+        }, $repository->externalCatalogRows($organizationId, $screenContext->scopeId));
         $activePanel = is_string($screenContext->query['automation_panel'] ?? null)
             ? trim((string) $screenContext->query['automation_panel'])
             : '';
+        $hasRepositories = $repositories !== [];
+        $showDetailOnly = is_array($selectedPack);
+        $showRepositoryPanel = ! $showDetailOnly && ($activePanel === 'repository-editor' || ! $hasRepositories);
 
         return [
             'packs' => array_map(function (array $pack) use ($screenContext): array {
@@ -166,6 +217,17 @@ class AutomationCatalogPlugin implements PluginInterface
                     'health_route' => route('plugin.automation-catalog.health.update', ['packId' => $pack['id']]),
                 ];
             }, $packs),
+            'installed_packs' => array_map(function (array $pack) use ($screenContext): array {
+                return [
+                    ...$pack,
+                    'open_url' => route('core.shell.index', [...$this->baseQuery($screenContext, false), 'menu' => 'plugin.automation-catalog.root', 'pack_id' => $pack['id']]),
+                    'install_route' => route('plugin.automation-catalog.install', ['packId' => $pack['id']]),
+                    'enable_route' => route('plugin.automation-catalog.enable', ['packId' => $pack['id']]),
+                    'disable_route' => route('plugin.automation-catalog.disable', ['packId' => $pack['id']]),
+                    'uninstall_route' => route('plugin.automation-catalog.uninstall', ['packId' => $pack['id']]),
+                    'health_route' => route('plugin.automation-catalog.health.update', ['packId' => $pack['id']]),
+                ];
+            }, $installedPacks),
             'selected_pack' => $selectedPack,
             'selected_pack_output_mappings' => $selectedPackMappings,
             'can_manage_packs' => $canManagePacks,
@@ -179,8 +241,11 @@ class AutomationCatalogPlugin implements PluginInterface
             'output_mapping_store_route' => is_array($selectedPack)
                 ? route('plugin.automation-catalog.output-mappings.store', ['packId' => $selectedPack['id']])
                 : null,
-            'show_pack_editor' => $activePanel === 'pack-editor',
-            'show_repository_panel' => $activePanel === 'repository-editor',
+            'show_pack_editor' => ! $showDetailOnly && $activePanel === 'pack-editor',
+            'show_repository_panel' => $showRepositoryPanel,
+            'show_repository_onboarding' => ! $showDetailOnly && ! $hasRepositories,
+            'show_external_catalog' => ! $showDetailOnly && $hasRepositories,
+            'show_catalog_chrome' => ! $showDetailOnly,
             'repositories' => $repositories,
             'external_catalog_rows' => $externalCatalogRows,
             'trust_tier_options' => [

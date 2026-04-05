@@ -6,11 +6,12 @@
       "summary": "Use the automation catalog to register pack metadata, control install and enable state, track operational health posture, and map outputs into evidence and workflow actions.",
       "body": [
         "An automation pack is a governed deployment unit for connectors, evidence collection jobs, or operational compliance tasks.",
-        "The catalog separates lifecycle control from pack implementation details so operators can manage only what is installed and enabled.",
+        "The catalog top section lists installed packs only, so operators can manage active automations without discovery noise.",
         "Ownership and provenance metadata make each pack traceable to a responsible principal and source.",
         "Output mappings let operators route automation results into evidence refresh records or workflow transitions using explicit target scopes.",
         "External package repositories can be registered with trust tier and public key so repository indexes are validated before ingestion.",
-        "The catalog can install the official PymeSec repository in one click and run an immediate refresh to populate latest releases."
+        "When no repository is configured, the page opens an onboarding layout with official repository activation and custom repository registration.",
+        "Opening one pack enters a focused detail view and hides parent catalog panels until you return to the list."
       ],
       "concept_ids": [
         "automation-pack",
@@ -58,7 +59,8 @@
         "Install packs before enabling them in production workflows.",
         "Enable only packs that are required for the current operating model.",
         "Disable packs that are not currently needed.",
-        "Use uninstall to remove a pack record from the local catalog when you no longer want it."
+        "Use uninstall to remove a pack record from the local catalog when you no longer want it.",
+        "Use the external catalog table to install discovered releases before they appear in the installed-pack catalog."
       ],
       "order": 432
     },
@@ -106,7 +108,7 @@
         "Register repository URL, repository signature URL, trust tier, and public key.",
         "Use the one-click official repository install when you want a preconfigured trusted-first-party source.",
         "Refresh repository metadata so the catalog validates signature and ingests latest releases.",
-        "Review discovered releases before install/enable decisions."
+        "Review discovered releases in the external catalog and install only the packs you want active in the workspace."
       ],
       "relations": [
         {

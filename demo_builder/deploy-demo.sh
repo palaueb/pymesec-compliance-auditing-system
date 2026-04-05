@@ -298,7 +298,7 @@ configure_env() {
     set_env_value "$env_file" "PLUGINS_ENABLED" "hello-world,asset-catalog,actor-directory,controls-catalog,risk-management,questionnaires,collaboration,third-party-risk,findings-remediation,policy-exceptions,data-flows-privacy,continuity-bcm,automation-catalog,assessments-audits,evidence-management,identity-local"
     set_env_value "$env_file" "DEMO_LOGIN_USERNAME" "admin"
     set_env_value "$env_file" "DEMO_LOGIN_PASSWORD" "demo"
-    set_env_value "$env_file" "DEMO_LOGIN_PRINCIPAL_ID" "principal-org-a"
+    set_env_value "$env_file" "DEMO_LOGIN_PRINCIPAL_ID" "principal-admin"
     set_env_value "$env_file" "DEMO_LOGIN_ORGANIZATION_ID" "org-a"
     set_env_value "$env_file" "DEMO_AUTOMATION_REPOSITORY_LABEL" "$DEMO_AUTOMATION_REPOSITORY_LABEL"
     set_env_value "$env_file" "DEMO_AUTOMATION_REPOSITORY_URL" "$DEMO_AUTOMATION_REPOSITORY_URL"

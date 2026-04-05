@@ -29,6 +29,7 @@ Rules:
 
 - contextual detail pages stay under the same menu id as their parent list
 - the sidebar remains focused on modules, not individual records
+- when a detail selector is active (for example `pack_id`), module views should switch to focused mode and hide parent index panels
 - `context_back_url` is accepted only for local `/app` or `/admin` routes
 - invalid or external `context_back_url` values are ignored
 - `context_label` is shown only when a valid contextual back link is present

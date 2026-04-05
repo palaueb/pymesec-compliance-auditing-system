@@ -28,6 +28,7 @@ Each page and object must be checked against these questions:
 - [x] Define a reusable page contract for `index`, `detail`, and `governance` screens.
 - [x] Standardize `Open` / `View details` as the main action from list pages.
 - [x] Remove child collection maintenance from list rows across the product.
+- [ ] Enforce focused detail mode in every module: when a detail is open, hide parent index panels by default.
 - [ ] Normalize governed fields so reporting and filtering do not depend on free text.
 - [ ] Define return-to-origin flows for `create related record` actions.
 
@@ -245,6 +246,22 @@ TODO:
 - [x] move action management and evidence to `Finding Detail`
 - [x] keep register as browse/filter/open
 - [x] keep board focused on workflow state
+
+### Automation Catalog
+
+Files:
+- `plugins/automation-catalog/resources/views/index.blade.php`
+
+Issues:
+- index and detail contexts can be mixed in the same page render
+- discovery rows and installed rows can be conflated, creating action ambiguity
+- repository onboarding must be explicit when no repositories are configured
+
+TODO:
+- [x] keep top catalog focused on installed packs only
+- [x] keep external discovery in a dedicated catalog section
+- [x] show first-repository onboarding by default when the repository list is empty
+- [x] hide parent catalog panels when a pack detail is open
 
 ### Policy Exceptions
 

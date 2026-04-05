@@ -103,18 +103,19 @@ Screen:
 
 Workspace behavior:
 
-- register new pack metadata
-- browse current pack posture
-- open one pack detail
+- browse installed packs in the main catalog list
+- open one pack detail in focused mode (without rendering index panels above it)
 - apply lifecycle actions
 - update health posture and failure reason
 - register output mappings
 - execute evidence-refresh mappings by uploading output files or reusing artifact ids
 - execute workflow-transition mappings against governed workflow subjects
 - track per-mapping last delivery status and last message
+- show repository onboarding by default when no repository is configured
 - register external package repositories with trust tier and public key
 - refresh repository indexes with signature validation before ingestion
 - inspect latest external releases discovered from enabled repositories
+- install discovered releases from the external catalog before they appear in the installed-pack list
 
 ## Authorization
 

@@ -94,7 +94,7 @@ index be178c988dbbc367dab53d7bc96a0a48587730ff..27c2ea185a2dff64f37fa8b6905dcefd
 +        $demo->startDemoSession($request);
 +
 +        session()->forget(['auth.pending_principal_id', 'auth.pending_provider', 'auth.pending_method']);
-+        session()->put('auth.principal_id', (string) config('demo.login.principal_id', 'principal-org-a'));
++        session()->put('auth.principal_id', (string) config('demo.login.principal_id', 'principal-admin'));
 +        session()->put('auth.provider', 'identity-local');
 +
 +        return redirect()->route('core.shell.index', [
