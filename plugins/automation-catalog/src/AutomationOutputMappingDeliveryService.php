@@ -23,7 +23,7 @@ class AutomationOutputMappingDeliveryService
     /**
      * @param  array<string, string>  $mapping
      * @param  array<string, mixed>  $data
-     * @return array{status: string, message: string}
+     * @return array{status: string, message: string, artifact_id?: string, evidence_id?: string}
      */
     public function deliver(
         array $mapping,
@@ -62,7 +62,7 @@ class AutomationOutputMappingDeliveryService
     /**
      * @param  array<string, string>  $mapping
      * @param  array<string, mixed>  $data
-     * @return array{status: string, message: string}
+     * @return array{status: string, message: string, artifact_id?: string, evidence_id?: string}
      */
     private function deliverEvidenceRefresh(
         array $mapping,
@@ -138,17 +138,19 @@ class AutomationOutputMappingDeliveryService
 
         $evidenceId = (string) (($promotion['record']['id'] ?? '') ?: '');
 
-        return [
-            'status' => 'success',
-            'message' => ($promotion['created'] ?? false)
-                ? sprintf('Evidence refreshed: %s.', $evidenceId)
-                : sprintf('Artifact already mapped to evidence: %s.', $evidenceId),
-        ];
+            return [
+                'status' => 'success',
+                'message' => ($promotion['created'] ?? false)
+                    ? sprintf('Evidence refreshed: %s.', $evidenceId)
+                    : sprintf('Artifact already mapped to evidence: %s.', $evidenceId),
+                'artifact_id' => $artifactId,
+                'evidence_id' => $evidenceId,
+            ];
     }
 
     /**
      * @param  array<string, string>  $mapping
-     * @return array{status: string, message: string}
+     * @return array{status: string, message: string, artifact_id?: string, evidence_id?: string}
      */
     private function deliverWorkflowTransition(
         array $mapping,

@@ -8,7 +8,14 @@
         "An automation pack is a governed deployment unit for connectors, evidence collection jobs, or operational compliance tasks.",
         "The catalog top section lists installed packs only, so operators can manage active automations without discovery noise.",
         "Ownership and provenance metadata make each pack traceable to a responsible principal and source.",
-        "Output mappings let operators route automation results into evidence refresh records or workflow transitions using explicit target scopes.",
+        "Output mappings let operators route automation results into evidence refresh records or workflow transitions using explicit targets or scope resolver mode for asset/risk.",
+        "Runtime execution supports manual runs from pack detail and scheduled runs via CLI/CRON, with persisted run history per pack.",
+        "Per-target check results are persisted on each runtime execution so outcomes can be audited at object level.",
+        "Mappings can optionally propagate runtime status posture into asset/risk targets through a policy gate.",
+        "When posture propagation is enabled, asset/risk posture updates keep provenance references to the last automation run and check result.",
+        "Each mapping can be gated by execution mode so it runs in runtime, manual apply, or both.",
+        "Mappings can also enforce on-fail policy to raise deduplicated findings, with optional remediation action creation, when runtime checks fail.",
+        "Evidence policy can be set to always, on-fail, or on-change to control runtime evidence churn.",
         "External package repositories can be registered with trust tier and public key so repository indexes are validated before ingestion.",
         "When no repository is configured, the page opens an onboarding layout with official repository activation and custom repository registration.",
         "Opening one pack enters a focused detail view and hides parent catalog panels until you return to the list."
@@ -17,6 +24,7 @@
         "automation-pack",
         "automation-pack-lifecycle",
         "automation-pack-health",
+        "automation-pack-runtime",
         "automation-output-mapping",
         "automation-package-repository"
       ],
@@ -78,6 +86,38 @@
       "order": 433
     },
     {
+      "id": "automation-pack-runtime",
+      "label": "Automation pack runtime",
+      "category": "operations",
+      "summary": "Manual and scheduled execution layer that runs active mappings for installed and enabled packs and stores execution history.",
+      "why_it_exists": "It moves the catalog from static lifecycle control into actual runtime operations with traceable outcomes.",
+      "how_to_use": [
+        "Run a pack manually from pack detail when you need immediate execution.",
+        "Configure per-pack schedule policy (cron + timezone) when runtime should execute on recurring cadence.",
+        "Run scheduled batches with the automation CLI command from CRON.",
+        "Use --respect_schedule=1 on automation runtime CLI when CRON should execute only packs that are due by their configured schedule.",
+        "Review run history to inspect trigger mode, status, duration, and mapping counters.",
+        "Runtime evidence mappings now generate payloads via the runtime executor contract and promote them into governed evidence records automatically.",
+        "Scope resolver mappings are executed from pack runtime (Run now or scheduled runtime), not from one-off mapping apply.",
+        "Use latest check results in pack detail to review target-level status and outcome per execution.",
+        "Each check result now keeps direct traceability ids for evidence artifact, evidence record, finding, and remediation action when those objects are produced.",
+        "Mappings can enforce runtime guardrails (max targets, payload size) and retry policy (attempts/backoff) for safer execution."
+      ],
+      "relations": [
+        {
+          "type": "updates",
+          "target": "automation-pack-health",
+          "summary": "Each execution updates pack health and last-run posture."
+        },
+        {
+          "type": "executes",
+          "target": "automation-output-mapping",
+          "summary": "Runtime executes active mappings and records success, failure, or skipped status."
+        }
+      ],
+      "order": 434
+    },
+    {
       "id": "automation-output-mapping",
       "label": "Automation output mapping",
       "category": "operations",
@@ -85,6 +125,16 @@
       "why_it_exists": "It turns raw automation output into governed operational effects without requiring ad-hoc manual copy/paste procedures.",
       "how_to_use": [
         "Define one mapping per operational intent, such as evidence refresh for one control or transition for one workflow subject.",
+        "Use explicit binding mode for one fixed target object id.",
+        "Use scope binding mode for asset/risk selectors (scope id plus optional tags).",
+        "Enable posture propagation policy only when you want runtime status to update asset/risk automation posture fields.",
+        "Use execution mode to restrict a mapping to runtime-only, manual-only, or both.",
+        "Use on-fail policy raise-finding when failed checks must open a finding without manual triage.",
+        "Use on-fail policy raise-finding-and-action when failed checks must open both a finding and a planned remediation action.",
+        "Use latest check results to open generated evidence, findings, and remediation actions directly when runtime policies create them.",
+        "Use evidence policy on-change to avoid uploading identical artifacts when payload fingerprint is unchanged.",
+        "Use runtime retry policy to retry failed delivery attempts and track retries in check result diagnostics.",
+        "Use runtime guardrails to cap resolved targets and payload size before delivery.",
         "Use evidence mappings to upload or reference output artifacts and promote them into governed evidence records.",
         "Use workflow mappings to apply a specific transition against a specific subject id with explicit workflow key and transition key.",
         "Track last delivery status and message so operators can diagnose mapping failures quickly."
@@ -96,7 +146,7 @@
           "summary": "Each output mapping belongs to exactly one automation pack."
         }
       ],
-      "order": 434
+      "order": 435
     },
     {
       "id": "automation-package-repository",
@@ -117,7 +167,7 @@
           "summary": "Latest discovered releases are mirrored into local automation pack records."
         }
       ],
-      "order": 435
+      "order": 436
     }
   ]
 }

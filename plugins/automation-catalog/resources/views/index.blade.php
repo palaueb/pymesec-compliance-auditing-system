@@ -119,6 +119,14 @@
             @if ($selected_pack['last_failure_reason'] !== '')
                 <div class="table-note">Last failure reason: {{ $selected_pack['last_failure_reason'] }}</div>
             @endif
+            <div class="table-note">
+                Runtime schedule:
+                @if ($selected_pack['runtime_schedule_enabled'] === '1')
+                    Enabled · {{ $selected_pack['runtime_schedule_cron'] !== '' ? $selected_pack['runtime_schedule_cron'] : 'No cron' }} · {{ $selected_pack['runtime_schedule_timezone'] !== '' ? $selected_pack['runtime_schedule_timezone'] : 'UTC' }}
+                @else
+                    Disabled
+                @endif
+            </div>
 
             @if ($can_manage_packs)
                 <div class="action-cluster" style="margin-top:12px;">
@@ -162,6 +170,18 @@
                         <input type="hidden" name="membership_id" value="{{ $query['membership_ids'][0] ?? 'membership-org-a-hello' }}">
                         <button class="button button-ghost" type="submit">Uninstall</button>
                     </form>
+                    @if (is_string($runtime_run_route) && $selected_pack['is_installed'] === '1' && $selected_pack['is_enabled'] === '1')
+                        <form method="POST" action="{{ $runtime_run_route }}">
+                            @csrf
+                            <input type="hidden" name="principal_id" value="{{ $query['principal_id'] ?? '' }}">
+                            <input type="hidden" name="organization_id" value="{{ $query['organization_id'] }}">
+                            <input type="hidden" name="scope_id" value="{{ $query['scope_id'] ?? '' }}">
+                            <input type="hidden" name="locale" value="{{ $query['locale'] }}">
+                            <input type="hidden" name="menu" value="plugin.automation-catalog.root">
+                            <input type="hidden" name="membership_id" value="{{ $query['membership_ids'][0] ?? 'membership-org-a-hello' }}">
+                            <button class="button button-secondary" type="submit">Run now</button>
+                        </form>
+                    @endif
                 </div>
 
                 <form class="upload-form" method="POST" action="{{ route('plugin.automation-catalog.health.update', ['packId' => $selected_pack['id']]) }}" style="margin-top:12px;">
@@ -191,6 +211,36 @@
                     </div>
                 </form>
 
+                <form class="upload-form" method="POST" action="{{ route('plugin.automation-catalog.schedule.update', ['packId' => $selected_pack['id']]) }}" style="margin-top:12px;">
+                    @csrf
+                    <input type="hidden" name="principal_id" value="{{ $query['principal_id'] ?? '' }}">
+                    <input type="hidden" name="organization_id" value="{{ $query['organization_id'] }}">
+                    <input type="hidden" name="scope_id" value="{{ $query['scope_id'] ?? '' }}">
+                    <input type="hidden" name="locale" value="{{ $query['locale'] }}">
+                    <input type="hidden" name="menu" value="plugin.automation-catalog.root">
+                    <input type="hidden" name="membership_id" value="{{ $query['membership_ids'][0] ?? 'membership-org-a-hello' }}">
+                    <div class="overview-grid" style="grid-template-columns:repeat(3, minmax(0, 1fr));">
+                        <div class="field">
+                            <label class="field-label">Enable schedule</label>
+                            <select class="field-select" name="runtime_schedule_enabled">
+                                <option value="0" @selected($selected_pack['runtime_schedule_enabled'] !== '1')>Disabled</option>
+                                <option value="1" @selected($selected_pack['runtime_schedule_enabled'] === '1')>Enabled</option>
+                            </select>
+                        </div>
+                        <div class="field">
+                            <label class="field-label">Cron expression</label>
+                            <input class="field-input" name="runtime_schedule_cron" placeholder="*/15 * * * *" value="{{ $selected_pack['runtime_schedule_cron'] }}">
+                        </div>
+                        <div class="field">
+                            <label class="field-label">Timezone</label>
+                            <input class="field-input" name="runtime_schedule_timezone" placeholder="UTC" value="{{ $selected_pack['runtime_schedule_timezone'] }}">
+                        </div>
+                    </div>
+                    <div class="action-cluster" style="margin-top:10px;">
+                        <button class="button button-ghost" type="submit">Update schedule</button>
+                    </div>
+                </form>
+
                 <div class="surface-card" style="margin-top:14px; padding:14px;">
                     <div class="row-between">
                         <div class="entity-title">Automation output mappings</div>
@@ -217,8 +267,20 @@
                                         @endif
                                     </td>
                                     <td>
-                                        <div class="table-note">{{ $mapping['target_subject_type'] !== '' ? $mapping['target_subject_type'] : 'No subject type' }}</div>
+                                        <div class="table-note">{{ $mapping['target_subject_type'] !== '' ? $mapping['target_subject_type'] : 'No subject type' }} · {{ $mapping['target_binding_mode_label'] }}</div>
                                         <div class="entity-title" style="font-size:14px;">{{ $mapping['target_subject_id'] !== '' ? $mapping['target_subject_id'] : 'No subject id' }}</div>
+                                        @if ($mapping['target_scope_id'] !== '')
+                                            <div class="table-note">Scope resolver: {{ $mapping['target_scope_id'] }}</div>
+                                        @endif
+                                        @if ($mapping['target_selector_tags'] !== '')
+                                            <div class="table-note">Tags: {{ $mapping['target_selector_tags'] }}</div>
+                                        @endif
+                                        <div class="table-note">Execution mode: {{ $mapping['execution_mode_label'] }}</div>
+                                        <div class="table-note">Posture policy: {{ $mapping['posture_propagation_policy_label'] }}</div>
+                                        <div class="table-note">On fail: {{ $mapping['on_fail_policy_label'] }}</div>
+                                        <div class="table-note">Evidence policy: {{ $mapping['evidence_policy_label'] }}</div>
+                                        <div class="table-note">Retry: {{ $mapping['runtime_retry_max_attempts'] }} max · {{ $mapping['runtime_retry_backoff_ms'] }} ms backoff</div>
+                                        <div class="table-note">Guardrails: {{ $mapping['runtime_max_targets'] }} max targets · {{ $mapping['runtime_payload_max_kb'] }} KB payload</div>
                                     </td>
                                     <td>
                                         <div class="table-note">{{ $mapping['last_status_label'] }}</div>
@@ -228,36 +290,44 @@
                                         @endif
                                     </td>
                                     <td>
-                                        <form class="upload-form" method="POST" action="{{ $mapping['apply_route'] }}" enctype="multipart/form-data">
-                                            @csrf
-                                            <input type="hidden" name="principal_id" value="{{ $query['principal_id'] ?? '' }}">
-                                            <input type="hidden" name="organization_id" value="{{ $query['organization_id'] }}">
-                                            <input type="hidden" name="scope_id" value="{{ $query['scope_id'] ?? '' }}">
-                                            <input type="hidden" name="locale" value="{{ $query['locale'] }}">
-                                            <input type="hidden" name="menu" value="plugin.automation-catalog.root">
-                                            <input type="hidden" name="membership_id" value="{{ $query['membership_ids'][0] ?? 'membership-org-a-hello' }}">
+                                        @if (($mapping['target_binding_mode'] ?? 'explicit') === 'scope')
+                                            <div class="table-note">Scope resolver mapping.</div>
+                                            <div class="table-note">Use <strong>Run now</strong> on the pack to execute all resolved targets.</div>
+                                        @elseif (($mapping['execution_mode'] ?? 'both') === 'runtime-only')
+                                            <div class="table-note">Runtime-only mapping.</div>
+                                            <div class="table-note">Use <strong>Run now</strong> on the pack.</div>
+                                        @else
+                                            <form class="upload-form" method="POST" action="{{ $mapping['apply_route'] }}" enctype="multipart/form-data">
+                                                @csrf
+                                                <input type="hidden" name="principal_id" value="{{ $query['principal_id'] ?? '' }}">
+                                                <input type="hidden" name="organization_id" value="{{ $query['organization_id'] }}">
+                                                <input type="hidden" name="scope_id" value="{{ $query['scope_id'] ?? '' }}">
+                                                <input type="hidden" name="locale" value="{{ $query['locale'] }}">
+                                                <input type="hidden" name="menu" value="plugin.automation-catalog.root">
+                                                <input type="hidden" name="membership_id" value="{{ $query['membership_ids'][0] ?? 'membership-org-a-hello' }}">
 
-                                            @if ($mapping['mapping_kind'] === 'evidence-refresh')
-                                                <div class="field" style="margin-bottom:8px;">
-                                                    <label class="field-label">Output file</label>
-                                                    <input class="field-input" type="file" name="output_file">
-                                                </div>
-                                                <div class="field" style="margin-bottom:8px;">
-                                                    <label class="field-label">Or existing artifact id</label>
-                                                    <input class="field-input" name="existing_artifact_id" placeholder="01H...">
-                                                </div>
-                                                <div class="field" style="margin-bottom:8px;">
-                                                    <label class="field-label">Evidence kind</label>
-                                                    <select class="field-select" name="evidence_kind">
-                                                        @foreach ($evidence_kind_options as $kind => $label)
-                                                            <option value="{{ $kind }}">{{ $label }}</option>
-                                                        @endforeach
-                                                    </select>
-                                                </div>
-                                            @endif
+                                                @if ($mapping['mapping_kind'] === 'evidence-refresh')
+                                                    <div class="field" style="margin-bottom:8px;">
+                                                        <label class="field-label">Output file</label>
+                                                        <input class="field-input" type="file" name="output_file">
+                                                    </div>
+                                                    <div class="field" style="margin-bottom:8px;">
+                                                        <label class="field-label">Or existing artifact id</label>
+                                                        <input class="field-input" name="existing_artifact_id" placeholder="01H...">
+                                                    </div>
+                                                    <div class="field" style="margin-bottom:8px;">
+                                                        <label class="field-label">Evidence kind</label>
+                                                        <select class="field-select" name="evidence_kind">
+                                                            @foreach ($evidence_kind_options as $kind => $label)
+                                                                <option value="{{ $kind }}">{{ $label }}</option>
+                                                            @endforeach
+                                                        </select>
+                                                    </div>
+                                                @endif
 
-                                            <button class="button button-secondary" type="submit">Run mapping</button>
-                                        </form>
+                                                <button class="button button-secondary" type="submit">Run mapping</button>
+                                            </form>
+                                        @endif
                                     </td>
                                 </tr>
                             @empty
@@ -301,8 +371,70 @@
                                         </select>
                                     </div>
                                     <div class="field">
+                                        <label class="field-label">Binding mode</label>
+                                        <select class="field-select" name="target_binding_mode">
+                                            <option value="explicit">Explicit object id</option>
+                                            <option value="scope">Scope resolver (asset/risk)</option>
+                                        </select>
+                                    </div>
+                                    <div class="field">
                                         <label class="field-label">Target subject id</label>
-                                        <input class="field-input" name="target_subject_id" placeholder="control-access-review" required>
+                                        <input class="field-input" name="target_subject_id" placeholder="control-access-review">
+                                    </div>
+                                    <div class="field">
+                                        <label class="field-label">Resolver scope id (optional)</label>
+                                        <input class="field-input" name="target_scope_id" placeholder="scope-eu">
+                                    </div>
+                                    <div class="field">
+                                        <label class="field-label">Resolver tags (optional)</label>
+                                        <input class="field-input" name="target_tags" placeholder="criticality:high,classification:confidential">
+                                    </div>
+                                    <div class="field">
+                                        <label class="field-label">Posture propagation policy</label>
+                                        <select class="field-select" name="posture_propagation_policy">
+                                            <option value="disabled">Disabled</option>
+                                            <option value="status-only">Status only (asset/risk)</option>
+                                        </select>
+                                    </div>
+                                    <div class="field">
+                                        <label class="field-label">Execution mode</label>
+                                        <select class="field-select" name="execution_mode">
+                                            <option value="both">Both (manual + runtime)</option>
+                                            <option value="runtime-only">Runtime only</option>
+                                            <option value="manual-only">Manual only</option>
+                                        </select>
+                                    </div>
+                                    <div class="field">
+                                        <label class="field-label">On fail policy</label>
+                                        <select class="field-select" name="on_fail_policy">
+                                            <option value="no-op">No-op</option>
+                                            <option value="raise-finding">Raise finding</option>
+                                            <option value="raise-finding-and-action">Raise finding + action</option>
+                                        </select>
+                                    </div>
+                                    <div class="field">
+                                        <label class="field-label">Evidence policy</label>
+                                        <select class="field-select" name="evidence_policy">
+                                            <option value="always">Always</option>
+                                            <option value="on-fail">On fail</option>
+                                            <option value="on-change">On change</option>
+                                        </select>
+                                    </div>
+                                    <div class="field">
+                                        <label class="field-label">Runtime retry max attempts</label>
+                                        <input class="field-input" type="number" min="0" max="5" name="runtime_retry_max_attempts" value="0">
+                                    </div>
+                                    <div class="field">
+                                        <label class="field-label">Runtime retry backoff (ms)</label>
+                                        <input class="field-input" type="number" min="0" max="60000" name="runtime_retry_backoff_ms" value="0">
+                                    </div>
+                                    <div class="field">
+                                        <label class="field-label">Runtime max targets</label>
+                                        <input class="field-input" type="number" min="1" max="2000" name="runtime_max_targets" value="200">
+                                    </div>
+                                    <div class="field">
+                                        <label class="field-label">Runtime payload max (KB)</label>
+                                        <input class="field-input" type="number" min="0" max="10240" name="runtime_payload_max_kb" value="512">
                                     </div>
                                     <div class="field">
                                         <label class="field-label">Workflow key (for workflow mappings)</label>
@@ -333,6 +465,122 @@
                             @endforeach
                         @endforeach
                     </datalist>
+                </div>
+
+                <div class="surface-card" style="margin-top:14px; padding:14px;">
+                    <div class="row-between">
+                        <div class="entity-title">Runtime executions</div>
+                        <span class="table-note">Manual and scheduled runtime history for this pack.</span>
+                    </div>
+                    <table class="entity-table" style="margin-top:10px;">
+                        <thead>
+                            <tr>
+                                <th>Started</th>
+                                <th>Trigger</th>
+                                <th>Status</th>
+                                <th>Mappings</th>
+                                <th>Duration</th>
+                                <th>Message</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse ($selected_pack_runs as $run)
+                                <tr>
+                                    <td>{{ $run['started_at'] }}</td>
+                                    <td>{{ $run['trigger_mode_label'] }}</td>
+                                    <td>{{ $run['status_label'] }}</td>
+                                    <td>
+                                        <div class="table-note">Total {{ $run['total_mappings'] }}</div>
+                                        <div class="table-note">OK {{ $run['success_count'] }} · Fail {{ $run['failed_count'] }} · Skip {{ $run['skipped_count'] }}</div>
+                                    </td>
+                                    <td>{{ $run['duration_ms'] !== '' ? $run['duration_ms'].' ms' : 'N/A' }}</td>
+                                    <td>
+                                        @if ($run['failure_reason'] !== '')
+                                            <div class="table-note" style="overflow-wrap:anywhere;">{{ $run['failure_reason'] }}</div>
+                                        @else
+                                            <div class="table-note">{{ $run['finished_at'] !== '' ? 'Completed' : 'Running' }}</div>
+                                        @endif
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr><td colspan="6">No runtime executions yet.</td></tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
+
+                <div class="surface-card" style="margin-top:14px; padding:14px;">
+                    <div class="row-between">
+                        <div class="entity-title">Latest check results</div>
+                        <span class="table-note">Per-target runtime outcomes persisted for diagnostics and reporting.</span>
+                    </div>
+                    <table class="entity-table" style="margin-top:10px;">
+                        <thead>
+                            <tr>
+                                <th>Checked</th>
+                                <th>Target</th>
+                                <th>Mapping</th>
+                                <th>Status</th>
+                                <th>Outcome</th>
+                                <th>Attempts</th>
+                                <th>Evidence</th>
+                                <th>Finding</th>
+                                <th>Action</th>
+                                <th>Message</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @forelse ($selected_pack_check_results as $result)
+                                <tr>
+                                    <td>{{ $result['checked_at'] }}</td>
+                                    <td>
+                                        <div class="table-note">{{ $result['target_subject_type'] !== '' ? $result['target_subject_type'] : 'No subject type' }}</div>
+                                        <div class="entity-title" style="font-size:14px;">{{ $result['target_subject_id'] !== '' ? $result['target_subject_id'] : 'No subject id' }}</div>
+                                    </td>
+                                    <td>
+                                        <div class="table-note">{{ $result['mapping_kind'] !== '' ? $result['mapping_kind'] : 'No mapping kind' }}</div>
+                                        <div class="table-note">Trigger {{ $result['trigger_mode'] }}</div>
+                                    </td>
+                                    <td>{{ $result['status_label'] }}</td>
+                                    <td>{{ $result['outcome_label'] }}</td>
+                                    <td>
+                                        <div class="table-note">{{ $result['attempt_count'] ?? '1' }} tries</div>
+                                        @if (($result['retry_count'] ?? '0') !== '0')
+                                            <div class="table-note">Retries {{ $result['retry_count'] }}</div>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        @if ($result['evidence_open_url'] !== '')
+                                            <a href="{{ $result['evidence_open_url'] }}">Open evidence</a>
+                                        @elseif ($result['artifact_id'] !== '')
+                                            <span class="table-note">Artifact {{ $result['artifact_id'] }}</span>
+                                        @else
+                                            <span class="table-note">None</span>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        @if ($result['finding_open_url'] !== '')
+                                            <a href="{{ $result['finding_open_url'] }}">Open finding</a>
+                                        @else
+                                            <span class="table-note">None</span>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        @if ($result['action_open_url'] !== '')
+                                            <a href="{{ $result['action_open_url'] }}">Open action</a>
+                                        @else
+                                            <span class="table-note">None</span>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        <div class="table-note" style="overflow-wrap:anywhere;">{{ $result['message'] !== '' ? $result['message'] : 'No message' }}</div>
+                                    </td>
+                                </tr>
+                            @empty
+                                <tr><td colspan="10">No check results yet.</td></tr>
+                            @endforelse
+                        </tbody>
+                    </table>
                 </div>
             @endif
         </div>

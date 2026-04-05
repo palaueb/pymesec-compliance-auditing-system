@@ -114,6 +114,11 @@ class AssetCatalogRepository
             'criticality' => (string) $asset->criticality,
             'classification' => (string) $asset->classification,
             'owner_label' => is_string($asset->owner_label) ? $asset->owner_label : '',
+            'automation_posture' => is_string($asset->automation_posture) ? $asset->automation_posture : 'unknown',
+            'automation_posture_updated_at' => $asset->automation_posture_updated_at !== null ? (string) $asset->automation_posture_updated_at : '',
+            'automation_posture_message' => is_string($asset->automation_posture_message) ? $asset->automation_posture_message : '',
+            'automation_posture_check_result_id' => is_string($asset->automation_posture_check_result_id ?? null) ? $asset->automation_posture_check_result_id : '',
+            'automation_posture_run_id' => is_string($asset->automation_posture_run_id ?? null) ? $asset->automation_posture_run_id : '',
         ];
     }
 }

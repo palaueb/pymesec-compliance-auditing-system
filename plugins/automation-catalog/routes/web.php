@@ -3,9 +3,11 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 use PymeSec\Plugins\AutomationCatalog\AutomationCatalogRepository;
 use PymeSec\Plugins\AutomationCatalog\AutomationOutputMappingDeliveryService;
 use PymeSec\Plugins\AutomationCatalog\AutomationPackageRepositorySyncService;
+use PymeSec\Plugins\AutomationCatalog\AutomationPackRuntimeService;
 
 if (! function_exists('automationCatalogOfficialRepositoryPreset')) {
     /**
@@ -215,6 +217,102 @@ Route::post('/plugins/automation-catalog/{packId}/health', function (Request $re
     ]))->with('status', 'Automation health updated.');
 })->middleware('core.permission:plugin.automation-catalog.packs.manage')->name('plugin.automation-catalog.health.update');
 
+Route::post('/plugins/automation-catalog/{packId}/schedule', function (Request $request, string $packId, AutomationCatalogRepository $repository) {
+    $validated = $request->validate([
+        'runtime_schedule_enabled' => ['nullable', 'boolean'],
+        'runtime_schedule_cron' => ['nullable', 'string', 'max:120'],
+        'runtime_schedule_timezone' => [
+            'nullable',
+            'string',
+            'max:64',
+            static function (string $attribute, mixed $value, \Closure $fail): void {
+                if (! is_string($value) || $value === '') {
+                    return;
+                }
+
+                if (! in_array($value, timezone_identifiers_list(), true)) {
+                    $fail('Timezone must be a valid IANA timezone identifier.');
+                }
+            },
+        ],
+    ]);
+
+    $scheduleEnabled = (bool) ($validated['runtime_schedule_enabled'] ?? false);
+    $scheduleCron = trim((string) ($validated['runtime_schedule_cron'] ?? ''));
+    $scheduleTimezone = trim((string) ($validated['runtime_schedule_timezone'] ?? ''));
+
+    if ($scheduleEnabled && $scheduleCron === '') {
+        throw ValidationException::withMessages([
+            'runtime_schedule_cron' => 'Cron expression is required when runtime schedule is enabled.',
+        ]);
+    }
+
+    if ($scheduleEnabled && $scheduleTimezone === '') {
+        $scheduleTimezone = 'UTC';
+    }
+
+    $principalId = (string) $request->input('principal_id', 'principal-org-a');
+    $membershipId = $request->input('membership_id');
+    $organizationId = (string) $request->input('organization_id', 'org-a');
+    $scopeId = $request->input('scope_id');
+
+    abort_if($repository->updatePackRuntimeSchedule($packId, [
+        'runtime_schedule_enabled' => $scheduleEnabled,
+        'runtime_schedule_cron' => $scheduleCron !== '' ? $scheduleCron : null,
+        'runtime_schedule_timezone' => $scheduleTimezone !== '' ? $scheduleTimezone : null,
+        'runtime_schedule_last_slot' => null,
+    ]) === null, 404);
+
+    return redirect()->route('core.shell.index', array_filter([
+        'menu' => 'plugin.automation-catalog.root',
+        'pack_id' => $packId,
+        'principal_id' => $principalId,
+        'organization_id' => $organizationId,
+        'scope_id' => is_string($scopeId) && $scopeId !== '' ? $scopeId : null,
+        'locale' => $request->input('locale', 'en'),
+        'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
+    ]))->with('status', 'Runtime schedule updated.');
+})->middleware('core.permission:plugin.automation-catalog.packs.manage')->name('plugin.automation-catalog.schedule.update');
+
+Route::post('/plugins/automation-catalog/{packId}/run', function (
+    Request $request,
+    string $packId,
+    AutomationPackRuntimeService $runtime,
+) {
+    $principalId = (string) $request->input('principal_id', 'principal-org-a');
+    $membershipId = $request->input('membership_id');
+    $organizationId = (string) $request->input('organization_id', 'org-a');
+    $scopeId = $request->input('scope_id');
+
+    $run = $runtime->runPack(
+        packId: $packId,
+        triggerMode: 'manual',
+        principalId: $principalId,
+        membershipId: is_string($membershipId) && $membershipId !== '' ? $membershipId : null,
+    );
+    abort_if($run === null, 404);
+
+    $status = (string) ($run['status'] ?? 'failed');
+    $summary = sprintf(
+        'Runtime %s · total %s · ok %s · fail %s · skip %s',
+        $status,
+        (string) ($run['total_mappings'] ?? '0'),
+        (string) ($run['success_count'] ?? '0'),
+        (string) ($run['failed_count'] ?? '0'),
+        (string) ($run['skipped_count'] ?? '0'),
+    );
+
+    return redirect()->route('core.shell.index', array_filter([
+        'menu' => 'plugin.automation-catalog.root',
+        'pack_id' => $packId,
+        'principal_id' => $principalId,
+        'organization_id' => $organizationId,
+        'scope_id' => is_string($scopeId) && $scopeId !== '' ? $scopeId : null,
+        'locale' => $request->input('locale', 'en'),
+        'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
+    ]))->with('status', $summary);
+})->middleware('core.permission:plugin.automation-catalog.packs.manage')->name('plugin.automation-catalog.run');
+
 Route::post('/plugins/automation-catalog/repositories', function (
     Request $request,
     AutomationCatalogRepository $repository,
@@ -364,6 +462,7 @@ Route::post('/plugins/automation-catalog/{packId}/output-mappings', function (
     $validated = $request->validate([
         'mapping_label' => ['required', 'string', 'max:180'],
         'mapping_kind' => ['required', 'string', Rule::in(['evidence-refresh', 'workflow-transition'])],
+        'target_binding_mode' => ['nullable', 'string', Rule::in(['explicit', 'scope'])],
         'target_subject_type' => ['required', 'string', Rule::in([
             'asset',
             'control',
@@ -380,18 +479,114 @@ Route::post('/plugins/automation-catalog/{packId}/output-mappings', function (
             'assessment-review',
             'vendor-review',
         ])],
-        'target_subject_id' => ['required', 'string', 'max:80'],
+        'target_subject_id' => ['nullable', 'string', 'max:80', 'required_if:target_binding_mode,explicit'],
+        'target_scope_id' => ['nullable', 'string', 'max:64'],
+        'target_tags' => ['nullable', 'string', 'max:600'],
+        'posture_propagation_policy' => ['nullable', 'string', Rule::in(['disabled', 'status-only'])],
+        'execution_mode' => ['nullable', 'string', Rule::in(['both', 'runtime-only', 'manual-only'])],
+        'on_fail_policy' => ['nullable', 'string', Rule::in(['no-op', 'raise-finding', 'raise-finding-and-action'])],
+        'evidence_policy' => ['nullable', 'string', Rule::in(['always', 'on-fail', 'on-change'])],
+        'runtime_retry_max_attempts' => ['nullable', 'integer', 'min:0', 'max:5'],
+        'runtime_retry_backoff_ms' => ['nullable', 'integer', 'min:0', 'max:60000'],
+        'runtime_max_targets' => ['nullable', 'integer', 'min:1', 'max:2000'],
+        'runtime_payload_max_kb' => ['nullable', 'integer', 'min:0', 'max:10240'],
         'workflow_key' => ['nullable', 'string', 'max:180', 'required_if:mapping_kind,workflow-transition'],
         'transition_key' => ['nullable', 'string', 'max:80', 'required_if:mapping_kind,workflow-transition'],
         'is_active' => ['nullable', 'boolean'],
     ]);
+
+    $bindingMode = is_string($validated['target_binding_mode'] ?? null) && $validated['target_binding_mode'] !== ''
+        ? (string) $validated['target_binding_mode']
+        : 'explicit';
+
+    if ($bindingMode === 'scope' && ! in_array((string) $validated['target_subject_type'], ['asset', 'risk'], true)) {
+        throw ValidationException::withMessages([
+            'target_subject_type' => 'Scope binding mode currently supports only asset and risk targets.',
+        ]);
+    }
+
+    if ($bindingMode === 'explicit' && trim((string) ($validated['target_subject_id'] ?? '')) === '') {
+        throw ValidationException::withMessages([
+            'target_subject_id' => 'Target subject id is required in explicit binding mode.',
+        ]);
+    }
+
+    $posturePolicy = is_string($validated['posture_propagation_policy'] ?? null) && $validated['posture_propagation_policy'] !== ''
+        ? (string) $validated['posture_propagation_policy']
+        : 'disabled';
+    $executionMode = is_string($validated['execution_mode'] ?? null) && $validated['execution_mode'] !== ''
+        ? (string) $validated['execution_mode']
+        : 'both';
+    $onFailPolicy = is_string($validated['on_fail_policy'] ?? null) && $validated['on_fail_policy'] !== ''
+        ? (string) $validated['on_fail_policy']
+        : 'no-op';
+    $evidencePolicy = is_string($validated['evidence_policy'] ?? null) && $validated['evidence_policy'] !== ''
+        ? (string) $validated['evidence_policy']
+        : 'always';
+
+    if ($posturePolicy !== 'disabled' && ! in_array((string) $validated['target_subject_type'], ['asset', 'risk'], true)) {
+        throw ValidationException::withMessages([
+            'posture_propagation_policy' => 'Posture propagation currently supports only asset and risk targets.',
+        ]);
+    }
+
+    $rawSelectorTags = collect(explode(',', (string) ($validated['target_tags'] ?? '')))
+        ->map(static fn (string $value): string => trim($value))
+        ->filter(static fn (string $value): bool => $value !== '')
+        ->values()
+        ->all();
+    $selectorTags = [];
+    $invalidSelectorTags = [];
+
+    foreach ($rawSelectorTags as $tag) {
+        if (! str_contains($tag, ':')) {
+            $invalidSelectorTags[] = $tag;
+
+            continue;
+        }
+
+        [$rawKey, $rawValue] = array_pad(explode(':', $tag, 2), 2, '');
+        $key = trim((string) $rawKey);
+        $value = trim((string) $rawValue);
+
+        if ($key === '' || $value === '') {
+            $invalidSelectorTags[] = $tag;
+
+            continue;
+        }
+
+        $selectorTags[] = $key.':'.$value;
+    }
+
+    if ($invalidSelectorTags !== []) {
+        throw ValidationException::withMessages([
+            'target_tags' => sprintf(
+                'Invalid selector tag format for: %s. Use key:value (comma-separated).',
+                implode(', ', $invalidSelectorTags),
+            ),
+        ]);
+    }
 
     $principalId = (string) $request->input('principal_id', 'principal-org-a');
     $membershipId = $request->input('membership_id');
     $organizationId = (string) $request->input('organization_id', 'org-a');
     $scopeId = $request->input('scope_id');
 
-    $mapping = $repository->createOutputMapping($packId, $validated, $principalId);
+    $mapping = $repository->createOutputMapping($packId, [
+        ...$validated,
+        'target_binding_mode' => $bindingMode,
+        'posture_propagation_policy' => $posturePolicy,
+        'execution_mode' => $executionMode,
+        'on_fail_policy' => $onFailPolicy,
+        'evidence_policy' => $evidencePolicy,
+        'runtime_retry_max_attempts' => (int) ($validated['runtime_retry_max_attempts'] ?? 0),
+        'runtime_retry_backoff_ms' => (int) ($validated['runtime_retry_backoff_ms'] ?? 0),
+        'runtime_max_targets' => (int) ($validated['runtime_max_targets'] ?? 200),
+        'runtime_payload_max_kb' => (int) ($validated['runtime_payload_max_kb'] ?? 512),
+        'target_selector' => [
+            'tags' => $selectorTags,
+        ],
+    ], $principalId);
     abort_if($mapping === null, 404);
 
     return redirect()->route('core.shell.index', array_filter([
@@ -428,6 +623,30 @@ Route::post('/plugins/automation-catalog/{packId}/output-mappings/{mappingId}/ap
     $pack = $repository->find($packId);
     $mapping = $repository->findOutputMapping($mappingId);
     abort_if($pack === null || $mapping === null || ($mapping['automation_pack_id'] ?? '') !== $packId, 404);
+
+    if (($mapping['target_binding_mode'] ?? 'explicit') === 'scope') {
+        return redirect()->route('core.shell.index', array_filter([
+            'menu' => 'plugin.automation-catalog.root',
+            'pack_id' => $packId,
+            'principal_id' => $principalId,
+            'organization_id' => $organizationId,
+            'scope_id' => $scopeId,
+            'locale' => $request->input('locale', 'en'),
+            'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
+        ]))->with('status', 'Scope resolver mappings execute from pack runtime. Use Run now (or scheduled runtime) instead.');
+    }
+
+    if (($mapping['execution_mode'] ?? 'both') === 'runtime-only') {
+        return redirect()->route('core.shell.index', array_filter([
+            'menu' => 'plugin.automation-catalog.root',
+            'pack_id' => $packId,
+            'principal_id' => $principalId,
+            'organization_id' => $organizationId,
+            'scope_id' => $scopeId,
+            'locale' => $request->input('locale', 'en'),
+            'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
+        ]))->with('status', 'This mapping is runtime-only. Execute it from pack runtime.');
+    }
 
     $result = $delivery->deliver(
         mapping: $mapping,

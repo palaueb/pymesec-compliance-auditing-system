@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
@@ -44,6 +45,7 @@ class AutomationCatalogTest extends TestCase
             ->assertSee('connector.microsoft.entra-jml')
             ->assertSee('Degraded')
             ->assertSee('Back to automations')
+            ->assertSee('Latest check results')
             ->assertDontSee('Install your first package repository')
             ->assertDontSee('Automation pack catalog')
             ->assertSee('Rate limit from upstream directory API on full sync.');
@@ -166,6 +168,803 @@ class AutomationCatalogTest extends TestCase
             'id' => 'automation-output-map-aws-evidence-refresh',
             'last_status' => 'success',
         ]);
+    }
+
+    public function test_manual_runtime_run_executes_enabled_pack_and_persists_run_history(): void
+    {
+        $payload = [
+            'principal_id' => 'principal-org-a',
+            'organization_id' => 'org-a',
+            'scope_id' => 'scope-eu',
+            'locale' => 'en',
+            'menu' => 'plugin.automation-catalog.root',
+            'membership_id' => 'membership-org-a-hello',
+        ];
+
+        $this->post('/plugins/automation-catalog/automation-pack-aws-config-baseline/run', $payload)
+            ->assertFound();
+
+        $this->assertDatabaseHas('automation_pack_runs', [
+            'automation_pack_id' => 'automation-pack-aws-config-baseline',
+            'trigger_mode' => 'manual',
+            'status' => 'success',
+        ]);
+        $this->assertDatabaseHas('automation_pack_output_mappings', [
+            'id' => 'automation-output-map-aws-control-review',
+            'last_status' => 'success',
+        ]);
+        $this->assertDatabaseHas('automation_pack_output_mappings', [
+            'id' => 'automation-output-map-aws-evidence-refresh',
+            'last_status' => 'success',
+        ]);
+        $this->assertDatabaseHas('automation_packs', [
+            'id' => 'automation-pack-aws-config-baseline',
+            'health_state' => 'healthy',
+        ]);
+        $this->assertDatabaseHas('automation_check_results', [
+            'automation_pack_id' => 'automation-pack-aws-config-baseline',
+            'target_subject_type' => 'control',
+            'target_subject_id' => 'control-access-review',
+            'status' => 'success',
+            'outcome' => 'pass',
+        ]);
+        $this->assertGreaterThanOrEqual(
+            1,
+            DB::table('artifacts')
+                ->where('owner_component', 'automation-catalog')
+                ->where('subject_type', 'control')
+                ->where('subject_id', 'control-access-review')
+                ->count()
+        );
+
+        $evidenceCheckResult = DB::table('automation_check_results')
+            ->where('automation_pack_id', 'automation-pack-aws-config-baseline')
+            ->where('automation_output_mapping_id', 'automation-output-map-aws-evidence-refresh')
+            ->where('target_subject_type', 'control')
+            ->where('target_subject_id', 'control-access-review')
+            ->where('status', 'success')
+            ->orderByDesc('checked_at')
+            ->first();
+        $this->assertNotNull($evidenceCheckResult);
+
+        $artifactId = is_object($evidenceCheckResult) && is_string($evidenceCheckResult->artifact_id ?? null)
+            ? (string) $evidenceCheckResult->artifact_id
+            : '';
+        $evidenceId = is_object($evidenceCheckResult) && is_string($evidenceCheckResult->evidence_id ?? null)
+            ? (string) $evidenceCheckResult->evidence_id
+            : '';
+
+        $this->assertNotSame('', $artifactId);
+        $this->assertNotSame('', $evidenceId);
+        $this->assertDatabaseHas('evidence_records', [
+            'id' => $evidenceId,
+            'artifact_id' => $artifactId,
+            'organization_id' => 'org-a',
+        ]);
+    }
+
+    public function test_runtime_scope_binding_resolves_asset_and_risk_targets_for_evidence_refresh(): void
+    {
+        $payload = [
+            'principal_id' => 'principal-org-a',
+            'organization_id' => 'org-a',
+            'scope_id' => 'scope-eu',
+            'locale' => 'en',
+            'menu' => 'plugin.automation-catalog.root',
+            'membership_id' => 'membership-org-a-hello',
+        ];
+
+        $this->post('/plugins/automation-catalog/automation-pack-aws-config-baseline/output-mappings', [
+            ...$payload,
+            'mapping_label' => 'Scope asset runtime evidence',
+            'mapping_kind' => 'evidence-refresh',
+            'target_binding_mode' => 'scope',
+            'target_subject_type' => 'asset',
+            'target_scope_id' => 'scope-eu',
+            'target_tags' => 'criticality:high,classification:confidential',
+            'posture_propagation_policy' => 'status-only',
+            'is_active' => '1',
+        ])->assertFound();
+
+        $this->post('/plugins/automation-catalog/automation-pack-aws-config-baseline/output-mappings', [
+            ...$payload,
+            'mapping_label' => 'Scope risk runtime evidence',
+            'mapping_kind' => 'evidence-refresh',
+            'target_binding_mode' => 'scope',
+            'target_subject_type' => 'risk',
+            'target_scope_id' => 'scope-eu',
+            'target_tags' => 'category:Identity',
+            'posture_propagation_policy' => 'status-only',
+            'is_active' => '1',
+        ])->assertFound();
+
+        $this->post('/plugins/automation-catalog/automation-pack-aws-config-baseline/run', $payload)
+            ->assertFound();
+
+        $this->assertDatabaseHas('automation_pack_output_mappings', [
+            'mapping_label' => 'Scope asset runtime evidence',
+            'last_status' => 'success',
+        ]);
+        $this->assertDatabaseHas('automation_pack_output_mappings', [
+            'mapping_label' => 'Scope risk runtime evidence',
+            'last_status' => 'success',
+        ]);
+        $this->assertDatabaseHas('automation_check_results', [
+            'automation_pack_id' => 'automation-pack-aws-config-baseline',
+            'target_subject_type' => 'asset',
+            'target_subject_id' => 'asset-erp-prod',
+            'status' => 'success',
+            'outcome' => 'pass',
+        ]);
+        $this->assertDatabaseHas('automation_check_results', [
+            'automation_pack_id' => 'automation-pack-aws-config-baseline',
+            'target_subject_type' => 'risk',
+            'target_subject_id' => 'risk-access-drift',
+            'status' => 'success',
+            'outcome' => 'pass',
+        ]);
+        $this->assertDatabaseHas('assets', [
+            'id' => 'asset-erp-prod',
+            'organization_id' => 'org-a',
+            'automation_posture' => 'healthy',
+        ]);
+        $this->assertDatabaseHas('risks', [
+            'id' => 'risk-access-drift',
+            'organization_id' => 'org-a',
+            'automation_posture' => 'healthy',
+        ]);
+        $this->assertDatabaseHas('evidence_record_links', [
+            'domain_type' => 'asset',
+            'domain_id' => 'asset-erp-prod',
+            'organization_id' => 'org-a',
+            'scope_id' => 'scope-eu',
+        ]);
+        $this->assertDatabaseHas('evidence_record_links', [
+            'domain_type' => 'risk',
+            'domain_id' => 'risk-access-drift',
+            'organization_id' => 'org-a',
+            'scope_id' => 'scope-eu',
+        ]);
+    }
+
+    public function test_runtime_failed_mapping_propagates_degraded_posture_for_risk_when_policy_is_enabled(): void
+    {
+        $payload = [
+            'principal_id' => 'principal-org-a',
+            'organization_id' => 'org-a',
+            'scope_id' => 'scope-eu',
+            'locale' => 'en',
+            'menu' => 'plugin.automation-catalog.root',
+            'membership_id' => 'membership-org-a-hello',
+        ];
+
+        $this->post('/plugins/automation-catalog/automation-pack-aws-config-baseline/output-mappings', [
+            ...$payload,
+            'mapping_label' => 'Broken risk workflow transition',
+            'mapping_kind' => 'workflow-transition',
+            'target_binding_mode' => 'explicit',
+            'target_subject_type' => 'risk',
+            'target_subject_id' => 'risk-access-drift',
+            'workflow_key' => 'plugin.controls-catalog.control-lifecycle',
+            'transition_key' => 'transition-that-does-not-exist',
+            'posture_propagation_policy' => 'status-only',
+            'is_active' => '1',
+        ])->assertFound();
+
+        $this->post('/plugins/automation-catalog/automation-pack-aws-config-baseline/run', $payload)
+            ->assertFound();
+
+        $this->assertDatabaseHas('automation_check_results', [
+            'automation_pack_id' => 'automation-pack-aws-config-baseline',
+            'target_subject_type' => 'risk',
+            'target_subject_id' => 'risk-access-drift',
+            'status' => 'failed',
+            'outcome' => 'fail',
+        ]);
+        $this->assertDatabaseHas('risks', [
+            'id' => 'risk-access-drift',
+            'organization_id' => 'org-a',
+            'automation_posture' => 'degraded',
+        ]);
+
+        $failedCheckResult = DB::table('automation_check_results')
+            ->where('automation_pack_id', 'automation-pack-aws-config-baseline')
+            ->where('target_subject_type', 'risk')
+            ->where('target_subject_id', 'risk-access-drift')
+            ->where('status', 'failed')
+            ->orderByDesc('checked_at')
+            ->first();
+        $this->assertNotNull($failedCheckResult);
+
+        $failedCheckResultId = is_object($failedCheckResult) && is_string($failedCheckResult->id ?? null)
+            ? (string) $failedCheckResult->id
+            : '';
+        $failedRunId = is_object($failedCheckResult) && is_string($failedCheckResult->automation_pack_run_id ?? null)
+            ? (string) $failedCheckResult->automation_pack_run_id
+            : '';
+
+        $this->assertNotSame('', $failedCheckResultId);
+        $this->assertNotSame('', $failedRunId);
+        $this->assertDatabaseHas('risks', [
+            'id' => 'risk-access-drift',
+            'organization_id' => 'org-a',
+            'automation_posture_check_result_id' => $failedCheckResultId,
+            'automation_posture_run_id' => $failedRunId,
+        ]);
+    }
+
+    public function test_on_fail_raise_finding_creates_one_deduplicated_automation_finding(): void
+    {
+        $payload = [
+            'principal_id' => 'principal-org-a',
+            'organization_id' => 'org-a',
+            'scope_id' => 'scope-eu',
+            'locale' => 'en',
+            'menu' => 'plugin.automation-catalog.root',
+            'membership_id' => 'membership-org-a-hello',
+        ];
+
+        $this->post('/plugins/automation-catalog/automation-pack-aws-config-baseline/output-mappings', [
+            ...$payload,
+            'mapping_label' => 'Raise finding on failed workflow',
+            'mapping_kind' => 'workflow-transition',
+            'target_binding_mode' => 'explicit',
+            'target_subject_type' => 'risk',
+            'target_subject_id' => 'risk-access-drift',
+            'workflow_key' => 'plugin.controls-catalog.control-lifecycle',
+            'transition_key' => 'transition-that-does-not-exist',
+            'on_fail_policy' => 'raise-finding',
+            'is_active' => '1',
+        ])->assertFound();
+
+        $mappingId = (string) DB::table('automation_pack_output_mappings')
+            ->where('automation_pack_id', 'automation-pack-aws-config-baseline')
+            ->where('mapping_label', 'Raise finding on failed workflow')
+            ->value('id');
+        $this->assertNotSame('', $mappingId);
+
+        $this->post('/plugins/automation-catalog/automation-pack-aws-config-baseline/run', $payload)
+            ->assertFound();
+        $this->post('/plugins/automation-catalog/automation-pack-aws-config-baseline/run', $payload)
+            ->assertFound();
+
+        $automationFindingCount = DB::table('findings')
+            ->where('organization_id', 'org-a')
+            ->where('scope_id', 'scope-eu')
+            ->where('linked_risk_id', 'risk-access-drift')
+            ->where('title', 'like', 'Automation failure · Raise finding on failed workflow%')
+            ->count();
+        $this->assertSame(1, $automationFindingCount);
+
+        $this->assertDatabaseHas('automation_failure_findings', [
+            'organization_id' => 'org-a',
+            'scope_id' => 'scope-eu',
+            'automation_pack_id' => 'automation-pack-aws-config-baseline',
+            'automation_output_mapping_id' => $mappingId,
+            'target_subject_type' => 'risk',
+            'target_subject_id' => 'risk-access-drift',
+        ]);
+
+        $this->assertDatabaseHas('automation_check_results', [
+            'automation_pack_id' => 'automation-pack-aws-config-baseline',
+            'automation_output_mapping_id' => $mappingId,
+            'target_subject_type' => 'risk',
+            'target_subject_id' => 'risk-access-drift',
+            'status' => 'failed',
+            'finding_id' => (string) DB::table('automation_failure_findings')
+                ->where('automation_output_mapping_id', $mappingId)
+                ->value('finding_id'),
+        ]);
+    }
+
+    public function test_on_fail_raise_finding_and_action_creates_one_deduplicated_action(): void
+    {
+        $payload = [
+            'principal_id' => 'principal-org-a',
+            'organization_id' => 'org-a',
+            'scope_id' => 'scope-eu',
+            'locale' => 'en',
+            'menu' => 'plugin.automation-catalog.root',
+            'membership_id' => 'membership-org-a-hello',
+        ];
+
+        $this->post('/plugins/automation-catalog/automation-pack-aws-config-baseline/output-mappings', [
+            ...$payload,
+            'mapping_label' => 'Raise finding and action on failed workflow',
+            'mapping_kind' => 'workflow-transition',
+            'target_binding_mode' => 'explicit',
+            'target_subject_type' => 'risk',
+            'target_subject_id' => 'risk-access-drift',
+            'workflow_key' => 'plugin.controls-catalog.control-lifecycle',
+            'transition_key' => 'transition-that-does-not-exist',
+            'on_fail_policy' => 'raise-finding-and-action',
+            'is_active' => '1',
+        ])->assertFound();
+
+        $mappingId = (string) DB::table('automation_pack_output_mappings')
+            ->where('automation_pack_id', 'automation-pack-aws-config-baseline')
+            ->where('mapping_label', 'Raise finding and action on failed workflow')
+            ->value('id');
+        $this->assertNotSame('', $mappingId);
+
+        $this->post('/plugins/automation-catalog/automation-pack-aws-config-baseline/run', $payload)
+            ->assertFound();
+        $this->post('/plugins/automation-catalog/automation-pack-aws-config-baseline/run', $payload)
+            ->assertFound();
+
+        $finding = DB::table('findings')
+            ->where('organization_id', 'org-a')
+            ->where('scope_id', 'scope-eu')
+            ->where('linked_risk_id', 'risk-access-drift')
+            ->where('title', 'like', 'Automation failure · Raise finding and action on failed workflow%')
+            ->first();
+
+        $this->assertNotNull($finding);
+        $findingId = is_object($finding) && is_string($finding->id) ? (string) $finding->id : '';
+        $this->assertNotSame('', $findingId);
+
+        $actionCount = DB::table('remediation_actions')
+            ->where('organization_id', 'org-a')
+            ->where('scope_id', 'scope-eu')
+            ->where('finding_id', $findingId)
+            ->where('title', 'like', 'Investigate automation failure · Raise finding and action on failed workflow%')
+            ->count();
+        $this->assertSame(1, $actionCount);
+
+        $actionId = (string) DB::table('remediation_actions')
+            ->where('organization_id', 'org-a')
+            ->where('scope_id', 'scope-eu')
+            ->where('finding_id', $findingId)
+            ->value('id');
+        $this->assertNotSame('', $actionId);
+
+        $this->assertDatabaseHas('automation_failure_findings', [
+            'organization_id' => 'org-a',
+            'scope_id' => 'scope-eu',
+            'automation_pack_id' => 'automation-pack-aws-config-baseline',
+            'automation_output_mapping_id' => $mappingId,
+            'target_subject_type' => 'risk',
+            'target_subject_id' => 'risk-access-drift',
+            'finding_id' => $findingId,
+            'remediation_action_id' => $actionId,
+        ]);
+        $this->assertDatabaseHas('automation_check_results', [
+            'automation_pack_id' => 'automation-pack-aws-config-baseline',
+            'automation_output_mapping_id' => $mappingId,
+            'target_subject_type' => 'risk',
+            'target_subject_id' => 'risk-access-drift',
+            'status' => 'failed',
+            'finding_id' => $findingId,
+            'remediation_action_id' => $actionId,
+        ]);
+    }
+
+    public function test_evidence_policy_on_change_delivers_once_and_then_skips_unchanged_payload(): void
+    {
+        $payload = [
+            'principal_id' => 'principal-org-a',
+            'organization_id' => 'org-a',
+            'scope_id' => 'scope-eu',
+            'locale' => 'en',
+            'menu' => 'plugin.automation-catalog.root',
+            'membership_id' => 'membership-org-a-hello',
+        ];
+
+        $this->post('/plugins/automation-catalog/automation-pack-aws-config-baseline/output-mappings', [
+            ...$payload,
+            'mapping_label' => 'On change evidence mapping',
+            'mapping_kind' => 'evidence-refresh',
+            'target_binding_mode' => 'explicit',
+            'target_subject_type' => 'control',
+            'target_subject_id' => 'control-access-review',
+            'evidence_policy' => 'on-change',
+            'is_active' => '1',
+        ])->assertFound();
+
+        $mappingId = (string) DB::table('automation_pack_output_mappings')
+            ->where('automation_pack_id', 'automation-pack-aws-config-baseline')
+            ->where('mapping_label', 'On change evidence mapping')
+            ->value('id');
+        $this->assertNotSame('', $mappingId);
+
+        $this->post('/plugins/automation-catalog/automation-pack-aws-config-baseline/run', $payload)->assertFound();
+        $this->assertSame(
+            1,
+            DB::table('artifacts')
+                ->where('owner_component', 'automation-catalog')
+                ->where('subject_type', 'control')
+                ->where('subject_id', 'control-access-review')
+                ->where('label', 'On change evidence mapping output')
+                ->count()
+        );
+
+        $this->post('/plugins/automation-catalog/automation-pack-aws-config-baseline/run', $payload)->assertFound();
+        $this->assertSame(
+            1,
+            DB::table('artifacts')
+                ->where('owner_component', 'automation-catalog')
+                ->where('subject_type', 'control')
+                ->where('subject_id', 'control-access-review')
+                ->where('label', 'On change evidence mapping output')
+                ->count()
+        );
+
+        $this->assertDatabaseHas('automation_pack_output_mappings', [
+            'id' => $mappingId,
+            'last_status' => 'skipped',
+        ]);
+        $this->assertDatabaseHas('automation_evidence_delivery_states', [
+            'automation_output_mapping_id' => $mappingId,
+            'target_subject_type' => 'control',
+            'target_subject_id' => 'control-access-review',
+        ]);
+    }
+
+    public function test_evidence_policy_on_fail_skips_delivery_when_outcome_is_pass(): void
+    {
+        $payload = [
+            'principal_id' => 'principal-org-a',
+            'organization_id' => 'org-a',
+            'scope_id' => 'scope-eu',
+            'locale' => 'en',
+            'menu' => 'plugin.automation-catalog.root',
+            'membership_id' => 'membership-org-a-hello',
+        ];
+
+        $this->post('/plugins/automation-catalog/automation-pack-aws-config-baseline/output-mappings', [
+            ...$payload,
+            'mapping_label' => 'On fail evidence policy mapping',
+            'mapping_kind' => 'evidence-refresh',
+            'target_binding_mode' => 'explicit',
+            'target_subject_type' => 'control',
+            'target_subject_id' => 'control-access-review',
+            'evidence_policy' => 'on-fail',
+            'is_active' => '1',
+        ])->assertFound();
+
+        $mappingId = (string) DB::table('automation_pack_output_mappings')
+            ->where('automation_pack_id', 'automation-pack-aws-config-baseline')
+            ->where('mapping_label', 'On fail evidence policy mapping')
+            ->value('id');
+        $this->assertNotSame('', $mappingId);
+
+        $this->post('/plugins/automation-catalog/automation-pack-aws-config-baseline/run', $payload)->assertFound();
+
+        $this->assertDatabaseHas('automation_pack_output_mappings', [
+            'id' => $mappingId,
+            'last_status' => 'skipped',
+        ]);
+        $this->assertSame(
+            0,
+            DB::table('artifacts')
+                ->where('owner_component', 'automation-catalog')
+                ->where('subject_type', 'control')
+                ->where('subject_id', 'control-access-review')
+                ->where('label', 'On fail evidence policy mapping output')
+                ->count()
+        );
+    }
+
+    public function test_runtime_retry_policy_retries_failed_mapping_and_persists_attempt_metadata(): void
+    {
+        $payload = [
+            'principal_id' => 'principal-org-a',
+            'organization_id' => 'org-a',
+            'scope_id' => 'scope-eu',
+            'locale' => 'en',
+            'menu' => 'plugin.automation-catalog.root',
+            'membership_id' => 'membership-org-a-hello',
+        ];
+
+        $this->post('/plugins/automation-catalog/automation-pack-aws-config-baseline/output-mappings', [
+            ...$payload,
+            'mapping_label' => 'Retry failed workflow mapping',
+            'mapping_kind' => 'workflow-transition',
+            'target_binding_mode' => 'explicit',
+            'target_subject_type' => 'risk',
+            'target_subject_id' => 'risk-access-drift',
+            'workflow_key' => 'plugin.controls-catalog.control-lifecycle',
+            'transition_key' => 'transition-that-does-not-exist',
+            'runtime_retry_max_attempts' => 2,
+            'runtime_retry_backoff_ms' => 0,
+            'is_active' => '1',
+        ])->assertFound();
+
+        $mappingId = (string) DB::table('automation_pack_output_mappings')
+            ->where('automation_pack_id', 'automation-pack-aws-config-baseline')
+            ->where('mapping_label', 'Retry failed workflow mapping')
+            ->value('id');
+        $this->assertNotSame('', $mappingId);
+
+        $this->post('/plugins/automation-catalog/automation-pack-aws-config-baseline/run', $payload)->assertFound();
+
+        $checkResult = DB::table('automation_check_results')
+            ->where('automation_output_mapping_id', $mappingId)
+            ->where('target_subject_type', 'risk')
+            ->where('target_subject_id', 'risk-access-drift')
+            ->orderByDesc('checked_at')
+            ->first();
+
+        $this->assertNotNull($checkResult);
+        $this->assertSame('failed', is_object($checkResult) ? (string) $checkResult->status : '');
+        $this->assertSame(3, is_object($checkResult) ? (int) $checkResult->attempt_count : 0);
+        $this->assertSame(2, is_object($checkResult) ? (int) $checkResult->retry_count : 0);
+        $this->assertNotSame('', is_object($checkResult) && is_string($checkResult->idempotency_key ?? null) ? (string) $checkResult->idempotency_key : '');
+    }
+
+    public function test_runtime_guardrail_blocks_scope_mapping_when_resolved_targets_exceed_limit(): void
+    {
+        DB::table('assets')->insert([
+            'id' => 'asset-guardrail-extra',
+            'organization_id' => 'org-a',
+            'scope_id' => 'scope-eu',
+            'name' => 'Guardrail Extra Asset',
+            'type' => 'application',
+            'criticality' => 'medium',
+            'classification' => 'internal',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $payload = [
+            'principal_id' => 'principal-org-a',
+            'organization_id' => 'org-a',
+            'scope_id' => 'scope-eu',
+            'locale' => 'en',
+            'menu' => 'plugin.automation-catalog.root',
+            'membership_id' => 'membership-org-a-hello',
+        ];
+
+        $this->post('/plugins/automation-catalog/automation-pack-aws-config-baseline/output-mappings', [
+            ...$payload,
+            'mapping_label' => 'Scope guardrail max targets',
+            'mapping_kind' => 'evidence-refresh',
+            'target_binding_mode' => 'scope',
+            'target_subject_type' => 'asset',
+            'target_scope_id' => 'scope-eu',
+            'runtime_max_targets' => 1,
+            'is_active' => '1',
+        ])->assertFound();
+
+        $mappingId = (string) DB::table('automation_pack_output_mappings')
+            ->where('automation_pack_id', 'automation-pack-aws-config-baseline')
+            ->where('mapping_label', 'Scope guardrail max targets')
+            ->value('id');
+        $this->assertNotSame('', $mappingId);
+
+        $this->post('/plugins/automation-catalog/automation-pack-aws-config-baseline/run', $payload)->assertFound();
+
+        $checkResult = DB::table('automation_check_results')
+            ->where('automation_output_mapping_id', $mappingId)
+            ->orderByDesc('checked_at')
+            ->first();
+
+        $this->assertNotNull($checkResult);
+        $this->assertSame('failed', is_object($checkResult) ? (string) $checkResult->status : '');
+        $this->assertStringContainsString(
+            'Guardrail: resolved targets',
+            is_object($checkResult) && is_string($checkResult->message ?? null) ? (string) $checkResult->message : ''
+        );
+    }
+
+    public function test_runtime_guardrail_blocks_payload_above_mapping_limit(): void
+    {
+        $payload = [
+            'principal_id' => 'principal-org-a',
+            'organization_id' => 'org-a',
+            'scope_id' => 'scope-eu',
+            'locale' => 'en',
+            'menu' => 'plugin.automation-catalog.root',
+            'membership_id' => 'membership-org-a-hello',
+        ];
+
+        $this->post('/plugins/automation-catalog/automation-pack-aws-config-baseline/output-mappings', [
+            ...$payload,
+            'mapping_label' => 'Payload size guardrail mapping',
+            'mapping_kind' => 'evidence-refresh',
+            'target_binding_mode' => 'explicit',
+            'target_subject_type' => 'control',
+            'target_subject_id' => 'control-access-review',
+            'runtime_payload_max_kb' => 0,
+            'is_active' => '1',
+        ])->assertFound();
+
+        $mappingId = (string) DB::table('automation_pack_output_mappings')
+            ->where('automation_pack_id', 'automation-pack-aws-config-baseline')
+            ->where('mapping_label', 'Payload size guardrail mapping')
+            ->value('id');
+        $this->assertNotSame('', $mappingId);
+
+        $this->post('/plugins/automation-catalog/automation-pack-aws-config-baseline/run', $payload)->assertFound();
+
+        $checkResult = DB::table('automation_check_results')
+            ->where('automation_output_mapping_id', $mappingId)
+            ->where('target_subject_type', 'control')
+            ->where('target_subject_id', 'control-access-review')
+            ->orderByDesc('checked_at')
+            ->first();
+
+        $this->assertNotNull($checkResult);
+        $this->assertSame('failed', is_object($checkResult) ? (string) $checkResult->status : '');
+        $this->assertStringContainsString(
+            'Guardrail: payload size',
+            is_object($checkResult) && is_string($checkResult->message ?? null) ? (string) $checkResult->message : ''
+        );
+    }
+
+    public function test_runtime_only_mapping_cannot_be_applied_manually_and_executes_in_runtime(): void
+    {
+        $payload = [
+            'principal_id' => 'principal-org-a',
+            'organization_id' => 'org-a',
+            'scope_id' => 'scope-eu',
+            'locale' => 'en',
+            'menu' => 'plugin.automation-catalog.root',
+            'membership_id' => 'membership-org-a-hello',
+        ];
+
+        $this->post('/plugins/automation-catalog/automation-pack-aws-config-baseline/output-mappings', [
+            ...$payload,
+            'mapping_label' => 'Runtime only evidence mapping',
+            'mapping_kind' => 'evidence-refresh',
+            'target_binding_mode' => 'explicit',
+            'target_subject_type' => 'control',
+            'target_subject_id' => 'control-access-review',
+            'execution_mode' => 'runtime-only',
+            'is_active' => '1',
+        ])->assertFound();
+
+        $mappingId = (string) DB::table('automation_pack_output_mappings')
+            ->where('automation_pack_id', 'automation-pack-aws-config-baseline')
+            ->where('mapping_label', 'Runtime only evidence mapping')
+            ->value('id');
+        $this->assertNotSame('', $mappingId);
+
+        $this->post("/plugins/automation-catalog/automation-pack-aws-config-baseline/output-mappings/{$mappingId}/apply", $payload)
+            ->assertFound();
+
+        $this->assertDatabaseHas('automation_pack_output_mappings', [
+            'id' => $mappingId,
+            'last_status' => 'never',
+        ]);
+
+        $this->post('/plugins/automation-catalog/automation-pack-aws-config-baseline/run', $payload)
+            ->assertFound();
+
+        $this->assertDatabaseHas('automation_pack_output_mappings', [
+            'id' => $mappingId,
+            'last_status' => 'success',
+        ]);
+    }
+
+    public function test_manual_only_mapping_is_skipped_by_runtime_and_can_be_applied_manually(): void
+    {
+        $payload = [
+            'principal_id' => 'principal-org-a',
+            'organization_id' => 'org-a',
+            'scope_id' => 'scope-eu',
+            'locale' => 'en',
+            'menu' => 'plugin.automation-catalog.root',
+            'membership_id' => 'membership-org-a-hello',
+        ];
+
+        $this->post('/plugins/automation-catalog/automation-pack-aws-config-baseline/output-mappings', [
+            ...$payload,
+            'mapping_label' => 'Manual only control transition',
+            'mapping_kind' => 'workflow-transition',
+            'target_binding_mode' => 'explicit',
+            'target_subject_type' => 'control',
+            'target_subject_id' => 'control-access-review',
+            'workflow_key' => 'plugin.controls-catalog.control-lifecycle',
+            'transition_key' => 'approve',
+            'execution_mode' => 'manual-only',
+            'is_active' => '1',
+        ])->assertFound();
+
+        $mappingId = (string) DB::table('automation_pack_output_mappings')
+            ->where('automation_pack_id', 'automation-pack-aws-config-baseline')
+            ->where('mapping_label', 'Manual only control transition')
+            ->value('id');
+        $this->assertNotSame('', $mappingId);
+
+        $this->post('/plugins/automation-catalog/automation-pack-aws-config-baseline/run', $payload)
+            ->assertFound();
+
+        $this->assertDatabaseHas('automation_pack_output_mappings', [
+            'id' => $mappingId,
+            'last_status' => 'never',
+        ]);
+
+        $this->post("/plugins/automation-catalog/automation-pack-aws-config-baseline/output-mappings/{$mappingId}/apply", $payload)
+            ->assertFound();
+
+        $this->assertDatabaseHas('automation_pack_output_mappings', [
+            'id' => $mappingId,
+            'last_status' => 'success',
+        ]);
+    }
+
+    public function test_scheduled_runtime_command_runs_enabled_packs(): void
+    {
+        $exitCode = Artisan::call('automation:runs', [
+            '--organization_id' => 'org-a',
+            '--scope_id' => 'scope-eu',
+            '--trigger' => 'scheduled',
+            '--principal_id' => 'principal-org-a',
+            '--membership_id' => 'membership-org-a-hello',
+        ]);
+
+        $this->assertSame(0, $exitCode);
+        $this->assertGreaterThanOrEqual(
+            1,
+            DB::table('automation_pack_runs')->where('trigger_mode', 'scheduled')->count()
+        );
+        $this->assertDatabaseHas('automation_pack_runs', [
+            'automation_pack_id' => 'automation-pack-aws-config-baseline',
+            'trigger_mode' => 'scheduled',
+        ]);
+    }
+
+    public function test_scheduled_runtime_command_can_respect_per_pack_schedule_policy(): void
+    {
+        DB::table('automation_packs')
+            ->where('id', 'automation-pack-aws-config-baseline')
+            ->update([
+                'runtime_schedule_enabled' => true,
+                'runtime_schedule_cron' => '* * * * *',
+                'runtime_schedule_timezone' => 'UTC',
+                'runtime_schedule_last_slot' => null,
+                'updated_at' => now(),
+            ]);
+
+        $beforeCount = DB::table('automation_pack_runs')
+            ->where('automation_pack_id', 'automation-pack-aws-config-baseline')
+            ->where('trigger_mode', 'scheduled')
+            ->count();
+
+        $exitCode = Artisan::call('automation:runs', [
+            '--organization_id' => 'org-a',
+            '--scope_id' => 'scope-eu',
+            '--trigger' => 'scheduled',
+            '--respect_schedule' => '1',
+            '--principal_id' => 'principal-org-a',
+            '--membership_id' => 'membership-org-a-hello',
+        ]);
+        $this->assertSame(0, $exitCode);
+
+        $afterFirstCount = DB::table('automation_pack_runs')
+            ->where('automation_pack_id', 'automation-pack-aws-config-baseline')
+            ->where('trigger_mode', 'scheduled')
+            ->count();
+
+        $this->assertGreaterThan($beforeCount, $afterFirstCount);
+        $this->assertDatabaseHas('automation_packs', [
+            'id' => 'automation-pack-aws-config-baseline',
+            'runtime_schedule_enabled' => true,
+            'runtime_schedule_cron' => '* * * * *',
+            'runtime_schedule_timezone' => 'UTC',
+        ]);
+        $lastSlot = (string) DB::table('automation_packs')
+            ->where('id', 'automation-pack-aws-config-baseline')
+            ->value('runtime_schedule_last_slot');
+        $this->assertNotSame('', $lastSlot);
+
+        $exitCode = Artisan::call('automation:runs', [
+            '--organization_id' => 'org-a',
+            '--scope_id' => 'scope-eu',
+            '--trigger' => 'scheduled',
+            '--respect_schedule' => '1',
+            '--principal_id' => 'principal-org-a',
+            '--membership_id' => 'membership-org-a-hello',
+        ]);
+        $this->assertSame(0, $exitCode);
+
+        $afterSecondCount = DB::table('automation_pack_runs')
+            ->where('automation_pack_id', 'automation-pack-aws-config-baseline')
+            ->where('trigger_mode', 'scheduled')
+            ->count();
+
+        $this->assertSame($afterFirstCount, $afterSecondCount);
     }
 
     public function test_external_repository_can_be_registered_and_refreshed_with_valid_signature(): void

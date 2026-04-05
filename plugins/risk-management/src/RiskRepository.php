@@ -162,6 +162,11 @@ class RiskRepository
             'linked_asset_id' => is_string($risk->linked_asset_id) ? $risk->linked_asset_id : '',
             'linked_control_id' => is_string($risk->linked_control_id) ? $risk->linked_control_id : '',
             'treatment' => (string) $risk->treatment,
+            'automation_posture' => is_string($risk->automation_posture) ? $risk->automation_posture : 'unknown',
+            'automation_posture_updated_at' => $risk->automation_posture_updated_at !== null ? (string) $risk->automation_posture_updated_at : '',
+            'automation_posture_message' => is_string($risk->automation_posture_message) ? $risk->automation_posture_message : '',
+            'automation_posture_check_result_id' => is_string($risk->automation_posture_check_result_id ?? null) ? $risk->automation_posture_check_result_id : '',
+            'automation_posture_run_id' => is_string($risk->automation_posture_run_id ?? null) ? $risk->automation_posture_run_id : '',
         ];
     }
 }

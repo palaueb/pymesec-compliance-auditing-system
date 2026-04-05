@@ -16,6 +16,8 @@ use PymeSec\Core\Plugins\PluginLifecycleManager;
 use PymeSec\Core\Plugins\PluginStateStore;
 use PymeSec\Core\Tenancy\Contracts\TenancyServiceInterface;
 use PymeSec\Core\Workflows\Contracts\WorkflowRegistryInterface;
+use PymeSec\Plugins\AutomationCatalog\AutomationCatalogRepository;
+use PymeSec\Plugins\AutomationCatalog\AutomationPackRuntimeService;
 use PymeSec\Plugins\EvidenceManagement\EvidenceManagementRepository;
 
 Artisan::command('inspire', function () {
@@ -236,6 +238,102 @@ Artisan::command('evidence:queue-reminders {--organization_id=} {--scope_id=}', 
 
     return 0;
 })->purpose('Queue due evidence review and expiry reminders');
+
+Artisan::command('automation:runs {--organization_id=} {--scope_id=} {--pack_id=} {--principal_id=principal-org-a} {--membership_id=} {--trigger=scheduled} {--respect_schedule=0}', function () {
+    if (! app()->bound(AutomationPackRuntimeService::class) || ! app()->bound(AutomationCatalogRepository::class)) {
+        $this->error('automation-catalog plugin is not enabled.');
+
+        return 1;
+    }
+
+    /** @var AutomationPackRuntimeService $runtime */
+    $runtime = app(AutomationPackRuntimeService::class);
+    /** @var AutomationCatalogRepository $repository */
+    $repository = app(AutomationCatalogRepository::class);
+
+    $organizationId = is_string($this->option('organization_id')) && $this->option('organization_id') !== ''
+        ? (string) $this->option('organization_id')
+        : null;
+    $scopeId = is_string($this->option('scope_id')) && $this->option('scope_id') !== ''
+        ? (string) $this->option('scope_id')
+        : null;
+    $packId = is_string($this->option('pack_id')) && $this->option('pack_id') !== ''
+        ? (string) $this->option('pack_id')
+        : null;
+    $principalId = is_string($this->option('principal_id')) && $this->option('principal_id') !== ''
+        ? (string) $this->option('principal_id')
+        : null;
+    $membershipId = is_string($this->option('membership_id')) && $this->option('membership_id') !== ''
+        ? (string) $this->option('membership_id')
+        : null;
+    $trigger = is_string($this->option('trigger')) && in_array((string) $this->option('trigger'), ['manual', 'scheduled'], true)
+        ? (string) $this->option('trigger')
+        : 'scheduled';
+    $respectSchedule = filter_var((string) $this->option('respect_schedule'), FILTER_VALIDATE_BOOL);
+
+    $runs = [];
+
+    if ($packId !== null) {
+        $pack = $repository->find($packId);
+
+        if ($pack === null) {
+            $this->error(sprintf('Pack [%s] not found.', $packId));
+
+            return 1;
+        }
+
+        if ($organizationId !== null && (string) ($pack['organization_id'] ?? '') !== $organizationId) {
+            $this->error(sprintf('Pack [%s] does not belong to organization [%s].', $packId, $organizationId));
+
+            return 1;
+        }
+
+        if ($scopeId !== null) {
+            $packScope = (string) ($pack['scope_id'] ?? '');
+            if ($packScope !== '' && $packScope !== $scopeId) {
+                $this->error(sprintf('Pack [%s] scope [%s] does not match requested scope [%s].', $packId, $packScope, $scopeId));
+
+                return 1;
+            }
+        }
+
+        $run = $runtime->runPack($packId, $trigger, $principalId, $membershipId);
+        if ($run !== null) {
+            $runs[] = $run;
+        }
+    } else {
+        if ($trigger === 'scheduled' && $respectSchedule) {
+            $runs = $runtime->runDueScheduledPacks($organizationId, $scopeId, $principalId, $membershipId);
+        } else {
+            $runs = $runtime->runEnabledPacks($organizationId, $scopeId, $trigger, $principalId, $membershipId);
+        }
+    }
+
+    if ($runs === []) {
+        $this->info('No eligible automation packs were executed.');
+
+        return 0;
+    }
+
+    $this->table(
+        ['Run ID', 'Pack ID', 'Status', 'Trigger', 'Total', 'OK', 'Fail', 'Skip', 'Started'],
+        array_map(static fn (array $run): array => [
+            (string) ($run['id'] ?? ''),
+            (string) ($run['automation_pack_id'] ?? ''),
+            (string) ($run['status'] ?? ''),
+            (string) ($run['trigger_mode'] ?? ''),
+            (string) ($run['total_mappings'] ?? '0'),
+            (string) ($run['success_count'] ?? '0'),
+            (string) ($run['failed_count'] ?? '0'),
+            (string) ($run['skipped_count'] ?? '0'),
+            (string) ($run['started_at'] ?? ''),
+        ], $runs),
+    );
+
+    $this->info(sprintf('Executed %d automation pack run(s).', count($runs)));
+
+    return 0;
+})->purpose('Execute enabled automation pack runtimes and optionally enforce per-pack schedule policy');
 
 Artisan::command('artifacts:list {--limit=20} {--owner_component=} {--subject_type=} {--subject_id=} {--artifact_type=} {--organization_id=} {--scope_id=}', function (ArtifactServiceInterface $artifacts) {
     $rows = array_map(static fn ($artifact): array => [

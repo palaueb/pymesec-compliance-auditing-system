@@ -76,7 +76,7 @@ class AutomationCatalogRepository
 
         $id = 'automation-pack-'.Str::lower(Str::ulid());
 
-        DB::table('automation_packs')->insert([
+        $payload = [
             'id' => $id,
             'organization_id' => (string) $data['organization_id'],
             'scope_id' => $scopeId,
@@ -102,7 +102,16 @@ class AutomationCatalogRepository
             'last_sync_at' => now(),
             'created_at' => now(),
             'updated_at' => now(),
-        ]);
+        ];
+
+        if ($this->packSupportsRuntimeScheduleColumns()) {
+            $payload['runtime_schedule_enabled'] = false;
+            $payload['runtime_schedule_cron'] = null;
+            $payload['runtime_schedule_timezone'] = null;
+            $payload['runtime_schedule_last_slot'] = null;
+        }
+
+        DB::table('automation_packs')->insert($payload);
 
         /** @var array<string, string> $pack */
         $pack = $this->find($id);
@@ -186,6 +195,48 @@ class AutomationCatalogRepository
             ]);
 
         return $this->find($packId);
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, string>|null
+     */
+    public function updatePackRuntimeSchedule(string $packId, array $data): ?array
+    {
+        if (! $this->packSupportsRuntimeScheduleColumns()) {
+            return $this->find($packId);
+        }
+
+        $current = $this->find($packId);
+        if ($current === null) {
+            return null;
+        }
+
+        DB::table('automation_packs')
+            ->where('id', $packId)
+            ->update([
+                'runtime_schedule_enabled' => (bool) ($data['runtime_schedule_enabled'] ?? false),
+                'runtime_schedule_cron' => ($data['runtime_schedule_cron'] ?? null) ?: null,
+                'runtime_schedule_timezone' => ($data['runtime_schedule_timezone'] ?? null) ?: null,
+                'runtime_schedule_last_slot' => ($data['runtime_schedule_last_slot'] ?? null) ?: null,
+                'updated_at' => now(),
+            ]);
+
+        return $this->find($packId);
+    }
+
+    public function markPackRuntimeScheduleSlot(string $packId, string $slot): void
+    {
+        if ($slot === '' || ! $this->packSupportsRuntimeScheduleColumns()) {
+            return;
+        }
+
+        DB::table('automation_packs')
+            ->where('id', $packId)
+            ->update([
+                'runtime_schedule_last_slot' => $slot,
+                'updated_at' => now(),
+            ]);
     }
 
     public function uninstallPack(string $packId): bool
@@ -281,10 +332,21 @@ class AutomationCatalogRepository
         $targetSubjectId = trim((string) ($data['target_subject_id'] ?? ''));
         $workflowKey = trim((string) ($data['workflow_key'] ?? ''));
         $transitionKey = trim((string) ($data['transition_key'] ?? ''));
+        $targetBindingMode = $this->normalizeTargetBindingMode((string) ($data['target_binding_mode'] ?? 'explicit'));
+        $targetScopeId = trim((string) ($data['target_scope_id'] ?? ''));
+        $targetSelector = is_array($data['target_selector'] ?? null) ? $data['target_selector'] : [];
+        $posturePropagationPolicy = $this->normalizePosturePropagationPolicy((string) ($data['posture_propagation_policy'] ?? 'disabled'));
+        $executionMode = $this->normalizeExecutionMode((string) ($data['execution_mode'] ?? 'both'));
+        $onFailPolicy = $this->normalizeOnFailPolicy((string) ($data['on_fail_policy'] ?? 'no-op'));
+        $evidencePolicy = $this->normalizeEvidencePolicy((string) ($data['evidence_policy'] ?? 'always'));
+        $runtimeRetryMaxAttempts = $this->normalizeRuntimeRetryMaxAttempts((int) ($data['runtime_retry_max_attempts'] ?? 0));
+        $runtimeRetryBackoffMs = $this->normalizeRuntimeRetryBackoffMs((int) ($data['runtime_retry_backoff_ms'] ?? 0));
+        $runtimeMaxTargets = $this->normalizeRuntimeMaxTargets((int) ($data['runtime_max_targets'] ?? 200));
+        $runtimePayloadMaxKb = $this->normalizeRuntimePayloadMaxKb((int) ($data['runtime_payload_max_kb'] ?? 512));
 
         $id = 'automation-output-map-'.Str::lower(Str::ulid());
 
-        DB::table('automation_pack_output_mappings')->insert([
+        $payload = [
             'id' => $id,
             'automation_pack_id' => $packId,
             'organization_id' => $pack['organization_id'],
@@ -295,6 +357,13 @@ class AutomationCatalogRepository
             'target_subject_id' => $targetSubjectId !== '' ? $targetSubjectId : null,
             'workflow_key' => $workflowKey !== '' ? $workflowKey : null,
             'transition_key' => $transitionKey !== '' ? $transitionKey : null,
+            'target_binding_mode' => $targetBindingMode,
+            'target_scope_id' => $targetScopeId !== '' ? $targetScopeId : null,
+            'target_selector_json' => $this->encodeJson($targetSelector),
+            'posture_propagation_policy' => $posturePropagationPolicy,
+            'execution_mode' => $executionMode,
+            'on_fail_policy' => $onFailPolicy,
+            'evidence_policy' => $evidencePolicy,
             'is_active' => (bool) ($data['is_active'] ?? true),
             'last_applied_at' => null,
             'last_status' => 'never',
@@ -303,7 +372,16 @@ class AutomationCatalogRepository
             'updated_by_principal_id' => $principalId !== null && $principalId !== '' ? $principalId : null,
             'created_at' => now(),
             'updated_at' => now(),
-        ]);
+        ];
+
+        if ($this->mappingSupportsRuntimeGuardrailColumns()) {
+            $payload['runtime_retry_max_attempts'] = $runtimeRetryMaxAttempts;
+            $payload['runtime_retry_backoff_ms'] = $runtimeRetryBackoffMs;
+            $payload['runtime_max_targets'] = $runtimeMaxTargets;
+            $payload['runtime_payload_max_kb'] = $runtimePayloadMaxKb;
+        }
+
+        DB::table('automation_pack_output_mappings')->insert($payload);
 
         return $this->findOutputMapping($id);
     }
@@ -319,7 +397,7 @@ class AutomationCatalogRepository
             return null;
         }
 
-        $normalizedStatus = in_array($status, ['success', 'failed'], true) ? $status : 'failed';
+        $normalizedStatus = in_array($status, ['success', 'failed', 'skipped'], true) ? $status : 'failed';
 
         DB::table('automation_pack_output_mappings')
             ->where('id', $mappingId)
@@ -331,6 +409,397 @@ class AutomationCatalogRepository
             ]);
 
         return $this->findOutputMapping($mappingId);
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, string>|null
+     */
+    public function createPackRun(string $packId, array $data): ?array
+    {
+        if ($this->find($packId) === null) {
+            return null;
+        }
+
+        $id = 'automation-pack-run-'.Str::lower(Str::ulid());
+
+        DB::table('automation_pack_runs')->insert([
+            'id' => $id,
+            'automation_pack_id' => $packId,
+            'organization_id' => (string) ($data['organization_id'] ?? ''),
+            'scope_id' => ($data['scope_id'] ?? null) ?: null,
+            'trigger_mode' => trim((string) ($data['trigger_mode'] ?? 'manual')),
+            'status' => trim((string) ($data['status'] ?? 'running')),
+            'started_at' => ($data['started_at'] ?? null) ?: now(),
+            'finished_at' => ($data['finished_at'] ?? null) ?: null,
+            'duration_ms' => (int) ($data['duration_ms'] ?? 0) ?: null,
+            'total_mappings' => (int) ($data['total_mappings'] ?? 0),
+            'success_count' => (int) ($data['success_count'] ?? 0),
+            'failed_count' => (int) ($data['failed_count'] ?? 0),
+            'skipped_count' => (int) ($data['skipped_count'] ?? 0),
+            'summary' => ($data['summary'] ?? null) ?: null,
+            'failure_reason' => ($data['failure_reason'] ?? null) ?: null,
+            'initiated_by_principal_id' => ($data['initiated_by_principal_id'] ?? null) ?: null,
+            'initiated_by_membership_id' => ($data['initiated_by_membership_id'] ?? null) ?: null,
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        return $this->findPackRun($id);
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, string>|null
+     */
+    public function completePackRun(string $runId, array $data): ?array
+    {
+        $current = $this->findPackRun($runId);
+        if ($current === null) {
+            return null;
+        }
+
+        DB::table('automation_pack_runs')
+            ->where('id', $runId)
+            ->update([
+                'status' => trim((string) ($data['status'] ?? $current['status'])),
+                'finished_at' => ($data['finished_at'] ?? null) ?: now(),
+                'duration_ms' => (int) ($data['duration_ms'] ?? $current['duration_ms']),
+                'total_mappings' => (int) ($data['total_mappings'] ?? $current['total_mappings']),
+                'success_count' => (int) ($data['success_count'] ?? $current['success_count']),
+                'failed_count' => (int) ($data['failed_count'] ?? $current['failed_count']),
+                'skipped_count' => (int) ($data['skipped_count'] ?? $current['skipped_count']),
+                'summary' => ($data['summary'] ?? null) ?: null,
+                'failure_reason' => ($data['failure_reason'] ?? null) ?: null,
+                'updated_at' => now(),
+            ]);
+
+        return $this->findPackRun($runId);
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, string>|null
+     */
+    public function createCheckResult(array $data): ?array
+    {
+        $runId = trim((string) ($data['automation_pack_run_id'] ?? ''));
+        $packId = trim((string) ($data['automation_pack_id'] ?? ''));
+        $organizationId = trim((string) ($data['organization_id'] ?? ''));
+
+        if ($runId === '' || $packId === '' || $organizationId === '') {
+            return null;
+        }
+
+        $id = 'automation-check-result-'.Str::lower(Str::ulid());
+
+        $payload = [
+            'id' => $id,
+            'automation_pack_run_id' => $runId,
+            'automation_pack_id' => $packId,
+            'automation_output_mapping_id' => ($data['automation_output_mapping_id'] ?? null) ?: null,
+            'organization_id' => $organizationId,
+            'scope_id' => ($data['scope_id'] ?? null) ?: null,
+            'trigger_mode' => trim((string) ($data['trigger_mode'] ?? 'manual')),
+            'mapping_kind' => trim((string) ($data['mapping_kind'] ?? 'evidence-refresh')),
+            'target_subject_type' => ($data['target_subject_type'] ?? null) ?: null,
+            'target_subject_id' => ($data['target_subject_id'] ?? null) ?: null,
+            'status' => trim((string) ($data['status'] ?? 'failed')),
+            'outcome' => trim((string) ($data['outcome'] ?? 'error')),
+            'severity' => ($data['severity'] ?? null) ?: null,
+            'message' => ($data['message'] ?? null) ?: null,
+            'checked_at' => ($data['checked_at'] ?? null) ?: now(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ];
+
+        if ($this->checkResultSupportsTraceabilityColumns()) {
+            $payload['artifact_id'] = ($data['artifact_id'] ?? null) ?: null;
+            $payload['evidence_id'] = ($data['evidence_id'] ?? null) ?: null;
+            $payload['finding_id'] = ($data['finding_id'] ?? null) ?: null;
+            $payload['remediation_action_id'] = ($data['remediation_action_id'] ?? null) ?: null;
+        }
+
+        if ($this->checkResultSupportsRetryColumns()) {
+            $attemptCount = (int) ($data['attempt_count'] ?? 1);
+            if ($attemptCount < 1) {
+                $attemptCount = 1;
+            }
+
+            $retryCount = (int) ($data['retry_count'] ?? max(0, $attemptCount - 1));
+            if ($retryCount < 0) {
+                $retryCount = 0;
+            }
+
+            $payload['idempotency_key'] = ($data['idempotency_key'] ?? null) ?: null;
+            $payload['attempt_count'] = $attemptCount;
+            $payload['retry_count'] = $retryCount;
+        }
+
+        DB::table('automation_check_results')->insert($payload);
+
+        return $this->findCheckResult($id);
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     * @return array<string, string>|null
+     */
+    public function updateCheckResultTraceability(string $checkResultId, array $data): ?array
+    {
+        if (! $this->checkResultSupportsTraceabilityColumns()) {
+            return $this->findCheckResult($checkResultId);
+        }
+
+        $current = $this->findCheckResult($checkResultId);
+        if ($current === null) {
+            return null;
+        }
+
+        DB::table('automation_check_results')
+            ->where('id', $checkResultId)
+            ->update([
+                'artifact_id' => array_key_exists('artifact_id', $data)
+                    ? (($data['artifact_id'] ?? null) ?: null)
+                    : (($current['artifact_id'] ?? '') !== '' ? $current['artifact_id'] : null),
+                'evidence_id' => array_key_exists('evidence_id', $data)
+                    ? (($data['evidence_id'] ?? null) ?: null)
+                    : (($current['evidence_id'] ?? '') !== '' ? $current['evidence_id'] : null),
+                'finding_id' => array_key_exists('finding_id', $data)
+                    ? (($data['finding_id'] ?? null) ?: null)
+                    : (($current['finding_id'] ?? '') !== '' ? $current['finding_id'] : null),
+                'remediation_action_id' => array_key_exists('remediation_action_id', $data)
+                    ? (($data['remediation_action_id'] ?? null) ?: null)
+                    : (($current['remediation_action_id'] ?? '') !== '' ? $current['remediation_action_id'] : null),
+                'updated_at' => now(),
+            ]);
+
+        return $this->findCheckResult($checkResultId);
+    }
+
+    /**
+     * @return array<int, array<string, string>>
+     */
+    public function recentCheckResultsForPack(string $packId, int $limit = 25): array
+    {
+        $safeLimit = max(1, min(200, $limit));
+
+        return DB::table('automation_check_results')
+            ->where('automation_pack_id', $packId)
+            ->orderByDesc('checked_at')
+            ->orderByDesc('created_at')
+            ->limit($safeLimit)
+            ->get()
+            ->map(fn ($result): array => $this->mapCheckResult($result))
+            ->all();
+    }
+
+    /**
+     * @param  array<int, string>  $checkResultIds
+     * @return array<string, string>
+     */
+    public function findingByCheckResultIds(array $checkResultIds): array
+    {
+        $ids = array_values(array_filter(array_map(static fn ($id): string => trim((string) $id), $checkResultIds), static fn (string $id): bool => $id !== ''));
+        if ($ids === []) {
+            return [];
+        }
+
+        $index = [];
+
+        foreach (DB::table('automation_failure_findings')->whereIn('first_check_result_id', $ids)->get(['first_check_result_id', 'finding_id']) as $row) {
+            if (is_string($row->first_check_result_id) && $row->first_check_result_id !== '' && is_string($row->finding_id) && $row->finding_id !== '') {
+                $index[$row->first_check_result_id] = $row->finding_id;
+            }
+        }
+
+        foreach (DB::table('automation_failure_findings')->whereIn('last_check_result_id', $ids)->get(['last_check_result_id', 'finding_id']) as $row) {
+            if (is_string($row->last_check_result_id) && $row->last_check_result_id !== '' && is_string($row->finding_id) && $row->finding_id !== '') {
+                $index[$row->last_check_result_id] = $row->finding_id;
+            }
+        }
+
+        return $index;
+    }
+
+    /**
+     * @param  array<int, string>  $checkResultIds
+     * @return array<string, string>
+     */
+    public function remediationActionByCheckResultIds(array $checkResultIds): array
+    {
+        if (! DB::getSchemaBuilder()->hasColumn('automation_failure_findings', 'remediation_action_id')) {
+            return [];
+        }
+
+        $ids = array_values(array_filter(array_map(static fn ($id): string => trim((string) $id), $checkResultIds), static fn (string $id): bool => $id !== ''));
+        if ($ids === []) {
+            return [];
+        }
+
+        $index = [];
+
+        foreach (DB::table('automation_failure_findings')->whereIn('first_check_result_id', $ids)->get(['first_check_result_id', 'remediation_action_id']) as $row) {
+            if (is_string($row->first_check_result_id)
+                && $row->first_check_result_id !== ''
+                && is_string($row->remediation_action_id)
+                && $row->remediation_action_id !== '') {
+                $index[$row->first_check_result_id] = $row->remediation_action_id;
+            }
+        }
+
+        foreach (DB::table('automation_failure_findings')->whereIn('last_check_result_id', $ids)->get(['last_check_result_id', 'remediation_action_id']) as $row) {
+            if (is_string($row->last_check_result_id)
+                && $row->last_check_result_id !== ''
+                && is_string($row->remediation_action_id)
+                && $row->remediation_action_id !== '') {
+                $index[$row->last_check_result_id] = $row->remediation_action_id;
+            }
+        }
+
+        return $index;
+    }
+
+    /**
+     * @return array<string, string>|null
+     */
+    public function findEvidenceDeliveryState(string $mappingId, string $targetSubjectType, string $targetSubjectId): ?array
+    {
+        $state = DB::table('automation_evidence_delivery_states')
+            ->where('automation_output_mapping_id', $mappingId)
+            ->where('target_subject_type', $targetSubjectType)
+            ->where('target_subject_id', $targetSubjectId)
+            ->first();
+
+        if ($state === null) {
+            return null;
+        }
+
+        return [
+            'id' => (string) $state->id,
+            'organization_id' => (string) $state->organization_id,
+            'scope_id' => is_string($state->scope_id) ? $state->scope_id : '',
+            'automation_output_mapping_id' => (string) $state->automation_output_mapping_id,
+            'target_subject_type' => (string) $state->target_subject_type,
+            'target_subject_id' => (string) $state->target_subject_id,
+            'last_payload_fingerprint' => is_string($state->last_payload_fingerprint) ? $state->last_payload_fingerprint : '',
+            'last_check_outcome' => is_string($state->last_check_outcome) ? $state->last_check_outcome : '',
+            'last_artifact_id' => is_string($state->last_artifact_id) ? $state->last_artifact_id : '',
+            'last_delivered_at' => $state->last_delivered_at !== null ? (string) $state->last_delivered_at : '',
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>  $data
+     */
+    public function upsertEvidenceDeliveryState(array $data): void
+    {
+        $mappingId = trim((string) ($data['automation_output_mapping_id'] ?? ''));
+        $targetType = trim((string) ($data['target_subject_type'] ?? ''));
+        $targetId = trim((string) ($data['target_subject_id'] ?? ''));
+
+        if ($mappingId === '' || $targetType === '' || $targetId === '') {
+            return;
+        }
+
+        $existing = DB::table('automation_evidence_delivery_states')
+            ->where('automation_output_mapping_id', $mappingId)
+            ->where('target_subject_type', $targetType)
+            ->where('target_subject_id', $targetId)
+            ->first();
+
+        if ($existing !== null) {
+            DB::table('automation_evidence_delivery_states')
+                ->where('id', (string) $existing->id)
+                ->update([
+                    'last_payload_fingerprint' => ($data['last_payload_fingerprint'] ?? null) ?: null,
+                    'last_check_outcome' => ($data['last_check_outcome'] ?? null) ?: null,
+                    'last_artifact_id' => ($data['last_artifact_id'] ?? null) ?: null,
+                    'last_delivered_at' => ($data['last_delivered_at'] ?? null) ?: now(),
+                    'updated_at' => now(),
+                ]);
+
+            return;
+        }
+
+        DB::table('automation_evidence_delivery_states')->insert([
+            'id' => 'automation-evidence-state-'.Str::lower(Str::ulid()),
+            'organization_id' => trim((string) ($data['organization_id'] ?? '')),
+            'scope_id' => ($data['scope_id'] ?? null) ?: null,
+            'automation_output_mapping_id' => $mappingId,
+            'target_subject_type' => $targetType,
+            'target_subject_id' => $targetId,
+            'last_payload_fingerprint' => ($data['last_payload_fingerprint'] ?? null) ?: null,
+            'last_check_outcome' => ($data['last_check_outcome'] ?? null) ?: null,
+            'last_artifact_id' => ($data['last_artifact_id'] ?? null) ?: null,
+            'last_delivered_at' => ($data['last_delivered_at'] ?? null) ?: now(),
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+    }
+
+    /**
+     * @return array<int, array<string, string>>
+     */
+    public function recentRunsForPack(string $packId, int $limit = 15): array
+    {
+        $safeLimit = max(1, min(100, $limit));
+
+        return DB::table('automation_pack_runs')
+            ->where('automation_pack_id', $packId)
+            ->orderByDesc('started_at')
+            ->orderByDesc('created_at')
+            ->limit($safeLimit)
+            ->get()
+            ->map(fn ($run): array => $this->mapPackRun($run))
+            ->all();
+    }
+
+    /**
+     * @return array<int, array<string, string>>
+     */
+    public function enabledPacksForRuntime(?string $organizationId = null, ?string $scopeId = null): array
+    {
+        $query = DB::table('automation_packs')
+            ->where('is_installed', true)
+            ->where('is_enabled', true)
+            ->orderBy('organization_id')
+            ->orderBy('scope_id')
+            ->orderBy('name');
+
+        if (is_string($organizationId) && $organizationId !== '') {
+            $query->where('organization_id', $organizationId);
+        }
+
+        if (is_string($scopeId) && $scopeId !== '') {
+            $query->where(function ($nested) use ($scopeId): void {
+                $nested->where('scope_id', $scopeId)->orWhereNull('scope_id');
+            });
+        }
+
+        return $query->get()
+            ->map(fn ($pack): array => $this->mapPack($pack))
+            ->all();
+    }
+
+    /**
+     * @return array<string, string>|null
+     */
+    public function findPackRun(string $runId): ?array
+    {
+        $run = DB::table('automation_pack_runs')->where('id', $runId)->first();
+
+        return $run !== null ? $this->mapPackRun($run) : null;
+    }
+
+    /**
+     * @return array<string, string>|null
+     */
+    public function findCheckResult(string $checkResultId): ?array
+    {
+        $result = DB::table('automation_check_results')->where('id', $checkResultId)->first();
+
+        return $result !== null ? $this->mapCheckResult($result) : null;
     }
 
     /**
@@ -624,6 +1093,13 @@ class AutomationCatalogRepository
             : 'evidence-refresh';
     }
 
+    private function normalizeTargetBindingMode(string $bindingMode): string
+    {
+        return in_array($bindingMode, ['explicit', 'scope'], true)
+            ? $bindingMode
+            : 'explicit';
+    }
+
     private function normalizeTargetSubjectType(string $subjectType): string
     {
         return in_array($subjectType, [
@@ -642,6 +1118,54 @@ class AutomationCatalogRepository
             'assessment-review',
             'vendor-review',
         ], true) ? $subjectType : '';
+    }
+
+    private function normalizePosturePropagationPolicy(string $policy): string
+    {
+        return in_array($policy, ['disabled', 'status-only'], true)
+            ? $policy
+            : 'disabled';
+    }
+
+    private function normalizeExecutionMode(string $executionMode): string
+    {
+        return in_array($executionMode, ['both', 'runtime-only', 'manual-only'], true)
+            ? $executionMode
+            : 'both';
+    }
+
+    private function normalizeOnFailPolicy(string $policy): string
+    {
+        return in_array($policy, ['no-op', 'raise-finding', 'raise-finding-and-action'], true)
+            ? $policy
+            : 'no-op';
+    }
+
+    private function normalizeEvidencePolicy(string $policy): string
+    {
+        return in_array($policy, ['always', 'on-fail', 'on-change'], true)
+            ? $policy
+            : 'always';
+    }
+
+    private function normalizeRuntimeRetryMaxAttempts(int $value): int
+    {
+        return max(0, min(5, $value));
+    }
+
+    private function normalizeRuntimeRetryBackoffMs(int $value): int
+    {
+        return max(0, min(60000, $value));
+    }
+
+    private function normalizeRuntimeMaxTargets(int $value): int
+    {
+        return max(1, min(2000, $value));
+    }
+
+    private function normalizeRuntimePayloadMaxKb(int $value): int
+    {
+        return max(0, min(10240, $value));
     }
 
     /**
@@ -664,6 +1188,10 @@ class AutomationCatalogRepository
             'lifecycle_state' => is_string($pack->lifecycle_state) ? $pack->lifecycle_state : 'discovered',
             'is_installed' => (bool) $pack->is_installed ? '1' : '0',
             'is_enabled' => (bool) $pack->is_enabled ? '1' : '0',
+            'runtime_schedule_enabled' => (bool) ($pack->runtime_schedule_enabled ?? false) ? '1' : '0',
+            'runtime_schedule_cron' => is_string($pack->runtime_schedule_cron ?? null) ? $pack->runtime_schedule_cron : '',
+            'runtime_schedule_timezone' => is_string($pack->runtime_schedule_timezone ?? null) ? $pack->runtime_schedule_timezone : '',
+            'runtime_schedule_last_slot' => is_string($pack->runtime_schedule_last_slot ?? null) ? $pack->runtime_schedule_last_slot : '',
             'installed_at' => $pack->installed_at !== null ? (string) $pack->installed_at : '',
             'enabled_at' => $pack->enabled_at !== null ? (string) $pack->enabled_at : '',
             'disabled_at' => $pack->disabled_at !== null ? (string) $pack->disabled_at : '',
@@ -694,6 +1222,17 @@ class AutomationCatalogRepository
             'target_subject_id' => is_string($mapping->target_subject_id) ? $mapping->target_subject_id : '',
             'workflow_key' => is_string($mapping->workflow_key) ? $mapping->workflow_key : '',
             'transition_key' => is_string($mapping->transition_key) ? $mapping->transition_key : '',
+            'target_binding_mode' => is_string($mapping->target_binding_mode) ? $mapping->target_binding_mode : 'explicit',
+            'target_scope_id' => is_string($mapping->target_scope_id) ? $mapping->target_scope_id : '',
+            'target_selector_json' => is_string($mapping->target_selector_json) ? $mapping->target_selector_json : '',
+            'posture_propagation_policy' => is_string($mapping->posture_propagation_policy) ? $mapping->posture_propagation_policy : 'disabled',
+            'execution_mode' => is_string($mapping->execution_mode) ? $mapping->execution_mode : 'both',
+            'on_fail_policy' => is_string($mapping->on_fail_policy) ? $mapping->on_fail_policy : 'no-op',
+            'evidence_policy' => is_string($mapping->evidence_policy) ? $mapping->evidence_policy : 'always',
+            'runtime_retry_max_attempts' => is_numeric($mapping->runtime_retry_max_attempts ?? null) ? (string) ((int) $mapping->runtime_retry_max_attempts) : '0',
+            'runtime_retry_backoff_ms' => is_numeric($mapping->runtime_retry_backoff_ms ?? null) ? (string) ((int) $mapping->runtime_retry_backoff_ms) : '0',
+            'runtime_max_targets' => is_numeric($mapping->runtime_max_targets ?? null) ? (string) ((int) $mapping->runtime_max_targets) : '200',
+            'runtime_payload_max_kb' => is_numeric($mapping->runtime_payload_max_kb ?? null) ? (string) ((int) $mapping->runtime_payload_max_kb) : '512',
             'is_active' => (bool) $mapping->is_active ? '1' : '0',
             'last_applied_at' => $mapping->last_applied_at !== null ? (string) $mapping->last_applied_at : '',
             'last_status' => is_string($mapping->last_status) ? $mapping->last_status : 'never',
@@ -703,6 +1242,100 @@ class AutomationCatalogRepository
             'created_at' => (string) $mapping->created_at,
             'updated_at' => (string) $mapping->updated_at,
         ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function mapPackRun(object $run): array
+    {
+        return [
+            'id' => (string) $run->id,
+            'automation_pack_id' => (string) $run->automation_pack_id,
+            'organization_id' => (string) $run->organization_id,
+            'scope_id' => is_string($run->scope_id) ? $run->scope_id : '',
+            'trigger_mode' => is_string($run->trigger_mode) ? $run->trigger_mode : 'manual',
+            'status' => is_string($run->status) ? $run->status : 'running',
+            'started_at' => (string) $run->started_at,
+            'finished_at' => $run->finished_at !== null ? (string) $run->finished_at : '',
+            'duration_ms' => $run->duration_ms !== null ? (string) $run->duration_ms : '',
+            'total_mappings' => (string) ($run->total_mappings ?? 0),
+            'success_count' => (string) ($run->success_count ?? 0),
+            'failed_count' => (string) ($run->failed_count ?? 0),
+            'skipped_count' => (string) ($run->skipped_count ?? 0),
+            'summary' => is_string($run->summary) ? $run->summary : '',
+            'failure_reason' => is_string($run->failure_reason) ? $run->failure_reason : '',
+            'initiated_by_principal_id' => is_string($run->initiated_by_principal_id) ? $run->initiated_by_principal_id : '',
+            'initiated_by_membership_id' => is_string($run->initiated_by_membership_id) ? $run->initiated_by_membership_id : '',
+            'created_at' => (string) $run->created_at,
+            'updated_at' => (string) $run->updated_at,
+        ];
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function mapCheckResult(object $result): array
+    {
+        return [
+            'id' => (string) $result->id,
+            'automation_pack_run_id' => (string) $result->automation_pack_run_id,
+            'automation_pack_id' => (string) $result->automation_pack_id,
+            'automation_output_mapping_id' => is_string($result->automation_output_mapping_id) ? $result->automation_output_mapping_id : '',
+            'organization_id' => (string) $result->organization_id,
+            'scope_id' => is_string($result->scope_id) ? $result->scope_id : '',
+            'trigger_mode' => is_string($result->trigger_mode) ? $result->trigger_mode : 'manual',
+            'mapping_kind' => is_string($result->mapping_kind) ? $result->mapping_kind : 'evidence-refresh',
+            'target_subject_type' => is_string($result->target_subject_type) ? $result->target_subject_type : '',
+            'target_subject_id' => is_string($result->target_subject_id) ? $result->target_subject_id : '',
+            'status' => is_string($result->status) ? $result->status : 'failed',
+            'outcome' => is_string($result->outcome) ? $result->outcome : 'error',
+            'severity' => is_string($result->severity) ? $result->severity : '',
+            'message' => is_string($result->message) ? $result->message : '',
+            'artifact_id' => is_string($result->artifact_id ?? null) ? $result->artifact_id : '',
+            'evidence_id' => is_string($result->evidence_id ?? null) ? $result->evidence_id : '',
+            'finding_id' => is_string($result->finding_id ?? null) ? $result->finding_id : '',
+            'remediation_action_id' => is_string($result->remediation_action_id ?? null) ? $result->remediation_action_id : '',
+            'idempotency_key' => is_string($result->idempotency_key ?? null) ? $result->idempotency_key : '',
+            'attempt_count' => is_numeric($result->attempt_count ?? null) ? (string) ((int) $result->attempt_count) : '1',
+            'retry_count' => is_numeric($result->retry_count ?? null) ? (string) ((int) $result->retry_count) : '0',
+            'checked_at' => (string) $result->checked_at,
+            'created_at' => (string) $result->created_at,
+            'updated_at' => (string) $result->updated_at,
+        ];
+    }
+
+    private function checkResultSupportsTraceabilityColumns(): bool
+    {
+        static $supported = null;
+
+        if (is_bool($supported)) {
+            return $supported;
+        }
+
+        $schema = DB::getSchemaBuilder();
+        $supported = $schema->hasColumn('automation_check_results', 'artifact_id')
+            && $schema->hasColumn('automation_check_results', 'evidence_id')
+            && $schema->hasColumn('automation_check_results', 'finding_id')
+            && $schema->hasColumn('automation_check_results', 'remediation_action_id');
+
+        return $supported;
+    }
+
+    private function checkResultSupportsRetryColumns(): bool
+    {
+        static $supported = null;
+
+        if (is_bool($supported)) {
+            return $supported;
+        }
+
+        $schema = DB::getSchemaBuilder();
+        $supported = $schema->hasColumn('automation_check_results', 'idempotency_key')
+            && $schema->hasColumn('automation_check_results', 'attempt_count')
+            && $schema->hasColumn('automation_check_results', 'retry_count');
+
+        return $supported;
     }
 
     /**
@@ -790,6 +1423,12 @@ class AutomationCatalogRepository
             }
 
             DB::table('automation_packs')->insert([
+                ...($this->packSupportsRuntimeScheduleColumns() ? [
+                    'runtime_schedule_enabled' => false,
+                    'runtime_schedule_cron' => null,
+                    'runtime_schedule_timezone' => null,
+                    'runtime_schedule_last_slot' => null,
+                ] : []),
                 'id' => 'automation-pack-'.Str::lower(Str::ulid()),
                 'organization_id' => $organizationId,
                 'scope_id' => $scopeId !== '' ? $scopeId : null,
@@ -872,5 +1511,39 @@ class AutomationCatalogRepository
         $encoded = json_encode($value, JSON_UNESCAPED_SLASHES);
 
         return is_string($encoded) ? $encoded : '{}';
+    }
+
+    private function packSupportsRuntimeScheduleColumns(): bool
+    {
+        static $supported = null;
+
+        if (is_bool($supported)) {
+            return $supported;
+        }
+
+        $schema = DB::getSchemaBuilder();
+        $supported = $schema->hasColumn('automation_packs', 'runtime_schedule_enabled')
+            && $schema->hasColumn('automation_packs', 'runtime_schedule_cron')
+            && $schema->hasColumn('automation_packs', 'runtime_schedule_timezone')
+            && $schema->hasColumn('automation_packs', 'runtime_schedule_last_slot');
+
+        return $supported;
+    }
+
+    private function mappingSupportsRuntimeGuardrailColumns(): bool
+    {
+        static $supported = null;
+
+        if (is_bool($supported)) {
+            return $supported;
+        }
+
+        $schema = DB::getSchemaBuilder();
+        $supported = $schema->hasColumn('automation_pack_output_mappings', 'runtime_retry_max_attempts')
+            && $schema->hasColumn('automation_pack_output_mappings', 'runtime_retry_backoff_ms')
+            && $schema->hasColumn('automation_pack_output_mappings', 'runtime_max_targets')
+            && $schema->hasColumn('automation_pack_output_mappings', 'runtime_payload_max_kb');
+
+        return $supported;
     }
 }

@@ -11,6 +11,9 @@ use PymeSec\Core\UI\ScreenDefinition;
 use PymeSec\Core\UI\ScreenRenderContext;
 use PymeSec\Core\UI\ToolbarAction;
 use PymeSec\Core\Workflows\Contracts\WorkflowRegistryInterface;
+use PymeSec\Plugins\AutomationCatalog\Runtime\AutomationPackRuntimeExecutorRegistry;
+use PymeSec\Plugins\AutomationCatalog\Runtime\GenericPackRuntimeExecutor;
+use PymeSec\Plugins\AutomationCatalog\Runtime\HelloWorldPackRuntimeExecutor;
 
 class AutomationCatalogPlugin implements PluginInterface
 {
@@ -18,7 +21,18 @@ class AutomationCatalogPlugin implements PluginInterface
     {
         $context->app()->singleton(AutomationCatalogRepository::class, fn () => new AutomationCatalogRepository);
         $context->app()->singleton(AutomationOutputMappingDeliveryService::class);
+        $context->app()->singleton(AutomationTargetPosturePropagationService::class);
+        $context->app()->singleton(AutomationFailureFindingService::class);
         $context->app()->singleton(AutomationPackageRepositorySyncService::class);
+        $context->app()->singleton(HelloWorldPackRuntimeExecutor::class);
+        $context->app()->singleton(GenericPackRuntimeExecutor::class);
+        $context->app()->singleton(AutomationPackRuntimeExecutorRegistry::class, function ($app): AutomationPackRuntimeExecutorRegistry {
+            return new AutomationPackRuntimeExecutorRegistry([
+                $app->make(HelloWorldPackRuntimeExecutor::class),
+                $app->make(GenericPackRuntimeExecutor::class),
+            ]);
+        });
+        $context->app()->singleton(AutomationPackRuntimeService::class);
 
         $context->registerScreen(new ScreenDefinition(
             menuId: 'plugin.automation-catalog.root',
@@ -109,11 +123,37 @@ class AutomationCatalogPlugin implements PluginInterface
 
         $selectedPackMappings = is_array($selectedPack)
             ? array_map(function (array $mapping): array {
+                $selector = json_decode((string) ($mapping['target_selector_json'] ?? ''), true);
+                $selectorTags = is_array($selector['tags'] ?? null)
+                    ? implode(', ', array_values(array_filter(array_map(static fn ($tag): string => is_string($tag) ? $tag : '', $selector['tags']), static fn (string $tag): bool => $tag !== '')))
+                    : '';
+
                 return [
                     ...$mapping,
                     'mapping_kind_label' => $mapping['mapping_kind'] === 'workflow-transition' ? 'Workflow transition' : 'Evidence refresh',
+                    'target_binding_mode_label' => ($mapping['target_binding_mode'] ?? 'explicit') === 'scope' ? 'Scope resolver' : 'Explicit object',
+                    'posture_propagation_policy_label' => ($mapping['posture_propagation_policy'] ?? 'disabled') === 'status-only'
+                        ? 'Status only'
+                        : 'Disabled',
+                    'execution_mode_label' => match ($mapping['execution_mode'] ?? 'both') {
+                        'runtime-only' => 'Runtime only',
+                        'manual-only' => 'Manual only',
+                        default => 'Both',
+                    },
+                    'on_fail_policy_label' => ($mapping['on_fail_policy'] ?? 'no-op') === 'raise-finding'
+                        ? 'Raise finding'
+                        : (($mapping['on_fail_policy'] ?? 'no-op') === 'raise-finding-and-action'
+                            ? 'Raise finding + action'
+                            : 'No-op'),
+                    'evidence_policy_label' => match ($mapping['evidence_policy'] ?? 'always') {
+                        'on-fail' => 'On fail',
+                        'on-change' => 'On change',
+                        default => 'Always',
+                    },
+                    'target_selector_tags' => $selectorTags,
                     'last_status_label' => match ($mapping['last_status']) {
                         'success' => 'Success',
+                        'skipped' => 'Skipped',
                         'failed' => 'Failed',
                         default => 'Never',
                     },
@@ -124,6 +164,69 @@ class AutomationCatalogPlugin implements PluginInterface
                 ];
             }, $repository->outputMappings((string) $selectedPack['id']))
             : [];
+        $selectedPackRuns = is_array($selectedPack)
+            ? array_map(static function (array $run): array {
+                return [
+                    ...$run,
+                    'status_label' => match ($run['status']) {
+                        'success' => 'Success',
+                        'partial' => 'Partial',
+                        'failed' => 'Failed',
+                        'running' => 'Running',
+                        default => ucwords(str_replace('-', ' ', $run['status'])),
+                    },
+                    'trigger_mode_label' => $run['trigger_mode'] === 'scheduled' ? 'Scheduled' : 'Manual',
+                ];
+            }, $repository->recentRunsForPack((string) $selectedPack['id'], 20))
+            : [];
+        $selectedPackCheckResults = [];
+        if (is_array($selectedPack)) {
+            $rawCheckResults = $repository->recentCheckResultsForPack((string) $selectedPack['id'], 25);
+            $findingByCheckResult = $repository->findingByCheckResultIds(array_map(static fn (array $result): string => (string) ($result['id'] ?? ''), $rawCheckResults));
+            $actionByCheckResult = $repository->remediationActionByCheckResultIds(array_map(static fn (array $result): string => (string) ($result['id'] ?? ''), $rawCheckResults));
+
+            $selectedPackCheckResults = array_map(function (array $result) use ($screenContext, $findingByCheckResult, $actionByCheckResult): array {
+                $resultId = (string) ($result['id'] ?? '');
+                $evidenceId = (string) ($result['evidence_id'] ?? '');
+                $findingId = (string) ($result['finding_id'] ?? '');
+                if ($findingId === '') {
+                    $findingId = $findingByCheckResult[$resultId] ?? '';
+                }
+                $actionId = (string) ($result['remediation_action_id'] ?? '');
+                if ($actionId === '') {
+                    $actionId = $actionByCheckResult[$resultId] ?? '';
+                }
+
+                return [
+                    ...$result,
+                    'status_label' => match ($result['status']) {
+                        'success' => 'Success',
+                        'skipped' => 'Skipped',
+                        'failed' => 'Failed',
+                        default => ucwords(str_replace('-', ' ', $result['status'])),
+                    },
+                    'outcome_label' => match ($result['outcome']) {
+                        'pass' => 'Pass',
+                        'fail' => 'Fail',
+                        'warn' => 'Warn',
+                        'not-applicable' => 'Not applicable',
+                        default => ucwords(str_replace('-', ' ', $result['outcome'])),
+                    },
+                    'evidence_id' => $evidenceId,
+                    'evidence_open_url' => $evidenceId !== ''
+                        ? route('core.shell.index', [...$this->baseQuery($screenContext, false), 'menu' => 'plugin.evidence-management.root', 'evidence_id' => $evidenceId])
+                        : '',
+                    'finding_id' => $findingId,
+                    'finding_open_url' => $findingId !== ''
+                        ? route('core.shell.index', [...$this->baseQuery($screenContext, false), 'menu' => 'plugin.findings-remediation.root', 'finding_id' => $findingId])
+                        : '',
+                    'action_id' => $actionId,
+                    'action_open_url' => $actionId !== '' && $findingId !== ''
+                        ? route('core.shell.index', [...$this->baseQuery($screenContext, false), 'menu' => 'plugin.findings-remediation.root', 'finding_id' => $findingId, 'action_id' => $actionId])
+                        : '',
+                ];
+            }, $rawCheckResults);
+        }
 
         $workflowCatalog = array_map(static function ($definition): array {
             return [
@@ -230,6 +333,8 @@ class AutomationCatalogPlugin implements PluginInterface
             }, $installedPacks),
             'selected_pack' => $selectedPack,
             'selected_pack_output_mappings' => $selectedPackMappings,
+            'selected_pack_runs' => $selectedPackRuns,
+            'selected_pack_check_results' => $selectedPackCheckResults,
             'can_manage_packs' => $canManagePacks,
             'query' => $this->baseQuery($screenContext),
             'list_query' => $this->baseQuery($screenContext, false),
@@ -240,6 +345,9 @@ class AutomationCatalogPlugin implements PluginInterface
             'official_repository_install_route' => route('plugin.automation-catalog.repositories.install-official'),
             'output_mapping_store_route' => is_array($selectedPack)
                 ? route('plugin.automation-catalog.output-mappings.store', ['packId' => $selectedPack['id']])
+                : null,
+            'runtime_run_route' => is_array($selectedPack)
+                ? route('plugin.automation-catalog.run', ['packId' => $selectedPack['id']])
                 : null,
             'show_pack_editor' => ! $showDetailOnly && $activePanel === 'pack-editor',
             'show_repository_panel' => $showRepositoryPanel,
