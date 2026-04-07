@@ -78,6 +78,22 @@ Automations should be:
 
 The open-source model fits a catalog better than a closed commercial marketplace.
 
+### 4. API-first parity for all actions
+
+All relevant product actions should be available both:
+
+- from the web UI
+- from authenticated and authorized REST API endpoints
+
+This includes, at minimum:
+
+- create, update, state-transition, assignment, and approval actions
+- evidence/attachment upload and linkage actions
+- automation catalog lifecycle actions (repository, install, enable/disable, run)
+- external collaboration lifecycle actions (invite, revoke, expiry handling)
+
+The roadmap should treat API parity as a product capability, not only an internal engineering preference.
+
 ## Priority Order
 
 ## 1. Third-Party Risk / Vendor Review Workspace
