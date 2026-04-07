@@ -1,20 +1,20 @@
 diff --git a/core/bootstrap/app.php b/core/bootstrap/app.php
-index d899c4d0ea6c024a368304723b3ea648fdcf3fe9..13d05951bad9807435fd2dab4ca3c3b63216f6d1 100644
+index 0562a9e324d92fcda09bbcfcd22db706b43bb925..3171a25b10428d61a8adbc14fdffdd9d231ab978 100644
 --- a/core/bootstrap/app.php
 +++ b/core/bootstrap/app.php
-@@ -2,6 +2,7 @@
- 
+@@ -3,6 +3,7 @@
+ use App\Http\Middleware\AuditHttpOperation;
  use App\Http\Middleware\AuthorizePermission;
  use App\Http\Middleware\CanonicalizeAuthenticatedPrincipal;
 +use App\Http\Middleware\UseDemoDatabase;
- use Illuminate\Foundation\Application;
- use Illuminate\Foundation\Configuration\Exceptions;
- use Illuminate\Foundation\Configuration\Middleware;
-@@ -15,6 +16,7 @@
+ use App\Http\Middleware\ResolveApiPrincipal;
+ use Illuminate\Auth\Access\AuthorizationException;
+ use Illuminate\Auth\AuthenticationException;
+@@ -23,6 +24,7 @@
      ->withMiddleware(function (Middleware $middleware): void {
          $middleware->web(append: [
              CanonicalizeAuthenticatedPrincipal::class,
 +            UseDemoDatabase::class,
+             AuditHttpOperation::class,
          ]);
  
-         $middleware->alias([

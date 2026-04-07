@@ -1,18 +1,18 @@
 diff --git a/core/routes/console.php b/core/routes/console.php
-index 2aab13f1587af7ae1903a4685b4cbbe4168a19de..be0f11bec12dd0e2d074e415aae759c1db66e97a 100644
+index 520175a080cf8174c19287158622b820d6e61023..1eed35ef2d0aa841fae46b6557c29f6361c34811 100644
 --- a/core/routes/console.php
 +++ b/core/routes/console.php
-@@ -2,6 +2,7 @@
- 
+@@ -3,6 +3,7 @@
+ use Carbon\CarbonImmutable;
  use Illuminate\Foundation\Inspiring;
  use Illuminate\Support\Facades\Artisan;
 +use Illuminate\Support\Facades\File;
  use PymeSec\Core\Artifacts\Contracts\ArtifactServiceInterface;
  use PymeSec\Core\Audit\AuditRecordData;
  use PymeSec\Core\Audit\Contracts\AuditTrailInterface;
-@@ -17,11 +18,52 @@
- use PymeSec\Core\Tenancy\Contracts\TenancyServiceInterface;
- use PymeSec\Core\Workflows\Contracts\WorkflowRegistryInterface;
+@@ -22,11 +23,52 @@
+ use PymeSec\Plugins\AutomationCatalog\AutomationCatalogRepository;
+ use PymeSec\Plugins\AutomationCatalog\AutomationPackRuntimeService;
  use PymeSec\Plugins\EvidenceManagement\EvidenceManagementRepository;
 +use App\Demo\DemoSessionManager;
  
@@ -60,6 +60,6 @@ index 2aab13f1587af7ae1903a4685b4cbbe4168a19de..be0f11bec12dd0e2d074e415aae759c1
 +    }
 +})->purpose('Build the demo SQLite template and clear stale session databases');
 +
- Artisan::command('plugins:list', function (PluginManagerInterface $plugins) {
-     $rows = array_map(static fn (array $plugin): array => [
-         $plugin['id'],
+ Artisan::command('openapi:generate {--output=}', function (OpenApiDocumentBuilder $openApi) {
+     $output = (string) $this->option('output');
+ 
