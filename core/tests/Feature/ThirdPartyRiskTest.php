@@ -879,4 +879,382 @@ class ThirdPartyRiskTest extends TestCase
             ->where('id', $assignmentId)
             ->value('is_active'));
     }
+
+    public function test_vendor_api_endpoints_support_vendor_management_crud(): void
+    {
+        $base = [
+            'principal_id' => 'principal-org-a',
+            'organization_id' => 'org-a',
+            'membership_id' => 'membership-org-a-hello',
+        ];
+
+        $this->getJson('/api/v1/vendors?'.http_build_query([
+            'principal_id' => 'principal-org-a',
+            'organization_id' => 'org-a',
+            'scope_id' => 'scope-eu',
+            'membership_ids' => ['membership-org-a-hello'],
+        ]))
+            ->assertOk()
+            ->assertJsonFragment(['id' => 'vendor-northbridge-payroll']);
+
+        $this->getJson('/api/v1/vendors/vendor-northbridge-payroll?'.http_build_query([
+            'principal_id' => 'principal-org-a',
+            'organization_id' => 'org-a',
+            'scope_id' => 'scope-eu',
+            'membership_ids' => ['membership-org-a-hello'],
+        ]))
+            ->assertOk()
+            ->assertJsonPath('data.current_review.id', 'vendor-review-northbridge-payroll-2026');
+
+        $created = $this->postJson('/api/v1/vendors', [
+            ...$base,
+            'scope_id' => 'scope-eu',
+            'legal_name' => 'Supplier Review Partner',
+            'service_summary' => 'Security questionnaire intake and review support.',
+            'tier' => 'high',
+            'website' => 'https://supplier-review-partner.test',
+            'primary_contact_name' => 'Julia West',
+            'primary_contact_email' => 'julia.west@supplier-review-partner.test',
+            'review_profile_id' => 'vendor-review-profile-eu-payroll-processor',
+            'questionnaire_template_id' => 'vendor-questionnaire-template-payroll-baseline',
+            'review_title' => '2026 onboarding review',
+            'inherent_risk' => 'high',
+            'review_summary' => 'Initial due diligence for outsourced questionnaire handling.',
+            'decision_notes' => 'Pending evidence upload.',
+            'linked_asset_id' => 'asset-erp-prod',
+            'linked_control_id' => 'control-access-review',
+            'linked_risk_id' => 'risk-access-drift',
+            'linked_finding_id' => 'finding-access-review-gap',
+            'next_review_due_on' => now()->addDays(60)->toDateString(),
+            'owner_actor_id' => 'actor-ava-mason',
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.vendor.legal_name', 'Supplier Review Partner')
+            ->assertJsonPath('data.review.title', '2026 onboarding review');
+
+        $vendorId = (string) $created->json('data.vendor.id');
+        $reviewId = (string) $created->json('data.review.id');
+
+        $this->assertNotSame('', $vendorId);
+        $this->assertNotSame('', $reviewId);
+        $this->assertDatabaseHas('vendors', [
+            'id' => $vendorId,
+            'legal_name' => 'Supplier Review Partner',
+            'organization_id' => 'org-a',
+        ]);
+
+        $this->patchJson("/api/v1/vendors/{$vendorId}/reviews/{$reviewId}", [
+            ...$base,
+            'scope_id' => 'scope-eu',
+            'legal_name' => 'Supplier Review Partner Ltd',
+            'service_summary' => 'Security questionnaire intake, evidence review, and follow-up support.',
+            'tier' => 'critical',
+            'website' => 'https://supplier-review-partner.test',
+            'primary_contact_name' => 'Julia West',
+            'primary_contact_email' => 'julia.west@supplier-review-partner.test',
+            'review_profile_id' => 'vendor-review-profile-eu-payroll-processor',
+            'questionnaire_template_id' => 'vendor-questionnaire-template-payroll-baseline',
+            'review_title' => '2026 onboarding review',
+            'inherent_risk' => 'critical',
+            'review_summary' => 'Expanded due diligence for outsourced questionnaire intake and evidence review.',
+            'decision_notes' => 'Escalate privileged access evidence before approval.',
+            'linked_asset_id' => 'asset-erp-prod',
+            'linked_control_id' => 'control-access-review',
+            'linked_risk_id' => 'risk-access-drift',
+            'linked_finding_id' => 'finding-access-review-gap',
+            'next_review_due_on' => now()->addDays(45)->toDateString(),
+            'owner_actor_id' => 'actor-compliance-office',
+        ])
+            ->assertOk()
+            ->assertJsonPath('data.vendor.legal_name', 'Supplier Review Partner Ltd')
+            ->assertJsonPath('data.review.inherent_risk', 'critical');
+
+        $this->assertDatabaseHas('functional_assignments', [
+            'domain_object_type' => 'vendor-review',
+            'domain_object_id' => $reviewId,
+            'assignment_type' => 'owner',
+            'functional_actor_id' => 'actor-compliance-office',
+            'is_active' => true,
+        ]);
+    }
+
+    public function test_vendor_api_endpoints_support_collaboration_questionnaires_brokered_and_workflow_flows(): void
+    {
+        $base = [
+            'principal_id' => 'principal-org-a',
+            'organization_id' => 'org-a',
+            'membership_id' => 'membership-org-a-hello',
+        ];
+
+        $this->postJson('/api/v1/vendors/vendor-northbridge-payroll/reviews/vendor-review-northbridge-payroll-2026/collaboration/comments', [
+            ...$base,
+            'body' => 'API collaboration comment for vendor review.',
+            'mentioned_actor_ids' => ['actor-ava-mason'],
+        ])->assertOk()
+            ->assertJsonPath('data.body', 'API collaboration comment for vendor review.');
+
+        $request = $this->postJson('/api/v1/vendors/vendor-northbridge-payroll/reviews/vendor-review-northbridge-payroll-2026/collaboration/requests', [
+            ...$base,
+            'title' => 'API follow-up request',
+            'details' => 'Validate final emergency access evidence package.',
+            'status' => 'open',
+            'priority' => 'urgent',
+            'handoff_state' => 'review',
+            'mentioned_actor_ids' => ['actor-ava-mason'],
+            'assigned_actor_id' => 'actor-compliance-office',
+            'due_on' => now()->addDays(2)->toDateString(),
+        ])->assertOk()
+            ->assertJsonPath('data.status', 'open');
+
+        $requestId = (string) $request->json('data.id');
+        $this->assertNotSame('', $requestId);
+
+        $this->patchJson("/api/v1/vendors/vendor-northbridge-payroll/reviews/vendor-review-northbridge-payroll-2026/collaboration/requests/{$requestId}", [
+            ...$base,
+            'title' => 'API follow-up request',
+            'details' => 'Validated and pending management sign-off.',
+            'status' => 'waiting',
+            'priority' => 'urgent',
+            'handoff_state' => 'approval',
+            'mentioned_actor_ids' => ['actor-ava-mason'],
+            'assigned_actor_id' => 'actor-compliance-office',
+            'due_on' => now()->addDays(2)->toDateString(),
+        ])->assertOk()
+            ->assertJsonPath('data.status', 'waiting')
+            ->assertJsonPath('data.handoff_state', 'approval');
+
+        $brokered = $this->postJson('/api/v1/vendors/vendor-northbridge-payroll/reviews/vendor-review-northbridge-payroll-2026/brokered-requests', [
+            ...$base,
+            'contact_name' => 'Alicia Brown',
+            'contact_email' => 'alicia.brown@northbridge-payroll.test',
+            'collection_channel' => 'email',
+            'instructions' => 'Collect the latest access certification statement over email.',
+        ])->assertOk()
+            ->assertJsonPath('data.collection_status', 'queued');
+
+        $brokeredId = (string) $brokered->json('data.id');
+        $this->assertNotSame('', $brokeredId);
+
+        $this->patchJson("/api/v1/vendors/vendor-northbridge-payroll/reviews/vendor-review-northbridge-payroll-2026/brokered-requests/{$brokeredId}", [
+            ...$base,
+            'collection_status' => 'submitted',
+            'broker_notes' => 'Collected by email and ready for reviewer validation.',
+        ])->assertOk()
+            ->assertJsonPath('data.collection_status', 'submitted');
+
+        $item = $this->postJson('/api/v1/vendors/vendor-northbridge-payroll/reviews/vendor-review-northbridge-payroll-2026/questionnaire-items', [
+            ...$base,
+            'section_title' => 'Evidence handling',
+            'prompt' => 'Is privileged support protected with MFA?',
+            'response_type' => 'yes-no',
+            'attachment_mode' => 'supporting-document',
+            'attachment_upload_profile' => 'documents_only',
+            'is_required' => true,
+        ])->assertOk()
+            ->assertJsonPath('data.prompt', 'Is privileged support protected with MFA?');
+
+        $itemId = (string) $item->json('data.id');
+        $this->assertNotSame('', $itemId);
+
+        $this->patchJson("/api/v1/vendors/vendor-northbridge-payroll/reviews/vendor-review-northbridge-payroll-2026/questionnaire-items/{$itemId}", [
+            ...$base,
+            'section_title' => 'Access governance',
+            'prompt' => 'Is privileged support protected with MFA?',
+            'response_type' => 'yes-no',
+            'response_status' => 'accepted',
+            'attachment_mode' => 'supporting-document',
+            'attachment_upload_profile' => 'documents_only',
+            'is_required' => true,
+            'answer_text' => 'Yes. MFA is required.',
+            'follow_up_notes' => 'Validated against privileged access standard.',
+        ])->assertOk()
+            ->assertJsonPath('data.response_status', 'accepted');
+
+        $this->patchJson("/api/v1/vendors/vendor-northbridge-payroll/reviews/vendor-review-northbridge-payroll-2026/questionnaire-items/{$itemId}/review", [
+            ...$base,
+            'response_status' => 'accepted',
+            'review_notes' => 'Accepted after internal validation.',
+        ])->assertOk()
+            ->assertJsonPath('data.review_notes', 'Accepted after internal validation.');
+
+        $this->postJson('/api/v1/vendors/vendor-northbridge-payroll/reviews/vendor-review-northbridge-payroll-2026/questionnaire-template/apply', [
+            ...$base,
+            'questionnaire_template_id' => 'vendor-questionnaire-template-payroll-baseline',
+        ])->assertOk()
+            ->assertJsonPath('data.created_items', 1);
+
+        $this->postJson('/api/v1/vendors/vendor-northbridge-payroll/reviews/vendor-review-northbridge-payroll-2026/transitions/start-review', $base)
+            ->assertOk()
+            ->assertJsonPath('data.transition', 'start-review');
+
+        $this->assertDatabaseHas('workflow_instances', [
+            'workflow_key' => 'plugin.third-party-risk.review-lifecycle',
+            'subject_type' => 'vendor-review',
+            'subject_id' => 'vendor-review-northbridge-payroll-2026',
+            'current_state' => 'in-review',
+        ]);
+    }
+
+    public function test_vendor_api_endpoints_support_external_links_drafts_and_owner_removal(): void
+    {
+        $base = [
+            'principal_id' => 'principal-org-a',
+            'organization_id' => 'org-a',
+            'membership_id' => 'membership-org-a-hello',
+        ];
+
+        $external = $this->postJson('/api/v1/vendors/vendor-northbridge-payroll/reviews/vendor-review-northbridge-payroll-2026/external-links', [
+            ...$base,
+            'contact_name' => 'Nina Walsh',
+            'contact_email' => 'nina.walsh@northbridge-payroll.test',
+            'can_answer_questionnaire' => true,
+            'can_upload_artifacts' => true,
+            'expires_at' => now()->addDay()->toIso8601String(),
+        ])->assertOk()
+            ->assertJsonPath('data.link.contact_email', 'nina.walsh@northbridge-payroll.test')
+            ->assertJsonPath('data.link.can_answer_questionnaire', '1')
+            ->assertJsonPath('data.link.can_upload_artifacts', '1');
+
+        $linkId = (string) $external->json('data.link.id');
+        $collaboratorId = (string) $external->json('data.link.collaborator_id');
+
+        $this->assertNotSame('', $linkId);
+        $this->assertNotSame('', $collaboratorId);
+        $this->assertNotSame('', (string) $external->json('data.portal_token'));
+        $this->assertStringContainsString('/external/vendor-review/', (string) $external->json('data.portal_url'));
+
+        $this->patchJson("/api/v1/vendors/vendor-northbridge-payroll/reviews/vendor-review-northbridge-payroll-2026/external-collaborators/{$collaboratorId}", [
+            ...$base,
+            'lifecycle_state' => 'blocked',
+        ])->assertOk()
+            ->assertJsonPath('data.lifecycle_state', 'blocked');
+
+        $this->patchJson("/api/v1/vendors/vendor-northbridge-payroll/reviews/vendor-review-northbridge-payroll-2026/external-links/{$linkId}/revoke", $base)
+            ->assertOk();
+
+        $commentDraft = $this->postJson('/api/v1/vendors/vendor-northbridge-payroll/reviews/vendor-review-northbridge-payroll-2026/collaboration/drafts', [
+            ...$base,
+            'draft_type' => 'comment',
+            'body' => 'Draft note from API before publishing the final comment.',
+            'mentioned_actor_ids' => ['actor-ava-mason'],
+        ])->assertOk();
+
+        $commentDraftId = (string) $commentDraft->json('data.id');
+        $this->assertNotSame('', $commentDraftId);
+
+        $requestDraft = $this->postJson('/api/v1/vendors/vendor-northbridge-payroll/reviews/vendor-review-northbridge-payroll-2026/collaboration/drafts', [
+            ...$base,
+            'draft_type' => 'request',
+            'title' => 'Prepare final approval note',
+            'details' => 'Keep the approval handoff note ready once the signed evidence pack lands.',
+            'priority' => 'high',
+            'handoff_state' => 'approval',
+            'mentioned_actor_ids' => ['actor-compliance-office'],
+            'assigned_actor_id' => 'actor-ava-mason',
+            'due_on' => now()->addDays(3)->toDateString(),
+        ])->assertOk();
+
+        $requestDraftId = (string) $requestDraft->json('data.id');
+        $this->assertNotSame('', $requestDraftId);
+
+        $this->patchJson("/api/v1/vendors/vendor-northbridge-payroll/reviews/vendor-review-northbridge-payroll-2026/collaboration/drafts/{$requestDraftId}", [
+            ...$base,
+            'draft_type' => 'request',
+            'title' => 'Prepare final approval note',
+            'details' => 'Include emergency access evidence summary before sign-off.',
+            'priority' => 'urgent',
+            'handoff_state' => 'approval',
+            'mentioned_actor_ids' => ['actor-ava-mason'],
+            'assigned_actor_id' => 'actor-compliance-office',
+            'due_on' => now()->addDays(2)->toDateString(),
+        ])->assertOk()
+            ->assertJsonPath('data.priority', 'urgent');
+
+        $this->postJson("/api/v1/vendors/vendor-northbridge-payroll/reviews/vendor-review-northbridge-payroll-2026/collaboration/drafts/{$commentDraftId}/promote-comment", $base)
+            ->assertOk()
+            ->assertJsonPath('data.body', 'Draft note from API before publishing the final comment.');
+
+        $this->postJson("/api/v1/vendors/vendor-northbridge-payroll/reviews/vendor-review-northbridge-payroll-2026/collaboration/drafts/{$requestDraftId}/promote-request", $base)
+            ->assertOk()
+            ->assertJsonPath('data.title', 'Prepare final approval note');
+
+        $this->assertDatabaseMissing('collaboration_drafts', ['id' => $commentDraftId]);
+        $this->assertDatabaseMissing('collaboration_drafts', ['id' => $requestDraftId]);
+
+        $ownerAssignmentId = (string) DB::table('functional_assignments')
+            ->where('domain_object_type', 'vendor-review')
+            ->where('domain_object_id', 'vendor-review-northbridge-payroll-2026')
+            ->where('assignment_type', 'owner')
+            ->where('functional_actor_id', 'actor-ava-mason')
+            ->where('is_active', true)
+            ->value('id');
+
+        $this->assertNotSame('', $ownerAssignmentId);
+
+        $this->patchJson("/api/v1/vendors/vendor-northbridge-payroll/reviews/vendor-review-northbridge-payroll-2026/owners/{$ownerAssignmentId}/remove", $base)
+            ->assertOk()
+            ->assertJsonPath('data.assignment_id', $ownerAssignmentId)
+            ->assertJsonPath('data.removed', true);
+
+        $this->assertDatabaseHas('functional_assignments', [
+            'id' => $ownerAssignmentId,
+            'is_active' => false,
+        ]);
+    }
+
+    public function test_vendor_api_endpoints_support_vendor_and_questionnaire_artifact_uploads(): void
+    {
+        Storage::fake('local');
+
+        $base = [
+            'principal_id' => 'principal-org-a',
+            'organization_id' => 'org-a',
+            'membership_id' => 'membership-org-a-hello',
+        ];
+
+        $reviewArtifact = $this->post(
+            '/api/v1/vendors/vendor-northbridge-payroll/reviews/vendor-review-northbridge-payroll-2026/artifacts',
+            [
+                ...$base,
+                'label' => 'Payroll package',
+                'artifact_type' => 'evidence',
+                'artifact' => UploadedFile::fake()->createWithContent('payroll-package.pdf', 'payroll evidence'),
+            ],
+            ['Accept' => 'application/json'],
+        )->assertOk()
+            ->assertJsonPath('data.subject_type', 'vendor-review')
+            ->assertJsonPath('data.subject_id', 'vendor-review-northbridge-payroll-2026')
+            ->assertJsonPath('data.label', 'Payroll package');
+
+        $reviewArtifactId = (string) $reviewArtifact->json('data.id');
+        $this->assertNotSame('', $reviewArtifactId);
+        $this->assertDatabaseHas('artifacts', [
+            'id' => $reviewArtifactId,
+            'subject_type' => 'vendor-review',
+            'subject_id' => 'vendor-review-northbridge-payroll-2026',
+            'owner_component' => 'third-party-risk',
+        ]);
+
+        $questionnaireArtifact = $this->post(
+            '/api/v1/vendors/vendor-northbridge-payroll/reviews/vendor-review-northbridge-payroll-2026/questionnaire-items/vendor-question-northbridge-access-review/artifacts',
+            [
+                ...$base,
+                'label' => 'Signed access review package',
+                'artifact' => UploadedFile::fake()->createWithContent('signed-access-review.pdf', 'signed review body'),
+            ],
+            ['Accept' => 'application/json'],
+        )->assertOk()
+            ->assertJsonPath('data.subject_type', 'questionnaire-subject-item')
+            ->assertJsonPath('data.subject_id', 'vendor-question-northbridge-access-review')
+            ->assertJsonPath('data.label', 'Signed access review package');
+
+        $questionnaireArtifactId = (string) $questionnaireArtifact->json('data.id');
+        $this->assertNotSame('', $questionnaireArtifactId);
+        $this->assertDatabaseHas('artifacts', [
+            'id' => $questionnaireArtifactId,
+            'subject_type' => 'questionnaire-subject-item',
+            'subject_id' => 'vendor-question-northbridge-access-review',
+            'owner_component' => 'questionnaires',
+        ]);
+    }
 }

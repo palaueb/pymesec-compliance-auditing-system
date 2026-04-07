@@ -224,6 +224,8 @@ class PluginSystemTest extends TestCase
             ->expectsTable(
                 ['Key', 'Origin', 'Operation', 'Contexts'],
                 [
+                    ['core.api-tokens.manage', 'core', 'manage', 'platform'],
+                    ['core.api-tokens.view', 'core', 'view', 'platform'],
                     ['core.artifacts.manage', 'core', 'manage', 'platform'],
                     ['core.artifacts.view', 'core', 'view', 'platform'],
                     ['core.audit-logs.export', 'core', 'export', 'platform'],
@@ -410,6 +412,7 @@ class PluginSystemTest extends TestCase
                     ['core.reference-data', 'core', 'core.platform', 'core.reference-data.index', 'core.reference-data.view', 'admin', '35'],
                     ['core.audit', 'core', 'core.platform', 'core.audit.index', 'core.audit-logs.view', 'admin', '40'],
                     ['core.notifications', 'core', 'core.platform', 'core.notifications.index', 'core.notifications.view', 'admin', '45'],
+                    ['core.api-tokens', 'core', 'core.platform', 'core.api-tokens.index', 'core.api-tokens.view', 'admin', '50'],
                     ['plugin.asset-catalog.root', 'asset-catalog', '', 'plugin.asset-catalog.index', 'plugin.asset-catalog.assets.view', 'app', '20'],
                     ['plugin.asset-catalog.lifecycle', 'asset-catalog', 'plugin.asset-catalog.root', 'plugin.asset-catalog.lifecycle', 'plugin.asset-catalog.assets.view', 'app', '10'],
                     ['plugin.controls-catalog.root', 'controls-catalog', '', '', 'plugin.controls-catalog.controls.view', 'app', '25'],

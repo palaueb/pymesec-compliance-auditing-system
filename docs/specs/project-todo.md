@@ -38,12 +38,12 @@ Archived (non-canonical) backlog history:
 - [x] Expose relation lookup endpoints for dynamic write fields (actors, frameworks, controls, risks) and declare lookup sources per write contract.
 - [ ] Expand API domain coverage from current core/asset/risk/controls/assessments/findings (+ remediation actions and assessment reviews) baseline to all enabled product modules and workflows.
 - [ ] Expand route-owned OpenAPI contracts (and shared components where needed) to cover all enabled plugin domains with complete write/action contracts.
-- [ ] Complete API token lifecycle governance (issue/revoke/rotate/expiry/scope policy) with platform UI and audit controls.
-- [ ] Publish a stable versioned OpenAPI artifact endpoint for external tooling consumption with compatibility policy.
+- [x] Complete API token lifecycle governance (issue/revoke/rotate/expiry/scope policy) with platform UI and audit controls.
+- [x] Publish a stable versioned OpenAPI artifact endpoint for external tooling consumption with compatibility policy.
 
 ## Active Pending: Agent-First Surfaces and Distribution
 
-- [ ] Add and maintain root `SKILL.md` as the canonical agent usage guide for API/MCP capabilities.
+- [x] Add and maintain root `SKILL.md` as the canonical agent usage guide for API/MCP capabilities.
 - [ ] Publish an official MCP server implementation with tenancy, permission, and object-access enforcement parity.
 - [ ] Register official agent integration surfaces (MCP server + skill metadata) in discovery registries/context hubs.
 - [ ] Provide a versioned machine-readable sample dataset bundle (organization, scopes, assets, controls, risks, assessments, findings) for agent/integration onboarding.

@@ -19,6 +19,7 @@ class CoreAdministrationScreensTest extends TestCase
             'core.reference-data' => 'Reference catalogs',
             'core.audit' => 'Audit Trail',
             'core.notifications' => 'Notifications & Delivery',
+            'core.api-tokens' => 'API Tokens',
         ];
 
         foreach ($screens as $menu => $title) {

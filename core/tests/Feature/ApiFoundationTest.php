@@ -3,8 +3,11 @@
 namespace Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Http\UploadedFile;
 use Illuminate\Routing\Router;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
 
 class ApiFoundationTest extends TestCase
@@ -286,22 +289,789 @@ class ApiFoundationTest extends TestCase
             ->assertJsonPath('data.status', 'in-progress');
     }
 
+    public function test_core_domain_lifecycle_owner_and_artifact_api_endpoints_work(): void
+    {
+        Storage::fake('local');
+
+        $base = [
+            'principal_id' => 'principal-org-a',
+            'organization_id' => 'org-a',
+            'membership_id' => 'membership-org-a-hello',
+        ];
+
+        $assetCreate = $this->postJson('/api/v1/assets', [
+            ...$base,
+            'name' => 'API Lifecycle Asset',
+            'type' => 'application',
+            'criticality' => 'high',
+            'classification' => 'internal',
+            'scope_id' => 'scope-eu',
+            'owner_actor_id' => 'actor-ava-mason',
+        ])->assertOk();
+        $assetId = (string) $assetCreate->json('data.id');
+
+        $this->postJson("/api/v1/assets/{$assetId}/transitions/submit-review", [
+            ...$base,
+            'scope_id' => 'scope-eu',
+        ])->assertOk()->assertJsonPath('data.transition', 'submit-review');
+
+        $assetOwnerAssignmentId = (string) DB::table('functional_assignments')
+            ->where('domain_object_type', 'asset')
+            ->where('domain_object_id', $assetId)
+            ->where('assignment_type', 'owner')
+            ->where('functional_actor_id', 'actor-ava-mason')
+            ->where('is_active', true)
+            ->value('id');
+        $this->assertNotSame('', $assetOwnerAssignmentId);
+
+        $this->patchJson("/api/v1/assets/{$assetId}/owners/{$assetOwnerAssignmentId}/remove", $base)
+            ->assertOk()
+            ->assertJsonPath('data.removed', true);
+
+        $riskCreate = $this->postJson('/api/v1/risks', [
+            ...$base,
+            'title' => 'API Lifecycle Risk',
+            'category' => 'operations',
+            'inherent_score' => 45,
+            'residual_score' => 20,
+            'treatment' => 'Reduce onboarding exceptions',
+            'scope_id' => 'scope-eu',
+            'linked_asset_id' => $assetId,
+            'linked_control_id' => 'control-access-review',
+            'owner_actor_id' => 'actor-ava-mason',
+        ])->assertOk();
+        $riskId = (string) $riskCreate->json('data.id');
+
+        $this->postJson("/api/v1/risks/{$riskId}/transitions/start-assessment", [
+            ...$base,
+            'scope_id' => 'scope-eu',
+        ])->assertOk()->assertJsonPath('data.transition', 'start-assessment');
+
+        $this->post("/api/v1/risks/{$riskId}/artifacts", [
+            ...$base,
+            'label' => 'Risk evidence bundle',
+            'artifact_type' => 'evidence',
+            'artifact' => UploadedFile::fake()->createWithContent('risk-evidence.pdf', 'risk evidence'),
+        ], ['Accept' => 'application/json'])->assertOk()
+            ->assertJsonPath('data.subject_type', 'risk')
+            ->assertJsonPath('data.subject_id', $riskId);
+
+        $riskOwnerAssignmentId = (string) DB::table('functional_assignments')
+            ->where('domain_object_type', 'risk')
+            ->where('domain_object_id', $riskId)
+            ->where('assignment_type', 'owner')
+            ->where('functional_actor_id', 'actor-ava-mason')
+            ->where('is_active', true)
+            ->value('id');
+        $this->assertNotSame('', $riskOwnerAssignmentId);
+
+        $this->patchJson("/api/v1/risks/{$riskId}/owners/{$riskOwnerAssignmentId}/remove", $base)
+            ->assertOk()
+            ->assertJsonPath('data.removed', true);
+
+        $controlCreate = $this->postJson('/api/v1/controls', [
+            ...$base,
+            'name' => 'API Lifecycle Control',
+            'framework' => 'Internal Security',
+            'domain' => 'identity',
+            'evidence' => 'Control evidence notes',
+            'scope_id' => 'scope-eu',
+            'owner_actor_id' => 'actor-ava-mason',
+        ])->assertOk();
+        $controlId = (string) $controlCreate->json('data.id');
+
+        $this->postJson("/api/v1/controls/{$controlId}/transitions/submit-review", [
+            ...$base,
+            'scope_id' => 'scope-eu',
+        ])->assertOk()->assertJsonPath('data.transition', 'submit-review');
+
+        $this->post("/api/v1/controls/{$controlId}/artifacts", [
+            ...$base,
+            'label' => 'Control evidence bundle',
+            'artifact_type' => 'evidence',
+            'artifact' => UploadedFile::fake()->createWithContent('control-evidence.pdf', 'control evidence'),
+        ], ['Accept' => 'application/json'])->assertOk()
+            ->assertJsonPath('data.subject_type', 'control')
+            ->assertJsonPath('data.subject_id', $controlId);
+
+        $controlOwnerAssignmentId = (string) DB::table('functional_assignments')
+            ->where('domain_object_type', 'control')
+            ->where('domain_object_id', $controlId)
+            ->where('assignment_type', 'owner')
+            ->where('functional_actor_id', 'actor-ava-mason')
+            ->where('is_active', true)
+            ->value('id');
+        $this->assertNotSame('', $controlOwnerAssignmentId);
+
+        $this->patchJson("/api/v1/controls/{$controlId}/owners/{$controlOwnerAssignmentId}/remove", $base)
+            ->assertOk()
+            ->assertJsonPath('data.removed', true);
+
+        $findingCreate = $this->postJson('/api/v1/findings', [
+            ...$base,
+            'title' => 'API Lifecycle Finding',
+            'severity' => 'high',
+            'description' => 'Finding for lifecycle test',
+            'scope_id' => 'scope-eu',
+            'linked_control_id' => $controlId,
+            'linked_risk_id' => $riskId,
+            'owner_actor_id' => 'actor-ava-mason',
+        ])->assertOk();
+        $findingId = (string) $findingCreate->json('data.id');
+
+        $this->postJson("/api/v1/findings/{$findingId}/transitions/triage", [
+            ...$base,
+            'scope_id' => 'scope-eu',
+        ])->assertOk()->assertJsonPath('data.transition', 'triage');
+
+        $this->post("/api/v1/findings/{$findingId}/artifacts", [
+            ...$base,
+            'label' => 'Finding evidence bundle',
+            'artifact_type' => 'evidence',
+            'artifact' => UploadedFile::fake()->createWithContent('finding-evidence.pdf', 'finding evidence'),
+        ], ['Accept' => 'application/json'])->assertOk()
+            ->assertJsonPath('data.subject_type', 'finding')
+            ->assertJsonPath('data.subject_id', $findingId);
+
+        $findingOwnerAssignmentId = (string) DB::table('functional_assignments')
+            ->where('domain_object_type', 'finding')
+            ->where('domain_object_id', $findingId)
+            ->where('assignment_type', 'owner')
+            ->where('functional_actor_id', 'actor-ava-mason')
+            ->where('is_active', true)
+            ->value('id');
+        $this->assertNotSame('', $findingOwnerAssignmentId);
+
+        $this->patchJson("/api/v1/findings/{$findingId}/owners/{$findingOwnerAssignmentId}/remove", $base)
+            ->assertOk()
+            ->assertJsonPath('data.removed', true);
+
+        $actionCreate = $this->postJson("/api/v1/findings/{$findingId}/actions", [
+            ...$base,
+            'title' => 'API Lifecycle Action',
+            'status' => 'planned',
+            'notes' => 'Action for owner-removal test',
+            'owner_actor_id' => 'actor-compliance-office',
+        ])->assertOk();
+        $actionId = (string) $actionCreate->json('data.id');
+
+        $actionOwnerAssignmentId = (string) DB::table('functional_assignments')
+            ->where('domain_object_type', 'remediation-action')
+            ->where('domain_object_id', $actionId)
+            ->where('assignment_type', 'owner')
+            ->where('functional_actor_id', 'actor-compliance-office')
+            ->where('is_active', true)
+            ->value('id');
+        $this->assertNotSame('', $actionOwnerAssignmentId);
+
+        $this->patchJson("/api/v1/findings/actions/{$actionId}/owners/{$actionOwnerAssignmentId}/remove", $base)
+            ->assertOk()
+            ->assertJsonPath('data.removed', true);
+    }
+
+    public function test_assessment_lifecycle_owner_artifact_and_review_finding_api_endpoints_work(): void
+    {
+        Storage::fake('local');
+
+        $base = [
+            'principal_id' => 'principal-org-a',
+            'organization_id' => 'org-a',
+            'membership_id' => 'membership-org-a-hello',
+            'scope_id' => 'scope-eu',
+        ];
+
+        $controlCreate = $this->postJson('/api/v1/controls', [
+            ...$base,
+            'name' => 'API Assessment Lifecycle Control',
+            'framework' => 'Internal Security',
+            'domain' => 'identity',
+            'evidence' => 'Control evidence for assessment lifecycle',
+        ])->assertOk();
+        $controlId = (string) $controlCreate->json('data.id');
+
+        $assessmentCreate = $this->postJson('/api/v1/assessments', [
+            ...$base,
+            'title' => 'API Assessment Lifecycle',
+            'summary' => 'Assessment lifecycle API parity test',
+            'starts_on' => '2026-04-01',
+            'ends_on' => '2026-04-30',
+            'status' => 'draft',
+            'control_ids' => [$controlId],
+            'owner_actor_id' => 'actor-ava-mason',
+        ])->assertOk();
+        $assessmentId = (string) $assessmentCreate->json('data.id');
+
+        $this->patchJson("/api/v1/assessments/{$assessmentId}/reviews/{$controlId}", [
+            ...$base,
+            'result' => 'fail',
+            'test_notes' => 'Control failed validation for lifecycle test',
+            'conclusion' => 'Escalate to remediation',
+            'reviewed_on' => '2026-04-10',
+        ])->assertOk()
+            ->assertJsonPath('data.result', 'fail');
+
+        $this->post("/api/v1/assessments/{$assessmentId}/reviews/{$controlId}/artifacts", [
+            ...$base,
+            'label' => 'Assessment review workpaper',
+            'artifact_type' => 'workpaper',
+            'artifact' => UploadedFile::fake()->createWithContent('assessment-review.pdf', 'assessment review evidence'),
+        ], ['Accept' => 'application/json'])->assertOk()
+            ->assertJsonPath('data.subject_type', 'assessment-review');
+
+        $findingResponse = $this->postJson("/api/v1/assessments/{$assessmentId}/reviews/{$controlId}/findings", [
+            ...$base,
+            'title' => 'Assessment review generated finding',
+            'severity' => 'high',
+            'description' => 'Finding raised directly from failed review',
+            'due_on' => '2026-05-15',
+        ])->assertOk();
+        $findingId = (string) $findingResponse->json('data.id');
+        $this->assertNotSame('', $findingId);
+
+        $reviewLinkedFindingId = (string) DB::table('assessment_control_reviews')
+            ->where('assessment_id', $assessmentId)
+            ->where('control_id', $controlId)
+            ->value('linked_finding_id');
+        $this->assertSame($findingId, $reviewLinkedFindingId);
+
+        $this->postJson("/api/v1/assessments/{$assessmentId}/transitions/activate", $base)
+            ->assertOk()
+            ->assertJsonPath('data.transition', 'activate')
+            ->assertJsonPath('data.status', 'active');
+
+        $ownerAssignmentId = (string) DB::table('functional_assignments')
+            ->where('domain_object_type', 'assessment')
+            ->where('domain_object_id', $assessmentId)
+            ->where('assignment_type', 'owner')
+            ->where('functional_actor_id', 'actor-ava-mason')
+            ->where('is_active', true)
+            ->value('id');
+        $this->assertNotSame('', $ownerAssignmentId);
+
+        $this->patchJson("/api/v1/assessments/{$assessmentId}/owners/{$ownerAssignmentId}/remove", $base)
+            ->assertOk()
+            ->assertJsonPath('data.removed', true);
+    }
+
+    public function test_policy_exception_lifecycle_owner_artifact_and_transition_api_endpoints_work(): void
+    {
+        Storage::fake('local');
+
+        $base = [
+            'principal_id' => 'principal-org-a',
+            'organization_id' => 'org-a',
+            'membership_id' => 'membership-org-a-hello',
+            'scope_id' => 'scope-eu',
+        ];
+
+        $controlCreate = $this->postJson('/api/v1/controls', [
+            ...$base,
+            'name' => 'API Policy Linked Control',
+            'framework' => 'Internal Security',
+            'domain' => 'identity',
+            'evidence' => 'Control evidence for policy lifecycle test',
+        ])->assertOk();
+        $controlId = (string) $controlCreate->json('data.id');
+
+        $policyCreate = $this->postJson('/api/v1/policies', [
+            ...$base,
+            'title' => 'API Policy Lifecycle',
+            'area' => 'identity',
+            'version_label' => 'v1.0',
+            'statement' => 'Baseline policy statement for API lifecycle testing',
+            'linked_control_id' => $controlId,
+            'review_due_on' => '2026-05-10',
+            'owner_actor_id' => 'actor-ava-mason',
+        ])->assertOk();
+        $policyId = (string) $policyCreate->json('data.id');
+
+        $this->patchJson("/api/v1/policies/{$policyId}", [
+            ...$base,
+            'title' => 'API Policy Lifecycle Updated',
+            'area' => 'identity',
+            'version_label' => 'v1.1',
+            'statement' => 'Updated policy statement from API',
+            'linked_control_id' => $controlId,
+            'review_due_on' => '2026-05-20',
+            'owner_actor_id' => 'actor-ava-mason',
+        ])->assertOk()
+            ->assertJsonPath('data.title', 'API Policy Lifecycle Updated');
+
+        $this->post("/api/v1/policies/{$policyId}/artifacts", [
+            ...$base,
+            'label' => 'Policy baseline document',
+            'artifact_type' => 'document',
+            'artifact' => UploadedFile::fake()->createWithContent('policy.pdf', 'policy document'),
+        ], ['Accept' => 'application/json'])->assertOk()
+            ->assertJsonPath('data.subject_type', 'policy')
+            ->assertJsonPath('data.subject_id', $policyId);
+
+        $this->postJson("/api/v1/policies/{$policyId}/transitions/submit-review", $base)
+            ->assertOk()
+            ->assertJsonPath('data.transition', 'submit-review');
+
+        $policyOwnerAssignmentId = (string) DB::table('functional_assignments')
+            ->where('domain_object_type', 'policy')
+            ->where('domain_object_id', $policyId)
+            ->where('assignment_type', 'owner')
+            ->where('functional_actor_id', 'actor-ava-mason')
+            ->where('is_active', true)
+            ->value('id');
+        $this->assertNotSame('', $policyOwnerAssignmentId);
+
+        $this->patchJson("/api/v1/policies/{$policyId}/owners/{$policyOwnerAssignmentId}/remove", $base)
+            ->assertOk()
+            ->assertJsonPath('data.removed', true);
+
+        $findingCreate = $this->postJson('/api/v1/findings', [
+            ...$base,
+            'title' => 'API Policy Exception Finding',
+            'severity' => 'high',
+            'description' => 'Finding used as linked record for policy exception API test',
+            'linked_control_id' => $controlId,
+            'owner_actor_id' => 'actor-compliance-office',
+        ])->assertOk();
+        $findingId = (string) $findingCreate->json('data.id');
+
+        $exceptionCreate = $this->postJson("/api/v1/policies/{$policyId}/exceptions", [
+            ...$base,
+            'title' => 'API Policy Exception',
+            'rationale' => 'Temporary exception for controlled migration window',
+            'compensating_control' => 'Daily privileged access review',
+            'linked_finding_id' => $findingId,
+            'expires_on' => '2026-06-15',
+            'owner_actor_id' => 'actor-ava-mason',
+        ])->assertOk();
+        $exceptionId = (string) $exceptionCreate->json('data.id');
+
+        $this->patchJson("/api/v1/policies/exceptions/{$exceptionId}", [
+            ...$base,
+            'title' => 'API Policy Exception Updated',
+            'rationale' => 'Temporary exception with updated safeguards',
+            'compensating_control' => 'Daily privileged review and alerting',
+            'linked_finding_id' => $findingId,
+            'expires_on' => '2026-06-20',
+            'owner_actor_id' => 'actor-ava-mason',
+        ])->assertOk()
+            ->assertJsonPath('data.title', 'API Policy Exception Updated');
+
+        $this->post("/api/v1/policies/exceptions/{$exceptionId}/artifacts", [
+            ...$base,
+            'label' => 'Exception approval evidence',
+            'artifact_type' => 'evidence',
+            'artifact' => UploadedFile::fake()->createWithContent('exception-evidence.pdf', 'exception evidence'),
+        ], ['Accept' => 'application/json'])->assertOk()
+            ->assertJsonPath('data.subject_type', 'policy-exception')
+            ->assertJsonPath('data.subject_id', $exceptionId);
+
+        $this->postJson("/api/v1/policies/exceptions/{$exceptionId}/transitions/approve", $base)
+            ->assertOk()
+            ->assertJsonPath('data.transition', 'approve');
+
+        $exceptionOwnerAssignmentId = (string) DB::table('functional_assignments')
+            ->where('domain_object_type', 'policy-exception')
+            ->where('domain_object_id', $exceptionId)
+            ->where('assignment_type', 'owner')
+            ->where('functional_actor_id', 'actor-ava-mason')
+            ->where('is_active', true)
+            ->value('id');
+        $this->assertNotSame('', $exceptionOwnerAssignmentId);
+
+        $this->patchJson("/api/v1/policies/exceptions/{$exceptionId}/owners/{$exceptionOwnerAssignmentId}/remove", $base)
+            ->assertOk()
+            ->assertJsonPath('data.removed', true);
+    }
+
+    public function test_privacy_data_flow_and_processing_activity_api_lifecycle_endpoints_work(): void
+    {
+        Storage::fake('local');
+
+        $base = [
+            'principal_id' => 'principal-org-a',
+            'organization_id' => 'org-a',
+            'membership_id' => 'membership-org-a-hello',
+            'scope_id' => 'scope-eu',
+        ];
+
+        $assetCreate = $this->postJson('/api/v1/assets', [
+            ...$base,
+            'name' => 'API Privacy Linked Asset',
+            'type' => 'application',
+            'criticality' => 'high',
+            'classification' => 'internal',
+        ])->assertOk();
+        $assetId = (string) $assetCreate->json('data.id');
+
+        $riskCreate = $this->postJson('/api/v1/risks', [
+            ...$base,
+            'title' => 'API Privacy Linked Risk',
+            'category' => 'operations',
+            'inherent_score' => 44,
+            'residual_score' => 21,
+            'treatment' => 'Reduce exposure across handoff systems',
+            'linked_asset_id' => $assetId,
+        ])->assertOk();
+        $riskId = (string) $riskCreate->json('data.id');
+
+        $policyCreate = $this->postJson('/api/v1/policies', [
+            ...$base,
+            'title' => 'API Privacy Linked Policy',
+            'area' => 'identity',
+            'version_label' => 'v1.0',
+            'statement' => 'Policy used for privacy activity linking',
+        ])->assertOk();
+        $policyId = (string) $policyCreate->json('data.id');
+
+        $findingCreate = $this->postJson('/api/v1/findings', [
+            ...$base,
+            'title' => 'API Privacy Linked Finding',
+            'severity' => 'medium',
+            'description' => 'Finding used for privacy activity linking',
+        ])->assertOk();
+        $findingId = (string) $findingCreate->json('data.id');
+
+        $flowCreate = $this->postJson('/api/v1/privacy/data-flows', [
+            ...$base,
+            'title' => 'API Privacy Data Flow',
+            'source' => 'CRM',
+            'destination' => 'Support tooling',
+            'data_category_summary' => 'Customer profile and incident context',
+            'transfer_type' => 'vendor',
+            'review_due_on' => '2026-06-01',
+            'linked_asset_id' => $assetId,
+            'linked_risk_id' => $riskId,
+            'owner_actor_id' => 'actor-ava-mason',
+        ])->assertOk();
+        $flowId = (string) $flowCreate->json('data.id');
+
+        $this->patchJson("/api/v1/privacy/data-flows/{$flowId}", [
+            ...$base,
+            'title' => 'API Privacy Data Flow Updated',
+            'source' => 'CRM',
+            'destination' => 'Support tooling and BI',
+            'data_category_summary' => 'Customer profile, incident context, and trend aggregates',
+            'transfer_type' => 'vendor',
+            'review_due_on' => '2026-06-15',
+            'linked_asset_id' => $assetId,
+            'linked_risk_id' => $riskId,
+            'owner_actor_id' => 'actor-ava-mason',
+        ])->assertOk()
+            ->assertJsonPath('data.title', 'API Privacy Data Flow Updated');
+
+        $this->post("/api/v1/privacy/data-flows/{$flowId}/artifacts", [
+            ...$base,
+            'label' => 'Data flow record',
+            'artifact_type' => 'record',
+            'artifact' => UploadedFile::fake()->createWithContent('privacy-flow.pdf', 'privacy flow evidence'),
+        ], ['Accept' => 'application/json'])->assertOk()
+            ->assertJsonPath('data.subject_type', 'privacy-data-flow')
+            ->assertJsonPath('data.subject_id', $flowId);
+
+        $this->postJson("/api/v1/privacy/data-flows/{$flowId}/transitions/submit-review", $base)
+            ->assertOk()
+            ->assertJsonPath('data.transition', 'submit-review');
+
+        $flowOwnerAssignmentId = (string) DB::table('functional_assignments')
+            ->where('domain_object_type', 'privacy-data-flow')
+            ->where('domain_object_id', $flowId)
+            ->where('assignment_type', 'owner')
+            ->where('functional_actor_id', 'actor-ava-mason')
+            ->where('is_active', true)
+            ->value('id');
+        $this->assertNotSame('', $flowOwnerAssignmentId);
+
+        $this->patchJson("/api/v1/privacy/data-flows/{$flowId}/owners/{$flowOwnerAssignmentId}/remove", $base)
+            ->assertOk()
+            ->assertJsonPath('data.removed', true);
+
+        $activityCreate = $this->postJson('/api/v1/privacy/activities', [
+            ...$base,
+            'title' => 'API Processing Activity',
+            'purpose' => 'Handle customer support requests',
+            'lawful_basis' => 'contract',
+            'linked_data_flow_ids' => $flowId,
+            'linked_risk_ids' => $riskId,
+            'linked_policy_id' => $policyId,
+            'linked_finding_id' => $findingId,
+            'review_due_on' => '2026-06-20',
+            'owner_actor_id' => 'actor-ava-mason',
+        ])->assertOk();
+        $activityId = (string) $activityCreate->json('data.id');
+
+        $this->patchJson("/api/v1/privacy/activities/{$activityId}", [
+            ...$base,
+            'title' => 'API Processing Activity Updated',
+            'purpose' => 'Handle customer support requests with expanded reporting',
+            'lawful_basis' => 'contract',
+            'linked_data_flow_ids' => $flowId,
+            'linked_risk_ids' => $riskId,
+            'linked_policy_id' => $policyId,
+            'linked_finding_id' => $findingId,
+            'review_due_on' => '2026-06-30',
+            'owner_actor_id' => 'actor-ava-mason',
+        ])->assertOk()
+            ->assertJsonPath('data.title', 'API Processing Activity Updated');
+
+        $this->post("/api/v1/privacy/activities/{$activityId}/artifacts", [
+            ...$base,
+            'label' => 'Processing activity record',
+            'artifact_type' => 'record',
+            'artifact' => UploadedFile::fake()->createWithContent('privacy-activity.pdf', 'privacy activity evidence'),
+        ], ['Accept' => 'application/json'])->assertOk()
+            ->assertJsonPath('data.subject_type', 'privacy-processing-activity')
+            ->assertJsonPath('data.subject_id', $activityId);
+
+        $this->postJson("/api/v1/privacy/activities/{$activityId}/transitions/submit-review", $base)
+            ->assertOk()
+            ->assertJsonPath('data.transition', 'submit-review');
+
+        $activityOwnerAssignmentId = (string) DB::table('functional_assignments')
+            ->where('domain_object_type', 'privacy-processing-activity')
+            ->where('domain_object_id', $activityId)
+            ->where('assignment_type', 'owner')
+            ->where('functional_actor_id', 'actor-ava-mason')
+            ->where('is_active', true)
+            ->value('id');
+        $this->assertNotSame('', $activityOwnerAssignmentId);
+
+        $this->patchJson("/api/v1/privacy/activities/{$activityId}/owners/{$activityOwnerAssignmentId}/remove", $base)
+            ->assertOk()
+            ->assertJsonPath('data.removed', true);
+    }
+
+    public function test_continuity_service_and_plan_api_lifecycle_endpoints_work(): void
+    {
+        Storage::fake('local');
+
+        $base = [
+            'principal_id' => 'principal-org-a',
+            'organization_id' => 'org-a',
+            'membership_id' => 'membership-org-a-hello',
+            'scope_id' => 'scope-eu',
+        ];
+
+        $assetCreate = $this->postJson('/api/v1/assets', [
+            ...$base,
+            'name' => 'API Continuity Linked Asset',
+            'type' => 'application',
+            'criticality' => 'high',
+            'classification' => 'internal',
+        ])->assertOk();
+        $assetId = (string) $assetCreate->json('data.id');
+
+        $riskCreate = $this->postJson('/api/v1/risks', [
+            ...$base,
+            'title' => 'API Continuity Linked Risk',
+            'category' => 'operations',
+            'inherent_score' => 41,
+            'residual_score' => 20,
+            'treatment' => 'Reduce restore-time variance',
+            'linked_asset_id' => $assetId,
+        ])->assertOk();
+        $riskId = (string) $riskCreate->json('data.id');
+
+        $policyCreate = $this->postJson('/api/v1/policies', [
+            ...$base,
+            'title' => 'API Continuity Linked Policy',
+            'area' => 'identity',
+            'version_label' => 'v1.0',
+            'statement' => 'Policy used for continuity plan linking',
+        ])->assertOk();
+        $policyId = (string) $policyCreate->json('data.id');
+
+        $findingCreate = $this->postJson('/api/v1/findings', [
+            ...$base,
+            'title' => 'API Continuity Linked Finding',
+            'severity' => 'high',
+            'description' => 'Finding used for continuity plan linking',
+        ])->assertOk();
+        $findingId = (string) $findingCreate->json('data.id');
+
+        $serviceCreate = $this->postJson('/api/v1/continuity/services', [
+            ...$base,
+            'title' => 'API Continuity Service',
+            'impact_tier' => 'critical',
+            'recovery_time_objective_hours' => 6,
+            'recovery_point_objective_hours' => 2,
+            'linked_asset_id' => $assetId,
+            'linked_risk_id' => $riskId,
+            'owner_actor_id' => 'actor-ava-mason',
+        ])->assertOk();
+        $serviceId = (string) $serviceCreate->json('data.id');
+
+        $dependencyTargetCreate = $this->postJson('/api/v1/continuity/services', [
+            ...$base,
+            'title' => 'API Continuity Dependency Service',
+            'impact_tier' => 'critical',
+            'recovery_time_objective_hours' => 8,
+            'recovery_point_objective_hours' => 4,
+            'linked_asset_id' => $assetId,
+            'linked_risk_id' => $riskId,
+        ])->assertOk();
+        $dependencyTargetId = (string) $dependencyTargetCreate->json('data.id');
+
+        $this->patchJson("/api/v1/continuity/services/{$serviceId}", [
+            ...$base,
+            'title' => 'API Continuity Service Updated',
+            'impact_tier' => 'critical',
+            'recovery_time_objective_hours' => 4,
+            'recovery_point_objective_hours' => 1,
+            'linked_asset_id' => $assetId,
+            'linked_risk_id' => $riskId,
+            'owner_actor_id' => 'actor-ava-mason',
+        ])->assertOk()
+            ->assertJsonPath('data.title', 'API Continuity Service Updated');
+
+        $this->postJson("/api/v1/continuity/services/{$serviceId}/dependencies", [
+            ...$base,
+            'depends_on_service_id' => $dependencyTargetId,
+            'dependency_kind' => 'critical',
+            'recovery_notes' => 'Primary service relies on backup restore orchestration',
+        ])->assertOk()
+            ->assertJsonPath('data.depends_on_service_id', $dependencyTargetId);
+
+        $this->post("/api/v1/continuity/services/{$serviceId}/artifacts", [
+            ...$base,
+            'label' => 'Continuity service evidence',
+            'artifact_type' => 'continuity-record',
+            'artifact' => UploadedFile::fake()->createWithContent('continuity-service.pdf', 'continuity service evidence'),
+        ], ['Accept' => 'application/json'])->assertOk()
+            ->assertJsonPath('data.subject_type', 'continuity-service')
+            ->assertJsonPath('data.subject_id', $serviceId);
+
+        $this->postJson("/api/v1/continuity/services/{$serviceId}/transitions/submit-review", $base)
+            ->assertOk()
+            ->assertJsonPath('data.transition', 'submit-review');
+
+        $serviceOwnerAssignmentId = (string) DB::table('functional_assignments')
+            ->where('domain_object_type', 'continuity-service')
+            ->where('domain_object_id', $serviceId)
+            ->where('assignment_type', 'owner')
+            ->where('functional_actor_id', 'actor-ava-mason')
+            ->where('is_active', true)
+            ->value('id');
+        $this->assertNotSame('', $serviceOwnerAssignmentId);
+
+        $this->patchJson("/api/v1/continuity/services/{$serviceId}/owners/{$serviceOwnerAssignmentId}/remove", $base)
+            ->assertOk()
+            ->assertJsonPath('data.removed', true);
+
+        $planCreate = $this->postJson("/api/v1/continuity/services/{$serviceId}/plans", [
+            ...$base,
+            'title' => 'API Recovery Plan',
+            'strategy_summary' => 'Switch to backup pathway and validate controls',
+            'test_due_on' => '2026-07-01',
+            'linked_policy_id' => $policyId,
+            'linked_finding_id' => $findingId,
+            'owner_actor_id' => 'actor-ava-mason',
+        ])->assertOk();
+        $planId = (string) $planCreate->json('data.id');
+
+        $this->patchJson("/api/v1/continuity/plans/{$planId}", [
+            ...$base,
+            'title' => 'API Recovery Plan Updated',
+            'strategy_summary' => 'Switch to backup pathway and verify operational readiness',
+            'test_due_on' => '2026-07-10',
+            'linked_policy_id' => $policyId,
+            'linked_finding_id' => $findingId,
+            'owner_actor_id' => 'actor-ava-mason',
+        ])->assertOk()
+            ->assertJsonPath('data.title', 'API Recovery Plan Updated');
+
+        $this->postJson("/api/v1/continuity/plans/{$planId}/exercises", [
+            ...$base,
+            'exercise_date' => '2026-06-01',
+            'exercise_type' => 'tabletop',
+            'scenario_summary' => 'Cross-team outage escalation drill',
+            'outcome' => 'partial',
+            'follow_up_summary' => 'Needs deeper failover rehearsal',
+        ])->assertOk()
+            ->assertJsonPath('data.plan_id', $planId);
+
+        $this->postJson("/api/v1/continuity/plans/{$planId}/executions", [
+            ...$base,
+            'executed_on' => '2026-06-05',
+            'execution_type' => 'recovery-drill',
+            'status' => 'passed',
+            'participants' => 'Support Leads, Recovery Ops',
+            'notes' => 'RTO stayed within target window',
+        ])->assertOk()
+            ->assertJsonPath('data.plan_id', $planId)
+            ->assertJsonPath('data.status', 'passed');
+
+        $this->post("/api/v1/continuity/plans/{$planId}/artifacts", [
+            ...$base,
+            'label' => 'Recovery plan evidence',
+            'artifact_type' => 'recovery-plan',
+            'artifact' => UploadedFile::fake()->createWithContent('continuity-plan.pdf', 'continuity plan evidence'),
+        ], ['Accept' => 'application/json'])->assertOk()
+            ->assertJsonPath('data.subject_type', 'continuity-plan')
+            ->assertJsonPath('data.subject_id', $planId);
+
+        $this->postJson("/api/v1/continuity/plans/{$planId}/transitions/submit-review", $base)
+            ->assertOk()
+            ->assertJsonPath('data.transition', 'submit-review');
+
+        $planOwnerAssignmentId = (string) DB::table('functional_assignments')
+            ->where('domain_object_type', 'continuity-plan')
+            ->where('domain_object_id', $planId)
+            ->where('assignment_type', 'owner')
+            ->where('functional_actor_id', 'actor-ava-mason')
+            ->where('is_active', true)
+            ->value('id');
+        $this->assertNotSame('', $planOwnerAssignmentId);
+
+        $this->patchJson("/api/v1/continuity/plans/{$planId}/owners/{$planOwnerAssignmentId}/remove", $base)
+            ->assertOk()
+            ->assertJsonPath('data.removed', true);
+    }
+
     public function test_openapi_endpoint_and_generation_command_work(): void
     {
         $response = $this->get('/openapi.json')
             ->assertOk()
+            ->assertHeader('X-PymeSec-OpenApi-Version', 'v1')
+            ->assertHeader('X-PymeSec-OpenApi-Compat', 'minor-compatible')
             ->assertSee('coreGetCapabilities')
+            ->assertSee('coreListApiTokens')
+            ->assertSee('coreIssueApiToken')
+            ->assertSee('coreRotateApiToken')
+            ->assertSee('coreRevokeApiToken')
+            ->assertSee('thirdPartyRiskListVendors')
+            ->assertSee('thirdPartyRiskCreateVendorWithReview')
+            ->assertSee('thirdPartyRiskUpdateVendorWithReview')
+            ->assertSee('thirdPartyRiskIssueExternalLink')
+            ->assertSee('thirdPartyRiskCreateVendorReviewDraft')
+            ->assertSee('thirdPartyRiskRemoveVendorReviewOwner')
+            ->assertSee('thirdPartyRiskAttachVendorReviewArtifact')
+            ->assertSee('thirdPartyRiskAttachQuestionnaireItemArtifact')
+            ->assertSee('thirdPartyRiskTransitionReview')
             ->assertSee('assetCatalogListAssets')
+            ->assertSee('assetCatalogTransitionAsset')
             ->assertSee('riskManagementListRisks')
+            ->assertSee('riskManagementTransitionRisk')
             ->assertSee('controlsCatalogListControls')
+            ->assertSee('controlsCatalogTransitionControl')
             ->assertSee('assessmentsAuditsListAssessments')
             ->assertSee('assessmentsAuditsUpdateAssessmentReview')
+            ->assertSee('assessmentsAuditsRemoveAssessmentOwner')
+            ->assertSee('assessmentsAuditsAttachAssessmentReviewArtifact')
+            ->assertSee('assessmentsAuditsCreateReviewFinding')
+            ->assertSee('assessmentsAuditsTransitionAssessment')
+            ->assertSee('policyExceptionsCreatePolicy')
+            ->assertSee('policyExceptionsTransitionException')
+            ->assertSee('dataFlowsPrivacyCreateDataFlow')
+            ->assertSee('dataFlowsPrivacyTransitionProcessingActivity')
+            ->assertSee('continuityBcmCreateService')
+            ->assertSee('continuityBcmTransitionPlan')
             ->assertSee('findingsRemediationListFindings')
+            ->assertSee('findingsRemediationTransitionFinding')
             ->assertSee('findingsRemediationCreateAction')
             ->assertSee('findingsRemediationUpdateAction');
 
         $openApi = $response->json();
         $this->assertIsArray($openApi);
+        $this->assertSame('v1', $openApi['x-contract-version'] ?? null);
         $this->assertSame(
             'object',
             data_get($openApi, 'paths./assets.post.requestBody.content.application/json.schema.type'),
@@ -337,6 +1107,19 @@ class ApiFoundationTest extends TestCase
         $this->assertSame(
             'assessments.review_result',
             data_get($openApi, 'paths./assessments/{assessmentId}/reviews/{controlId}.patch.requestBody.content.application/json.schema.properties.result.x-governed-catalog'),
+        );
+
+        $versionedResponse = $this->get('/openapi/v1.json')
+            ->assertOk()
+            ->assertHeader('X-PymeSec-OpenApi-Version', 'v1')
+            ->assertSee('coreIssueApiToken');
+
+        $versionedOpenApi = $versionedResponse->json();
+        $this->assertIsArray($versionedOpenApi);
+        $this->assertSame('v1', $versionedOpenApi['x-contract-version'] ?? null);
+        $this->assertSame(
+            data_get($openApi, 'paths./api-tokens.post.operationId'),
+            data_get($versionedOpenApi, 'paths./api-tokens.post.operationId'),
         );
 
         $output = base_path('storage/framework/testing/openapi.test.json');
@@ -438,17 +1221,91 @@ class ApiFoundationTest extends TestCase
         $router = $this->app->make('router');
 
         $parityMatrix = [
+            'core.api-tokens.issue' => 'coreIssueApiToken',
+            'core.api-tokens.rotate' => 'coreRotateApiToken',
+            'core.api-tokens.revoke' => 'coreRevokeApiToken',
+            'plugin.third-party-risk.store' => 'thirdPartyRiskCreateVendorWithReview',
+            'plugin.third-party-risk.update' => 'thirdPartyRiskUpdateVendorWithReview',
+            'plugin.third-party-risk.external.links.issue' => 'thirdPartyRiskIssueExternalLink',
+            'plugin.third-party-risk.external.links.revoke' => 'thirdPartyRiskRevokeExternalLink',
+            'plugin.third-party-risk.external.collaborators.update' => 'thirdPartyRiskUpdateExternalCollaboratorLifecycle',
+            'plugin.third-party-risk.collaboration.drafts.store' => 'thirdPartyRiskCreateVendorReviewDraft',
+            'plugin.third-party-risk.collaboration.drafts.update' => 'thirdPartyRiskUpdateVendorReviewDraft',
+            'plugin.third-party-risk.collaboration.drafts.promote-comment' => 'thirdPartyRiskPromoteVendorReviewDraftToComment',
+            'plugin.third-party-risk.collaboration.drafts.promote-request' => 'thirdPartyRiskPromoteVendorReviewDraftToRequest',
+            'plugin.third-party-risk.collaboration.comments.store' => 'thirdPartyRiskAddVendorReviewComment',
+            'plugin.third-party-risk.collaboration.requests.store' => 'thirdPartyRiskCreateVendorReviewRequest',
+            'plugin.third-party-risk.collaboration.requests.update' => 'thirdPartyRiskUpdateVendorReviewRequest',
+            'plugin.third-party-risk.brokered-requests.issue' => 'thirdPartyRiskIssueBrokeredRequest',
+            'plugin.third-party-risk.brokered-requests.update' => 'thirdPartyRiskUpdateBrokeredRequest',
+            'plugin.third-party-risk.owners.destroy' => 'thirdPartyRiskRemoveVendorReviewOwner',
+            'plugin.third-party-risk.artifacts.store' => 'thirdPartyRiskAttachVendorReviewArtifact',
+            'plugin.third-party-risk.questionnaire-items.store' => 'thirdPartyRiskAddQuestionnaireItem',
+            'plugin.third-party-risk.questionnaire-items.update' => 'thirdPartyRiskUpdateQuestionnaireItem',
+            'plugin.third-party-risk.questionnaire-items.artifacts.store' => 'thirdPartyRiskAttachQuestionnaireItemArtifact',
+            'plugin.third-party-risk.questionnaire-items.review' => 'thirdPartyRiskReviewQuestionnaireItem',
+            'plugin.third-party-risk.questionnaire-items.apply-template' => 'thirdPartyRiskApplyQuestionnaireTemplate',
+            'plugin.third-party-risk.transition' => 'thirdPartyRiskTransitionReview',
             'plugin.asset-catalog.store' => 'assetCatalogCreateAsset',
             'plugin.asset-catalog.update' => 'assetCatalogUpdateAsset',
+            'plugin.asset-catalog.owners.destroy' => 'assetCatalogRemoveAssetOwner',
+            'plugin.asset-catalog.transition' => 'assetCatalogTransitionAsset',
             'plugin.risk-management.store' => 'riskManagementCreateRisk',
             'plugin.risk-management.update' => 'riskManagementUpdateRisk',
+            'plugin.risk-management.owners.destroy' => 'riskManagementRemoveRiskOwner',
+            'plugin.risk-management.artifacts.store' => 'riskManagementAttachRiskArtifact',
+            'plugin.risk-management.transition' => 'riskManagementTransitionRisk',
             'plugin.controls-catalog.store' => 'controlsCatalogCreateControl',
             'plugin.controls-catalog.update' => 'controlsCatalogUpdateControl',
+            'plugin.controls-catalog.owners.destroy' => 'controlsCatalogRemoveControlOwner',
+            'plugin.controls-catalog.artifacts.store' => 'controlsCatalogAttachControlArtifact',
+            'plugin.controls-catalog.transition' => 'controlsCatalogTransitionControl',
             'plugin.assessments-audits.store' => 'assessmentsAuditsCreateAssessment',
             'plugin.assessments-audits.update' => 'assessmentsAuditsUpdateAssessment',
+            'plugin.assessments-audits.owners.destroy' => 'assessmentsAuditsRemoveAssessmentOwner',
             'plugin.assessments-audits.reviews.update' => 'assessmentsAuditsUpdateAssessmentReview',
+            'plugin.assessments-audits.reviews.artifacts.store' => 'assessmentsAuditsAttachAssessmentReviewArtifact',
+            'plugin.assessments-audits.reviews.findings.store' => 'assessmentsAuditsCreateReviewFinding',
+            'plugin.assessments-audits.transition' => 'assessmentsAuditsTransitionAssessment',
+            'plugin.policy-exceptions.store' => 'policyExceptionsCreatePolicy',
+            'plugin.policy-exceptions.update' => 'policyExceptionsUpdatePolicy',
+            'plugin.policy-exceptions.owners.destroy' => 'policyExceptionsRemovePolicyOwner',
+            'plugin.policy-exceptions.exceptions.store' => 'policyExceptionsCreateException',
+            'plugin.policy-exceptions.exceptions.update' => 'policyExceptionsUpdateException',
+            'plugin.policy-exceptions.exceptions.owners.destroy' => 'policyExceptionsRemoveExceptionOwner',
+            'plugin.policy-exceptions.artifacts.store' => 'policyExceptionsAttachPolicyArtifact',
+            'plugin.policy-exceptions.exceptions.artifacts.store' => 'policyExceptionsAttachExceptionArtifact',
+            'plugin.policy-exceptions.transition' => 'policyExceptionsTransitionPolicy',
+            'plugin.policy-exceptions.exceptions.transition' => 'policyExceptionsTransitionException',
+            'plugin.data-flows-privacy.store' => 'dataFlowsPrivacyCreateDataFlow',
+            'plugin.data-flows-privacy.update' => 'dataFlowsPrivacyUpdateDataFlow',
+            'plugin.data-flows-privacy.owners.destroy' => 'dataFlowsPrivacyRemoveDataFlowOwner',
+            'plugin.data-flows-privacy.artifacts.store' => 'dataFlowsPrivacyAttachDataFlowArtifact',
+            'plugin.data-flows-privacy.transition' => 'dataFlowsPrivacyTransitionDataFlow',
+            'plugin.data-flows-privacy.activities.store' => 'dataFlowsPrivacyCreateProcessingActivity',
+            'plugin.data-flows-privacy.activities.update' => 'dataFlowsPrivacyUpdateProcessingActivity',
+            'plugin.data-flows-privacy.activities.owners.destroy' => 'dataFlowsPrivacyRemoveProcessingActivityOwner',
+            'plugin.data-flows-privacy.activities.artifacts.store' => 'dataFlowsPrivacyAttachProcessingActivityArtifact',
+            'plugin.data-flows-privacy.activities.transition' => 'dataFlowsPrivacyTransitionProcessingActivity',
+            'plugin.continuity-bcm.store' => 'continuityBcmCreateService',
+            'plugin.continuity-bcm.update' => 'continuityBcmUpdateService',
+            'plugin.continuity-bcm.dependencies.store' => 'continuityBcmAddServiceDependency',
+            'plugin.continuity-bcm.owners.destroy' => 'continuityBcmRemoveServiceOwner',
+            'plugin.continuity-bcm.artifacts.store' => 'continuityBcmAttachServiceArtifact',
+            'plugin.continuity-bcm.transition' => 'continuityBcmTransitionService',
+            'plugin.continuity-bcm.plans.store' => 'continuityBcmCreatePlan',
+            'plugin.continuity-bcm.plans.update' => 'continuityBcmUpdatePlan',
+            'plugin.continuity-bcm.plans.exercises.store' => 'continuityBcmRecordPlanExercise',
+            'plugin.continuity-bcm.plans.executions.store' => 'continuityBcmRecordPlanExecution',
+            'plugin.continuity-bcm.plans.owners.destroy' => 'continuityBcmRemovePlanOwner',
+            'plugin.continuity-bcm.plans.artifacts.store' => 'continuityBcmAttachPlanArtifact',
+            'plugin.continuity-bcm.plans.transition' => 'continuityBcmTransitionPlan',
             'plugin.findings-remediation.store' => 'findingsRemediationCreateFinding',
             'plugin.findings-remediation.update' => 'findingsRemediationUpdateFinding',
+            'plugin.findings-remediation.owners.destroy' => 'findingsRemediationRemoveFindingOwner',
+            'plugin.findings-remediation.actions.owners.destroy' => 'findingsRemediationRemoveActionOwner',
+            'plugin.findings-remediation.artifacts.store' => 'findingsRemediationAttachFindingArtifact',
+            'plugin.findings-remediation.transition' => 'findingsRemediationTransitionFinding',
             'plugin.findings-remediation.actions.store' => 'findingsRemediationCreateAction',
             'plugin.findings-remediation.actions.update' => 'findingsRemediationUpdateAction',
         ];
@@ -489,6 +1346,25 @@ class ApiFoundationTest extends TestCase
 
                 $lookupFields = is_array($operation['x-lookup-fields'] ?? null) ? $operation['x-lookup-fields'] : [];
 
+                foreach ($lookupFields as $field => $lookupDefinition) {
+                    if (! is_string($field) || $field === '') {
+                        continue;
+                    }
+
+                    $this->assertArrayHasKey(
+                        $field,
+                        $properties,
+                        sprintf('OpenAPI operation [%s %s] declares x-lookup-fields for unknown contract field [%s].', strtoupper((string) $method), $path, $field),
+                    );
+
+                    $lookupSource = data_get($lookupDefinition, 'source');
+                    $this->assertIsString(
+                        $lookupSource,
+                        sprintf('OpenAPI operation [%s %s] must declare lookup source for [%s].', strtoupper((string) $method), $path, $field),
+                    );
+                    $this->assertNotSame('', trim((string) $lookupSource));
+                }
+
                 foreach ($properties as $field => $schema) {
                     if (! is_string($field) || ! is_array($schema)) {
                         continue;
@@ -526,30 +1402,66 @@ class ApiFoundationTest extends TestCase
         }
     }
 
-    public function test_lookup_option_endpoints_cover_dynamic_write_fields(): void
+    public function test_lookup_sources_referenced_by_write_contracts_are_runtime_reachable_with_option_shape(): void
     {
-        $query = [
-            'principal_id' => 'principal-org-a',
-            'organization_id' => 'org-a',
-            'scope_id' => 'scope-eu',
-            'membership_ids' => ['membership-org-a-hello'],
-        ];
+        $openApi = $this->get('/openapi.json')->assertOk()->json();
+        $paths = is_array($openApi['paths'] ?? null) ? $openApi['paths'] : [];
+        $sources = [];
 
-        $this->getJson('/api/v1/lookups/actors/options?'.http_build_query($query))
-            ->assertOk()
-            ->assertJsonFragment(['id' => 'actor-ava-mason']);
+        foreach ($paths as $path => $operations) {
+            if (! is_string($path) || ! is_array($operations)) {
+                continue;
+            }
 
-        $this->getJson('/api/v1/lookups/frameworks/options?'.http_build_query($query))
-            ->assertOk()
-            ->assertJsonFragment(['id' => 'framework-iso-27001']);
+            foreach ($operations as $method => $operation) {
+                if (! is_string($method) || ! in_array(strtolower($method), ['post', 'put', 'patch'], true) || ! is_array($operation)) {
+                    continue;
+                }
 
-        $this->getJson('/api/v1/lookups/controls/options?'.http_build_query($query))
-            ->assertOk()
-            ->assertJsonFragment(['id' => 'control-access-review']);
+                $lookupFields = is_array($operation['x-lookup-fields'] ?? null) ? $operation['x-lookup-fields'] : [];
 
-        $this->getJson('/api/v1/lookups/risks/options?'.http_build_query($query))
-            ->assertOk()
-            ->assertJsonFragment(['id' => 'risk-access-drift']);
+                foreach ($lookupFields as $field => $lookupDefinition) {
+                    if (! is_string($field) || ! is_array($lookupDefinition)) {
+                        continue;
+                    }
+
+                    $lookupSource = $lookupDefinition['source'] ?? null;
+                    if (is_string($lookupSource) && trim($lookupSource) !== '') {
+                        $sources[] = trim($lookupSource);
+                    }
+                }
+            }
+        }
+
+        $sources = array_values(array_unique($sources));
+        $this->assertNotSame([], $sources, 'Expected at least one x-lookup-fields source referenced by write operations.');
+
+        foreach ($sources as $source) {
+            $lookupEndpoint = $this->normalizeLookupSourceToApiUrl($source);
+            $query = $this->lookupRequestQueryForSource($lookupEndpoint);
+            $response = $this->getJson($lookupEndpoint.'?'.http_build_query($query))->assertOk();
+
+            $rows = $response->json('data');
+            $this->assertIsArray($rows, sprintf('Lookup source [%s] must return data as an array.', $lookupEndpoint));
+
+            foreach ($rows as $index => $row) {
+                $this->assertIsArray($row, sprintf('Lookup source [%s] returned invalid option row at index [%s].', $lookupEndpoint, (string) $index));
+                $this->assertIsString($row['id'] ?? null, sprintf('Lookup source [%s] option row [%s] must include string id.', $lookupEndpoint, (string) $index));
+                $this->assertNotSame('', trim((string) ($row['id'] ?? '')), sprintf('Lookup source [%s] option row [%s] id cannot be empty.', $lookupEndpoint, (string) $index));
+
+                if (str_contains($lookupEndpoint, '/lookups/')) {
+                    $this->assertIsString($row['label'] ?? null, sprintf('Lookup source [%s] option row [%s] must include string label.', $lookupEndpoint, (string) $index));
+                    $this->assertNotSame('', trim((string) ($row['label'] ?? '')), sprintf('Lookup source [%s] option row [%s] label cannot be empty.', $lookupEndpoint, (string) $index));
+
+                    continue;
+                }
+
+                $this->assertTrue(
+                    $this->hasReadableLookupValue($row),
+                    sprintf('Lookup source [%s] option row [%s] must expose a readable text field (label/name/title/display_name).', $lookupEndpoint, (string) $index),
+                );
+            }
+        }
     }
 
     /**
@@ -600,8 +1512,69 @@ class ApiFoundationTest extends TestCase
         return $path === '//' ? '/' : $path;
     }
 
+    private function normalizeLookupSourceToApiUrl(string $source): string
+    {
+        $source = trim($source);
+        $path = '/'.ltrim($source, '/');
+
+        if (str_starts_with($path, '/api/v1/')) {
+            return $path;
+        }
+
+        if (str_starts_with($path, '/v1/')) {
+            return '/api'.$path;
+        }
+
+        if (str_starts_with($path, '/lookups/')) {
+            return '/api/v1'.$path;
+        }
+
+        return $path;
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function lookupRequestQueryForSource(string $source): array
+    {
+        if (str_starts_with($source, '/api/v1/lookups/principals/options')) {
+            return [
+                'principal_id' => 'principal-admin',
+            ];
+        }
+
+        $query = [
+            'principal_id' => 'principal-org-a',
+            'organization_id' => 'org-a',
+            'scope_id' => 'scope-eu',
+            'membership_ids' => ['membership-org-a-hello'],
+        ];
+
+        if (str_starts_with($source, '/api/v1/lookups/vendor-questionnaire-templates/options')) {
+            $query['profile_id'] = 'vendor-review-profile-eu-payroll-processor';
+        }
+
+        return $query;
+    }
+
     private function fieldRequiresLookupSource(string $field): bool
     {
         return str_ends_with($field, '_id') || str_ends_with($field, '_ids');
+    }
+
+    /**
+     * @param  array<string, mixed>  $row
+     */
+    private function hasReadableLookupValue(array $row): bool
+    {
+        foreach (['label', 'name', 'title', 'display_name'] as $key) {
+            $value = $row[$key] ?? null;
+
+            if (is_string($value) && trim($value) !== '') {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

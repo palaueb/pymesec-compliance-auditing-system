@@ -65,6 +65,7 @@ class ResolveApiPrincipal
             authorId: $resolvedToken['id'],
             tokenOrganizationId: $resolvedToken['organization_id'],
             tokenScopeId: $resolvedToken['scope_id'],
+            tokenAbilities: $resolvedToken['abilities'] ?? [],
         );
 
         return $next($request);
@@ -88,10 +89,15 @@ class ResolveApiPrincipal
         string $authorId,
         ?string $tokenOrganizationId = null,
         ?string $tokenScopeId = null,
+        array $tokenAbilities = [],
     ): void {
         $request->attributes->set('core.authenticated_principal_id', $principalId);
         $request->attributes->set('core.author_type', $authorType);
         $request->attributes->set('core.author_id', $authorId);
+        $request->attributes->set('core.api_token_abilities', array_values(array_filter(
+            $tokenAbilities,
+            static fn (mixed $value): bool => is_string($value) && $value !== '',
+        )));
 
         $request->query->set('principal_id', $principalId);
         $request->request->set('principal_id', $principalId);

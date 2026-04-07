@@ -1,5 +1,6 @@
 <?php
 
+use Carbon\CarbonImmutable;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Schema;
@@ -26,6 +27,7 @@ use PymeSec\Core\Plugins\Contracts\PluginManagerInterface;
 use PymeSec\Core\Plugins\PluginLifecycleManager;
 use PymeSec\Core\Principals\PrincipalReference;
 use PymeSec\Core\ReferenceData\ReferenceCatalogService;
+use PymeSec\Core\Security\ApiAccessTokenRepository;
 use PymeSec\Core\Tenancy\Contracts\TenancyServiceInterface;
 use PymeSec\Core\Tenancy\TenancyContext;
 use PymeSec\Core\UI\Contracts\ScreenRegistryInterface;
@@ -51,10 +53,96 @@ $resolvePrincipalId = static function (?string $default = null): ?string {
     return $default;
 };
 
-Route::get('/openapi.json', function (OpenApiDocumentBuilder $openApi) {
-    return response()->json($openApi->build(), 200, [
+$hasOrganizationWideMembership = static function (array $memberships): bool {
+    foreach ($memberships as $membership) {
+        if (is_array($membership->scopes ?? null) && $membership->scopes === []) {
+            return true;
+        }
+    }
+
+    return false;
+};
+
+/**
+ * @return array<int, string>
+ */
+$resolveEffectivePermissionKeys = static function (
+    string $principalId,
+    ?string $organizationId,
+    ?string $scopeId,
+    array $requestedMembershipIds,
+    AuthorizationServiceInterface $authorization,
+    PermissionRegistryInterface $permissions,
+    TenancyServiceInterface $tenancy
+) use ($hasOrganizationWideMembership): array {
+    $memberships = [];
+
+    foreach ($requestedMembershipIds as $membershipId) {
+        if (is_string($membershipId) && $membershipId !== '') {
+            $memberships[] = $membershipId;
+        }
+    }
+
+    $context = $tenancy->resolveContext(
+        principalId: $principalId,
+        requestedOrganizationId: $organizationId,
+        requestedScopeId: $scopeId,
+        requestedMembershipIds: $memberships,
+    );
+
+    $effectiveScopeId = $context->scope?->id;
+
+    if ($context->organization !== null && $context->memberships !== [] && ! $hasOrganizationWideMembership($context->memberships)) {
+        if (is_string($scopeId) && $scopeId !== '' && $effectiveScopeId === null) {
+            return [];
+        }
+
+        if ($effectiveScopeId === null) {
+            $effectiveScopeId = $context->scopes[0]->id ?? null;
+        }
+    }
+
+    $keys = [];
+
+    foreach ($permissions->all() as $permission) {
+        $allowed = $authorization->authorize(new AuthorizationContext(
+            principal: new PrincipalReference(
+                id: $principalId,
+                provider: 'request',
+            ),
+            permission: $permission->key,
+            memberships: $context->memberships,
+            organizationId: $context->organization?->id,
+            scopeId: $effectiveScopeId,
+        ))->allowed();
+
+        if ($allowed) {
+            $keys[] = $permission->key;
+        }
+    }
+
+    return $keys;
+};
+
+$renderOpenApiDocument = static function (OpenApiDocumentBuilder $openApi, string $contractVersion) {
+    $document = $openApi->build();
+    $document['x-contract-version'] = $contractVersion;
+
+    return response()->json($document, 200, [
         'Content-Type' => 'application/json; charset=UTF-8',
+        'X-PymeSec-OpenApi-Version' => $contractVersion,
+        'X-PymeSec-OpenApi-Compat' => 'minor-compatible',
+        'Cache-Control' => 'no-store',
     ], JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
+};
+
+Route::get('/openapi/v1.json', function (OpenApiDocumentBuilder $openApi) use ($renderOpenApiDocument) {
+    return $renderOpenApiDocument($openApi, 'v1');
+})->name('core.openapi.document.v1');
+
+Route::get('/openapi.json', function (OpenApiDocumentBuilder $openApi) use ($renderOpenApiDocument) {
+    return $renderOpenApiDocument($openApi, 'v1')
+        ->header('Link', '</openapi/v1.json>; rel="canonical"');
 })->name('core.openapi.document');
 
 $shellRouteNameForMenu = static function (?string $menuId): string {
@@ -1692,6 +1780,467 @@ Route::get('/core/notifications', function (NotificationServiceInterface $notifi
         ),
     ]);
 })->middleware('core.permission:core.notifications.view')->name('core.notifications.index');
+
+Route::get('/core/api-tokens', function (ApiAccessTokenRepository $tokens) {
+    $limit = request()->integer('limit', 100);
+    $organizationId = request()->query('organization_id');
+    $scopeId = request()->query('scope_id');
+    $principalId = request()->query('owner_principal_id');
+
+    return response()->json([
+        'api_tokens' => $tokens->list(
+            organizationId: is_string($organizationId) && $organizationId !== '' ? $organizationId : null,
+            scopeId: is_string($scopeId) && $scopeId !== '' ? $scopeId : null,
+            principalId: is_string($principalId) && $principalId !== '' ? $principalId : null,
+            limit: $limit,
+        ),
+    ]);
+})->middleware('core.permission:core.api-tokens.view')->name('core.api-tokens.index');
+
+Route::post('/core/api-tokens', function (
+    ApiAccessTokenRepository $tokens,
+    AuthorizationServiceInterface $authorization,
+    PermissionRegistryInterface $permissions,
+    TenancyServiceInterface $tenancy,
+    AuditTrailInterface $audit,
+    EventBusInterface $events
+) use ($shellRouteNameForMenu, $resolvePrincipalId, $resolveEffectivePermissionKeys) {
+    $ownerPrincipalRules = ['required', 'string', 'max:120'];
+
+    if (Schema::hasTable('identity_local_users')) {
+        $ownerPrincipalRules[] = Rule::exists('identity_local_users', 'principal_id')
+            ->where(fn ($query) => $query->where('is_active', true));
+    }
+
+    $validated = request()->validate([
+        'label' => ['required', 'string', 'max:160'],
+        'owner_principal_id' => $ownerPrincipalRules,
+        'organization_id' => ['nullable', 'string', 'max:64', 'exists:organizations,id'],
+        'scope_id' => ['nullable', 'string', 'max:64', 'exists:scopes,id'],
+        'expires_in_days' => ['nullable', 'integer', 'min:1', 'max:730'],
+        'abilities' => ['nullable', 'string', 'max:5000'],
+        'principal_id' => ['nullable', 'string', 'max:120'],
+        'locale' => ['nullable', 'string', 'max:12'],
+        'theme' => ['nullable', 'string', 'max:40'],
+        'menu' => ['nullable', 'string', 'max:80'],
+    ]);
+
+    $ownerPrincipalId = (string) $validated['owner_principal_id'];
+    $organizationId = is_string($validated['organization_id'] ?? null) && $validated['organization_id'] !== ''
+        ? $validated['organization_id']
+        : null;
+    $scopeId = is_string($validated['scope_id'] ?? null) && $validated['scope_id'] !== ''
+        ? $validated['scope_id']
+        : null;
+
+    if ($scopeId !== null) {
+        $scopeOrganizationId = DB::table('scopes')->where('id', $scopeId)->value('organization_id');
+        abort_unless(is_string($scopeOrganizationId) && $scopeOrganizationId !== '', 422, 'Scope organization is invalid.');
+
+        if ($organizationId !== null && $organizationId !== $scopeOrganizationId) {
+            return back()->withErrors([
+                'scope_id' => 'Selected scope does not belong to the selected organization.',
+            ])->withInput();
+        }
+
+        $organizationId = $organizationId ?? $scopeOrganizationId;
+    }
+
+    if (Schema::hasTable('identity_local_users') && $organizationId !== null) {
+        $ownerOrganizationId = DB::table('identity_local_users')
+            ->where('principal_id', $ownerPrincipalId)
+            ->value('organization_id');
+
+        if (is_string($ownerOrganizationId) && $ownerOrganizationId !== '' && $ownerOrganizationId !== $organizationId) {
+            return back()->withErrors([
+                'owner_principal_id' => 'Selected person does not belong to the selected organization.',
+            ])->withInput();
+        }
+    }
+
+    $expiresInDays = is_numeric($validated['expires_in_days'] ?? null)
+        ? (int) $validated['expires_in_days']
+        : null;
+    $expiresAt = is_int($expiresInDays) ? CarbonImmutable::now()->addDays($expiresInDays) : null;
+    $abilitiesInput = is_string($validated['abilities'] ?? null) ? $validated['abilities'] : '';
+    $abilities = array_values(array_filter(array_map(
+        static fn (string $value): string => trim($value),
+        preg_split('/[\s,]+/', $abilitiesInput) ?: [],
+    ), static fn (string $value): bool => $value !== ''));
+    $actingPrincipalId = $resolvePrincipalId(
+        is_string($validated['principal_id'] ?? null) && $validated['principal_id'] !== ''
+            ? $validated['principal_id']
+            : null
+    );
+
+    abort_unless(is_string($actingPrincipalId) && $actingPrincipalId !== '', 403);
+
+    $canIssueForOthers = $authorization->authorize(new AuthorizationContext(
+        principal: new PrincipalReference(
+            id: $actingPrincipalId,
+            provider: 'request',
+        ),
+        permission: 'core.roles.manage',
+        memberships: [],
+        organizationId: null,
+        scopeId: null,
+    ))->allowed();
+
+    if (! $canIssueForOthers && $ownerPrincipalId !== $actingPrincipalId) {
+        abort(403, 'You can only issue tokens for your own principal.');
+    }
+
+    $ownerPermissions = $resolveEffectivePermissionKeys(
+        principalId: $ownerPrincipalId,
+        organizationId: $organizationId,
+        scopeId: $scopeId,
+        requestedMembershipIds: [],
+        authorization: $authorization,
+        permissions: $permissions,
+        tenancy: $tenancy,
+    );
+
+    if ($ownerPermissions === []) {
+        return back()->withErrors([
+            'owner_principal_id' => 'Selected owner has no effective permissions in the selected context.',
+        ])->withInput();
+    }
+
+    $effectiveAbilities = [];
+
+    if ($abilities !== []) {
+        $unknownAbilities = array_values(array_filter(
+            $abilities,
+            static fn (string $ability): bool => ! $permissions->has($ability),
+        ));
+
+        if ($unknownAbilities !== []) {
+            return back()->withErrors([
+                'abilities' => sprintf('Unknown permission keys: %s', implode(', ', $unknownAbilities)),
+            ])->withInput();
+        }
+
+        $abilitiesOutsideOwner = array_values(array_diff($abilities, $ownerPermissions));
+
+        if ($abilitiesOutsideOwner !== []) {
+            return back()->withErrors([
+                'abilities' => sprintf('Requested abilities are not granted to the owner in this context: %s', implode(', ', $abilitiesOutsideOwner)),
+            ])->withInput();
+        }
+
+        if (! $canIssueForOthers) {
+            $issuerPermissions = $resolveEffectivePermissionKeys(
+                principalId: $actingPrincipalId,
+                organizationId: $organizationId,
+                scopeId: $scopeId,
+                requestedMembershipIds: request()->input('membership_ids', []),
+                authorization: $authorization,
+                permissions: $permissions,
+                tenancy: $tenancy,
+            );
+            $abilitiesOutsideIssuer = array_values(array_diff($abilities, $issuerPermissions));
+
+            if ($abilitiesOutsideIssuer !== []) {
+                return back()->withErrors([
+                    'abilities' => sprintf('Requested abilities exceed your own effective permissions: %s', implode(', ', $abilitiesOutsideIssuer)),
+                ])->withInput();
+            }
+        }
+
+        $effectiveAbilities = $abilities;
+    } else {
+        if ($canIssueForOthers) {
+            $effectiveAbilities = $ownerPermissions;
+        } else {
+            $issuerPermissions = $resolveEffectivePermissionKeys(
+                principalId: $actingPrincipalId,
+                organizationId: $organizationId,
+                scopeId: $scopeId,
+                requestedMembershipIds: request()->input('membership_ids', []),
+                authorization: $authorization,
+                permissions: $permissions,
+                tenancy: $tenancy,
+            );
+
+            $effectiveAbilities = array_values(array_intersect($ownerPermissions, $issuerPermissions));
+        }
+    }
+
+    if ($effectiveAbilities === []) {
+        return back()->withErrors([
+            'abilities' => 'No effective token abilities are available in this context.',
+        ])->withInput();
+    }
+
+    $issued = $tokens->issue(
+        principalId: $ownerPrincipalId,
+        label: (string) $validated['label'],
+        organizationId: $organizationId,
+        scopeId: $scopeId,
+        createdByPrincipalId: $actingPrincipalId,
+        expiresAt: $expiresAt,
+        abilities: $effectiveAbilities,
+    );
+
+    $audit->record(new AuditRecordData(
+        eventType: 'core.api-tokens.issued',
+        outcome: 'success',
+        originComponent: 'core',
+        principalId: $actingPrincipalId,
+        organizationId: $organizationId,
+        scopeId: $scopeId,
+        targetType: 'api-access-token',
+        targetId: $issued['id'],
+        summary: [
+            'owner_principal_id' => $ownerPrincipalId,
+            'token_prefix' => $issued['token_prefix'],
+            'expires_at' => $issued['expires_at'],
+            'abilities' => $effectiveAbilities,
+        ],
+        executionOrigin: 'web',
+    ));
+
+    $events->publish(new PublicEvent(
+        name: 'core.api-tokens.issued',
+        originComponent: 'core',
+        organizationId: $organizationId,
+        scopeId: $scopeId,
+        payload: [
+            'token_id' => $issued['id'],
+            'owner_principal_id' => $ownerPrincipalId,
+            'token_prefix' => $issued['token_prefix'],
+            'expires_at' => $issued['expires_at'],
+        ],
+    ));
+
+    $query = array_filter([
+        'menu' => is_string($validated['menu'] ?? null) ? $validated['menu'] : 'core.api-tokens',
+        'principal_id' => $actingPrincipalId,
+        'owner_principal_id' => $ownerPrincipalId,
+        'organization_id' => $organizationId,
+        'scope_id' => $scopeId,
+        'token_id' => $issued['id'],
+        'locale' => is_string($validated['locale'] ?? null) ? $validated['locale'] : 'en',
+        'theme' => is_string($validated['theme'] ?? null) ? $validated['theme'] : null,
+        'membership_ids' => request()->input('membership_ids', []),
+    ]);
+
+    return redirect()->route($shellRouteNameForMenu($query['menu'] ?? null), $query)
+        ->with('status', 'API token issued. Copy the secret now; it is shown only once.')
+        ->with('api_token_issued', [
+            'id' => $issued['id'],
+            'token' => $issued['token'],
+            'token_prefix' => $issued['token_prefix'],
+            'owner_principal_id' => $ownerPrincipalId,
+            'organization_id' => $organizationId,
+            'scope_id' => $scopeId,
+            'expires_at' => $issued['expires_at'],
+        ]);
+})->middleware('core.permission:core.api-tokens.manage')->name('core.api-tokens.issue');
+
+Route::post('/core/api-tokens/{tokenId}/rotate', function (
+    ApiAccessTokenRepository $tokens,
+    AuthorizationServiceInterface $authorization,
+    AuditTrailInterface $audit,
+    EventBusInterface $events,
+    string $tokenId
+) use ($shellRouteNameForMenu, $resolvePrincipalId) {
+    $validated = request()->validate([
+        'principal_id' => ['nullable', 'string', 'max:120'],
+        'owner_principal_id' => ['nullable', 'string', 'max:120'],
+        'organization_id' => ['nullable', 'string', 'max:64'],
+        'scope_id' => ['nullable', 'string', 'max:64'],
+        'locale' => ['nullable', 'string', 'max:12'],
+        'theme' => ['nullable', 'string', 'max:40'],
+        'menu' => ['nullable', 'string', 'max:80'],
+    ]);
+
+    $record = $tokens->find($tokenId);
+    abort_if($record === null, 404);
+
+    $actingPrincipalId = $resolvePrincipalId(
+        is_string($validated['principal_id'] ?? null) && $validated['principal_id'] !== ''
+            ? $validated['principal_id']
+            : null
+    );
+    $canManageOthers = is_string($actingPrincipalId) && $actingPrincipalId !== '' && $authorization->authorize(new AuthorizationContext(
+        principal: new PrincipalReference(
+            id: $actingPrincipalId,
+            provider: 'request',
+        ),
+        permission: 'core.roles.manage',
+        memberships: [],
+        organizationId: null,
+        scopeId: null,
+    ))->allowed();
+
+    if (! $canManageOthers && $record['principal_id'] !== $actingPrincipalId) {
+        abort(403, 'You can only rotate your own tokens.');
+    }
+
+    $rotated = $tokens->rotate($tokenId);
+
+    if ($rotated === null) {
+        return back()->withErrors([
+            'token_id' => 'Token cannot be rotated because it is revoked or expired.',
+        ]);
+    }
+
+    $organizationId = is_string($record['organization_id'] ?? null) && $record['organization_id'] !== ''
+        ? $record['organization_id']
+        : (is_string($validated['organization_id'] ?? null) && $validated['organization_id'] !== '' ? $validated['organization_id'] : null);
+    $scopeId = is_string($record['scope_id'] ?? null) && $record['scope_id'] !== ''
+        ? $record['scope_id']
+        : (is_string($validated['scope_id'] ?? null) && $validated['scope_id'] !== '' ? $validated['scope_id'] : null);
+
+    $audit->record(new AuditRecordData(
+        eventType: 'core.api-tokens.rotated',
+        outcome: 'success',
+        originComponent: 'core',
+        principalId: $actingPrincipalId,
+        organizationId: $organizationId,
+        scopeId: $scopeId,
+        targetType: 'api-access-token',
+        targetId: $tokenId,
+        summary: [
+            'owner_principal_id' => $record['principal_id'],
+            'token_prefix' => $rotated['token_prefix'],
+        ],
+        executionOrigin: 'web',
+    ));
+
+    $events->publish(new PublicEvent(
+        name: 'core.api-tokens.rotated',
+        originComponent: 'core',
+        organizationId: $organizationId,
+        scopeId: $scopeId,
+        payload: [
+            'token_id' => $tokenId,
+            'owner_principal_id' => $record['principal_id'],
+            'token_prefix' => $rotated['token_prefix'],
+        ],
+    ));
+
+    $query = array_filter([
+        'menu' => is_string($validated['menu'] ?? null) ? $validated['menu'] : 'core.api-tokens',
+        'principal_id' => $actingPrincipalId,
+        'owner_principal_id' => is_string($validated['owner_principal_id'] ?? null) && $validated['owner_principal_id'] !== ''
+            ? $validated['owner_principal_id']
+            : $record['principal_id'],
+        'organization_id' => $organizationId,
+        'scope_id' => $scopeId,
+        'token_id' => $tokenId,
+        'locale' => is_string($validated['locale'] ?? null) ? $validated['locale'] : 'en',
+        'theme' => is_string($validated['theme'] ?? null) ? $validated['theme'] : null,
+        'membership_ids' => request()->input('membership_ids', []),
+    ]);
+
+    return redirect()->route($shellRouteNameForMenu($query['menu'] ?? null), $query)
+        ->with('status', 'API token rotated. Copy the new secret now; it is shown only once.')
+        ->with('api_token_issued', [
+            'id' => $rotated['id'],
+            'token' => $rotated['token'],
+            'token_prefix' => $rotated['token_prefix'],
+            'owner_principal_id' => $record['principal_id'],
+            'organization_id' => $organizationId,
+            'scope_id' => $scopeId,
+            'expires_at' => $rotated['expires_at'],
+        ]);
+})->middleware('core.permission:core.api-tokens.manage')->name('core.api-tokens.rotate');
+
+Route::post('/core/api-tokens/{tokenId}/revoke', function (
+    ApiAccessTokenRepository $tokens,
+    AuthorizationServiceInterface $authorization,
+    AuditTrailInterface $audit,
+    EventBusInterface $events,
+    string $tokenId
+) use ($shellRouteNameForMenu, $resolvePrincipalId) {
+    $validated = request()->validate([
+        'principal_id' => ['nullable', 'string', 'max:120'],
+        'owner_principal_id' => ['nullable', 'string', 'max:120'],
+        'organization_id' => ['nullable', 'string', 'max:64'],
+        'scope_id' => ['nullable', 'string', 'max:64'],
+        'locale' => ['nullable', 'string', 'max:12'],
+        'theme' => ['nullable', 'string', 'max:40'],
+        'menu' => ['nullable', 'string', 'max:80'],
+    ]);
+
+    $record = $tokens->find($tokenId);
+    abort_if($record === null, 404);
+    $actingPrincipalId = $resolvePrincipalId(
+        is_string($validated['principal_id'] ?? null) && $validated['principal_id'] !== ''
+            ? $validated['principal_id']
+            : null
+    );
+    $canManageOthers = is_string($actingPrincipalId) && $actingPrincipalId !== '' && $authorization->authorize(new AuthorizationContext(
+        principal: new PrincipalReference(
+            id: $actingPrincipalId,
+            provider: 'request',
+        ),
+        permission: 'core.roles.manage',
+        memberships: [],
+        organizationId: null,
+        scopeId: null,
+    ))->allowed();
+
+    if (! $canManageOthers && $record['principal_id'] !== $actingPrincipalId) {
+        abort(403, 'You can only revoke your own tokens.');
+    }
+
+    $revoked = $tokens->revoke($tokenId);
+    $organizationId = is_string($record['organization_id'] ?? null) && $record['organization_id'] !== ''
+        ? $record['organization_id']
+        : (is_string($validated['organization_id'] ?? null) && $validated['organization_id'] !== '' ? $validated['organization_id'] : null);
+    $scopeId = is_string($record['scope_id'] ?? null) && $record['scope_id'] !== ''
+        ? $record['scope_id']
+        : (is_string($validated['scope_id'] ?? null) && $validated['scope_id'] !== '' ? $validated['scope_id'] : null);
+
+    $audit->record(new AuditRecordData(
+        eventType: 'core.api-tokens.revoked',
+        outcome: 'success',
+        originComponent: 'core',
+        principalId: $actingPrincipalId,
+        organizationId: $organizationId,
+        scopeId: $scopeId,
+        targetType: 'api-access-token',
+        targetId: $tokenId,
+        summary: [
+            'owner_principal_id' => $record['principal_id'],
+            'token_prefix' => $record['token_prefix'],
+            'changed' => $revoked,
+        ],
+        executionOrigin: 'web',
+    ));
+
+    if ($revoked) {
+        $events->publish(new PublicEvent(
+            name: 'core.api-tokens.revoked',
+            originComponent: 'core',
+            organizationId: $organizationId,
+            scopeId: $scopeId,
+            payload: [
+                'token_id' => $tokenId,
+                'owner_principal_id' => $record['principal_id'],
+            ],
+        ));
+    }
+
+    $query = array_filter([
+        'menu' => is_string($validated['menu'] ?? null) ? $validated['menu'] : 'core.api-tokens',
+        'principal_id' => $actingPrincipalId,
+        'owner_principal_id' => is_string($validated['owner_principal_id'] ?? null) && $validated['owner_principal_id'] !== ''
+            ? $validated['owner_principal_id']
+            : null,
+        'organization_id' => $organizationId,
+        'scope_id' => $scopeId,
+        'locale' => is_string($validated['locale'] ?? null) ? $validated['locale'] : 'en',
+        'theme' => is_string($validated['theme'] ?? null) ? $validated['theme'] : null,
+        'membership_ids' => request()->input('membership_ids', []),
+    ]);
+
+    return redirect()->route($shellRouteNameForMenu($query['menu'] ?? null), $query)
+        ->with('status', $revoked ? 'API token revoked.' : 'API token was already revoked.');
+})->middleware('core.permission:core.api-tokens.manage')->name('core.api-tokens.revoke');
 
 Route::post('/core/notifications/settings', function (
     NotificationMailSettingsRepository $settings,

@@ -427,6 +427,24 @@ class AppServiceProvider extends ServiceProvider
                 operation: 'manage',
                 contexts: ['platform'],
             ),
+            new PermissionDefinition(
+                key: 'core.api-tokens.view',
+                label: 'View API tokens',
+                description: 'View issued API access tokens and their ownership boundaries.',
+                origin: 'core',
+                featureArea: 'api-tokens',
+                operation: 'view',
+                contexts: ['platform'],
+            ),
+            new PermissionDefinition(
+                key: 'core.api-tokens.manage',
+                label: 'Manage API tokens',
+                description: 'Issue and revoke API access tokens used by integrations.',
+                origin: 'core',
+                featureArea: 'api-tokens',
+                operation: 'manage',
+                contexts: ['platform'],
+            ),
         ] as $definition) {
             $permissions->register($definition);
         }
@@ -563,6 +581,18 @@ class AppServiceProvider extends ServiceProvider
             icon: 'mail',
             order: 45,
             permission: 'core.notifications.view',
+            area: 'admin',
+        ));
+
+        $menus->registerCore(new MenuDefinition(
+            id: 'core.api-tokens',
+            owner: 'core',
+            labelKey: 'core.nav.api_tokens',
+            routeName: 'core.api-tokens.index',
+            parentId: 'core.platform',
+            icon: 'key',
+            order: 50,
+            permission: 'core.api-tokens.view',
             area: 'admin',
         ));
 
@@ -980,6 +1010,37 @@ class AppServiceProvider extends ServiceProvider
         ));
 
         $screens->register(new ScreenDefinition(
+            menuId: 'core.api-tokens',
+            owner: 'core',
+            titleKey: 'core.api-tokens.screen.title',
+            subtitleKey: 'core.api-tokens.screen.subtitle',
+            viewPath: resource_path('views/api-tokens.blade.php'),
+            dataResolver: fn (ScreenRenderContext $screenContext): array => $this->apiAccessTokensScreenData($screenContext),
+            toolbarResolver: function (ScreenRenderContext $screenContext): array {
+                $authorization = $this->app->make(AuthorizationServiceInterface::class);
+                $canManage = $screenContext->principal !== null && $authorization->authorize(new AuthorizationContext(
+                    principal: $screenContext->principal,
+                    permission: 'core.api-tokens.manage',
+                    memberships: $screenContext->memberships,
+                    organizationId: $screenContext->organizationId,
+                    scopeId: $screenContext->scopeId,
+                ))->allowed();
+
+                if (! $canManage) {
+                    return [];
+                }
+
+                return [
+                    new ToolbarAction(
+                        label: 'Issue token',
+                        url: '#api-token-issue-editor',
+                        variant: 'primary',
+                    ),
+                ];
+            },
+        ));
+
+        $screens->register(new ScreenDefinition(
             menuId: 'core.functional-actors',
             owner: 'core',
             titleKey: 'core.functional-actors.screen.title',
@@ -1107,6 +1168,11 @@ class AppServiceProvider extends ServiceProvider
                     'label' => 'Notifications',
                     'copy' => 'Reminder delivery, SMTP setup, and outbound email checks.',
                     'url' => route('core.admin.index', [...$query, 'menu' => 'core.notifications']),
+                ],
+                [
+                    'label' => 'API tokens',
+                    'copy' => 'Issue integration credentials and revoke compromised tokens.',
+                    'url' => route('core.admin.index', [...$query, 'menu' => 'core.api-tokens']),
                 ],
             ],
             'recent_audit' => array_map(static fn ($record): array => $record->toArray(), $audit),
@@ -1560,6 +1626,135 @@ class AppServiceProvider extends ServiceProvider
             'save_settings_route' => route('core.notifications.settings.update'),
             'send_test_route' => route('core.notifications.test.send'),
             'save_template_route' => route('core.notifications.templates.update'),
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function apiAccessTokensScreenData(ScreenRenderContext $screenContext): array
+    {
+        $query = $this->coreScreenQuery($screenContext);
+        $authorization = $this->app->make(AuthorizationServiceInterface::class);
+        $repository = $this->app->make(ApiAccessTokenRepository::class);
+        $organizationId = is_string($query['organization_id'] ?? null) && $query['organization_id'] !== ''
+            ? (string) $query['organization_id']
+            : null;
+        $scopeId = is_string($query['scope_id'] ?? null) && $query['scope_id'] !== ''
+            ? (string) $query['scope_id']
+            : null;
+        $selectedOwnerPrincipalId = is_string($screenContext->query['owner_principal_id'] ?? null) && ($screenContext->query['owner_principal_id'] ?? '') !== ''
+            ? (string) $screenContext->query['owner_principal_id']
+            : null;
+        $canManageApiTokens = $screenContext->principal !== null && $authorization->authorize(new AuthorizationContext(
+            principal: $screenContext->principal,
+            permission: 'core.api-tokens.manage',
+            memberships: $screenContext->memberships,
+            organizationId: $organizationId,
+            scopeId: $scopeId,
+        ))->allowed();
+
+        $organizationOptions = DB::table('organizations')
+            ->orderBy('name')
+            ->get(['id', 'name'])
+            ->map(static fn ($organization): array => [
+                'id' => (string) $organization->id,
+                'label' => (string) $organization->name,
+            ])->all();
+        $organizationLabelMap = collect($organizationOptions)->mapWithKeys(
+            static fn (array $organization): array => [$organization['id'] => $organization['label']]
+        )->all();
+        $scopeOptions = is_string($organizationId) && $organizationId !== ''
+            ? DB::table('scopes')
+                ->where('organization_id', $organizationId)
+                ->where('is_active', true)
+                ->orderBy('name')
+                ->get(['id', 'name'])
+                ->map(static fn ($scope): array => [
+                    'id' => (string) $scope->id,
+                    'label' => (string) $scope->name,
+                ])->all()
+            : [];
+        $scopeLabelMap = collect($scopeOptions)->mapWithKeys(
+            static fn (array $scope): array => [$scope['id'] => $scope['label']]
+        )->all();
+        $principalOptions = $this->functionalActorPrincipalOptions($organizationId);
+        $principalLabelMap = collect($principalOptions)->mapWithKeys(
+            static fn (array $principal): array => [$principal['id'] => $principal['label']]
+        )->all();
+        $tokenRows = $repository->list(
+            organizationId: $organizationId,
+            scopeId: $scopeId,
+            principalId: $selectedOwnerPrincipalId,
+            limit: 300,
+        );
+        $listQuery = $query;
+        unset($listQuery['token_id']);
+
+        $tokens = array_map(function (array $token) use ($principalLabelMap, $organizationLabelMap, $scopeLabelMap, $listQuery): array {
+            $expiresAt = is_string($token['expires_at'] ?? null) && $token['expires_at'] !== ''
+                ? (string) $token['expires_at']
+                : null;
+            $revokedAt = is_string($token['revoked_at'] ?? null) && $token['revoked_at'] !== ''
+                ? (string) $token['revoked_at']
+                : null;
+            $isExpired = $expiresAt !== null && now()->greaterThan($expiresAt);
+            $isRevoked = $revokedAt !== null;
+
+            return [
+                ...$token,
+                'principal_label' => $principalLabelMap[$token['principal_id']] ?? $token['principal_id'],
+                'organization_label' => is_string($token['organization_id'] ?? null) && $token['organization_id'] !== ''
+                    ? ($organizationLabelMap[$token['organization_id']] ?? $token['organization_id'])
+                    : 'Platform-wide',
+                'scope_label' => is_string($token['scope_id'] ?? null) && $token['scope_id'] !== ''
+                    ? ($scopeLabelMap[$token['scope_id']] ?? $token['scope_id'])
+                    : 'All scopes',
+                'status' => $isRevoked ? 'revoked' : ($isExpired ? 'expired' : 'active'),
+                'is_revoked' => $isRevoked,
+                'is_expired' => $isExpired,
+                'open_url' => route('core.admin.index', [...$listQuery, 'menu' => 'core.api-tokens', 'token_id' => $token['id']]),
+                'revoke_route' => route('core.api-tokens.revoke', ['tokenId' => $token['id']]),
+                'rotate_route' => route('core.api-tokens.rotate', ['tokenId' => $token['id']]),
+            ];
+        }, $tokenRows);
+
+        $selectedTokenId = is_string($screenContext->query['token_id'] ?? null) && ($screenContext->query['token_id'] ?? '') !== ''
+            ? (string) $screenContext->query['token_id']
+            : null;
+        $selectedToken = null;
+
+        if (is_string($selectedTokenId) && $selectedTokenId !== '') {
+            foreach ($tokens as $token) {
+                if (($token['id'] ?? null) === $selectedTokenId) {
+                    $selectedToken = $token;
+                    break;
+                }
+            }
+        }
+
+        $issuedToken = session('api_token_issued');
+
+        return [
+            'query' => $query,
+            'list_query' => $listQuery,
+            'organization_id' => $organizationId,
+            'scope_id' => $scopeId,
+            'tokens' => $tokens,
+            'selected_token' => $selectedToken,
+            'issued_token' => is_array($issuedToken) ? $issuedToken : null,
+            'organization_options' => $organizationOptions,
+            'scope_options' => $scopeOptions,
+            'principal_options' => $principalOptions,
+            'selected_owner_principal_id' => $selectedOwnerPrincipalId,
+            'issue_token_route' => route('core.api-tokens.issue'),
+            'can_manage_api_tokens' => $canManageApiTokens,
+            'metrics' => [
+                'tokens' => count($tokens),
+                'active' => collect($tokens)->where('status', 'active')->count(),
+                'expired' => collect($tokens)->where('status', 'expired')->count(),
+                'revoked' => collect($tokens)->where('status', 'revoked')->count(),
+            ],
         ];
     }
 

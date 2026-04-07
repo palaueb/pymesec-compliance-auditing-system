@@ -45,6 +45,20 @@
       ],
       "concept_ids": ["audit-trail", "api-access-token"],
       "order": 40
+    },
+    {
+      "id": "api-token-governance",
+      "title": "Manage API tokens from administration",
+      "summary": "Issue integration tokens per user and revoke them quickly when risk changes.",
+      "body": [
+        "Use Administration > API tokens to issue credentials linked to one principal identity.",
+        "Use rotate when you need a new secret without changing owner or scope boundaries; previous secret becomes invalid immediately.",
+        "Set optional organization and scope boundaries to reduce blast radius for external integrations.",
+        "Token abilities are enforced per request and cannot exceed the owner effective permissions in the selected context.",
+        "Copy token secrets immediately after issuance because the clear value is shown one time only."
+      ],
+      "concept_ids": ["api-access-token", "principal", "audit-trail"],
+      "order": 50
     }
   ],
   "concepts": [

@@ -120,6 +120,21 @@ Common baseline requirements:
 - idempotency strategy for non-idempotent operations where required
 - upload/download operations defined explicitly in OpenAPI
 
+## OpenAPI Artifact Endpoint and Compatibility Policy
+
+Published endpoints:
+
+- `/openapi/v1.json` (version-pinned canonical artifact for v1 clients)
+- `/openapi.json` (alias to latest supported stable version)
+
+Compatibility policy for `v1`:
+
+- additive changes are allowed in minor delivery (new paths, optional fields, optional enum values)
+- breaking changes require a new artifact version path (for example `/openapi/v2.json`)
+- existing `operationId` values are immutable within `v1`
+- existing required request fields are immutable within `v1`
+- response shape changes that remove or rename existing fields are not allowed within `v1`
+
 ## OpenAPI Build and Governance
 
 Required workflow:

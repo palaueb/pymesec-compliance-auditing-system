@@ -78,6 +78,10 @@ class AuthorizePermission
             return $this->deny($request, $permission, $result->reason ?? 'permission_denied');
         }
 
+        if (! $this->tokenAbilityAllows($request, $permission)) {
+            return $this->deny($request, $permission, 'token_ability_denied');
+        }
+
         $canonicalOrganizationId = $tenancy->organization?->id ?? $organizationId;
         $canonicalScopeId = $effectiveScopeId;
 
@@ -206,5 +210,22 @@ class AuthorizePermission
         }
 
         return false;
+    }
+
+    private function tokenAbilityAllows(Request $request, string $permission): bool
+    {
+        $authorType = $request->attributes->get('core.author_type');
+
+        if ($authorType !== 'api_token') {
+            return true;
+        }
+
+        $abilities = $request->attributes->get('core.api_token_abilities');
+
+        if (! is_array($abilities) || $abilities === []) {
+            return true;
+        }
+
+        return in_array($permission, $abilities, true);
     }
 }

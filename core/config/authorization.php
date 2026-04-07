@@ -15,6 +15,8 @@ return [
                 'core.menus.view',
                 'core.notifications.manage',
                 'core.notifications.view',
+                'core.api-tokens.manage',
+                'core.api-tokens.view',
                 'core.plugins.view',
                 'core.plugins.manage',
                 'core.permissions.view',
