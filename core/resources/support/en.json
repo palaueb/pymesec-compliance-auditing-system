@@ -32,6 +32,19 @@
       ],
       "concept_ids": ["asset", "control", "risk", "finding", "artifact", "audit-trail"],
       "order": 30
+    },
+    {
+      "id": "api-and-openapi",
+      "title": "API and OpenAPI integration",
+      "summary": "Operational domains are exposed through REST API contracts and a generated OpenAPI document.",
+      "body": [
+        "Use /openapi.json as the canonical machine-readable contract for API operations currently available in the platform, including assets, risks, controls, assessments, findings, remediation actions, and assessment reviews.",
+        "For governed fields, always fetch allowed options from lookup endpoints before submitting write operations.",
+        "Write endpoints publish request contracts from route metadata and FormRequest validation rules so integrations can rely on one source of truth.",
+        "When a write field references another record (for example owner, control, risk, framework), inspect the operation lookup metadata and query the referenced lookup endpoint before sending the write payload."
+      ],
+      "concept_ids": ["audit-trail", "api-access-token"],
+      "order": 40
     }
   ],
   "concepts": [
@@ -164,6 +177,22 @@
         { "type": "records-changes-to", "target": "risk", "summary": "Risk decisions and transitions should be auditable." }
       ],
       "order": 80
+    },
+    {
+      "id": "api-access-token",
+      "label": "API Access Token",
+      "category": "access",
+      "summary": "A scoped credential used to authenticate REST API calls outside interactive web sessions.",
+      "why_it_exists": "Automation and external integrations need authenticated API access without browser sessions, while keeping traceability and revocation controls.",
+      "how_to_use": [
+        "Issue tokens with explicit owner principal and optional organization/scope boundaries.",
+        "Revoke tokens immediately when no longer required and monitor request activity in the audit trail."
+      ],
+      "relations": [
+        { "type": "used-by", "target": "principal", "summary": "Every token belongs to one principal identity." },
+        { "type": "recorded-in", "target": "audit-trail", "summary": "API operations must remain traceable in append-only logs." }
+      ],
+      "order": 90
     }
   ]
 }

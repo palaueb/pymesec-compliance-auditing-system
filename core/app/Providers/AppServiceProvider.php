@@ -26,6 +26,10 @@ use PymeSec\Core\Notifications\NotificationTemplateRenderer;
 use PymeSec\Core\Notifications\NotificationTemplateRepository;
 use PymeSec\Core\Notifications\OutboundNotificationMailer;
 use PymeSec\Core\ObjectAccess\ObjectAccessService;
+use PymeSec\Core\OpenApi\OpenApiDocumentBuilder;
+use PymeSec\Core\OpenApi\OpenApiFragmentLoader;
+use PymeSec\Core\OpenApi\RouteOpenApiExtractor;
+use PymeSec\Core\OpenApi\ValidationRulesToSchema;
 use PymeSec\Core\Permissions\AuthorizationContext;
 use PymeSec\Core\Permissions\AuthorizationPresentation;
 use PymeSec\Core\Permissions\AuthorizationService;
@@ -42,6 +46,7 @@ use PymeSec\Core\ReferenceData\ReferenceCatalogService;
 use PymeSec\Core\Reporting\ManagementReportingService;
 use PymeSec\Core\Reporting\ReportingMetricCatalog;
 use PymeSec\Core\Reporting\WorkspaceReportingContext;
+use PymeSec\Core\Security\ApiAccessTokenRepository;
 use PymeSec\Core\Support\Contracts\SupportRegistryInterface;
 use PymeSec\Core\Support\JsonSupportRegistry;
 use PymeSec\Core\Tenancy\Contracts\TenancyServiceInterface;
@@ -188,6 +193,29 @@ class AppServiceProvider extends ServiceProvider
 
         $this->app->singleton(ReferenceCatalogService::class, function (): ReferenceCatalogService {
             return new ReferenceCatalogService;
+        });
+
+        $this->app->singleton(ApiAccessTokenRepository::class, function (): ApiAccessTokenRepository {
+            return new ApiAccessTokenRepository;
+        });
+
+        $this->app->singleton(OpenApiFragmentLoader::class, function (): OpenApiFragmentLoader {
+            return new OpenApiFragmentLoader;
+        });
+
+        $this->app->singleton(RouteOpenApiExtractor::class, function ($app): RouteOpenApiExtractor {
+            return new RouteOpenApiExtractor(
+                router: $app['router'],
+                validationRulesToSchema: $app->make(ValidationRulesToSchema::class),
+                container: $app,
+            );
+        });
+
+        $this->app->singleton(OpenApiDocumentBuilder::class, function ($app): OpenApiDocumentBuilder {
+            return new OpenApiDocumentBuilder(
+                fragments: $app->make(OpenApiFragmentLoader::class),
+                routes: $app->make(RouteOpenApiExtractor::class),
+            );
         });
 
         $this->app->singleton(ReportingMetricCatalog::class, function (): ReportingMetricCatalog {

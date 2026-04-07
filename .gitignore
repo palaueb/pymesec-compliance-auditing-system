@@ -1,5 +1,5 @@
 .env
 .DS_Store
 Thumbs.db
-windows_app/
 automation-catalog-packages/
+internal/

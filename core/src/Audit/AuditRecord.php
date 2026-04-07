@@ -13,6 +13,9 @@ class AuditRecord
         public readonly string $eventType,
         public readonly string $outcome,
         public readonly string $originComponent,
+        public readonly ?string $channel,
+        public readonly ?string $authorType,
+        public readonly ?string $authorId,
         public readonly ?string $principalId,
         public readonly ?string $membershipId,
         public readonly ?string $organizationId,
@@ -22,6 +25,9 @@ class AuditRecord
         public readonly array $summary,
         public readonly array $correlation,
         public readonly ?string $executionOrigin,
+        public readonly ?string $requestMethod,
+        public readonly ?string $requestPath,
+        public readonly ?int $statusCode,
         public readonly string $createdAt,
     ) {}
 
@@ -35,6 +41,9 @@ class AuditRecord
             'event_type' => $this->eventType,
             'outcome' => $this->outcome,
             'origin_component' => $this->originComponent,
+            'channel' => $this->channel,
+            'author_type' => $this->authorType,
+            'author_id' => $this->authorId,
             'principal_id' => $this->principalId,
             'membership_id' => $this->membershipId,
             'organization_id' => $this->organizationId,
@@ -44,6 +53,9 @@ class AuditRecord
             'summary' => $this->summary,
             'correlation' => $this->correlation,
             'execution_origin' => $this->executionOrigin,
+            'request_method' => $this->requestMethod,
+            'request_path' => $this->requestPath,
+            'status_code' => $this->statusCode,
             'created_at' => $this->createdAt,
         ];
     }

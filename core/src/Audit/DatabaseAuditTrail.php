@@ -19,6 +19,9 @@ class DatabaseAuditTrail implements AuditTrailInterface
             'event_type' => $record->eventType,
             'outcome' => $record->outcome,
             'origin_component' => $record->originComponent,
+            'channel' => $record->channel,
+            'author_type' => $record->authorType,
+            'author_id' => $record->authorId,
             'principal_id' => $record->principalId,
             'membership_id' => $record->membershipId,
             'organization_id' => $record->organizationId,
@@ -28,6 +31,9 @@ class DatabaseAuditTrail implements AuditTrailInterface
             'summary' => $this->encodeJson($record->summary),
             'correlation' => $this->encodeJson($record->correlation),
             'execution_origin' => $record->executionOrigin,
+            'request_method' => $record->requestMethod,
+            'request_path' => $record->requestPath,
+            'status_code' => $record->statusCode,
             'created_at' => $createdAt,
         ]);
 
@@ -36,6 +42,9 @@ class DatabaseAuditTrail implements AuditTrailInterface
             eventType: $record->eventType,
             outcome: $record->outcome,
             originComponent: $record->originComponent,
+            channel: $record->channel,
+            authorType: $record->authorType,
+            authorId: $record->authorId,
             principalId: $record->principalId,
             membershipId: $record->membershipId,
             organizationId: $record->organizationId,
@@ -45,6 +54,9 @@ class DatabaseAuditTrail implements AuditTrailInterface
             summary: $record->summary,
             correlation: $record->correlation,
             executionOrigin: $record->executionOrigin,
+            requestMethod: $record->requestMethod,
+            requestPath: $record->requestPath,
+            statusCode: $record->statusCode,
             createdAt: $createdAt,
         );
     }
@@ -64,10 +76,15 @@ class DatabaseAuditTrail implements AuditTrailInterface
             'target_type',
             'target_id',
             'execution_origin',
+            'channel',
+            'author_type',
+            'author_id',
+            'request_method',
+            'status_code',
         ] as $field) {
             $value = $filters[$field] ?? null;
 
-            if (is_string($value) && $value !== '') {
+            if ((is_string($value) && $value !== '') || is_int($value)) {
                 $query->where($field, $value);
             }
         }
@@ -92,6 +109,9 @@ class DatabaseAuditTrail implements AuditTrailInterface
                 eventType: (string) $record->event_type,
                 outcome: (string) $record->outcome,
                 originComponent: (string) $record->origin_component,
+                channel: is_string($record->channel ?? null) ? $record->channel : null,
+                authorType: is_string($record->author_type ?? null) ? $record->author_type : null,
+                authorId: is_string($record->author_id ?? null) ? $record->author_id : null,
                 principalId: is_string($record->principal_id) ? $record->principal_id : null,
                 membershipId: is_string($record->membership_id) ? $record->membership_id : null,
                 organizationId: is_string($record->organization_id) ? $record->organization_id : null,
@@ -101,6 +121,9 @@ class DatabaseAuditTrail implements AuditTrailInterface
                 summary: $this->decodeJson($record->summary),
                 correlation: $this->decodeJson($record->correlation),
                 executionOrigin: is_string($record->execution_origin) ? $record->execution_origin : null,
+                requestMethod: is_string($record->request_method ?? null) ? $record->request_method : null,
+                requestPath: is_string($record->request_path ?? null) ? $record->request_path : null,
+                statusCode: is_numeric($record->status_code ?? null) ? (int) $record->status_code : null,
                 createdAt: (string) $record->created_at,
             ))
             ->all();

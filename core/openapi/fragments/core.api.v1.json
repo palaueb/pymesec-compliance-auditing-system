@@ -1,0 +1,73 @@
+{
+  "info": {
+    "title": "PymeSec API",
+    "description": "Canonical modular REST API contract for PymeSec."
+  },
+  "tags": [
+    {
+      "name": "core",
+      "description": "Core platform and capability endpoints."
+    },
+    {
+      "name": "reference-data",
+      "description": "Governed lookup and catalog endpoints."
+    }
+  ],
+  "paths": {
+    "/meta/capabilities": {
+      "get": {
+        "tags": ["core"],
+        "operationId": "coreGetCapabilities",
+        "summary": "Resolve effective principal capabilities",
+        "responses": {
+          "200": {
+            "description": "Capability snapshot for authenticated principal"
+          },
+          "401": {
+            "description": "Authentication required"
+          }
+        }
+      }
+    },
+    "/lookups/reference-catalogs": {
+      "get": {
+        "tags": ["reference-data"],
+        "operationId": "referenceDataListCatalogs",
+        "summary": "List managed reference catalogs and effective options",
+        "responses": {
+          "200": {
+            "description": "Catalog list with effective options"
+          },
+          "401": {
+            "description": "Authentication required"
+          }
+        }
+      }
+    },
+    "/lookups/reference-catalogs/{catalogKey}/options": {
+      "get": {
+        "tags": ["reference-data"],
+        "operationId": "referenceDataListCatalogOptions",
+        "summary": "List effective options for one catalog key",
+        "parameters": [
+          {
+            "name": "catalogKey",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Catalog options"
+          },
+          "404": {
+            "description": "Unknown catalog"
+          }
+        }
+      }
+    }
+  }
+}

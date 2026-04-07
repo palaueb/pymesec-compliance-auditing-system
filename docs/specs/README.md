@@ -7,18 +7,22 @@ Documentation rule:
 - Updating the in-application `HELP` is mandatory whenever a feature, workflow, screen, object, or governed record type is added, changed, improved, or removed.
 - A slice is not considered complete if specs change but the user-facing `support` content remains stale.
 - Execution status source of truth is `project-todo.md` (single canonical TODO).
+- Delivery quality gates are defined in `delivery-guardrails-v1.md` and are mandatory.
 
 Current notable documents:
 
 The following specification documents are available in the [`specs`](./) folder:
 
 - [project-todo.md](./project-todo.md)
+- [delivery-guardrails-v1.md](./delivery-guardrails-v1.md)
 - [status-index-v1.md](./status-index-v1.md)
 - [tenancy-model-v1.md](./tenancy-model-v1.md)
 - [audit-trail-v1.md](./audit-trail-v1.md)
 - [artifacts-and-attachments-v1.md](./artifacts-and-attachments-v1.md)
 - [file-upload-security-and-type-validation-v1.md](./file-upload-security-and-type-validation-v1.md)
 - [event-bus-and-hooks-v1.md](./event-bus-and-hooks-v1.md)
+- [api-openapi-foundation-v1.md](./api-openapi-foundation-v1.md)
+- [api-security-baseline-v1.md](./api-security-baseline-v1.md)
 - [continuity-bcm-plugin-v1.md](./continuity-bcm-plugin-v1.md)
 - [continuity-recovery-plan-detail-ui-v1.md](./continuity-recovery-plan-detail-ui-v1.md)
 - [data-flows-privacy-plugin-v1.md](./data-flows-privacy-plugin-v1.md)

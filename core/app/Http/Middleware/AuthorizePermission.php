@@ -122,7 +122,15 @@ class AuthorizePermission
 
     private function actingPrincipalId(Request $request): ?string
     {
-        $sessionValue = $request->session()->get('auth.principal_id');
+        $resolvedPrincipal = $request->attributes->get('core.authenticated_principal_id');
+
+        if (is_string($resolvedPrincipal) && $resolvedPrincipal !== '') {
+            return $resolvedPrincipal;
+        }
+
+        $sessionValue = $request->hasSession()
+            ? $request->session()->get('auth.principal_id')
+            : null;
 
         if (is_string($sessionValue) && $sessionValue !== '') {
             return $sessionValue;

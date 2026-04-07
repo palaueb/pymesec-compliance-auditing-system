@@ -1,0 +1,86 @@
+{
+  "tags": [
+    {
+      "name": "assets",
+      "description": "Asset catalog API surface."
+    }
+  ],
+  "paths": {
+    "/assets": {
+      "get": {
+        "tags": ["assets"],
+        "operationId": "assetCatalogListAssets",
+        "summary": "List assets visible in current context",
+        "responses": {
+          "200": {
+            "description": "Asset list"
+          },
+          "403": {
+            "description": "Missing assets.view permission"
+          }
+        }
+      },
+      "post": {
+        "tags": ["assets"],
+        "operationId": "assetCatalogCreateAsset",
+        "summary": "Create an asset",
+        "responses": {
+          "200": {
+            "description": "Asset created"
+          },
+          "422": {
+            "description": "Validation failed"
+          }
+        }
+      }
+    },
+    "/assets/{assetId}": {
+      "get": {
+        "tags": ["assets"],
+        "operationId": "assetCatalogGetAsset",
+        "summary": "Get one asset",
+        "parameters": [
+          {
+            "name": "assetId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Asset detail"
+          },
+          "404": {
+            "description": "Asset not found"
+          }
+        }
+      },
+      "patch": {
+        "tags": ["assets"],
+        "operationId": "assetCatalogUpdateAsset",
+        "summary": "Update one asset",
+        "parameters": [
+          {
+            "name": "assetId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Asset updated"
+          },
+          "422": {
+            "description": "Validation failed"
+          }
+        }
+      }
+    }
+  }
+}

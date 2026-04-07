@@ -281,6 +281,11 @@ class ReferenceCatalogService
                 'label' => 'Finding severity',
                 'description' => 'Define the severity scale used across findings and assessments.',
             ],
+            'findings.remediation_status' => [
+                'key' => 'findings.remediation_status',
+                'label' => 'Remediation status',
+                'description' => 'Define the lifecycle statuses used by remediation actions.',
+            ],
             'risks.categories' => [
                 'key' => 'risks.categories',
                 'label' => 'Risk categories',
@@ -290,6 +295,16 @@ class ReferenceCatalogService
                 'key' => 'policies.areas',
                 'label' => 'Policy areas',
                 'description' => 'Define the business areas used to classify policies and governance statements.',
+            ],
+            'assessments.status' => [
+                'key' => 'assessments.status',
+                'label' => 'Assessment status',
+                'description' => 'Define lifecycle statuses used by assessment campaigns.',
+            ],
+            'assessments.review_result' => [
+                'key' => 'assessments.review_result',
+                'label' => 'Assessment review result',
+                'description' => 'Define controlled review outcomes for control testing in assessments.',
             ],
         ];
     }

@@ -1,5 +1,6 @@
 <?php
 
+use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 use PymeSec\Core\Artifacts\Contracts\ArtifactServiceInterface;
@@ -9,11 +10,13 @@ use PymeSec\Core\Events\Contracts\EventBusInterface;
 use PymeSec\Core\FunctionalActors\Contracts\FunctionalActorServiceInterface;
 use PymeSec\Core\Menus\Contracts\MenuRegistryInterface;
 use PymeSec\Core\Notifications\Contracts\NotificationServiceInterface;
+use PymeSec\Core\OpenApi\OpenApiDocumentBuilder;
 use PymeSec\Core\Permissions\Contracts\AuthorizationStoreInterface;
 use PymeSec\Core\Permissions\Contracts\PermissionRegistryInterface;
 use PymeSec\Core\Plugins\Contracts\PluginManagerInterface;
 use PymeSec\Core\Plugins\PluginLifecycleManager;
 use PymeSec\Core\Plugins\PluginStateStore;
+use PymeSec\Core\Security\ApiAccessTokenRepository;
 use PymeSec\Core\Tenancy\Contracts\TenancyServiceInterface;
 use PymeSec\Core\Workflows\Contracts\WorkflowRegistryInterface;
 use PymeSec\Plugins\AutomationCatalog\AutomationCatalogRepository;
@@ -23,6 +26,70 @@ use PymeSec\Plugins\EvidenceManagement\EvidenceManagementRepository;
 Artisan::command('inspire', function () {
     $this->comment(Inspiring::quote());
 })->purpose('Display an inspiring quote');
+
+Artisan::command('openapi:generate {--output=}', function (OpenApiDocumentBuilder $openApi) {
+    $output = (string) $this->option('output');
+
+    if (trim($output) === '') {
+        $output = public_path('openapi.json');
+    }
+
+    if (! str_starts_with($output, '/')) {
+        $output = base_path($output);
+    }
+
+    $openApi->writeTo($output);
+    $this->info(sprintf('OpenAPI document generated at %s', $output));
+
+    return 0;
+})->purpose('Generate the canonical OpenAPI JSON document from modular fragments');
+
+Artisan::command('api-tokens:issue {principal_id} {label} {--organization_id=} {--scope_id=} {--expires_in_days=90} {--created_by=}', function (
+    ApiAccessTokenRepository $tokens,
+    string $principal_id,
+    string $label
+) {
+    $expiresInDays = (int) $this->option('expires_in_days');
+    $expiresAt = $expiresInDays > 0 ? CarbonImmutable::now()->addDays($expiresInDays) : null;
+
+    $issued = $tokens->issue(
+        principalId: $principal_id,
+        label: $label,
+        organizationId: is_string($this->option('organization_id')) && (string) $this->option('organization_id') !== '' ? (string) $this->option('organization_id') : null,
+        scopeId: is_string($this->option('scope_id')) && (string) $this->option('scope_id') !== '' ? (string) $this->option('scope_id') : null,
+        createdByPrincipalId: is_string($this->option('created_by')) && (string) $this->option('created_by') !== '' ? (string) $this->option('created_by') : null,
+        expiresAt: $expiresAt,
+    );
+
+    $this->line('Token created. Save this value now; it cannot be retrieved again:');
+    $this->line($issued['token']);
+    $this->newLine();
+    $this->table(
+        ['Token ID', 'Prefix', 'Principal', 'Organization', 'Scope', 'Expires at'],
+        [[
+            $issued['id'],
+            $issued['token_prefix'],
+            $issued['principal_id'],
+            $issued['organization_id'] ?? '',
+            $issued['scope_id'] ?? '',
+            $issued['expires_at'] ?? '',
+        ]],
+    );
+
+    return 0;
+})->purpose('Issue an API access token for a principal');
+
+Artisan::command('api-tokens:revoke {token_id}', function (ApiAccessTokenRepository $tokens, string $token_id) {
+    if (! $tokens->revoke($token_id)) {
+        $this->error(sprintf('Token [%s] was not revoked (not found or already revoked).', $token_id));
+
+        return 1;
+    }
+
+    $this->info(sprintf('Token [%s] revoked.', $token_id));
+
+    return 0;
+})->purpose('Revoke an API access token');
 
 Artisan::command('plugins:list', function (PluginManagerInterface $plugins) {
     $rows = array_map(static fn (array $plugin): array => [
@@ -91,16 +158,19 @@ Artisan::command('grants:list', function (AuthorizationStoreInterface $store) {
 Artisan::command('audit:list {--limit=20}', function (AuditTrailInterface $audit) {
     $rows = array_map(static fn ($record): array => [
         $record->createdAt,
+        $record->channel ?? '',
         $record->eventType,
         $record->outcome,
         $record->originComponent,
+        $record->authorType ?? '',
+        $record->authorId ?? '',
         $record->organizationId ?? '',
         $record->targetType ?? '',
         $record->targetId ?? '',
     ], $audit->latest((int) $this->option('limit')));
 
     $this->table(
-        ['When', 'Event', 'Outcome', 'Origin', 'Organization', 'Target Type', 'Target ID'],
+        ['When', 'Channel', 'Event', 'Outcome', 'Origin', 'Author Type', 'Author ID', 'Organization', 'Target Type', 'Target ID'],
         $rows,
     );
 })->purpose('List latest audit log records');
@@ -130,9 +200,12 @@ Artisan::command('audit:export {--format=jsonl} {--limit=200} {--event_type=} {-
         fputcsv($stream, [
             'id',
             'created_at',
+            'channel',
             'event_type',
             'outcome',
             'origin_component',
+            'author_type',
+            'author_id',
             'principal_id',
             'membership_id',
             'organization_id',
@@ -140,6 +213,9 @@ Artisan::command('audit:export {--format=jsonl} {--limit=200} {--event_type=} {-
             'target_type',
             'target_id',
             'execution_origin',
+            'request_method',
+            'request_path',
+            'status_code',
             'summary',
             'correlation',
         ]);
@@ -148,9 +224,12 @@ Artisan::command('audit:export {--format=jsonl} {--limit=200} {--event_type=} {-
             fputcsv($stream, [
                 $record->id,
                 $record->createdAt,
+                $record->channel ?? '',
                 $record->eventType,
                 $record->outcome,
                 $record->originComponent,
+                $record->authorType ?? '',
+                $record->authorId ?? '',
                 $record->principalId ?? '',
                 $record->membershipId ?? '',
                 $record->organizationId ?? '',
@@ -158,6 +237,9 @@ Artisan::command('audit:export {--format=jsonl} {--limit=200} {--event_type=} {-
                 $record->targetType ?? '',
                 $record->targetId ?? '',
                 $record->executionOrigin ?? '',
+                $record->requestMethod ?? '',
+                $record->requestPath ?? '',
+                $record->statusCode ?? '',
                 json_encode($record->summary, JSON_UNESCAPED_SLASHES),
                 json_encode($record->correlation, JSON_UNESCAPED_SLASHES),
             ]);

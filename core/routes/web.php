@@ -17,6 +17,7 @@ use PymeSec\Core\Notifications\Contracts\NotificationServiceInterface;
 use PymeSec\Core\Notifications\NotificationMailSettingsRepository;
 use PymeSec\Core\Notifications\NotificationTemplateRepository;
 use PymeSec\Core\Notifications\OutboundNotificationMailer;
+use PymeSec\Core\OpenApi\OpenApiDocumentBuilder;
 use PymeSec\Core\Permissions\AuthorizationContext;
 use PymeSec\Core\Permissions\Contracts\AuthorizationServiceInterface;
 use PymeSec\Core\Permissions\Contracts\AuthorizationStoreInterface;
@@ -49,6 +50,12 @@ $resolvePrincipalId = static function (?string $default = null): ?string {
 
     return $default;
 };
+
+Route::get('/openapi.json', function (OpenApiDocumentBuilder $openApi) {
+    return response()->json($openApi->build(), 200, [
+        'Content-Type' => 'application/json; charset=UTF-8',
+    ], JSON_UNESCAPED_SLASHES | JSON_PRETTY_PRINT);
+})->name('core.openapi.document');
 
 $shellRouteNameForMenu = static function (?string $menuId): string {
     if (! is_string($menuId) || $menuId === '' || ! app()->bound(MenuRegistryInterface::class)) {

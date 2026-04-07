@@ -1,0 +1,86 @@
+{
+  "tags": [
+    {
+      "name": "risks",
+      "description": "Risk register API surface."
+    }
+  ],
+  "paths": {
+    "/risks": {
+      "get": {
+        "tags": ["risks"],
+        "operationId": "riskManagementListRisks",
+        "summary": "List risks visible in current context",
+        "responses": {
+          "200": {
+            "description": "Risk list"
+          },
+          "403": {
+            "description": "Missing risks.view permission"
+          }
+        }
+      },
+      "post": {
+        "tags": ["risks"],
+        "operationId": "riskManagementCreateRisk",
+        "summary": "Create a risk",
+        "responses": {
+          "200": {
+            "description": "Risk created"
+          },
+          "422": {
+            "description": "Validation failed"
+          }
+        }
+      }
+    },
+    "/risks/{riskId}": {
+      "get": {
+        "tags": ["risks"],
+        "operationId": "riskManagementGetRisk",
+        "summary": "Get one risk",
+        "parameters": [
+          {
+            "name": "riskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Risk detail"
+          },
+          "404": {
+            "description": "Risk not found"
+          }
+        }
+      },
+      "patch": {
+        "tags": ["risks"],
+        "operationId": "riskManagementUpdateRisk",
+        "summary": "Update one risk",
+        "parameters": [
+          {
+            "name": "riskId",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Risk updated"
+          },
+          "422": {
+            "description": "Validation failed"
+          }
+        }
+      }
+    }
+  }
+}
