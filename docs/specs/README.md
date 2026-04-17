@@ -15,6 +15,7 @@ The following specification documents are available in the [`specs`](./) folder:
 
 - [project-todo.md](./project-todo.md)
 - [delivery-guardrails-v1.md](./delivery-guardrails-v1.md)
+- [development-obligations-baseline-v1.md](./development-obligations-baseline-v1.md)
 - [status-index-v1.md](./status-index-v1.md)
 - [tenancy-model-v1.md](./tenancy-model-v1.md)
 - [audit-trail-v1.md](./audit-trail-v1.md)

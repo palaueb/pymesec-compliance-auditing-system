@@ -43,6 +43,15 @@
   ],
   "routes": [
     {
+      "id": "continuity-bcm.api",
+      "type": "api",
+      "file": "routes/api.php",
+      "middleware": [
+        "api"
+      ],
+      "prefix": "api/v1"
+    },
+    {
       "id": "continuity-bcm.web",
       "type": "web",
       "file": "routes/web.php",

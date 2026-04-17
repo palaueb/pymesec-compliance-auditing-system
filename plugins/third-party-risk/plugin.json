@@ -50,6 +50,15 @@
   ],
   "routes": [
     {
+      "id": "third-party-risk.api",
+      "type": "api",
+      "file": "routes/api.php",
+      "middleware": [
+        "api"
+      ],
+      "prefix": "api/v1"
+    },
+    {
       "id": "third-party-risk.web",
       "type": "web",
       "file": "routes/web.php",

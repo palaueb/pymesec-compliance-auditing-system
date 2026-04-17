@@ -212,9 +212,9 @@ class PluginSystemTest extends TestCase
     {
         $this->artisan('plugins:list')
             ->expectsOutputToContain('| ID')
-            ->expectsOutputToContain('| controls-catalog     | domain         | yes     | yes    | 2           | 1      | 4')
+            ->expectsOutputToContain('| controls-catalog     | domain         | yes     | yes    | 2           | 2      | 4')
             ->expectsOutputToContain('| framework-gdpr       | framework-pack | no      | no     | 0           | 0      | 0     | plugin_not_enabled |')
-            ->expectsOutputToContain('| risk-management      | domain         | yes     | yes    | 2           | 1      | 2')
+            ->expectsOutputToContain('| risk-management      | domain         | yes     | yes    | 2           | 2      | 2')
             ->assertExitCode(0);
     }
 

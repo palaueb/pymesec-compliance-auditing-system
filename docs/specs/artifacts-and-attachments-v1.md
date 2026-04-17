@@ -101,7 +101,7 @@ Rules:
 - upload type validation must use both allowed extensions and server-side detected content type
 - artifact download and preview behavior must remain conservative for unknown or non-previewable file types
 
-See [`file-upload-security-and-type-validation-v1.md`](/media/marc/4T_EXFAT/web/pymesec.com/pymesec/docs/specs/file-upload-security-and-type-validation-v1.md) for the platform-wide upload baseline.
+See [`file-upload-security-and-type-validation-v1.md`](/media/marc/PROJECTES/web/pymesec.com/pymesec/docs/specs/file-upload-security-and-type-validation-v1.md) for the platform-wide upload baseline.
 
 ## 6. Tenancy Rules
 

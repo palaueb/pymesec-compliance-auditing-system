@@ -10,6 +10,8 @@ Active
 
 Define non-negotiable implementation guardrails so future changes remain consistent, testable, auditable, and API-first without depending on ad-hoc LLM output.
 
+This guardrail spec is complemented by `development-obligations-baseline-v1.md`, which provides the operational Definition of Done checklist used in day-to-day delivery.
+
 # Mandatory Delivery Gates
 
 A change is not complete unless all gates below are satisfied.

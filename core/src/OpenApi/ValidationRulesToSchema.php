@@ -44,6 +44,10 @@ class ValidationRulesToSchema
             $catalogKey = $governedFields[$field] ?? null;
             if (is_string($catalogKey) && $catalogKey !== '') {
                 $schema['x-governed-catalog'] = $catalogKey;
+                $schema['x-governed-source'] = sprintf(
+                    '/api/v1/lookups/reference-catalogs/%s/options',
+                    $catalogKey,
+                );
             }
 
             $properties[$field] = $schema;

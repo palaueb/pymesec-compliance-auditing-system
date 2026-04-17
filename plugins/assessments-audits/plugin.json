@@ -40,6 +40,15 @@
   ],
   "routes": [
     {
+      "id": "assessments-audits.api",
+      "type": "api",
+      "file": "routes/api.php",
+      "middleware": [
+        "api"
+      ],
+      "prefix": "api/v1"
+    },
+    {
       "id": "assessments-audits.web",
       "type": "web",
       "file": "routes/web.php",

@@ -43,6 +43,15 @@
   ],
   "routes": [
     {
+      "id": "data-flows-privacy.api",
+      "type": "api",
+      "file": "routes/api.php",
+      "middleware": [
+        "api"
+      ],
+      "prefix": "api/v1"
+    },
+    {
       "id": "data-flows-privacy.web",
       "type": "web",
       "file": "routes/web.php",

@@ -39,6 +39,15 @@
   ],
   "routes": [
     {
+      "id": "risk-management.api",
+      "type": "api",
+      "file": "routes/api.php",
+      "middleware": [
+        "api"
+      ],
+      "prefix": "api/v1"
+    },
+    {
       "id": "risk-management.web",
       "type": "web",
       "file": "routes/web.php",

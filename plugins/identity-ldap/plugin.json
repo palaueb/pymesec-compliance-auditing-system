@@ -42,6 +42,15 @@
   ],
   "routes": [
     {
+      "id": "identity-ldap.api",
+      "type": "api",
+      "file": "routes/api.php",
+      "middleware": [
+        "api"
+      ],
+      "prefix": "api/v1"
+    },
+    {
       "id": "identity-ldap.web",
       "type": "web",
       "file": "routes/web.php",

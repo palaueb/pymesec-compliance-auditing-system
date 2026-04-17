@@ -266,6 +266,26 @@ class ReferenceCatalogService
                 'label' => 'Dependency kinds',
                 'description' => 'Define the kinds of operational dependencies used in continuity services.',
             ],
+            'continuity.exercise_type' => [
+                'key' => 'continuity.exercise_type',
+                'label' => 'Exercise types',
+                'description' => 'Define the controlled exercise types used in recovery plan drills.',
+            ],
+            'continuity.exercise_outcome' => [
+                'key' => 'continuity.exercise_outcome',
+                'label' => 'Exercise outcomes',
+                'description' => 'Define the controlled outcomes used in continuity exercises.',
+            ],
+            'continuity.execution_type' => [
+                'key' => 'continuity.execution_type',
+                'label' => 'Execution types',
+                'description' => 'Define the controlled execution types used in recovery plan runs.',
+            ],
+            'continuity.execution_status' => [
+                'key' => 'continuity.execution_status',
+                'label' => 'Execution status',
+                'description' => 'Define the controlled status values used in continuity plan executions.',
+            ],
             'privacy.transfer_type' => [
                 'key' => 'privacy.transfer_type',
                 'label' => 'Privacy transfer types',

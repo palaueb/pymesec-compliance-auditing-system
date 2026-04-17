@@ -52,6 +52,10 @@ jobs:
         working-directory: core
         run: composer lint
 
+      - name: Verify OpenAPI artifacts
+        working-directory: core
+        run: php artisan openapi:publish --check
+
       - name: Test
         working-directory: core
         run: composer test

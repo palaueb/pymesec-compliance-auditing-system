@@ -1026,6 +1026,126 @@ class ApiFoundationTest extends TestCase
             ->assertJsonPath('data.removed', true);
     }
 
+    public function test_automation_catalog_api_lifecycle_repository_mapping_and_runtime_endpoints_work(): void
+    {
+        Storage::fake('local');
+
+        $base = [
+            'principal_id' => 'principal-org-a',
+            'organization_id' => 'org-a',
+            'membership_id' => 'membership-org-a-hello',
+            'scope_id' => 'scope-eu',
+        ];
+
+        $packCreate = $this->postJson('/api/v1/automation-catalog/packs', [
+            ...$base,
+            'pack_key' => 'connector.google.workspace-baseline-api',
+            'name' => 'Google Workspace Baseline via API',
+            'summary' => 'Pack managed through automation catalog API endpoints.',
+            'version' => '0.1.0',
+            'provider_type' => 'community',
+            'source_ref' => 'https://repository.pimesec.com/connector.google.workspace-baseline/',
+            'provenance_type' => 'manual',
+        ])->assertOk()
+            ->assertJsonPath('data.pack_key', 'connector.google.workspace-baseline-api')
+            ->assertJsonPath('data.lifecycle_state', 'discovered');
+        $packId = (string) $packCreate->json('data.id');
+        $this->assertNotSame('', $packId);
+
+        $this->getJson('/api/v1/automation-catalog/packs?'.http_build_query($base))
+            ->assertOk()
+            ->assertJsonFragment(['id' => $packId]);
+
+        $this->postJson("/api/v1/automation-catalog/packs/{$packId}/install", $base)
+            ->assertOk()
+            ->assertJsonPath('data.is_installed', '1');
+
+        $this->postJson("/api/v1/automation-catalog/packs/{$packId}/enable", $base)
+            ->assertOk()
+            ->assertJsonPath('data.is_enabled', '1');
+
+        $this->postJson("/api/v1/automation-catalog/packs/{$packId}/health", [
+            ...$base,
+            'health_state' => 'failing',
+            'last_failure_reason' => 'Connector token rejected by upstream API.',
+        ])->assertOk()
+            ->assertJsonPath('data.health_state', 'failing');
+
+        $this->postJson("/api/v1/automation-catalog/packs/{$packId}/schedule", [
+            ...$base,
+            'runtime_schedule_enabled' => true,
+            'runtime_schedule_cron' => '0 */6 * * *',
+            'runtime_schedule_timezone' => 'Europe/Madrid',
+        ])->assertOk()
+            ->assertJsonPath('data.runtime_schedule_enabled', '1')
+            ->assertJsonPath('data.runtime_schedule_cron', '0 */6 * * *');
+
+        $mappingCreate = $this->postJson("/api/v1/automation-catalog/packs/{$packId}/output-mappings", [
+            ...$base,
+            'mapping_label' => 'API evidence refresh mapping',
+            'mapping_kind' => 'evidence-refresh',
+            'target_binding_mode' => 'explicit',
+            'target_subject_type' => 'control',
+            'target_subject_id' => 'control-access-review',
+            'evidence_policy' => 'always',
+            'is_active' => true,
+        ])->assertOk()
+            ->assertJsonPath('data.mapping_kind', 'evidence-refresh');
+        $mappingId = (string) $mappingCreate->json('data.id');
+        $this->assertNotSame('', $mappingId);
+
+        $this->post("/api/v1/automation-catalog/packs/{$packId}/output-mappings/{$mappingId}/apply", [
+            ...$base,
+            'evidence_kind' => 'report',
+            'output_file' => UploadedFile::fake()->create('automation-output.txt', 8, 'text/plain'),
+        ], ['Accept' => 'application/json'])->assertOk()
+            ->assertJsonPath('data.status', 'success');
+
+        $this->postJson("/api/v1/automation-catalog/packs/{$packId}/run", $base)
+            ->assertOk()
+            ->assertJsonPath('data.automation_pack_id', $packId);
+        $this->assertDatabaseHas('automation_pack_runs', [
+            'automation_pack_id' => $packId,
+            'trigger_mode' => 'manual',
+        ]);
+
+        $repositoryCreate = $this->postJson('/api/v1/automation-catalog/repositories', [
+            ...$base,
+            'label' => 'Automation API test repository',
+            'repository_url' => 'https://repository.pimesec.com/repository.json',
+            'repository_sign_url' => 'https://repository.pimesec.com/repository.json.sign',
+            'public_key_pem' => "-----BEGIN PUBLIC KEY-----\nTEST\n-----END PUBLIC KEY-----",
+            'trust_tier' => 'community-reviewed',
+            'is_enabled' => true,
+        ])->assertOk()
+            ->assertJsonPath('data.label', 'Automation API test repository');
+        $repositoryId = (string) $repositoryCreate->json('data.id');
+        $this->assertNotSame('', $repositoryId);
+        $this->assertDatabaseHas('automation_pack_repositories', [
+            'id' => $repositoryId,
+            'organization_id' => 'org-a',
+        ]);
+
+        $this->getJson('/api/v1/automation-catalog/repositories?'.http_build_query($base))
+            ->assertOk()
+            ->assertJsonFragment(['id' => $repositoryId]);
+
+        $this->getJson('/api/v1/automation-catalog/lookups/scopes/options?'.http_build_query($base))
+            ->assertOk()
+            ->assertJsonFragment(['id' => 'scope-eu']);
+
+        $this->postJson("/api/v1/automation-catalog/packs/{$packId}/disable", $base)
+            ->assertOk()
+            ->assertJsonPath('data.is_enabled', '0');
+
+        $this->postJson("/api/v1/automation-catalog/packs/{$packId}/uninstall", $base)
+            ->assertOk()
+            ->assertJsonPath('data.uninstalled', true);
+
+        $this->assertDatabaseMissing('automation_packs', ['id' => $packId]);
+        $this->assertDatabaseMissing('automation_pack_output_mappings', ['automation_pack_id' => $packId]);
+    }
+
     public function test_openapi_endpoint_and_generation_command_work(): void
     {
         $response = $this->get('/openapi.json')
@@ -1067,7 +1187,13 @@ class ApiFoundationTest extends TestCase
             ->assertSee('findingsRemediationListFindings')
             ->assertSee('findingsRemediationTransitionFinding')
             ->assertSee('findingsRemediationCreateAction')
-            ->assertSee('findingsRemediationUpdateAction');
+            ->assertSee('findingsRemediationUpdateAction')
+            ->assertSee('automationCatalogListPacks')
+            ->assertSee('automationCatalogCreatePack')
+            ->assertSee('automationCatalogRunPack')
+            ->assertSee('automationCatalogSaveRepository')
+            ->assertSee('automationCatalogCreateOutputMapping')
+            ->assertSee('automationCatalogApplyOutputMapping');
 
         $openApi = $response->json();
         $this->assertIsArray($openApi);
@@ -1079,6 +1205,10 @@ class ApiFoundationTest extends TestCase
         $this->assertSame(
             'assets.types',
             data_get($openApi, 'paths./assets.post.requestBody.content.application/json.schema.properties.type.x-governed-catalog'),
+        );
+        $this->assertSame(
+            '/api/v1/lookups/reference-catalogs/assets.types/options',
+            data_get($openApi, 'paths./assets.post.requestBody.content.application/json.schema.properties.type.x-governed-source'),
         );
         $this->assertContains(
             'name',
@@ -1097,16 +1227,32 @@ class ApiFoundationTest extends TestCase
             data_get($openApi, 'paths./assessments.post.requestBody.content.application/json.schema.properties.status.x-governed-catalog'),
         );
         $this->assertSame(
+            '/api/v1/lookups/reference-catalogs/assessments.status/options',
+            data_get($openApi, 'paths./assessments.post.requestBody.content.application/json.schema.properties.status.x-governed-source'),
+        );
+        $this->assertSame(
             'findings.severity',
             data_get($openApi, 'paths./findings.post.requestBody.content.application/json.schema.properties.severity.x-governed-catalog'),
+        );
+        $this->assertSame(
+            '/api/v1/lookups/reference-catalogs/findings.severity/options',
+            data_get($openApi, 'paths./findings.post.requestBody.content.application/json.schema.properties.severity.x-governed-source'),
         );
         $this->assertSame(
             'findings.remediation_status',
             data_get($openApi, 'paths./findings/{findingId}/actions.post.requestBody.content.application/json.schema.properties.status.x-governed-catalog'),
         );
         $this->assertSame(
+            '/api/v1/lookups/reference-catalogs/findings.remediation_status/options',
+            data_get($openApi, 'paths./findings/{findingId}/actions.post.requestBody.content.application/json.schema.properties.status.x-governed-source'),
+        );
+        $this->assertSame(
             'assessments.review_result',
             data_get($openApi, 'paths./assessments/{assessmentId}/reviews/{controlId}.patch.requestBody.content.application/json.schema.properties.result.x-governed-catalog'),
+        );
+        $this->assertSame(
+            '/api/v1/lookups/reference-catalogs/assessments.review_result/options',
+            data_get($openApi, 'paths./assessments/{assessmentId}/reviews/{controlId}.patch.requestBody.content.application/json.schema.properties.result.x-governed-source'),
         );
 
         $versionedResponse = $this->get('/openapi/v1.json')
@@ -1130,6 +1276,23 @@ class ApiFoundationTest extends TestCase
 
         $this->assertFileExists($output);
         $this->assertStringContainsString('assetCatalogListAssets', (string) File::get($output));
+
+        $publishDir = base_path('storage/framework/testing/openapi.publish');
+        File::deleteDirectory($publishDir);
+
+        $this->artisan('openapi:publish', [
+            '--output-dir' => 'storage/framework/testing/openapi.publish',
+        ])->assertExitCode(0);
+
+        $this->assertFileExists($publishDir.'/openapi.json');
+        $this->assertFileExists($publishDir.'/openapi/v1.json');
+        $this->assertSame((string) File::get($publishDir.'/openapi/v1.json'), (string) File::get($publishDir.'/openapi.json'));
+        $this->assertStringNotContainsString('"x-generated-at"', (string) File::get($publishDir.'/openapi.json'));
+
+        $this->artisan('openapi:publish', [
+            '--output-dir' => 'storage/framework/testing/openapi.publish',
+            '--check' => true,
+        ])->assertExitCode(0);
     }
 
     public function test_every_api_v1_route_declares_required_openapi_metadata(): void
@@ -1224,6 +1387,31 @@ class ApiFoundationTest extends TestCase
             'core.api-tokens.issue' => 'coreIssueApiToken',
             'core.api-tokens.rotate' => 'coreRotateApiToken',
             'core.api-tokens.revoke' => 'coreRevokeApiToken',
+            'core.plugins.enable' => 'coreEnablePlugin',
+            'core.plugins.disable' => 'coreDisablePlugin',
+            'core.roles.store' => 'coreCreateRole',
+            'core.grants.store' => 'coreCreateRoleGrant',
+            'core.grants.update' => 'coreUpdateRoleGrant',
+            'core.reference-data.entries.store' => 'referenceDataCreateEntry',
+            'core.reference-data.entries.update' => 'referenceDataUpdateEntry',
+            'core.reference-data.entries.archive' => 'referenceDataArchiveEntry',
+            'core.reference-data.entries.activate' => 'referenceDataActivateEntry',
+            'core.tenancy.organizations.store' => 'tenancyCreateOrganization',
+            'core.tenancy.organizations.update' => 'tenancyUpdateOrganization',
+            'core.tenancy.organizations.archive' => 'tenancyArchiveOrganization',
+            'core.tenancy.organizations.activate' => 'tenancyActivateOrganization',
+            'core.tenancy.scopes.store' => 'tenancyCreateScope',
+            'core.tenancy.scopes.update' => 'tenancyUpdateScope',
+            'core.tenancy.scopes.archive' => 'tenancyArchiveScope',
+            'core.tenancy.scopes.activate' => 'tenancyActivateScope',
+            'core.functional-actors.store' => 'functionalActorsCreateActor',
+            'core.functional-actors.links.store' => 'functionalActorsLinkPrincipal',
+            'core.functional-actors.assignments.store' => 'functionalActorsCreateAssignment',
+            'core.object-access.assignments.store' => 'objectAccessCreateAssignment',
+            'core.object-access.assignments.deactivate' => 'objectAccessDeactivateAssignment',
+            'core.notifications.settings.update' => 'notificationsUpdateMailSettings',
+            'core.notifications.test.send' => 'notificationsSendTestEmail',
+            'core.notifications.templates.update' => 'notificationsUpdateTemplate',
             'plugin.third-party-risk.store' => 'thirdPartyRiskCreateVendorWithReview',
             'plugin.third-party-risk.update' => 'thirdPartyRiskUpdateVendorWithReview',
             'plugin.third-party-risk.external.links.issue' => 'thirdPartyRiskIssueExternalLink',
@@ -1246,6 +1434,22 @@ class ApiFoundationTest extends TestCase
             'plugin.third-party-risk.questionnaire-items.review' => 'thirdPartyRiskReviewQuestionnaireItem',
             'plugin.third-party-risk.questionnaire-items.apply-template' => 'thirdPartyRiskApplyQuestionnaireTemplate',
             'plugin.third-party-risk.transition' => 'thirdPartyRiskTransitionReview',
+            'plugin.third-party-risk.external.questionnaire-items.update' => 'thirdPartyRiskExternalSubmitQuestionnaireAnswer',
+            'plugin.third-party-risk.external.questionnaire-items.artifacts.store' => 'thirdPartyRiskExternalAttachQuestionnaireArtifact',
+            'plugin.third-party-risk.external.artifacts.store' => 'thirdPartyRiskExternalAttachReviewArtifact',
+            'plugin.automation-catalog.store' => 'automationCatalogCreatePack',
+            'plugin.automation-catalog.install' => 'automationCatalogInstallPack',
+            'plugin.automation-catalog.enable' => 'automationCatalogEnablePack',
+            'plugin.automation-catalog.disable' => 'automationCatalogDisablePack',
+            'plugin.automation-catalog.uninstall' => 'automationCatalogUninstallPack',
+            'plugin.automation-catalog.health.update' => 'automationCatalogUpdatePackHealth',
+            'plugin.automation-catalog.schedule.update' => 'automationCatalogUpdatePackSchedule',
+            'plugin.automation-catalog.run' => 'automationCatalogRunPack',
+            'plugin.automation-catalog.repositories.store' => 'automationCatalogSaveRepository',
+            'plugin.automation-catalog.repositories.install-official' => 'automationCatalogInstallOfficialRepository',
+            'plugin.automation-catalog.repositories.refresh' => 'automationCatalogRefreshRepository',
+            'plugin.automation-catalog.output-mappings.store' => 'automationCatalogCreateOutputMapping',
+            'plugin.automation-catalog.output-mappings.apply' => 'automationCatalogApplyOutputMapping',
             'plugin.asset-catalog.store' => 'assetCatalogCreateAsset',
             'plugin.asset-catalog.update' => 'assetCatalogUpdateAsset',
             'plugin.asset-catalog.owners.destroy' => 'assetCatalogRemoveAssetOwner',
@@ -1260,6 +1464,10 @@ class ApiFoundationTest extends TestCase
             'plugin.controls-catalog.owners.destroy' => 'controlsCatalogRemoveControlOwner',
             'plugin.controls-catalog.artifacts.store' => 'controlsCatalogAttachControlArtifact',
             'plugin.controls-catalog.transition' => 'controlsCatalogTransitionControl',
+            'plugin.controls-catalog.frameworks.store' => 'controlsCatalogCreateFramework',
+            'plugin.controls-catalog.frameworks.adoption.upsert' => 'controlsCatalogUpsertFrameworkAdoption',
+            'plugin.controls-catalog.requirements.store' => 'controlsCatalogCreateRequirement',
+            'plugin.controls-catalog.requirements.attach' => 'controlsCatalogAttachRequirement',
             'plugin.assessments-audits.store' => 'assessmentsAuditsCreateAssessment',
             'plugin.assessments-audits.update' => 'assessmentsAuditsUpdateAssessment',
             'plugin.assessments-audits.owners.destroy' => 'assessmentsAuditsRemoveAssessmentOwner',
@@ -1308,6 +1516,26 @@ class ApiFoundationTest extends TestCase
             'plugin.findings-remediation.transition' => 'findingsRemediationTransitionFinding',
             'plugin.findings-remediation.actions.store' => 'findingsRemediationCreateAction',
             'plugin.findings-remediation.actions.update' => 'findingsRemediationUpdateAction',
+            'plugin.evidence-management.store' => 'evidenceManagementCreateEvidence',
+            'plugin.evidence-management.update' => 'evidenceManagementUpdateEvidence',
+            'plugin.evidence-management.promote' => 'evidenceManagementPromoteArtifact',
+            'plugin.evidence-management.reminders.queue' => 'evidenceManagementQueueReminder',
+            'plugin.identity-local.users.store' => 'identityLocalCreateUser',
+            'plugin.identity-local.users.update' => 'identityLocalUpdateUser',
+            'plugin.identity-local.users.delete' => 'identityLocalDeleteUser',
+            'plugin.identity-local.memberships.store' => 'identityLocalCreateMembership',
+            'plugin.identity-local.memberships.update' => 'identityLocalUpdateMembership',
+            'plugin.identity-ldap.connection.store' => 'identityLdapSaveConnection',
+            'plugin.identity-ldap.mappings.store' => 'identityLdapSaveGroupMapping',
+            'plugin.identity-ldap.sync.store' => 'identityLdapRunSync',
+            'plugin.identity-local.setup.store' => 'identityLocalBootstrapSetup',
+            'plugin.identity-local.auth.request' => 'identityLocalAuthRequest',
+            'plugin.identity-local.auth.verify.consume' => 'identityLocalAuthVerifyCode',
+            'plugin.identity-local.auth.logout' => 'identityLocalAuthLogout',
+            'plugin.identity-local.users.import.upload' => 'identityLocalUploadUsersImport',
+            'plugin.identity-local.users.import.reset' => 'identityLocalResetUsersImport',
+            'plugin.identity-local.users.import.review' => 'identityLocalReviewUsersImport',
+            'plugin.identity-local.users.import.commit' => 'identityLocalCommitUsersImport',
         ];
 
         foreach ($parityMatrix as $webRouteName => $apiOperationId) {
@@ -1464,6 +1692,105 @@ class ApiFoundationTest extends TestCase
         }
     }
 
+    public function test_governed_catalog_fields_expose_runtime_lookup_sources_in_openapi(): void
+    {
+        $openApi = $this->get('/openapi.json')->assertOk()->json();
+        $paths = is_array($openApi['paths'] ?? null) ? $openApi['paths'] : [];
+
+        $this->assertArrayHasKey(
+            '/lookups/reference-catalogs/{catalogKey}/options',
+            $paths,
+            'OpenAPI must expose the governed catalog options lookup endpoint.',
+        );
+        $this->assertArrayHasKey(
+            'get',
+            $paths['/lookups/reference-catalogs/{catalogKey}/options'],
+            'OpenAPI governed catalog lookup endpoint must expose GET.',
+        );
+
+        $governedCount = 0;
+
+        foreach ($paths as $path => $operations) {
+            if (! is_string($path) || ! is_array($operations)) {
+                continue;
+            }
+
+            foreach ($operations as $method => $operation) {
+                if (! is_string($method) || ! in_array(strtolower($method), ['post', 'put', 'patch'], true) || ! is_array($operation)) {
+                    continue;
+                }
+
+                $properties = data_get($operation, 'requestBody.content.application/json.schema.properties', []);
+                if (! is_array($properties)) {
+                    continue;
+                }
+
+                foreach ($properties as $field => $schema) {
+                    if (! is_string($field) || ! is_array($schema)) {
+                        continue;
+                    }
+
+                    $catalogKey = $schema['x-governed-catalog'] ?? null;
+                    if (! is_string($catalogKey) || trim($catalogKey) === '') {
+                        continue;
+                    }
+
+                    $governedCount += 1;
+                    $governedSource = $schema['x-governed-source'] ?? null;
+
+                    $this->assertIsString(
+                        $governedSource,
+                        sprintf('OpenAPI operation [%s %s] governed field [%s] must declare x-governed-source.', strtoupper((string) $method), $path, $field),
+                    );
+                    $this->assertNotSame('', trim((string) $governedSource));
+
+                    $governedSource = $this->normalizeLookupSourceToApiUrl((string) $governedSource);
+                    $this->assertStringStartsWith('/api/v1/lookups/reference-catalogs/', $governedSource);
+                    $this->assertStringEndsWith('/options', $governedSource);
+
+                    if (preg_match('#^/api/v1/lookups/reference-catalogs/(.+)/options$#', $governedSource, $matches) === 1) {
+                        $this->assertSame(
+                            $catalogKey,
+                            $matches[1] ?? '',
+                            sprintf('OpenAPI operation [%s %s] governed field [%s] must point x-governed-source to catalog key [%s].', strtoupper((string) $method), $path, $field, $catalogKey),
+                        );
+                    }
+
+                    $sourceOpenApiPath = $this->normalizeGovernedSourceToOpenApiPath($governedSource);
+                    $this->assertArrayHasKey(
+                        $sourceOpenApiPath,
+                        $paths,
+                        sprintf('OpenAPI operation [%s %s] governed source path [%s] was not found in OpenAPI paths.', strtoupper((string) $method), $path, $sourceOpenApiPath),
+                    );
+                    $this->assertArrayHasKey(
+                        'get',
+                        $paths[$sourceOpenApiPath],
+                        sprintf('OpenAPI operation [%s %s] governed source [%s] must reference a GET endpoint.', strtoupper((string) $method), $path, $sourceOpenApiPath),
+                    );
+
+                    $response = $this->getJson($governedSource.'?'.http_build_query($this->lookupRequestQueryForSource($governedSource)))
+                        ->assertOk();
+                    $rows = $response->json('data.options');
+                    $this->assertIsArray($rows, sprintf('Governed source [%s] must return options array.', $governedSource));
+
+                    foreach ($rows as $index => $row) {
+                        $this->assertIsArray($row, sprintf('Governed source [%s] returned invalid option at index [%s].', $governedSource, (string) $index));
+                        $this->assertIsString($row['id'] ?? null, sprintf('Governed source [%s] option [%s] must include string id.', $governedSource, (string) $index));
+                        $this->assertNotSame('', trim((string) ($row['id'] ?? '')), sprintf('Governed source [%s] option [%s] id cannot be empty.', $governedSource, (string) $index));
+                        $this->assertIsString($row['label'] ?? null, sprintf('Governed source [%s] option [%s] must include string label.', $governedSource, (string) $index));
+                        $this->assertNotSame('', trim((string) ($row['label'] ?? '')), sprintf('Governed source [%s] option [%s] label cannot be empty.', $governedSource, (string) $index));
+                    }
+                }
+            }
+        }
+
+        $this->assertGreaterThan(
+            0,
+            $governedCount,
+            'Expected at least one governed write field in OpenAPI contracts.',
+        );
+    }
+
     /**
      * @param  array<string, mixed>  $openApi
      * @return array<int, string>
@@ -1530,6 +1857,15 @@ class ApiFoundationTest extends TestCase
         }
 
         return $path;
+    }
+
+    private function normalizeGovernedSourceToOpenApiPath(string $source): string
+    {
+        if (preg_match('#^/api/v1/lookups/reference-catalogs/.+/options$#', $source) === 1) {
+            return '/lookups/reference-catalogs/{catalogKey}/options';
+        }
+
+        return $this->normalizeLookupSourceToOpenApiPath($source);
     }
 
     /**

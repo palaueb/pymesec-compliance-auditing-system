@@ -23,7 +23,7 @@ The product is already usable and coherent at a module level, but the new cross-
 
 ### 1. Section contracts are too ad hoc
 
-[`ManagementReportingService.php`](/media/marc/4T_EXFAT/web/pymesec.com/pymesec/core/src/Reporting/ManagementReportingService.php#L23) returns a wide nested array with keys such as:
+[`ManagementReportingService.php`](/media/marc/PROJECTES/web/pymesec.com/pymesec/core/src/Reporting/ManagementReportingService.php#L23) returns a wide nested array with keys such as:
 
 - `metrics`
 - `status_breakdown`
@@ -44,7 +44,7 @@ The current contract is implementation-friendly, but not product-friendly.
 
 ### 2. Context semantics are correct, but encoded in the wrong place
 
-[`ManagementReportingService.php`](/media/marc/4T_EXFAT/web/pymesec.com/pymesec/core/src/Reporting/ManagementReportingService.php#L35) and [`ManagementReportingService.php`](/media/marc/4T_EXFAT/web/pymesec.com/pymesec/core/src/Reporting/ManagementReportingService.php#L477) hardcode important product rules:
+[`ManagementReportingService.php`](/media/marc/PROJECTES/web/pymesec.com/pymesec/core/src/Reporting/ManagementReportingService.php#L35) and [`ManagementReportingService.php`](/media/marc/PROJECTES/web/pymesec.com/pymesec/core/src/Reporting/ManagementReportingService.php#L477) hardcode important product rules:
 
 - assessments and evidence include organization-wide records when scoped
 - risks and findings stay scope-exact
@@ -55,7 +55,7 @@ These are product semantics, not just reporting semantics. If more summary scree
 
 ### 3. Workflow state resolution is coupled to per-row assembly
 
-[`ManagementReportingService.php`](/media/marc/4T_EXFAT/web/pymesec.com/pymesec/core/src/Reporting/ManagementReportingService.php#L347) and [`ManagementReportingService.php`](/media/marc/4T_EXFAT/web/pymesec.com/pymesec/core/src/Reporting/ManagementReportingService.php#L470) resolve workflow state while building report rows.
+[`ManagementReportingService.php`](/media/marc/PROJECTES/web/pymesec.com/pymesec/core/src/Reporting/ManagementReportingService.php#L347) and [`ManagementReportingService.php`](/media/marc/PROJECTES/web/pymesec.com/pymesec/core/src/Reporting/ManagementReportingService.php#L470) resolve workflow state while building report rows.
 
 That is acceptable for a first slice, but structurally it means:
 
@@ -67,7 +67,7 @@ The platform needs a small reporting-facing projection for workflow state instea
 
 ### 4. Executive reporting and operational queues are blended
 
-[`management-reporting.blade.php`](/media/marc/4T_EXFAT/web/pymesec.com/pymesec/core/resources/views/management-reporting.blade.php#L79) renders each domain as:
+[`management-reporting.blade.php`](/media/marc/PROJECTES/web/pymesec.com/pymesec/core/resources/views/management-reporting.blade.php#L79) renders each domain as:
 
 - summary KPIs
 - breakdown cards
@@ -78,7 +78,7 @@ This creates a hybrid screen:
 - too dense for a pure executive surface
 - too summary-only for actual operations
 
-Evidence is the clearest example. The reporting page exposes an attention queue that partially overlaps with the native evidence screen in [`index.blade.php`](/media/marc/4T_EXFAT/web/pymesec.com/pymesec/plugins/evidence-management/resources/views/index.blade.php#L354).
+Evidence is the clearest example. The reporting page exposes an attention queue that partially overlaps with the native evidence screen in [`index.blade.php`](/media/marc/PROJECTES/web/pymesec.com/pymesec/plugins/evidence-management/resources/views/index.blade.php#L354).
 
 The product needs a cleaner distinction between:
 
@@ -88,7 +88,7 @@ The product needs a cleaner distinction between:
 
 ### 5. Metric definitions are still local to each screen
 
-The screen currently defines headline metrics directly inside the service in [`ManagementReportingService.php`](/media/marc/4T_EXFAT/web/pymesec.com/pymesec/core/src/Reporting/ManagementReportingService.php#L45).
+The screen currently defines headline metrics directly inside the service in [`ManagementReportingService.php`](/media/marc/PROJECTES/web/pymesec.com/pymesec/core/src/Reporting/ManagementReportingService.php#L45).
 
 That is fine for bootstrapping, but it means:
 
@@ -174,7 +174,7 @@ Start with:
 
 The bug fixed today showed that reporting-specific UI composition is still too local.
 
-[`management-reporting.blade.php`](/media/marc/4T_EXFAT/web/pymesec.com/pymesec/core/resources/views/management-reporting.blade.php#L1) now contains screen-local layout styles to fix the immediate rendering issue. That is acceptable as a tactical fix, but the shell still lacks a small shared primitive for:
+[`management-reporting.blade.php`](/media/marc/PROJECTES/web/pymesec.com/pymesec/core/resources/views/management-reporting.blade.php#L1) now contains screen-local layout styles to fix the immediate rendering issue. That is acceptable as a tactical fix, but the shell still lacks a small shared primitive for:
 
 - label/value summary rows
 - compact breakdown lists

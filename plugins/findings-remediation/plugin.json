@@ -41,6 +41,15 @@
   ],
   "routes": [
     {
+      "id": "findings-remediation.api",
+      "type": "api",
+      "file": "routes/api.php",
+      "middleware": [
+        "api"
+      ],
+      "prefix": "api/v1"
+    },
+    {
       "id": "findings-remediation.web",
       "type": "web",
       "file": "routes/web.php",

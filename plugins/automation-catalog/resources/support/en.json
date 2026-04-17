@@ -10,6 +10,7 @@
         "Ownership and provenance metadata make each pack traceable to a responsible principal and source.",
         "Output mappings let operators route automation results into evidence refresh records or workflow transitions using explicit targets or scope resolver mode for asset/risk.",
         "Runtime execution supports manual runs from pack detail and scheduled runs via CLI/CRON, with persisted run history per pack.",
+        "Automation pack lifecycle, repository, runtime, and output mapping actions are also exposed by REST API under /api/v1/automation-catalog and are published in openapi.json.",
         "Per-target check results are persisted on each runtime execution so outcomes can be audited at object level.",
         "Mappings can optionally propagate runtime status posture into asset/risk targets through a policy gate.",
         "When posture propagation is enabled, asset/risk posture updates keep provenance references to the last automation run and check result.",

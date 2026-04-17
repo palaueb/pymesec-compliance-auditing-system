@@ -33,6 +33,7 @@ Main files:
 - `plugins/automation-catalog/src/AutomationCatalogPlugin.php`
 - `plugins/automation-catalog/src/AutomationCatalogRepository.php`
 - `plugins/automation-catalog/routes/web.php`
+- `plugins/automation-catalog/routes/api.php`
 - `plugins/automation-catalog/resources/views/index.blade.php`
 - `plugins/automation-catalog/src/AutomationOutputMappingDeliveryService.php`
 - `plugins/automation-catalog/src/AutomationPackageRepositorySyncService.php`
@@ -181,6 +182,15 @@ CLI runtime operation:
 - `php artisan automation:runs --organization_id=org-a --scope_id=scope-eu --trigger=scheduled`
 - `php artisan automation:runs --organization_id=org-a --scope_id=scope-eu --trigger=scheduled --respect_schedule=1`
 - target one pack with `--pack_id=<automation-pack-id>`
+
+API v1 operation surface (MCP/OpenAPI-ready):
+
+- base path: `/api/v1/automation-catalog`
+- packs: list, create, install, enable, disable, uninstall, health update, schedule update, run
+- repositories: list, save, install official, refresh
+- output mappings: create and manual apply
+- lookups: scopes, artifacts, target-subject options
+- external catalog: latest release rows from enabled repositories
 
 ## Authorization
 

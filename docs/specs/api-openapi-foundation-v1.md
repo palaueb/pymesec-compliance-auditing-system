@@ -57,6 +57,13 @@ Route metadata is mandatory for every `/api/v1` operation. Missing metadata must
 `paths` must be generated from router extraction, not manually curated JSON operation lists.
 For mutable endpoints, `requestBody` schemas should be generated from shared validation contracts (`request_form_request` preferred, `request_rules` accepted) plus governed field annotations, not manually duplicated schemas.
 For mutable endpoints with relational selectors (`*_id`, `*_ids`), route metadata must publish `lookup_fields` so clients can discover which lookup endpoint provides valid options.
+For mutable endpoints with governed catalog fields, generated schemas must expose both `x-governed-catalog` and `x-governed-source` so clients can resolve allowed options before write calls.
+
+Implementation baseline (current):
+
+- core-only operations remain in `core/routes/api.php`
+- plugin domain operations are split into `plugins/<plugin-id>/routes/api.php`
+- OpenAPI stays unified from active router extraction (`/openapi.json`, `/openapi/v1.json`)
 
 ### 3) Stable machine-facing contracts
 
@@ -142,8 +149,9 @@ Required workflow:
 1. module adds or updates endpoint + route `_openapi` metadata
 2. module tests include authz and response shape assertions
 3. OpenAPI assembler regenerates canonical `openapi.json`
-4. CI validates schema and blocks drift between routes and OpenAPI declaration
-5. CI enforces `api -> openapi` operation coverage and baseline `web write -> api operation` parity checks
+4. publish command writes both canonical artifacts (`public/openapi.json` and `public/openapi/v1.json`) from the same generated document
+5. CI runs `php artisan openapi:publish --check` and blocks any artifact drift
+6. CI enforces `api -> openapi` operation coverage and baseline `web write -> api operation` parity checks
 
 ## Acceptance Criteria
 

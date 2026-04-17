@@ -1,6 +1,6 @@
 # Project TODO (Canonical Single File)
 
-Snapshot date: 2026-04-07
+Snapshot date: 2026-04-17
 
 This is the only active TODO checklist for product work.
 
@@ -21,14 +21,14 @@ Archived (non-canonical) backlog history:
 - [x] Require in-application `HELP` updates whenever a feature/workflow/screen/object changes.
 - [x] Treat `tests + demo check + documentation update` as minimum closeout.
 - [x] Require API route-level OpenAPI metadata as source of truth (`/api/v1` routes must declare `_openapi`; generated contract must come from router extraction).
-- [ ] Require API parity for product actions: every relevant UI action must also be available through authenticated and authorized REST API endpoints.
+- [x] Require API parity for product actions: every relevant UI action must also be available through authenticated and authorized REST API endpoints.
 - [x] Require complete application auditability: every WEB and API operation (read/write, success/failure) must be recorded in append-only database logs.
 - [x] Require governed-write discipline in API: clients must obtain allowed values for constrained fields before write operations, and API must reject out-of-catalog values.
 
 ## Active Pending: P0 API/OpenAPI Program
 
-- [ ] Publish a canonical modular `openapi.json` for the full product surface (core + all functional domains).
-- [ ] Define and enforce OpenAPI operation ownership per module/plugin so no UI-only workflow remains undocumented in API.
+- [x] Publish a canonical modular `openapi.json` for the full product surface (core + all functional domains).
+- [x] Define and enforce OpenAPI operation ownership per module/plugin so no UI-only workflow remains undocumented in API.
 - [x] Expose lookup/reference endpoints for governed fields and use the same contracts across UI, integrations, and MCP.
 - [x] Implement a unified append-only operation log store for WEB + API with mandatory `channel` and `author` tagging on every record.
 - [x] Enforce object-level authorization parity in every API endpoint (organization, scope, role/permission, assignment, object access rules).
@@ -36,8 +36,8 @@ Archived (non-canonical) backlog history:
 - [x] Add MCP-ready API conventions (stable `operationId`, machine-readable errors, discoverable capability endpoints).
 - [x] Enforce OpenAPI coverage guardrails in tests (`api -> openapi` operation presence and baseline `web write -> api operation` parity checks for implemented product domains).
 - [x] Expose relation lookup endpoints for dynamic write fields (actors, frameworks, controls, risks) and declare lookup sources per write contract.
-- [ ] Expand API domain coverage from current core/asset/risk/controls/assessments/findings (+ remediation actions and assessment reviews) baseline to all enabled product modules and workflows.
-- [ ] Expand route-owned OpenAPI contracts (and shared components where needed) to cover all enabled plugin domains with complete write/action contracts.
+- [x] Expand API domain coverage from current core/asset/risk/controls/assessments/findings/automation-catalog (+ remediation actions and assessment reviews) baseline to all enabled product modules and workflows.
+- [x] Expand route-owned OpenAPI contracts (and shared components where needed) to cover all enabled plugin domains with complete write/action contracts.
 - [x] Complete API token lifecycle governance (issue/revoke/rotate/expiry/scope policy) with platform UI and audit controls.
 - [x] Publish a stable versioned OpenAPI artifact endpoint for external tooling consumption with compatibility policy.
 
@@ -105,6 +105,7 @@ Archived (non-canonical) backlog history:
 - [x] Third-party risk / vendor review workspace.
 - [x] Secure external collaboration generalized beyond third-party-risk and link-only flows.
 - [x] Questionnaire engine with internal, brokered, and direct secure external collection modes.
+- [x] API route ownership physically split by plugin (`plugins/<plugin-id>/routes/api.php`) while preserving one unified OpenAPI artifact.
 - [x] Automation catalog with first installable pack and connector-backed autonomous execution baseline.
 - [x] Collaboration layer for comments, requests, handoffs, tasks, and shared draft continuity.
 - [x] Deeper management reporting across assessments, evidence, risks, findings, and readiness slices.

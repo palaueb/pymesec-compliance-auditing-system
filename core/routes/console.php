@@ -44,6 +44,71 @@ Artisan::command('openapi:generate {--output=}', function (OpenApiDocumentBuilde
     return 0;
 })->purpose('Generate the canonical OpenAPI JSON document from modular fragments');
 
+Artisan::command('openapi:publish {--output-dir=public} {--check}', function (OpenApiDocumentBuilder $openApi) {
+    $outputDir = trim((string) $this->option('output-dir'));
+
+    if ($outputDir === '') {
+        $outputDir = 'public';
+    }
+
+    if (! str_starts_with($outputDir, '/')) {
+        $outputDir = base_path($outputDir);
+    }
+
+    $versionedPath = rtrim($outputDir, '/').'/openapi/v1.json';
+    $canonicalPath = rtrim($outputDir, '/').'/openapi.json';
+
+    $document = $openApi->build();
+    unset($document['x-generated-at']);
+
+    $json = json_encode($document, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR).PHP_EOL;
+    $paths = [$versionedPath, $canonicalPath];
+
+    if ($this->option('check')) {
+        $drift = [];
+
+        foreach ($paths as $path) {
+            if (! is_file($path)) {
+                $drift[$path] = 'missing';
+
+                continue;
+            }
+
+            if ((string) file_get_contents($path) !== $json) {
+                $drift[$path] = 'outdated';
+            }
+        }
+
+        if ($drift !== []) {
+            $this->error('OpenAPI artifact drift detected. Run php artisan openapi:publish and commit the updated files.');
+
+            foreach ($drift as $path => $reason) {
+                $this->line(sprintf('- %s (%s)', $path, $reason));
+            }
+
+            return 1;
+        }
+
+        $this->info('OpenAPI artifacts are up to date.');
+
+        return 0;
+    }
+
+    foreach ($paths as $path) {
+        $directory = dirname($path);
+
+        if (! is_dir($directory)) {
+            mkdir($directory, 0755, true);
+        }
+
+        file_put_contents($path, $json);
+    }
+
+    $this->info(sprintf('OpenAPI artifacts published: %s, %s', $canonicalPath, $versionedPath));
+
+    return 0;
+})->purpose('Publish canonical OpenAPI artifacts (versioned plus latest alias)');
+
 Artisan::command('api-tokens:issue {principal_id} {label} {--organization_id=} {--scope_id=} {--expires_in_days=90} {--created_by=}', function (
     ApiAccessTokenRepository $tokens,
     string $principal_id,

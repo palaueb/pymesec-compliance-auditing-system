@@ -37,6 +37,15 @@
   ],
   "routes": [
     {
+      "id": "evidence-management.api",
+      "type": "api",
+      "file": "routes/api.php",
+      "middleware": [
+        "api"
+      ],
+      "prefix": "api/v1"
+    },
+    {
       "id": "evidence-management.web",
       "type": "web",
       "file": "routes/web.php",
