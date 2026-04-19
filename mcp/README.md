@@ -26,6 +26,33 @@ Build artifacts are generated in `dist/` for:
 
 The server uses MCP JSON-RPC over stdio.
 
+## MCP Client Config Template
+
+Use this template in any MCP client that supports `stdio` servers:
+
+```json
+{
+  "mcpServers": {
+    "pymesec": {
+      "command": "/ABSOLUTE/PATH/TO/pymesec/dist/pymesec-mcp-linux-amd64",
+      "args": [],
+      "env": {
+        "PYMESEC_API_BASE_URL": "http://127.0.0.1:18080",
+        "PYMESEC_API_TOKEN": "pmsk_...",
+        "PYMESEC_API_PREFIX": "/api/v1",
+        "PYMESEC_SYNC_OPENAPI_ON_START": "true"
+      }
+    }
+  }
+}
+```
+
+Practical notes:
+
+- Replace `command` with your real absolute binary path.
+- On macOS/Windows use the corresponding binary from `dist/`.
+- Keep token scope minimal (least privilege) for the intended agent workflow.
+
 ## Smoke Test
 
 Run end-to-end MCP checks (stdio protocol + authenticated tool calls + operation parity):
