@@ -23,6 +23,7 @@ The following specification documents are available in the [`specs`](./) folder:
 - [file-upload-security-and-type-validation-v1.md](./file-upload-security-and-type-validation-v1.md)
 - [event-bus-and-hooks-v1.md](./event-bus-and-hooks-v1.md)
 - [api-openapi-foundation-v1.md](./api-openapi-foundation-v1.md)
+- [mcp-server-v1.md](./mcp-server-v1.md)
 - [api-security-baseline-v1.md](./api-security-baseline-v1.md)
 - [continuity-bcm-plugin-v1.md](./continuity-bcm-plugin-v1.md)
 - [continuity-recovery-plan-detail-ui-v1.md](./continuity-recovery-plan-detail-ui-v1.md)

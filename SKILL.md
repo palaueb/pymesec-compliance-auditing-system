@@ -10,7 +10,9 @@ This document defines the operational contract, security constraints, and recomm
 
 - OpenAPI contract: `/openapi.json`
 - API base path: `/api/v1`
+- Official MCP server (stdio): `pymesec-mcp` (Go binary)
 - Capability discovery: `GET /api/v1/meta/capabilities`
+- MCP server profile: `GET /api/v1/meta/mcp-server`
 - Reference/governed lookups:
   - `GET /api/v1/lookups/reference-catalogs`
   - `GET /api/v1/lookups/reference-catalogs/{catalogKey}/options`
@@ -18,6 +20,15 @@ This document defines the operational contract, security constraints, and recomm
   - `GET /api/v1/lookups/frameworks/options`
   - `GET /api/v1/lookups/controls/options`
   - `GET /api/v1/lookups/risks/options`
+
+Official MCP tools:
+
+- `pymesec_api_request`
+- `pymesec_call_operation`
+- `pymesec_list_operations`
+- `pymesec_get_capabilities`
+- `pymesec_get_openapi`
+- `pymesec_get_mcp_profile`
 
 ## Authentication and Context
 

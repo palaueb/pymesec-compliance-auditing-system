@@ -10,7 +10,7 @@ use PymeSec\Plugins\IdentityLocal\IdentityLocalAuthService;
 use PymeSec\Plugins\IdentityLocal\IdentityLocalRepository;
 use PymeSec\Plugins\IdentityLocal\IdentityUserImportService;
 
-$apiContext = require dirname(__DIR__, 3).'/core/routes/api_context.php';
+$apiContext = require base_path('routes/api_context.php');
 extract($apiContext, EXTR_SKIP);
 
 Route::post('/identity-local/users', function (

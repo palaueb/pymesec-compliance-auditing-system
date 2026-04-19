@@ -15,7 +15,7 @@ use PymeSec\Core\ReferenceData\ReferenceCatalogService;
 use PymeSec\Plugins\AssessmentsAudits\AssessmentsAuditsRepository;
 use PymeSec\Plugins\FindingsRemediation\FindingsRemediationRepository;
 
-$apiContext = require dirname(__DIR__, 3).'/core/routes/api_context.php';
+$apiContext = require base_path('routes/api_context.php');
 extract($apiContext, EXTR_SKIP);
 
 Route::get('/assessments', function (

@@ -106,6 +106,9 @@ make seed-demo
 make reset-demo
 make test
 make lint
+make compile
+MCP_SMOKE_TOKEN="pmsk_..." make mcp-smoke
+make smoke-app
 make logs
 docker compose exec app php artisan plugins:list
 docker compose exec app php artisan menus:list

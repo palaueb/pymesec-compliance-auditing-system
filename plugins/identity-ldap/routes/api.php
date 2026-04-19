@@ -6,7 +6,7 @@ use Illuminate\Validation\ValidationException;
 use PymeSec\Plugins\IdentityLdap\IdentityLdapRepository;
 use PymeSec\Plugins\IdentityLdap\IdentityLdapService;
 
-$apiContext = require dirname(__DIR__, 3).'/core/routes/api_context.php';
+$apiContext = require base_path('routes/api_context.php');
 extract($apiContext, EXTR_SKIP);
 
 Route::post('/identity-ldap/connection', function (

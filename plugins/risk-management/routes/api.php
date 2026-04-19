@@ -16,7 +16,7 @@ use PymeSec\Core\Workflows\Contracts\WorkflowServiceInterface;
 use PymeSec\Core\Workflows\WorkflowExecutionContext;
 use PymeSec\Plugins\RiskManagement\RiskRepository;
 
-$apiContext = require dirname(__DIR__, 3).'/core/routes/api_context.php';
+$apiContext = require base_path('routes/api_context.php');
 extract($apiContext, EXTR_SKIP);
 
 Route::get('/risks', function (

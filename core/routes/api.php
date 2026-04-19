@@ -340,6 +340,71 @@ Route::prefix('v1')->group(function () use (
         ],
     ]);
 
+    Route::get('/meta/mcp-server', function (
+        Request $request,
+        TenancyServiceInterface $tenancy,
+    ) use ($apiPrincipalId, $apiSuccess, $resolveTenancy) {
+        $principalId = $apiPrincipalId($request);
+        abort_unless(is_string($principalId) && $principalId !== '', 401);
+
+        $context = $resolveTenancy($request, $tenancy, $principalId);
+
+        return $apiSuccess([
+            'server' => [
+                'id' => 'pymesec-official-mcp',
+                'name' => 'PymeSec Official MCP Server',
+                'version' => '1.0.0',
+                'transport' => 'stdio',
+                'binary' => 'pymesec-mcp',
+                'tools' => [
+                    'pymesec_api_request',
+                    'pymesec_call_operation',
+                    'pymesec_list_operations',
+                    'pymesec_get_capabilities',
+                    'pymesec_get_openapi',
+                    'pymesec_get_mcp_profile',
+                ],
+                'autoconfiguration' => [
+                    'openapi_url' => '/openapi/v1.json',
+                    'api_base_url_env' => 'PYMESEC_API_BASE_URL',
+                    'api_token_env' => 'PYMESEC_API_TOKEN',
+                    'openapi_url_env' => 'PYMESEC_OPENAPI_URL',
+                    'api_prefix_env' => 'PYMESEC_API_PREFIX',
+                ],
+                'security_model' => [
+                    'authentication' => 'bearer_api_token',
+                    'authorization' => 'api_middleware_parity',
+                    'object_access' => 'api_middleware_parity',
+                    'audit' => 'api_channel_append_only',
+                ],
+            ],
+            'context' => [
+                'principal_id' => $principalId,
+                'organization_id' => $context->organization?->id,
+                'scope_id' => $context->scope?->id,
+                'membership_ids' => array_values(array_map(
+                    static fn ($membership): string => $membership->id,
+                    $context->memberships,
+                )),
+            ],
+        ]);
+    })->defaults('_openapi', [
+        'operation_id' => 'coreGetMcpServerProfile',
+        'tags' => ['core'],
+        'tag_descriptions' => [
+            'core' => 'Core platform and capability endpoints.',
+        ],
+        'summary' => 'Get official MCP server profile and security parity metadata',
+        'responses' => [
+            '200' => [
+                'description' => 'MCP profile metadata for current authenticated context',
+            ],
+            '401' => [
+                'description' => 'Authentication required',
+            ],
+        ],
+    ]);
+
     Route::get('/api-tokens', function (
         Request $request,
         ApiAccessTokenRepository $tokens,

@@ -44,7 +44,8 @@ Archived (non-canonical) backlog history:
 ## Active Pending: Agent-First Surfaces and Distribution
 
 - [x] Add and maintain root `SKILL.md` as the canonical agent usage guide for API/MCP capabilities.
-- [ ] Publish an official MCP server implementation with tenancy, permission, and object-access enforcement parity.
+- [x] Publish an official MCP server implementation with tenancy, permission, and object-access enforcement parity.
+- [x] Provide a reproducible MCP smoke workflow (`make mcp-smoke`) to validate authenticated tool parity against API/OpenAPI.
 - [ ] Register official agent integration surfaces (MCP server + skill metadata) in discovery registries/context hubs.
 - [ ] Provide a versioned machine-readable sample dataset bundle (organization, scopes, assets, controls, risks, assessments, findings) for agent/integration onboarding.
 - [ ] Add dual-mode CLI outputs (`human` + `--json`) for key operational commands to enable non-HTTP automation.

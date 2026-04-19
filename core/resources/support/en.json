@@ -47,6 +47,18 @@
       "order": 40
     },
     {
+      "id": "official-mcp-server",
+      "title": "Use the official MCP server",
+      "summary": "Agents can operate through the official MCP surface while keeping API security boundaries.",
+      "body": [
+        "Run the official broker with the `pymesec-mcp` Go binary and authenticate with a scoped API token (`PYMESEC_API_TOKEN` or per-tool token argument).",
+        "The MCP tools proxy every operation through `/api/v1`, so tenancy, permission checks, object-level access rules, and API audit logging remain enforced.",
+        "The binary can autoload `/openapi/v1.json` to resolve `operation_id` calls, and you should still resolve governed lookups before write operations."
+      ],
+      "concept_ids": ["mcp-server", "api-access-token", "audit-trail"],
+      "order": 45
+    },
+    {
       "id": "api-token-governance",
       "title": "Manage API tokens from administration",
       "summary": "Issue integration tokens per user and revoke them quickly when risk changes.",
@@ -207,6 +219,22 @@
         { "type": "recorded-in", "target": "audit-trail", "summary": "API operations must remain traceable in append-only logs." }
       ],
       "order": 90
+    },
+    {
+      "id": "mcp-server",
+      "label": "MCP Server",
+      "category": "integration",
+      "summary": "A JSON-RPC server over stdio that exposes PymeSec API workflows to agent tooling.",
+      "why_it_exists": "Agent runtimes need a stable bridge that preserves the exact API security and tenancy model instead of bypassing it with direct database access.",
+      "how_to_use": [
+        "Run the compiled `pymesec-mcp` binary and provide a least-privilege API token.",
+        "Use MCP tools to call `/api/v1` operations directly or by `operation_id`, then follow lookup-first writes for governed and relational fields."
+      ],
+      "relations": [
+        { "type": "proxies-to", "target": "api-access-token", "summary": "Authentication and scope constraints are enforced through API token context." },
+        { "type": "records-in", "target": "audit-trail", "summary": "Operations remain visible in the shared API audit trail." }
+      ],
+      "order": 95
     }
   ]
 }

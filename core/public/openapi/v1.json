@@ -7929,6 +7929,28 @@
                 ]
             }
         },
+        "/meta/mcp-server": {
+            "get": {
+                "tags": [
+                    "core"
+                ],
+                "operationId": "coreGetMcpServerProfile",
+                "summary": "Get official MCP server profile and security parity metadata",
+                "responses": {
+                    "200": {
+                        "description": "MCP profile metadata for current authenticated context"
+                    },
+                    "401": {
+                        "description": "Authentication required"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ]
+            }
+        },
         "/openapi": {
             "get": {
                 "tags": [

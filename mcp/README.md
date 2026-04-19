@@ -1,0 +1,79 @@
+# PymeSec MCP (Go Binary)
+
+Official MCP sidecar implemented in Go, designed for local execution next to LLM clients without PHP runtime dependencies.
+
+## Build
+
+From repository root:
+
+```bash
+make compile
+```
+
+Build artifacts are generated in `dist/` for:
+
+- Linux: `amd64`, `arm64`
+- macOS: `amd64`, `arm64`
+- Windows: `amd64`, `arm64`
+
+## Run
+
+```bash
+./dist/pymesec-mcp-linux-amd64 \
+  --api-base-url=http://127.0.0.1:8000 \
+  --api-token=YOUR_TOKEN
+```
+
+The server uses MCP JSON-RPC over stdio.
+
+## Smoke Test
+
+Run end-to-end MCP checks (stdio protocol + authenticated tool calls + operation parity):
+
+```bash
+MCP_SMOKE_TOKEN="pmsk_..." make mcp-smoke
+```
+
+Optional overrides:
+
+- `MCP_SMOKE_BIN` (default `./dist/pymesec-mcp-linux-amd64`)
+- `MCP_SMOKE_API_BASE_URL` (default `http://127.0.0.1:18080`)
+- `MCP_SMOKE_OPERATION_ID` (default `coreGetMcpServerProfile`)
+- `MCP_SMOKE_REQUEST_TIMEOUT` (default `30s`)
+
+`make mcp-smoke` validates:
+
+1. `pymesec_get_capabilities`
+2. `pymesec_call_operation` (OpenAPI operationId routing)
+3. `pymesec_api_request`
+4. parity between `call_operation` and direct `api_request` response body/status
+
+## Configuration
+
+CLI flags and environment variables:
+
+- `--api-base-url` / `PYMESEC_API_BASE_URL`
+- `--api-prefix` / `PYMESEC_API_PREFIX` (default `/api/v1`)
+- `--api-token` / `PYMESEC_API_TOKEN`
+- `--openapi-url` / `PYMESEC_OPENAPI_URL` (default `<api-base-url>/openapi/v1.json`)
+- `--request-timeout` / `PYMESEC_REQUEST_TIMEOUT` (default `30s`)
+- `--sync-openapi-on-start` / `PYMESEC_SYNC_OPENAPI_ON_START` (default `true`)
+
+## OpenAPI Autoconfiguration
+
+The binary loads OpenAPI and builds an operation index (`operationId -> method + path`).
+
+This enables:
+
+- `pymesec_call_operation` by `operation_id`
+- `pymesec_list_operations` to discover available operations
+
+So model clients can use operation IDs directly instead of hardcoding paths.
+
+## Security Model
+
+The binary is API-first:
+
+- all calls are forwarded to `/api/v1`
+- tenancy, permissions, object-access, and audit are enforced by existing API middleware
+- no direct DB/domain access from MCP
