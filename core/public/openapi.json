@@ -5698,6 +5698,191 @@
                 ]
             }
         },
+        "/external/vendor-review/{token}/artifacts": {
+            "post": {
+                "tags": [
+                    "vendors"
+                ],
+                "operationId": "thirdPartyRiskExternalAttachReviewArtifact",
+                "summary": "Upload one external review artifact using a review token",
+                "responses": {
+                    "200": {
+                        "description": "Review artifact uploaded"
+                    },
+                    "404": {
+                        "description": "Token or review not found"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "artifact",
+                                    "label"
+                                ],
+                                "properties": {
+                                    "artifact": {
+                                        "type": "string",
+                                        "format": "binary"
+                                    },
+                                    "label": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "token",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ]
+            }
+        },
+        "/external/vendor-review/{token}/questionnaire-items/{itemId}": {
+            "post": {
+                "tags": [
+                    "vendors"
+                ],
+                "operationId": "thirdPartyRiskExternalSubmitQuestionnaireAnswer",
+                "summary": "Submit one external questionnaire answer using a review token",
+                "responses": {
+                    "200": {
+                        "description": "Questionnaire answer submitted"
+                    },
+                    "404": {
+                        "description": "Token, review, or questionnaire item not found"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "answer_text": {
+                                        "type": "string"
+                                    }
+                                },
+                                "required": [
+                                    "answer_text"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "token",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "itemId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ]
+            }
+        },
+        "/external/vendor-review/{token}/questionnaire-items/{itemId}/artifacts": {
+            "post": {
+                "tags": [
+                    "vendors"
+                ],
+                "operationId": "thirdPartyRiskExternalAttachQuestionnaireArtifact",
+                "summary": "Upload one external questionnaire artifact using a review token",
+                "responses": {
+                    "200": {
+                        "description": "Questionnaire artifact uploaded"
+                    },
+                    "404": {
+                        "description": "Token, review, item, or attachment mode not valid"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "artifact",
+                                    "label"
+                                ],
+                                "properties": {
+                                    "artifact": {
+                                        "type": "string",
+                                        "format": "binary"
+                                    },
+                                    "label": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "token",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "itemId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ]
+            }
+        },
         "/findings": {
             "get": {
                 "tags": [
@@ -10486,6 +10671,2324 @@
                     "plugin.risk-management.risks.manage"
                 ]
             }
+        },
+        "/vendors": {
+            "get": {
+                "tags": [
+                    "vendors"
+                ],
+                "operationId": "thirdPartyRiskListVendors",
+                "summary": "List vendors with visible current review context",
+                "responses": {
+                    "200": {
+                        "description": "Vendor list"
+                    },
+                    "422": {
+                        "description": "Organization context required"
+                    },
+                    "403": {
+                        "description": "Caller is not authorized"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "x-permissions": [
+                    "plugin.third-party-risk.vendors.view"
+                ]
+            },
+            "post": {
+                "tags": [
+                    "vendors"
+                ],
+                "operationId": "thirdPartyRiskCreateVendorWithReview",
+                "summary": "Create a vendor with its initial review workspace",
+                "responses": {
+                    "200": {
+                        "description": "Vendor and review created"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    },
+                    "403": {
+                        "description": "Caller is not authorized"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "legal_name": {
+                                        "type": "string",
+                                        "maxLength": 140
+                                    },
+                                    "service_summary": {
+                                        "type": "string",
+                                        "maxLength": 255
+                                    },
+                                    "tier": {
+                                        "type": "string",
+                                        "enum": [
+                                            "\"low\"",
+                                            "\"medium\"",
+                                            "\"high\"",
+                                            "\"critical\""
+                                        ]
+                                    },
+                                    "website": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "maxLength": 255
+                                    },
+                                    "primary_contact_name": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "maxLength": 120
+                                    },
+                                    "primary_contact_email": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "format": "email",
+                                        "maxLength": 160
+                                    },
+                                    "organization_id": {
+                                        "type": "string",
+                                        "maxLength": 64
+                                    },
+                                    "scope_id": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "maxLength": 64
+                                    },
+                                    "review_profile_id": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "maxLength": 120
+                                    },
+                                    "questionnaire_template_id": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "maxLength": 120
+                                    },
+                                    "review_title": {
+                                        "type": "string",
+                                        "maxLength": 140
+                                    },
+                                    "inherent_risk": {
+                                        "type": "string",
+                                        "enum": [
+                                            "\"low\"",
+                                            "\"medium\"",
+                                            "\"high\"",
+                                            "\"critical\""
+                                        ]
+                                    },
+                                    "review_summary": {
+                                        "type": "string",
+                                        "maxLength": 2000
+                                    },
+                                    "decision_notes": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "maxLength": 2000
+                                    },
+                                    "linked_asset_id": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "maxLength": 120
+                                    },
+                                    "linked_control_id": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "maxLength": 120
+                                    },
+                                    "linked_risk_id": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "maxLength": 120
+                                    },
+                                    "linked_finding_id": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "maxLength": 120
+                                    },
+                                    "next_review_due_on": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "format": "date"
+                                    },
+                                    "owner_actor_id": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "maxLength": 64
+                                    }
+                                },
+                                "required": [
+                                    "legal_name",
+                                    "service_summary",
+                                    "tier",
+                                    "organization_id",
+                                    "review_title",
+                                    "inherent_risk",
+                                    "review_summary"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "x-permissions": [
+                    "plugin.third-party-risk.vendors.manage"
+                ],
+                "x-lookup-fields": {
+                    "review_profile_id": {
+                        "source": "/api/v1/lookups/vendor-review-profiles/options"
+                    },
+                    "questionnaire_template_id": {
+                        "source": "/api/v1/lookups/vendor-questionnaire-templates/options"
+                    },
+                    "linked_asset_id": {
+                        "source": "/api/v1/assets"
+                    },
+                    "linked_control_id": {
+                        "source": "/api/v1/lookups/controls/options"
+                    },
+                    "linked_risk_id": {
+                        "source": "/api/v1/lookups/risks/options"
+                    },
+                    "linked_finding_id": {
+                        "source": "/api/v1/lookups/findings/options"
+                    },
+                    "owner_actor_id": {
+                        "source": "/api/v1/lookups/actors/options"
+                    }
+                }
+            }
+        },
+        "/vendors/{vendorId}": {
+            "get": {
+                "tags": [
+                    "vendors"
+                ],
+                "operationId": "thirdPartyRiskGetVendor",
+                "summary": "Get one vendor with visible review details",
+                "responses": {
+                    "200": {
+                        "description": "Vendor detail"
+                    },
+                    "404": {
+                        "description": "Vendor not found in current context"
+                    },
+                    "403": {
+                        "description": "Caller is not authorized"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "parameters": [
+                    {
+                        "name": "vendorId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "plugin.third-party-risk.vendors.view"
+                ]
+            }
+        },
+        "/vendors/{vendorId}/reviews/{reviewId}": {
+            "patch": {
+                "tags": [
+                    "vendors"
+                ],
+                "operationId": "thirdPartyRiskUpdateVendorWithReview",
+                "summary": "Update a vendor and one review workspace",
+                "responses": {
+                    "200": {
+                        "description": "Vendor and review updated"
+                    },
+                    "404": {
+                        "description": "Vendor or review not found in current context"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    },
+                    "403": {
+                        "description": "Caller is not authorized"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "legal_name": {
+                                        "type": "string",
+                                        "maxLength": 140
+                                    },
+                                    "service_summary": {
+                                        "type": "string",
+                                        "maxLength": 255
+                                    },
+                                    "tier": {
+                                        "type": "string",
+                                        "enum": [
+                                            "\"low\"",
+                                            "\"medium\"",
+                                            "\"high\"",
+                                            "\"critical\""
+                                        ]
+                                    },
+                                    "website": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "maxLength": 255
+                                    },
+                                    "primary_contact_name": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "maxLength": 120
+                                    },
+                                    "primary_contact_email": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "format": "email",
+                                        "maxLength": 160
+                                    },
+                                    "scope_id": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "maxLength": 64
+                                    },
+                                    "review_profile_id": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "maxLength": 120
+                                    },
+                                    "questionnaire_template_id": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "maxLength": 120
+                                    },
+                                    "review_title": {
+                                        "type": "string",
+                                        "maxLength": 140
+                                    },
+                                    "inherent_risk": {
+                                        "type": "string",
+                                        "enum": [
+                                            "\"low\"",
+                                            "\"medium\"",
+                                            "\"high\"",
+                                            "\"critical\""
+                                        ]
+                                    },
+                                    "review_summary": {
+                                        "type": "string",
+                                        "maxLength": 2000
+                                    },
+                                    "decision_notes": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "maxLength": 2000
+                                    },
+                                    "linked_asset_id": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "maxLength": 120
+                                    },
+                                    "linked_control_id": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "maxLength": 120
+                                    },
+                                    "linked_risk_id": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "maxLength": 120
+                                    },
+                                    "linked_finding_id": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "maxLength": 120
+                                    },
+                                    "next_review_due_on": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "format": "date"
+                                    },
+                                    "owner_actor_id": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "maxLength": 64
+                                    }
+                                },
+                                "required": [
+                                    "legal_name",
+                                    "service_summary",
+                                    "tier",
+                                    "review_title",
+                                    "inherent_risk",
+                                    "review_summary"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "vendorId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "reviewId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "plugin.third-party-risk.vendors.manage"
+                ],
+                "x-lookup-fields": {
+                    "review_profile_id": {
+                        "source": "/api/v1/lookups/vendor-review-profiles/options"
+                    },
+                    "questionnaire_template_id": {
+                        "source": "/api/v1/lookups/vendor-questionnaire-templates/options"
+                    },
+                    "linked_asset_id": {
+                        "source": "/api/v1/assets"
+                    },
+                    "linked_control_id": {
+                        "source": "/api/v1/lookups/controls/options"
+                    },
+                    "linked_risk_id": {
+                        "source": "/api/v1/lookups/risks/options"
+                    },
+                    "linked_finding_id": {
+                        "source": "/api/v1/lookups/findings/options"
+                    },
+                    "owner_actor_id": {
+                        "source": "/api/v1/lookups/actors/options"
+                    }
+                }
+            }
+        },
+        "/vendors/{vendorId}/reviews/{reviewId}/artifacts": {
+            "post": {
+                "tags": [
+                    "vendors"
+                ],
+                "operationId": "thirdPartyRiskAttachVendorReviewArtifact",
+                "summary": "Upload one artifact to a vendor review",
+                "responses": {
+                    "200": {
+                        "description": "Artifact uploaded"
+                    },
+                    "404": {
+                        "description": "Vendor or review not found in current context"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    },
+                    "403": {
+                        "description": "Caller is not authorized"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "artifact"
+                                ],
+                                "properties": {
+                                    "artifact": {
+                                        "type": "string",
+                                        "format": "binary"
+                                    },
+                                    "label": {
+                                        "type": "string"
+                                    },
+                                    "artifact_type": {
+                                        "type": "string"
+                                    },
+                                    "membership_id": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "vendorId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "reviewId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "plugin.third-party-risk.vendors.manage"
+                ]
+            }
+        },
+        "/vendors/{vendorId}/reviews/{reviewId}/brokered-requests": {
+            "post": {
+                "tags": [
+                    "vendors"
+                ],
+                "operationId": "thirdPartyRiskIssueBrokeredRequest",
+                "summary": "Issue one brokered collection request for a vendor review",
+                "responses": {
+                    "200": {
+                        "description": "Brokered request created"
+                    },
+                    "404": {
+                        "description": "Vendor or review not found in current context"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    },
+                    "403": {
+                        "description": "Caller is not authorized"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "contact_name": {
+                                        "type": "string",
+                                        "maxLength": 120
+                                    },
+                                    "contact_email": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "format": "email",
+                                        "maxLength": 160
+                                    },
+                                    "collection_channel": {
+                                        "type": "string"
+                                    },
+                                    "instructions": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "maxLength": 2000
+                                    },
+                                    "broker_principal_id": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "maxLength": 64
+                                    }
+                                },
+                                "required": [
+                                    "contact_name",
+                                    "collection_channel"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "vendorId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "reviewId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "plugin.third-party-risk.vendors.manage"
+                ],
+                "x-lookup-fields": {
+                    "broker_principal_id": {
+                        "source": "/api/v1/lookups/principals/options"
+                    }
+                }
+            }
+        },
+        "/vendors/{vendorId}/reviews/{reviewId}/brokered-requests/{requestId}": {
+            "patch": {
+                "tags": [
+                    "vendors"
+                ],
+                "operationId": "thirdPartyRiskUpdateBrokeredRequest",
+                "summary": "Update one brokered collection request for a vendor review",
+                "responses": {
+                    "200": {
+                        "description": "Brokered request updated"
+                    },
+                    "404": {
+                        "description": "Vendor, review, or brokered request not found in current context"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    },
+                    "403": {
+                        "description": "Caller is not authorized"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "collection_status": {
+                                        "type": "string"
+                                    },
+                                    "broker_notes": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "maxLength": 2000
+                                    },
+                                    "broker_principal_id": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "maxLength": 64
+                                    }
+                                },
+                                "required": [
+                                    "collection_status"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "vendorId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "reviewId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "requestId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "plugin.third-party-risk.vendors.manage"
+                ],
+                "x-lookup-fields": {
+                    "broker_principal_id": {
+                        "source": "/api/v1/lookups/principals/options"
+                    }
+                }
+            }
+        },
+        "/vendors/{vendorId}/reviews/{reviewId}/collaboration/comments": {
+            "post": {
+                "tags": [
+                    "vendors"
+                ],
+                "operationId": "thirdPartyRiskAddVendorReviewComment",
+                "summary": "Add one collaboration comment to a vendor review",
+                "responses": {
+                    "200": {
+                        "description": "Comment created"
+                    },
+                    "404": {
+                        "description": "Vendor or review not found in current context"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    },
+                    "403": {
+                        "description": "Caller is not authorized"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "body": {
+                                        "type": "string",
+                                        "maxLength": 4000
+                                    },
+                                    "mentioned_actor_ids": {
+                                        "type": [
+                                            "array",
+                                            "null"
+                                        ],
+                                        "items": {
+                                            "type": "string"
+                                        }
+                                    }
+                                },
+                                "required": [
+                                    "body"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "vendorId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "reviewId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "plugin.third-party-risk.vendors.manage"
+                ],
+                "x-lookup-fields": {
+                    "mentioned_actor_ids": {
+                        "source": "/api/v1/lookups/actors/options"
+                    }
+                }
+            }
+        },
+        "/vendors/{vendorId}/reviews/{reviewId}/collaboration/drafts": {
+            "post": {
+                "tags": [
+                    "vendors"
+                ],
+                "operationId": "thirdPartyRiskCreateVendorReviewDraft",
+                "summary": "Create one shared collaboration draft for a vendor review",
+                "responses": {
+                    "200": {
+                        "description": "Collaboration draft created"
+                    },
+                    "404": {
+                        "description": "Vendor or review not found in current context"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    },
+                    "403": {
+                        "description": "Caller is not authorized"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "draft_type": {
+                                        "type": "string"
+                                    },
+                                    "title": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "maxLength": 200
+                                    },
+                                    "body": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "maxLength": 4000
+                                    },
+                                    "details": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "maxLength": 4000
+                                    },
+                                    "priority": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ]
+                                    },
+                                    "handoff_state": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ]
+                                    },
+                                    "mentioned_actor_ids": {
+                                        "type": [
+                                            "array",
+                                            "null"
+                                        ],
+                                        "items": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "assigned_actor_id": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "maxLength": 64
+                                    },
+                                    "due_on": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "format": "date"
+                                    }
+                                },
+                                "required": [
+                                    "draft_type"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "vendorId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "reviewId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "plugin.third-party-risk.vendors.manage"
+                ],
+                "x-lookup-fields": {
+                    "mentioned_actor_ids": {
+                        "source": "/api/v1/lookups/actors/options"
+                    },
+                    "assigned_actor_id": {
+                        "source": "/api/v1/lookups/actors/options"
+                    }
+                }
+            }
+        },
+        "/vendors/{vendorId}/reviews/{reviewId}/collaboration/drafts/{draftId}": {
+            "patch": {
+                "tags": [
+                    "vendors"
+                ],
+                "operationId": "thirdPartyRiskUpdateVendorReviewDraft",
+                "summary": "Update one shared collaboration draft for a vendor review",
+                "responses": {
+                    "200": {
+                        "description": "Collaboration draft updated"
+                    },
+                    "404": {
+                        "description": "Vendor, review, or draft not found in current context"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    },
+                    "403": {
+                        "description": "Caller is not authorized"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "draft_type": {
+                                        "type": "string"
+                                    },
+                                    "title": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "maxLength": 200
+                                    },
+                                    "body": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "maxLength": 4000
+                                    },
+                                    "details": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "maxLength": 4000
+                                    },
+                                    "priority": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ]
+                                    },
+                                    "handoff_state": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ]
+                                    },
+                                    "mentioned_actor_ids": {
+                                        "type": [
+                                            "array",
+                                            "null"
+                                        ],
+                                        "items": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "assigned_actor_id": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "maxLength": 64
+                                    },
+                                    "due_on": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "format": "date"
+                                    }
+                                },
+                                "required": [
+                                    "draft_type"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "vendorId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "reviewId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "draftId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "plugin.third-party-risk.vendors.manage"
+                ],
+                "x-lookup-fields": {
+                    "mentioned_actor_ids": {
+                        "source": "/api/v1/lookups/actors/options"
+                    },
+                    "assigned_actor_id": {
+                        "source": "/api/v1/lookups/actors/options"
+                    }
+                }
+            }
+        },
+        "/vendors/{vendorId}/reviews/{reviewId}/collaboration/drafts/{draftId}/promote-comment": {
+            "post": {
+                "tags": [
+                    "vendors"
+                ],
+                "operationId": "thirdPartyRiskPromoteVendorReviewDraftToComment",
+                "summary": "Promote one collaboration draft to comment",
+                "responses": {
+                    "200": {
+                        "description": "Draft promoted to comment"
+                    },
+                    "404": {
+                        "description": "Vendor, review, or draft not found in current context"
+                    },
+                    "403": {
+                        "description": "Caller is not authorized"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": []
+                            }
+                        }
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "vendorId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "reviewId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "draftId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "plugin.third-party-risk.vendors.manage"
+                ]
+            }
+        },
+        "/vendors/{vendorId}/reviews/{reviewId}/collaboration/drafts/{draftId}/promote-request": {
+            "post": {
+                "tags": [
+                    "vendors"
+                ],
+                "operationId": "thirdPartyRiskPromoteVendorReviewDraftToRequest",
+                "summary": "Promote one collaboration draft to follow-up request",
+                "responses": {
+                    "200": {
+                        "description": "Draft promoted to follow-up request"
+                    },
+                    "404": {
+                        "description": "Vendor, review, or draft not found in current context"
+                    },
+                    "403": {
+                        "description": "Caller is not authorized"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": []
+                            }
+                        }
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "vendorId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "reviewId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "draftId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "plugin.third-party-risk.vendors.manage"
+                ]
+            }
+        },
+        "/vendors/{vendorId}/reviews/{reviewId}/collaboration/requests": {
+            "post": {
+                "tags": [
+                    "vendors"
+                ],
+                "operationId": "thirdPartyRiskCreateVendorReviewRequest",
+                "summary": "Create one collaboration follow-up request for a vendor review",
+                "responses": {
+                    "200": {
+                        "description": "Follow-up request created"
+                    },
+                    "404": {
+                        "description": "Vendor or review not found in current context"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    },
+                    "403": {
+                        "description": "Caller is not authorized"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "title": {
+                                        "type": "string",
+                                        "maxLength": 200
+                                    },
+                                    "details": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "maxLength": 4000
+                                    },
+                                    "status": {
+                                        "type": "string"
+                                    },
+                                    "priority": {
+                                        "type": "string"
+                                    },
+                                    "handoff_state": {
+                                        "type": "string"
+                                    },
+                                    "mentioned_actor_ids": {
+                                        "type": [
+                                            "array",
+                                            "null"
+                                        ],
+                                        "items": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "assigned_actor_id": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "maxLength": 64
+                                    },
+                                    "due_on": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "format": "date"
+                                    }
+                                },
+                                "required": [
+                                    "title",
+                                    "status",
+                                    "priority",
+                                    "handoff_state"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "vendorId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "reviewId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "plugin.third-party-risk.vendors.manage"
+                ],
+                "x-lookup-fields": {
+                    "mentioned_actor_ids": {
+                        "source": "/api/v1/lookups/actors/options"
+                    },
+                    "assigned_actor_id": {
+                        "source": "/api/v1/lookups/actors/options"
+                    }
+                }
+            }
+        },
+        "/vendors/{vendorId}/reviews/{reviewId}/collaboration/requests/{requestId}": {
+            "patch": {
+                "tags": [
+                    "vendors"
+                ],
+                "operationId": "thirdPartyRiskUpdateVendorReviewRequest",
+                "summary": "Update one collaboration follow-up request for a vendor review",
+                "responses": {
+                    "200": {
+                        "description": "Follow-up request updated"
+                    },
+                    "404": {
+                        "description": "Vendor, review, or request not found in current context"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    },
+                    "403": {
+                        "description": "Caller is not authorized"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "title": {
+                                        "type": "string",
+                                        "maxLength": 200
+                                    },
+                                    "details": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "maxLength": 4000
+                                    },
+                                    "status": {
+                                        "type": "string"
+                                    },
+                                    "priority": {
+                                        "type": "string"
+                                    },
+                                    "handoff_state": {
+                                        "type": "string"
+                                    },
+                                    "mentioned_actor_ids": {
+                                        "type": [
+                                            "array",
+                                            "null"
+                                        ],
+                                        "items": {
+                                            "type": "string"
+                                        }
+                                    },
+                                    "assigned_actor_id": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "maxLength": 64
+                                    },
+                                    "due_on": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "format": "date"
+                                    }
+                                },
+                                "required": [
+                                    "title",
+                                    "status",
+                                    "priority",
+                                    "handoff_state"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "vendorId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "reviewId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "requestId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "plugin.third-party-risk.vendors.manage"
+                ],
+                "x-lookup-fields": {
+                    "mentioned_actor_ids": {
+                        "source": "/api/v1/lookups/actors/options"
+                    },
+                    "assigned_actor_id": {
+                        "source": "/api/v1/lookups/actors/options"
+                    }
+                }
+            }
+        },
+        "/vendors/{vendorId}/reviews/{reviewId}/external-collaborators/{collaboratorId}": {
+            "patch": {
+                "tags": [
+                    "vendors"
+                ],
+                "operationId": "thirdPartyRiskUpdateExternalCollaboratorLifecycle",
+                "summary": "Update one external collaborator lifecycle state",
+                "responses": {
+                    "200": {
+                        "description": "External collaborator lifecycle updated"
+                    },
+                    "404": {
+                        "description": "Vendor, review, or collaborator not found in current context"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    },
+                    "403": {
+                        "description": "Caller is not authorized"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "lifecycle_state": {
+                                        "type": "string"
+                                    }
+                                },
+                                "required": [
+                                    "lifecycle_state"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "vendorId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "reviewId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "collaboratorId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "plugin.third-party-risk.vendors.manage"
+                ]
+            }
+        },
+        "/vendors/{vendorId}/reviews/{reviewId}/external-links": {
+            "post": {
+                "tags": [
+                    "vendors"
+                ],
+                "operationId": "thirdPartyRiskIssueExternalLink",
+                "summary": "Issue one external collaboration link for a vendor review",
+                "responses": {
+                    "200": {
+                        "description": "External link issued"
+                    },
+                    "404": {
+                        "description": "Vendor or review not found in current context"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    },
+                    "403": {
+                        "description": "Caller is not authorized"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "contact_name": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "maxLength": 120
+                                    },
+                                    "contact_email": {
+                                        "type": "string",
+                                        "format": "email",
+                                        "maxLength": 160
+                                    },
+                                    "expires_at": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "format": "date"
+                                    },
+                                    "can_answer_questionnaire": {
+                                        "type": [
+                                            "boolean",
+                                            "null"
+                                        ]
+                                    },
+                                    "can_upload_artifacts": {
+                                        "type": [
+                                            "boolean",
+                                            "null"
+                                        ]
+                                    }
+                                },
+                                "required": [
+                                    "contact_email"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "vendorId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "reviewId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "plugin.third-party-risk.vendors.manage"
+                ]
+            }
+        },
+        "/vendors/{vendorId}/reviews/{reviewId}/external-links/{linkId}/revoke": {
+            "patch": {
+                "tags": [
+                    "vendors"
+                ],
+                "operationId": "thirdPartyRiskRevokeExternalLink",
+                "summary": "Revoke one external collaboration link",
+                "responses": {
+                    "200": {
+                        "description": "External link revoked"
+                    },
+                    "404": {
+                        "description": "Vendor, review, or external link not found in current context"
+                    },
+                    "403": {
+                        "description": "Caller is not authorized"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": []
+                            }
+                        }
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "vendorId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "reviewId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "linkId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "plugin.third-party-risk.vendors.manage"
+                ]
+            }
+        },
+        "/vendors/{vendorId}/reviews/{reviewId}/owners/{assignmentId}/remove": {
+            "patch": {
+                "tags": [
+                    "vendors"
+                ],
+                "operationId": "thirdPartyRiskRemoveVendorReviewOwner",
+                "summary": "Remove one owner assignment from a vendor review",
+                "responses": {
+                    "200": {
+                        "description": "Owner assignment removed"
+                    },
+                    "404": {
+                        "description": "Vendor, review, or assignment not found in current context"
+                    },
+                    "403": {
+                        "description": "Caller is not authorized"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": []
+                            }
+                        }
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "vendorId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "reviewId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "assignmentId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "plugin.third-party-risk.vendors.manage"
+                ]
+            }
+        },
+        "/vendors/{vendorId}/reviews/{reviewId}/questionnaire-items": {
+            "post": {
+                "tags": [
+                    "vendors"
+                ],
+                "operationId": "thirdPartyRiskAddQuestionnaireItem",
+                "summary": "Add one questionnaire item to a vendor review",
+                "responses": {
+                    "200": {
+                        "description": "Questionnaire item created"
+                    },
+                    "404": {
+                        "description": "Vendor or review not found in current context"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    },
+                    "403": {
+                        "description": "Caller is not authorized"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "section_title": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "maxLength": 120
+                                    },
+                                    "prompt": {
+                                        "type": "string",
+                                        "maxLength": 2000
+                                    },
+                                    "guidance_text": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "maxLength": 2000
+                                    },
+                                    "response_type": {
+                                        "type": "string"
+                                    },
+                                    "attachment_mode": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ]
+                                    },
+                                    "attachment_upload_profile": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ]
+                                    },
+                                    "is_required": {
+                                        "type": [
+                                            "boolean",
+                                            "null"
+                                        ]
+                                    }
+                                },
+                                "required": [
+                                    "prompt",
+                                    "response_type"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "vendorId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "reviewId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "plugin.third-party-risk.vendors.manage"
+                ]
+            }
+        },
+        "/vendors/{vendorId}/reviews/{reviewId}/questionnaire-items/{itemId}": {
+            "patch": {
+                "tags": [
+                    "vendors"
+                ],
+                "operationId": "thirdPartyRiskUpdateQuestionnaireItem",
+                "summary": "Update one questionnaire item for a vendor review",
+                "responses": {
+                    "200": {
+                        "description": "Questionnaire item updated"
+                    },
+                    "404": {
+                        "description": "Vendor, review, or questionnaire item not found in current context"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    },
+                    "403": {
+                        "description": "Caller is not authorized"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "section_title": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "maxLength": 120
+                                    },
+                                    "prompt": {
+                                        "type": "string",
+                                        "maxLength": 2000
+                                    },
+                                    "guidance_text": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "maxLength": 2000
+                                    },
+                                    "response_type": {
+                                        "type": "string"
+                                    },
+                                    "response_status": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ]
+                                    },
+                                    "attachment_mode": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ]
+                                    },
+                                    "attachment_upload_profile": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ]
+                                    },
+                                    "is_required": {
+                                        "type": [
+                                            "boolean",
+                                            "null"
+                                        ]
+                                    },
+                                    "answer_text": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "maxLength": 4000
+                                    },
+                                    "follow_up_notes": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "maxLength": 2000
+                                    }
+                                },
+                                "required": [
+                                    "prompt",
+                                    "response_type"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "vendorId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "reviewId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "itemId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "plugin.third-party-risk.vendors.manage"
+                ]
+            }
+        },
+        "/vendors/{vendorId}/reviews/{reviewId}/questionnaire-items/{itemId}/artifacts": {
+            "post": {
+                "tags": [
+                    "vendors"
+                ],
+                "operationId": "thirdPartyRiskAttachQuestionnaireItemArtifact",
+                "summary": "Upload one artifact to a vendor review questionnaire item",
+                "responses": {
+                    "200": {
+                        "description": "Questionnaire attachment uploaded"
+                    },
+                    "404": {
+                        "description": "Vendor, review, or questionnaire item not found in current context"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    },
+                    "403": {
+                        "description": "Caller is not authorized"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "type": "object",
+                                "required": [
+                                    "artifact"
+                                ],
+                                "properties": {
+                                    "artifact": {
+                                        "type": "string",
+                                        "format": "binary"
+                                    },
+                                    "label": {
+                                        "type": "string"
+                                    },
+                                    "membership_id": {
+                                        "type": "string"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "vendorId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "reviewId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "itemId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "plugin.third-party-risk.vendors.manage"
+                ]
+            }
+        },
+        "/vendors/{vendorId}/reviews/{reviewId}/questionnaire-items/{itemId}/review": {
+            "patch": {
+                "tags": [
+                    "vendors"
+                ],
+                "operationId": "thirdPartyRiskReviewQuestionnaireItem",
+                "summary": "Review one questionnaire item for a vendor review",
+                "responses": {
+                    "200": {
+                        "description": "Questionnaire review updated"
+                    },
+                    "404": {
+                        "description": "Vendor, review, or questionnaire item not found in current context"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    },
+                    "403": {
+                        "description": "Caller is not authorized"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "response_status": {
+                                        "type": "string"
+                                    },
+                                    "review_notes": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "maxLength": 2000
+                                    }
+                                },
+                                "required": [
+                                    "response_status"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "vendorId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "reviewId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "itemId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "plugin.third-party-risk.vendors.manage"
+                ]
+            }
+        },
+        "/vendors/{vendorId}/reviews/{reviewId}/questionnaire-template/apply": {
+            "post": {
+                "tags": [
+                    "vendors"
+                ],
+                "operationId": "thirdPartyRiskApplyQuestionnaireTemplate",
+                "summary": "Apply one questionnaire template to a vendor review",
+                "responses": {
+                    "200": {
+                        "description": "Template applied"
+                    },
+                    "404": {
+                        "description": "Vendor or review not found in current context"
+                    },
+                    "422": {
+                        "description": "Validation failed"
+                    },
+                    "403": {
+                        "description": "Caller is not authorized"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "questionnaire_template_id": {
+                                        "type": "string",
+                                        "maxLength": 120
+                                    }
+                                },
+                                "required": [
+                                    "questionnaire_template_id"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "vendorId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "reviewId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "plugin.third-party-risk.vendors.manage"
+                ],
+                "x-lookup-fields": {
+                    "questionnaire_template_id": {
+                        "source": "/api/v1/lookups/vendor-questionnaire-templates/options"
+                    }
+                }
+            }
+        },
+        "/vendors/{vendorId}/reviews/{reviewId}/transitions/{transitionKey}": {
+            "post": {
+                "tags": [
+                    "vendors"
+                ],
+                "operationId": "thirdPartyRiskTransitionReview",
+                "summary": "Apply one workflow transition to a vendor review",
+                "responses": {
+                    "200": {
+                        "description": "Transition applied"
+                    },
+                    "404": {
+                        "description": "Vendor or review not found in current context"
+                    },
+                    "403": {
+                        "description": "Caller is not authorized"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": []
+                            }
+                        }
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "vendorId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "reviewId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    },
+                    {
+                        "name": "transitionKey",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "plugin.third-party-risk.vendors.manage"
+                ]
+            }
         }
     },
     "components": {
@@ -10550,6 +13053,10 @@
         {
             "name": "policies",
             "description": "Policy and exception API surface."
+        },
+        {
+            "name": "vendors",
+            "description": "Third-party risk and vendor review API surface."
         }
     ],
     "security": [
