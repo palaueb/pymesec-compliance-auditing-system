@@ -9,6 +9,10 @@ use PymeSec\Core\Security\ContextualReferenceValidator;
 
 class ContinuityBcmRepository
 {
+    private const ID_MAX_LENGTH = 120;
+
+    private const ID_RANDOM_SUFFIX_LENGTH = 4;
+
     public function __construct(
         private readonly ContextualReferenceValidator $references,
     ) {}
@@ -471,14 +475,27 @@ class ContinuityBcmRepository
 
     private function nextId(string $prefix, string $value, string $table): string
     {
-        $base = $prefix.'-'.Str::slug($value);
-        $candidate = $base !== $prefix.'-' ? $base : $prefix.'-'.Str::lower(Str::ulid());
+        $slug = Str::slug($value);
+        $base = $slug !== '' ? $prefix.'-'.$slug : $prefix.'-'.Str::lower(Str::ulid());
+        $candidate = $this->limitId($base);
 
         if (! DB::table($table)->where('id', $candidate)->exists()) {
             return $candidate;
         }
 
-        return $candidate.'-'.Str::lower(Str::random(4));
+        do {
+            $suffix = '-'.Str::lower(Str::random(self::ID_RANDOM_SUFFIX_LENGTH));
+            $candidate = $this->limitId($base, strlen($suffix)).$suffix;
+        } while (DB::table($table)->where('id', $candidate)->exists());
+
+        return $candidate;
+    }
+
+    private function limitId(string $id, int $reservedLength = 0): string
+    {
+        $maxLength = max(1, self::ID_MAX_LENGTH - $reservedLength);
+
+        return rtrim(Str::substr($id, 0, $maxLength), '-');
     }
 
     /**

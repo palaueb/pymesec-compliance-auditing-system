@@ -29,6 +29,59 @@ class ApiAccessTokensTest extends TestCase
         ])->assertForbidden();
     }
 
+    public function test_console_api_token_issue_rejects_unknown_principal(): void
+    {
+        $this->artisan('api-tokens:issue', [
+            'principal_id' => 'missing-principal',
+            'label' => 'Invalid console token',
+            '--organization_id' => 'org-a',
+        ])
+            ->expectsOutputToContain('No active identity principal [missing-principal] exists.')
+            ->assertExitCode(1);
+
+        $this->assertDatabaseMissing('api_access_tokens', [
+            'label' => 'Invalid console token',
+        ]);
+    }
+
+    public function test_console_api_token_issue_rejects_context_outside_principal_organization(): void
+    {
+        $this->artisan('api-tokens:issue', [
+            'principal_id' => 'principal-org-a',
+            'label' => 'Wrong organization token',
+            '--organization_id' => 'org-b',
+            '--created_by' => 'principal-admin',
+        ])
+            ->expectsOutputToContain('Principal [principal-org-a] belongs to organization [org-a], not [org-b].')
+            ->assertExitCode(1);
+
+        $this->assertDatabaseMissing('api_access_tokens', [
+            'label' => 'Wrong organization token',
+        ]);
+    }
+
+    public function test_console_api_token_issue_creates_token_for_existing_principal_context(): void
+    {
+        $this->artisan('api-tokens:issue', [
+            'principal_id' => 'principal-org-a',
+            'label' => 'Valid console token',
+            '--organization_id' => 'org-a',
+            '--scope_id' => 'scope-eu',
+            '--expires_in_days' => '30',
+            '--created_by' => 'principal-admin',
+        ])
+            ->expectsOutputToContain('Token created. Save this value now; it cannot be retrieved again:')
+            ->assertExitCode(0);
+
+        $this->assertDatabaseHas('api_access_tokens', [
+            'label' => 'Valid console token',
+            'principal_id' => 'principal-org-a',
+            'organization_id' => 'org-a',
+            'scope_id' => 'scope-eu',
+            'created_by_principal_id' => 'principal-admin',
+        ]);
+    }
+
     public function test_platform_admin_can_issue_and_revoke_tokens_from_admin_screen(): void
     {
         $response = $this->post('/core/api-tokens', [

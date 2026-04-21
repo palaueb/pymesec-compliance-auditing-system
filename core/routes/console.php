@@ -3,6 +3,8 @@
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
 use PymeSec\Core\Artifacts\Contracts\ArtifactServiceInterface;
 use PymeSec\Core\Audit\AuditRecordData;
 use PymeSec\Core\Audit\Contracts\AuditTrailInterface;
@@ -114,15 +116,100 @@ Artisan::command('api-tokens:issue {principal_id} {label} {--organization_id=} {
     string $principal_id,
     string $label
 ) {
+    if (! Schema::hasTable('identity_local_users')) {
+        $this->error('Cannot issue API tokens because the identity table is not available.');
+
+        return 1;
+    }
+
+    $principal = DB::table('identity_local_users')
+        ->where('principal_id', $principal_id)
+        ->where('is_active', true)
+        ->first(['principal_id', 'organization_id']);
+
+    if ($principal === null) {
+        $this->error(sprintf('No active identity principal [%s] exists.', $principal_id));
+
+        return 1;
+    }
+
+    $organizationId = is_string($this->option('organization_id')) && (string) $this->option('organization_id') !== ''
+        ? (string) $this->option('organization_id')
+        : null;
+    $scopeId = is_string($this->option('scope_id')) && (string) $this->option('scope_id') !== ''
+        ? (string) $this->option('scope_id')
+        : null;
+    $createdByPrincipalId = is_string($this->option('created_by')) && (string) $this->option('created_by') !== ''
+        ? (string) $this->option('created_by')
+        : null;
+
+    if ($createdByPrincipalId !== null && ! DB::table('identity_local_users')
+        ->where('principal_id', $createdByPrincipalId)
+        ->where('is_active', true)
+        ->exists()) {
+        $this->error(sprintf('No active creator principal [%s] exists.', $createdByPrincipalId));
+
+        return 1;
+    }
+
+    if ($organizationId !== null && ! DB::table('organizations')->where('id', $organizationId)->exists()) {
+        $this->error(sprintf('Organization [%s] does not exist.', $organizationId));
+
+        return 1;
+    }
+
+    if ($scopeId !== null) {
+        $scope = DB::table('scopes')->where('id', $scopeId)->first(['id', 'organization_id', 'is_active']);
+
+        if ($scope === null || ! (bool) ($scope->is_active ?? false)) {
+            $this->error(sprintf('Active scope [%s] does not exist.', $scopeId));
+
+            return 1;
+        }
+
+        $scopeOrganizationId = is_string($scope->organization_id ?? null) && $scope->organization_id !== ''
+            ? (string) $scope->organization_id
+            : null;
+
+        if ($scopeOrganizationId === null) {
+            $this->error(sprintf('Scope [%s] has no organization boundary.', $scopeId));
+
+            return 1;
+        }
+
+        if ($organizationId !== null && $organizationId !== $scopeOrganizationId) {
+            $this->error(sprintf('Scope [%s] does not belong to organization [%s].', $scopeId, $organizationId));
+
+            return 1;
+        }
+
+        $organizationId ??= $scopeOrganizationId;
+    }
+
+    $principalOrganizationId = is_string($principal->organization_id ?? null) && $principal->organization_id !== ''
+        ? (string) $principal->organization_id
+        : null;
+
+    if ($organizationId !== null && $principalOrganizationId !== null && $principalOrganizationId !== $organizationId) {
+        $this->error(sprintf(
+            'Principal [%s] belongs to organization [%s], not [%s].',
+            $principal_id,
+            $principalOrganizationId,
+            $organizationId,
+        ));
+
+        return 1;
+    }
+
     $expiresInDays = (int) $this->option('expires_in_days');
     $expiresAt = $expiresInDays > 0 ? CarbonImmutable::now()->addDays($expiresInDays) : null;
 
     $issued = $tokens->issue(
         principalId: $principal_id,
         label: $label,
-        organizationId: is_string($this->option('organization_id')) && (string) $this->option('organization_id') !== '' ? (string) $this->option('organization_id') : null,
-        scopeId: is_string($this->option('scope_id')) && (string) $this->option('scope_id') !== '' ? (string) $this->option('scope_id') : null,
-        createdByPrincipalId: is_string($this->option('created_by')) && (string) $this->option('created_by') !== '' ? (string) $this->option('created_by') : null,
+        organizationId: $organizationId,
+        scopeId: $scopeId,
+        createdByPrincipalId: $createdByPrincipalId,
         expiresAt: $expiresAt,
     );
 

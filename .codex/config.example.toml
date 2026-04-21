@@ -3,6 +3,9 @@
 # Copy this file to `.codex/config.toml` and fill in local values.
 # `.codex/config.toml` is intentionally ignored because it may contain a token.
 
+approval_policy = "never"
+sandbox_mode = "workspace-write"
+
 [mcp_servers.pymesec]
 command = "/ABSOLUTE/PATH/TO/pymesec/dist/pymesec-mcp-linux-amd64"
 args = []

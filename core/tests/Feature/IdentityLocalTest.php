@@ -523,4 +523,32 @@ class IdentityLocalTest extends TestCase
             ]);
         }
     }
+
+    public function test_first_run_setup_wizard_shows_validation_errors_and_preserves_input(): void
+    {
+        DB::table('identity_local_users')->delete();
+
+        $this->from('/setup')->post('/setup', [
+            'display_name' => 'Root Admin',
+            'username' => 'root.admin',
+            'email' => 'root.admin@pymesec.test',
+            'password' => 'short',
+            'password_confirmation' => 'short',
+        ])
+            ->assertRedirect('/setup')
+            ->assertSessionHasErrors(['password']);
+
+        $this->followingRedirects()->from('/setup')->post('/setup', [
+            'display_name' => 'Root Admin',
+            'username' => 'root.admin',
+            'email' => 'root.admin@pymesec.test',
+            'password' => 'short',
+            'password_confirmation' => 'short',
+        ])
+            ->assertOk()
+            ->assertSee('The password field must be at least 8 characters.')
+            ->assertSee('value="Root Admin"', false)
+            ->assertSee('value="root.admin"', false)
+            ->assertSee('value="root.admin@pymesec.test"', false);
+    }
 }

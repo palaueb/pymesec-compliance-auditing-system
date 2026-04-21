@@ -39,6 +39,8 @@ Minimum fields in v1:
 - linked asset identifier
 - linked risk identifier
 
+Generated service, dependency, exercise, test execution, and recovery plan identifiers must remain within the 120-character storage contract even when they are derived from long titles or combined parent-child identifiers. If a generated identifier collides after truncation, the plugin appends a short random suffix while preserving the same maximum length.
+
 ### Recovery Plan
 
 A recovery plan represents the documented response and recovery strategy for one continuity service.

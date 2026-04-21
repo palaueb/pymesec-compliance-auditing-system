@@ -71,6 +71,7 @@ docker compose exec app php artisan api-tokens:issue \
 ```
 
 The console command prints the token once. This fallback creates a context-bound token, but it does not select a reduced ability list. For strict least privilege, issue the token from the UI or API and set the explicit abilities listed above.
+The principal, organization, and scope passed to the console command must already exist and must describe the same tenant context; otherwise the command fails without creating a token.
 
 ## Build or Locate the MCP Binary
 

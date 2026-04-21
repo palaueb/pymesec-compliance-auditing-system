@@ -87,6 +87,8 @@ The wizard then creates:
 - the first local administrator
 - the initial administrative grants required to access tenancy and identity screens
 
+Validation failures must return the user to the setup wizard with visible field errors. Non-sensitive fields should be preserved after validation failure; password fields must stay empty. The first administrator password remains optional, but when supplied it must satisfy the local identity password rules, including the minimum length enforced by the application.
+
 ## 3. Developer Workflow
 
 Recommended developer operations:

@@ -232,6 +232,70 @@ class ContinuityBcmTest extends TestCase
             ->assertSee('Fallback intake stayed within the expected recovery window.');
     }
 
+    public function test_continuity_dependency_ids_are_bounded_for_long_service_identifiers(): void
+    {
+        $payload = [
+            'principal_id' => 'principal-org-a',
+            'organization_id' => 'org-a',
+            'locale' => 'en',
+            'membership_id' => 'membership-org-a-hello',
+        ];
+
+        $sourceTitle = 'Alpha museum continuity service with a very descriptive operating name for ticketing reception lighting security and public visitor access';
+        $targetTitle = 'Bravo museum continuity service with a very descriptive operating name for electrical backup alarms cameras and safe visitor routes';
+
+        $this->post('/plugins/continuity/services', [
+            ...$payload,
+            'menu' => 'plugin.continuity-bcm.root',
+            'title' => $sourceTitle,
+            'impact_tier' => 'critical',
+            'recovery_time_objective_hours' => 4,
+            'recovery_point_objective_hours' => 1,
+            'linked_asset_id' => 'asset-erp-prod',
+            'linked_risk_id' => 'risk-access-drift',
+            'scope_id' => 'scope-eu',
+            'owner_actor_id' => 'actor-ava-mason',
+        ])->assertFound();
+
+        $this->post('/plugins/continuity/services', [
+            ...$payload,
+            'menu' => 'plugin.continuity-bcm.root',
+            'title' => $targetTitle,
+            'impact_tier' => 'critical',
+            'recovery_time_objective_hours' => 2,
+            'recovery_point_objective_hours' => 0,
+            'linked_asset_id' => 'asset-erp-prod',
+            'linked_risk_id' => 'risk-access-drift',
+            'scope_id' => 'scope-eu',
+            'owner_actor_id' => 'actor-ava-mason',
+        ])->assertFound();
+
+        $sourceId = DB::table('continuity_services')->where('title', $sourceTitle)->value('id');
+        $targetId = DB::table('continuity_services')->where('title', $targetTitle)->value('id');
+
+        $this->assertIsString($sourceId);
+        $this->assertIsString($targetId);
+        $this->assertLessThanOrEqual(120, strlen($sourceId));
+        $this->assertLessThanOrEqual(120, strlen($targetId));
+
+        $this->post("/plugins/continuity/services/{$sourceId}/dependencies", [
+            ...$payload,
+            'menu' => 'plugin.continuity-bcm.root',
+            'scope_id' => 'scope-eu',
+            'depends_on_service_id' => $targetId,
+            'dependency_kind' => 'critical',
+            'recovery_notes' => 'The public visit process depends on power and monitored access being available.',
+        ])->assertFound();
+
+        $dependencyId = DB::table('continuity_service_dependencies')
+            ->where('source_service_id', $sourceId)
+            ->where('depends_on_service_id', $targetId)
+            ->value('id');
+
+        $this->assertIsString($dependencyId);
+        $this->assertLessThanOrEqual(120, strlen($dependencyId));
+    }
+
     public function test_continuity_rejects_invalid_governed_reference_values(): void
     {
         $payload = [

@@ -66,6 +66,24 @@
             font: inherit;
             background: #fff;
         }
+        .field-input[aria-invalid="true"] {
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(156,79,47,0.12);
+        }
+        .error-list {
+            margin-top: 16px;
+            padding: 12px 14px;
+            border-radius: 6px;
+            border: 1px solid rgba(156,79,47,0.28);
+            background: rgba(156,79,47,0.08);
+            color: var(--ink);
+            font-size: 14px;
+        }
+        .field-error {
+            color: var(--accent);
+            font-size: 13px;
+            line-height: 1.35;
+        }
         .button {
             display: inline-flex;
             align-items: center;
@@ -103,51 +121,83 @@
         <h1>Create the first administrator</h1>
         <p>This account becomes the local administrative fallback. Use a password if you want password sign-in with an email verification step, or leave it empty and start with email sign-in only.</p>
 
+        @if ($errors->any())
+            <div class="error-list" role="alert">
+                @foreach ($errors->all() as $error)
+                    <div>{{ $error }}</div>
+                @endforeach
+            </div>
+        @endif
+
         <form method="POST" action="{{ route('plugin.identity-local.setup.store') }}">
             @csrf
             <div class="grid">
                 @if ($requiresOrganizationSetup)
                     <div class="field field-wide">
                         <label class="field-label" for="setup-organization-name">Organization name</label>
-                        <input class="field-input" id="setup-organization-name" name="organization_name" required>
+                        <input class="field-input" id="setup-organization-name" name="organization_name" value="{{ old('organization_name') }}" required @error('organization_name') aria-invalid="true" @enderror>
+                        @error('organization_name')
+                            <div class="field-error">{{ $message }}</div>
+                        @enderror
                     </div>
                     <div class="field">
                         <label class="field-label" for="setup-organization-slug">Organization slug</label>
-                        <input class="field-input" id="setup-organization-slug" name="organization_slug" placeholder="optional-auto-slug">
+                        <input class="field-input" id="setup-organization-slug" name="organization_slug" value="{{ old('organization_slug') }}" placeholder="optional-auto-slug" @error('organization_slug') aria-invalid="true" @enderror>
+                        @error('organization_slug')
+                            <div class="field-error">{{ $message }}</div>
+                        @enderror
                     </div>
                     <div class="field">
                         <label class="field-label" for="setup-default-locale">Default locale</label>
-                        <select class="field-input" id="setup-default-locale" name="default_locale">
-                            <option value="en">EN</option>
-                            <option value="es">ES</option>
-                            <option value="fr">FR</option>
-                            <option value="de">DE</option>
+                        <select class="field-input" id="setup-default-locale" name="default_locale" @error('default_locale') aria-invalid="true" @enderror>
+                            <option value="en" @selected(old('default_locale', 'en') === 'en')>EN</option>
+                            <option value="es" @selected(old('default_locale', 'en') === 'es')>ES</option>
+                            <option value="fr" @selected(old('default_locale', 'en') === 'fr')>FR</option>
+                            <option value="de" @selected(old('default_locale', 'en') === 'de')>DE</option>
                         </select>
+                        @error('default_locale')
+                            <div class="field-error">{{ $message }}</div>
+                        @enderror
                     </div>
                     <div class="field field-wide">
                         <label class="field-label" for="setup-default-timezone">Default timezone</label>
-                        <input class="field-input" id="setup-default-timezone" name="default_timezone" value="UTC" required>
+                        <input class="field-input" id="setup-default-timezone" name="default_timezone" value="{{ old('default_timezone', 'UTC') }}" required @error('default_timezone') aria-invalid="true" @enderror>
+                        @error('default_timezone')
+                            <div class="field-error">{{ $message }}</div>
+                        @enderror
                     </div>
                 @endif
                 <div class="field field-wide">
                     <label class="field-label" for="setup-display-name">Full name</label>
-                    <input class="field-input" id="setup-display-name" name="display_name" required autofocus>
+                    <input class="field-input" id="setup-display-name" name="display_name" value="{{ old('display_name') }}" required autofocus @error('display_name') aria-invalid="true" @enderror>
+                    @error('display_name')
+                        <div class="field-error">{{ $message }}</div>
+                    @enderror
                 </div>
                 <div class="field">
                     <label class="field-label" for="setup-username">Username</label>
-                    <input class="field-input" id="setup-username" name="username" required>
+                    <input class="field-input" id="setup-username" name="username" value="{{ old('username') }}" required @error('username') aria-invalid="true" @enderror>
+                    @error('username')
+                        <div class="field-error">{{ $message }}</div>
+                    @enderror
                 </div>
                 <div class="field">
                     <label class="field-label" for="setup-email">Work email</label>
-                    <input class="field-input" id="setup-email" name="email" type="email" required>
+                    <input class="field-input" id="setup-email" name="email" type="email" value="{{ old('email') }}" required @error('email') aria-invalid="true" @enderror>
+                    @error('email')
+                        <div class="field-error">{{ $message }}</div>
+                    @enderror
                 </div>
                 <div class="field">
                     <label class="field-label" for="setup-password">Password</label>
-                    <input class="field-input" id="setup-password" name="password" type="password">
+                    <input class="field-input" id="setup-password" name="password" type="password" minlength="8" @error('password') aria-invalid="true" @enderror>
+                    @error('password')
+                        <div class="field-error">{{ $message }}</div>
+                    @enderror
                 </div>
                 <div class="field">
                     <label class="field-label" for="setup-password-confirmation">Confirm password</label>
-                    <input class="field-input" id="setup-password-confirmation" name="password_confirmation" type="password">
+                    <input class="field-input" id="setup-password-confirmation" name="password_confirmation" type="password" minlength="8" @error('password') aria-invalid="true" @enderror>
                 </div>
             </div>
             <button class="button button-primary" type="submit">Create administrator</button>
