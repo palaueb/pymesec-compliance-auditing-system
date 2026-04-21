@@ -75,6 +75,19 @@ Optional overrides:
 3. `pymesec_api_request`
 4. parity between `call_operation` and direct `api_request` response body/status
 
+## MCP Resources
+
+The server also exposes MCP resources for clients that surface `resources/list`,
+`resources/templates/list`, and `resources/read`:
+
+- `pymesec://mcp/profile`
+- `pymesec://meta/capabilities`
+- `pymesec://openapi/v1`
+
+Resource templates:
+
+- `pymesec://operations/{operation_id}`
+
 ## Configuration
 
 CLI flags and environment variables:

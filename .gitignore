@@ -4,3 +4,5 @@ Thumbs.db
 automation-catalog-packages/
 internal/
 dist/
+.codex/config.toml
+.claude/

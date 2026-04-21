@@ -17,12 +17,22 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 )
 
 const (
 	defaultProtocolVersion = "2025-03-26"
 	defaultAPIPrefix       = "/api/v1"
+
+	resourceCapabilitiesURI      = "pymesec://meta/capabilities"
+	resourceMCPProfileURI        = "pymesec://mcp/profile"
+	resourceOpenAPIURI           = "pymesec://openapi/v1"
+	resourceOperationURIPrefix   = "pymesec://operations/"
+	resourceOperationURITemplate = "pymesec://operations/{operation_id}"
+
+	messageFramingHeader = "header"
+	messageFramingJSONL  = "jsonl"
 )
 
 var (
@@ -31,14 +41,14 @@ var (
 )
 
 type config struct {
-	APIBaseURL   string
-	APIPrefix    string
-	APIToken     string
-	OpenAPIURL   string
-	RequestTTL   time.Duration
-	StartupSync  bool
-	ServerName   string
-	ServerVer    string
+	APIBaseURL  string
+	APIPrefix   string
+	APIToken    string
+	OpenAPIURL  string
+	RequestTTL  time.Duration
+	StartupSync bool
+	ServerName  string
+	ServerVer   string
 }
 
 type jsonRPCRequest struct {
@@ -49,10 +59,10 @@ type jsonRPCRequest struct {
 }
 
 type jsonRPCResponse struct {
-	JSONRPC string         `json:"jsonrpc"`
-	ID      any            `json:"id,omitempty"`
-	Result  any            `json:"result,omitempty"`
-	Error   *jsonRPCError  `json:"error,omitempty"`
+	JSONRPC string        `json:"jsonrpc"`
+	ID      any           `json:"id,omitempty"`
+	Result  any           `json:"result,omitempty"`
+	Error   *jsonRPCError `json:"error,omitempty"`
 }
 
 type jsonRPCError struct {
@@ -77,6 +87,7 @@ type openAPIIndex struct {
 type mcpServer struct {
 	cfg        config
 	client     *http.Client
+	openAPIMu  sync.Mutex
 	openAPI    *openAPIIndex
 	openAPIErr error
 }
@@ -95,7 +106,7 @@ func main() {
 	}
 
 	if cfg.StartupSync {
-		server.openAPI, server.openAPIErr = server.fetchOpenAPI(context.Background(), cfg.APIToken)
+		go server.syncOpenAPI(context.Background(), cfg.APIToken)
 	}
 
 	if err := runJSONRPCLoop(server, os.Stdin, os.Stdout); err != nil {
@@ -152,7 +163,7 @@ func runJSONRPCLoop(server *mcpServer, input io.Reader, output io.Writer) error 
 	defer writer.Flush()
 
 	for {
-		req, err := readJSONRPCMessage(reader)
+		req, framing, err := readJSONRPCMessage(reader)
 		if err != nil {
 			if errors.Is(err, io.EOF) {
 				return nil
@@ -169,7 +180,7 @@ func runJSONRPCLoop(server *mcpServer, input io.Reader, output io.Writer) error 
 				},
 			}
 
-			if writeErr := writeJSONRPCMessage(writer, resp); writeErr != nil {
+			if writeErr := writeJSONRPCMessage(writer, resp, framing); writeErr != nil {
 				return writeErr
 			}
 
@@ -181,23 +192,24 @@ func runJSONRPCLoop(server *mcpServer, input io.Reader, output io.Writer) error 
 			continue
 		}
 
-		if err := writeJSONRPCMessage(writer, resp); err != nil {
+		if err := writeJSONRPCMessage(writer, resp, framing); err != nil {
 			return err
 		}
 	}
 }
 
-func readJSONRPCMessage(reader *bufio.Reader) (jsonRPCRequest, error) {
+func readJSONRPCMessage(reader *bufio.Reader) (jsonRPCRequest, string, error) {
 	line, err := reader.ReadString('\n')
 	if err != nil {
-		return jsonRPCRequest{}, err
+		return jsonRPCRequest{}, messageFramingHeader, err
 	}
 
 	trimmed := strings.TrimSpace(line)
 
 	// Allow JSONL payloads for local debugging tools.
 	if strings.HasPrefix(trimmed, "{") {
-		return decodeJSONRPCRequest([]byte(trimmed))
+		req, err := decodeJSONRPCRequest([]byte(trimmed))
+		return req, messageFramingJSONL, err
 	}
 
 	contentLength := 0
@@ -210,29 +222,30 @@ func readJSONRPCMessage(reader *bufio.Reader) (jsonRPCRequest, error) {
 		if matches := contentLengthPattern.FindStringSubmatch(headerLine); len(matches) == 2 {
 			n, convErr := strconv.Atoi(matches[1])
 			if convErr != nil {
-				return jsonRPCRequest{}, fmt.Errorf("invalid content length: %w", convErr)
+				return jsonRPCRequest{}, messageFramingHeader, fmt.Errorf("invalid content length: %w", convErr)
 			}
 			contentLength = n
 		}
 
 		nextLine, readErr := reader.ReadString('\n')
 		if readErr != nil {
-			return jsonRPCRequest{}, readErr
+			return jsonRPCRequest{}, messageFramingHeader, readErr
 		}
 
 		headerLine = strings.TrimRight(nextLine, "\r\n")
 	}
 
 	if contentLength <= 0 {
-		return jsonRPCRequest{}, errors.New("missing Content-Length header")
+		return jsonRPCRequest{}, messageFramingHeader, errors.New("missing Content-Length header")
 	}
 
 	body := make([]byte, contentLength)
 	if _, err := io.ReadFull(reader, body); err != nil {
-		return jsonRPCRequest{}, fmt.Errorf("unable to read jsonrpc payload: %w", err)
+		return jsonRPCRequest{}, messageFramingHeader, fmt.Errorf("unable to read jsonrpc payload: %w", err)
 	}
 
-	return decodeJSONRPCRequest(body)
+	req, err := decodeJSONRPCRequest(body)
+	return req, messageFramingHeader, err
 }
 
 func decodeJSONRPCRequest(payload []byte) (jsonRPCRequest, error) {
@@ -252,13 +265,23 @@ func decodeJSONRPCRequest(payload []byte) (jsonRPCRequest, error) {
 	return req, nil
 }
 
-func writeJSONRPCMessage(writer *bufio.Writer, response jsonRPCResponse) error {
+func writeJSONRPCMessage(writer *bufio.Writer, response jsonRPCResponse, framing string) error {
 	body, err := json.Marshal(response)
 	if err != nil {
 		return err
 	}
 
-	header := fmt.Sprintf("Content-Length: %d\r\nContent-Type: application/json\r\n\r\n", len(body))
+	if framing == messageFramingJSONL {
+		if _, err := writer.Write(body); err != nil {
+			return err
+		}
+		if err := writer.WriteByte('\n'); err != nil {
+			return err
+		}
+		return writer.Flush()
+	}
+
+	header := fmt.Sprintf("Content-Length: %d\r\n\r\n", len(body))
 	if _, err := writer.WriteString(header); err != nil {
 		return err
 	}
@@ -281,16 +304,22 @@ func (s *mcpServer) handle(req jsonRPCRequest) (jsonRPCResponse, bool) {
 
 	switch req.Method {
 	case "initialize":
+		protocolVersion := firstNonEmpty(stringArg(req.Params, "protocolVersion"), defaultProtocolVersion)
+
 		return jsonRPCResponse{
 			JSONRPC: "2.0",
 			ID:      req.ID,
 			Result: map[string]any{
-				"protocolVersion": defaultProtocolVersion,
+				"protocolVersion": protocolVersion,
 				"serverInfo": map[string]any{
 					"name":    s.cfg.ServerName,
 					"version": s.cfg.ServerVer,
 				},
 				"capabilities": map[string]any{
+					"resources": map[string]any{
+						"subscribe":   false,
+						"listChanged": false,
+					},
 					"tools": map[string]any{
 						"listChanged": false,
 					},
@@ -314,6 +343,33 @@ func (s *mcpServer) handle(req jsonRPCRequest) (jsonRPCResponse, bool) {
 				"tools": s.toolsList(),
 			},
 		}, true
+	case "resources/list":
+		return jsonRPCResponse{
+			JSONRPC: "2.0",
+			ID:      req.ID,
+			Result: map[string]any{
+				"resources": s.resourcesList(),
+			},
+		}, true
+	case "resources/templates/list":
+		return jsonRPCResponse{
+			JSONRPC: "2.0",
+			ID:      req.ID,
+			Result: map[string]any{
+				"resourceTemplates": s.resourceTemplatesList(),
+			},
+		}, true
+	case "resources/read":
+		result, err := s.readResource(req.Params)
+		if err != nil {
+			return s.errorResponse(req.ID, -32602, err.Error()), true
+		}
+
+		return jsonRPCResponse{
+			JSONRPC: "2.0",
+			ID:      req.ID,
+			Result:  result,
+		}, true
 	case "tools/call":
 		result, err := s.callTool(req.Params)
 		if err != nil {
@@ -328,6 +384,127 @@ func (s *mcpServer) handle(req jsonRPCRequest) (jsonRPCResponse, bool) {
 	default:
 		return s.errorResponse(req.ID, -32601, fmt.Sprintf("Method [%s] is not supported.", req.Method)), true
 	}
+}
+
+func (s *mcpServer) resourcesList() []map[string]any {
+	return []map[string]any{
+		{
+			"uri":         resourceMCPProfileURI,
+			"name":        "PymeSec MCP profile",
+			"description": "Official MCP server metadata and authenticated context snapshot.",
+			"mimeType":    "application/json",
+		},
+		{
+			"uri":         resourceCapabilitiesURI,
+			"name":        "PymeSec effective capabilities",
+			"description": "Effective permission snapshot for the configured API token context.",
+			"mimeType":    "application/json",
+		},
+		{
+			"uri":         resourceOpenAPIURI,
+			"name":        "PymeSec OpenAPI contract",
+			"description": "Authenticated OpenAPI contract payload for API route discovery.",
+			"mimeType":    "application/json",
+		},
+	}
+}
+
+func (s *mcpServer) resourceTemplatesList() []map[string]any {
+	return []map[string]any{
+		{
+			"uriTemplate": resourceOperationURITemplate,
+			"name":        "PymeSec OpenAPI operation",
+			"description": "OpenAPI operation metadata by operation_id.",
+			"mimeType":    "application/json",
+		},
+	}
+}
+
+func (s *mcpServer) readResource(params map[string]any) (map[string]any, error) {
+	uri := strings.TrimSpace(stringArg(params, "uri"))
+	if uri == "" {
+		return nil, errors.New("resource read requires [uri]")
+	}
+
+	switch uri {
+	case resourceMCPProfileURI:
+		payload, err := s.toolGetMCPProfile(map[string]any{})
+		if err != nil {
+			return nil, err
+		}
+		return toMCPResourceReadResult(uri, payload)
+	case resourceCapabilitiesURI:
+		payload, err := s.toolGetCapabilities(map[string]any{})
+		if err != nil {
+			return nil, err
+		}
+		return toMCPResourceReadResult(uri, payload)
+	case resourceOpenAPIURI:
+		payload, err := s.toolGetOpenAPI(map[string]any{})
+		if err != nil {
+			return nil, err
+		}
+		return toMCPResourceReadResult(uri, payload)
+	default:
+		if strings.HasPrefix(uri, resourceOperationURIPrefix) {
+			return s.readOperationResource(uri)
+		}
+		return nil, fmt.Errorf("resource uri [%s] is not registered", uri)
+	}
+}
+
+func (s *mcpServer) readOperationResource(uri string) (map[string]any, error) {
+	rawOperationID := strings.TrimPrefix(uri, resourceOperationURIPrefix)
+	operationID, err := url.PathUnescape(rawOperationID)
+	if err != nil {
+		return nil, fmt.Errorf("invalid operation resource uri [%s]: %w", uri, err)
+	}
+
+	operationID = strings.TrimSpace(operationID)
+	if operationID == "" {
+		return nil, errors.New("operation resource uri requires operation_id")
+	}
+
+	index, err := s.ensureOpenAPI(context.Background(), s.cfg.APIToken)
+	if err != nil {
+		return nil, fmt.Errorf("cannot load operation resource: %w", err)
+	}
+
+	op, ok := index.Operations[operationID]
+	if !ok {
+		return nil, fmt.Errorf("unknown operation_id [%s]", operationID)
+	}
+
+	return toMCPResourceReadResult(uri, map[string]any{
+		"operation": map[string]any{
+			"operation_id": op.OperationID,
+			"method":       op.Method,
+			"path":         op.Path,
+			"tags":         op.Tags,
+			"summary":      op.Summary,
+		},
+		"openapi": map[string]any{
+			"url":        s.cfg.OpenAPIURL,
+			"api_prefix": index.ServerURLPath,
+		},
+	})
+}
+
+func toMCPResourceReadResult(uri string, payload map[string]any) (map[string]any, error) {
+	pretty, err := json.MarshalIndent(payload, "", "  ")
+	if err != nil {
+		return nil, err
+	}
+
+	return map[string]any{
+		"contents": []map[string]any{
+			{
+				"uri":      uri,
+				"mimeType": "application/json",
+				"text":     string(pretty),
+			},
+		},
+	}, nil
 }
 
 func (s *mcpServer) errorResponse(id any, code int, message string) jsonRPCResponse {
@@ -705,12 +882,29 @@ func (s *mcpServer) toolGetMCPProfile(args map[string]any) (map[string]any, erro
 	})
 }
 
+func (s *mcpServer) syncOpenAPI(ctx context.Context, token string) {
+	index, err := s.fetchOpenAPI(ctx, token)
+
+	s.openAPIMu.Lock()
+	defer s.openAPIMu.Unlock()
+
+	s.openAPI = index
+	s.openAPIErr = err
+}
+
 func (s *mcpServer) ensureOpenAPI(ctx context.Context, token string) (*openAPIIndex, error) {
+	s.openAPIMu.Lock()
 	if s.openAPI != nil {
+		defer s.openAPIMu.Unlock()
 		return s.openAPI, nil
 	}
+	s.openAPIMu.Unlock()
 
 	index, err := s.fetchOpenAPI(ctx, token)
+
+	s.openAPIMu.Lock()
+	defer s.openAPIMu.Unlock()
+
 	if err != nil {
 		s.openAPIErr = err
 		return nil, err

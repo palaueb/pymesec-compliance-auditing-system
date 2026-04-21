@@ -1,0 +1,14 @@
+# Example project-local Codex MCP configuration for PymeSec.
+#
+# Copy this file to `.codex/config.toml` and fill in local values.
+# `.codex/config.toml` is intentionally ignored because it may contain a token.
+
+[mcp_servers.pymesec]
+command = "/ABSOLUTE/PATH/TO/pymesec/dist/pymesec-mcp-linux-amd64"
+args = []
+
+[mcp_servers.pymesec.env]
+PYMESEC_API_BASE_URL = "https://demo.pymesec.example"
+PYMESEC_API_TOKEN = "pmsk_REPLACE_WITH_DEMO_TOKEN"
+PYMESEC_API_PREFIX = "/api/v1"
+PYMESEC_SYNC_OPENAPI_ON_START = "true"

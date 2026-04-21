@@ -15,8 +15,9 @@ Provide an official Model Context Protocol (MCP) server for PymeSec that exposes
 v1 delivers:
 
 - official MCP Go binary over stdio (`pymesec-mcp`)
-- JSON-RPC request handling for `initialize`, `tools/list`, and `tools/call`
+- JSON-RPC request handling for `initialize`, `tools/list`, `tools/call`, `resources/list`, `resources/templates/list`, and `resources/read`
 - MCP tool broker to `/api/v1` endpoints (no direct database/domain bypass)
+- MCP resource exposure for stable platform metadata and OpenAPI operation lookup
 - API discovery endpoint for MCP profile metadata (`GET /api/v1/meta/mcp-server`)
 - OpenAPI-driven autoconfiguration (`operationId -> method/path`) for operation calls
 
@@ -53,6 +54,18 @@ Security boundary:
 - `pymesec_get_capabilities` (`GET /api/v1/meta/capabilities`)
 - `pymesec_get_openapi` (`GET /api/v1/openapi`)
 - `pymesec_get_mcp_profile` (`GET /api/v1/meta/mcp-server`)
+
+# Official Resource Surface (v1)
+
+Resources:
+
+- `pymesec://mcp/profile` — official MCP profile metadata for the configured token context
+- `pymesec://meta/capabilities` — effective capability snapshot for the configured token context
+- `pymesec://openapi/v1` — authenticated OpenAPI contract payload
+
+Resource templates:
+
+- `pymesec://operations/{operation_id}` — OpenAPI operation metadata by operation id
 
 # API Contract Additions
 
