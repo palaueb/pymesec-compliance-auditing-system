@@ -1,0 +1,34 @@
+{
+  "guide": [
+    {
+      "id": "start-with-assets",
+      "title": "Commencez votre modèle opérationnel par les actifs",
+      "summary": "Les actifs décrivent ce que l'organisation doit protéger, exploiter ou restaurer.",
+      "body": [
+        "Recensez comme actifs les systèmes, jeux de données, services et ressources métier importants.",
+        "Ensuite, d'autres registres comme les risques et les plans de continuité peuvent pointer vers ces actifs."
+      ],
+      "concept_ids": ["asset"],
+      "order": 60
+    }
+  ],
+  "concepts": [
+    {
+      "id": "asset",
+      "label": "Actif",
+      "category": "operations",
+      "summary": "Un élément métier, technique ou informationnel que l'organisation doit gérer et protéger.",
+      "why_it_exists": "Les actifs donnent au reste du modèle de conformité un sujet concret. Les risques, les contrôles et la reprise sont plus faciles à comprendre lorsqu'ils pointent vers l'élément qui compte.",
+      "how_to_use": [
+        "Créez des actifs pour les systèmes, les jeux de données, les services, les fournisseurs ou les ressources métier critiques.",
+        "Gardez à jour la responsabilité, l'état du cycle de vie et les champs descriptifs."
+      ],
+      "relations": [
+        { "type": "may-have", "target": "risk", "summary": "Les risques peuvent décrire des menaces ou des faiblesses qui affectent un actif." },
+        { "type": "may-be-covered-by", "target": "control", "summary": "Les contrôles peuvent soutenir la protection ou la gouvernance d'un actif." },
+        { "type": "may-be-needed-by", "target": "continuity-service", "summary": "Les services et les plans peuvent dépendre de l'actif." }
+      ],
+      "order": 210
+    }
+  ]
+}

@@ -84,14 +84,20 @@
   "translations": {
     "default_locale": "en",
     "supported_locales": [
-      "en"
+      "en",
+      "es",
+      "fr",
+      "de"
     ],
     "path": "resources/lang"
   },
   "support": {
     "path": "resources/support",
     "supported_locales": [
-      "en"
+      "en",
+      "es",
+      "fr",
+      "de"
     ]
   },
   "lifecycle": {},

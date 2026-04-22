@@ -1,0 +1,19 @@
+{
+  "plugin.collaboration.collaborator_lifecycle.active": "Activo",
+  "plugin.collaboration.collaborator_lifecycle.blocked": "Bloqueado",
+  "plugin.collaboration.draft_type.comment": "Borrador de comentario",
+  "plugin.collaboration.draft_type.request": "Borrador de seguimiento",
+  "plugin.collaboration.request_status.open": "Abierto",
+  "plugin.collaboration.request_status.in_progress": "En curso",
+  "plugin.collaboration.request_status.waiting": "En espera",
+  "plugin.collaboration.request_status.done": "Completado",
+  "plugin.collaboration.request_status.cancelled": "Cancelado",
+  "plugin.collaboration.request_priority.low": "Bajo",
+  "plugin.collaboration.request_priority.normal": "Normal",
+  "plugin.collaboration.request_priority.high": "Alto",
+  "plugin.collaboration.request_priority.urgent": "Urgente",
+  "plugin.collaboration.handoff_state.review": "En revisión",
+  "plugin.collaboration.handoff_state.remediation": "Remediación",
+  "plugin.collaboration.handoff_state.approval": "Aprobación",
+  "plugin.collaboration.handoff_state.closed_loop": "Ciclo cerrado"
+}

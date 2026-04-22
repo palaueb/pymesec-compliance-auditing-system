@@ -1,0 +1,8 @@
+{
+  "plugin.policy-exceptions.nav.root": "Politiques",
+  "plugin.policy-exceptions.nav.exceptions": "Exceptions",
+  "plugin.policy-exceptions.screen.register.title": "Registre des politiques",
+  "plugin.policy-exceptions.screen.register.subtitle": "Politiques de gouvernance avec responsables, cycle de vie, liens vers les contrôles et cadence de revue.",
+  "plugin.policy-exceptions.screen.exceptions.title": "Exceptions de politique",
+  "plugin.policy-exceptions.screen.exceptions.subtitle": "Suivez les écarts approuvés, les contrôles compensatoires, les dates d'expiration et les constats liés."
+}

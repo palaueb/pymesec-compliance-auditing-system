@@ -1,0 +1,8 @@
+{
+  "plugin.risk-management.nav.root": "Riesgos",
+  "plugin.risk-management.nav.board": "Panel",
+  "plugin.risk-management.screen.register.title": "Registro de riesgos",
+  "plugin.risk-management.screen.register.subtitle": "Registro de riesgos vinculado a activos, controles, responsables, flujo de trabajo y evidencias.",
+  "plugin.risk-management.screen.board.title": "Panel de riesgos",
+  "plugin.risk-management.screen.board.subtitle": "Panel de ciclo de vida y evidencias para riesgos tratados y aceptados."
+}

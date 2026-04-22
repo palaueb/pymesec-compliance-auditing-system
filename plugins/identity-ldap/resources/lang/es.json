@@ -1,0 +1,6 @@
+{
+  "plugin.identity-ldap.plugin.name": "Sincronización de directorio",
+  "plugin.identity-ldap.nav.directory": "Sincronización de directorio",
+  "plugin.identity-ldap.screen.directory.title": "Sincronización de directorio",
+  "plugin.identity-ldap.screen.directory.subtitle": "Mantén un conector LDAP por organización, asigna grupos externos y almacena en caché a las personas para respaldo local."
+}

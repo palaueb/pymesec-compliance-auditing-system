@@ -1,0 +1,54 @@
+{
+  "guide": [
+    {
+      "id": "manage-policies-and-approved-deviations",
+      "title": "Utilisez le détail de la politique pour gérer ensemble la règle et ses dérogations approuvées",
+      "summary": "Le registre de politique est l'ancrage de gouvernance. Les exceptions sont des registres subordonnés utilisés lorsqu'une dérogation est délibérément acceptée.",
+      "body": [
+        "Gardez dans l'espace de travail de la politique la déclaration, le contrôle lié, la cadence de revue, les responsables et les documents.",
+        "Créez une exception uniquement lorsque l'organisation autorise délibérément une dérogation bornée.",
+        "Utilisez l'état de l'exception, l'expiration, la justification et les notes sur les contrôles compensatoires pour que la dérogation reste révisable."
+      ],
+      "concept_ids": [
+        "policy",
+        "policy-exception"
+      ],
+      "order": 250
+    }
+  ],
+  "concepts": [
+    {
+      "id": "policy",
+      "label": "Politique",
+      "category": "governance",
+      "summary": "Une déclaration gouvernée de pratique attendue, de responsabilité et de cadence de revue.",
+      "why_it_exists": "Les politiques fournissent la base de règles à laquelle d'autres registres, comme les contrôles et les exceptions, peuvent se rattacher.",
+      "how_to_use": [
+        "Gardez à jour la déclaration, la version, les responsables, le contrôle lié et l'échéance de revue.",
+        "Utilisez les documents joints pour le matériel de travail ou les artefacts de politique approuvés."
+      ],
+      "relations": [
+        { "type": "may-link-to", "target": "control", "summary": "Les politiques peuvent pointer vers le contrôle qu'elles gouvernent ou justifient." },
+        { "type": "may-have", "target": "policy-exception", "summary": "Une politique peut avoir plusieurs exceptions approuvées ou demandées au fil du temps." }
+      ],
+      "order": 250
+    },
+    {
+      "id": "policy-exception",
+      "label": "Exception de politique",
+      "category": "governance",
+      "summary": "Une décision enregistrée formellement pour autoriser une dérogation à une politique ou une règle attendue.",
+      "why_it_exists": "Les organisations acceptent parfois des dérogations limitées. Une exception de politique rend cette décision visible, revue et limitée dans le temps.",
+      "how_to_use": [
+        "Utilisez une exception lorsqu'une règle ne peut pas être suivie et que la dérogation est acceptée délibérément.",
+        "Enregistrez le motif, le responsable, l'état d'approbation, l'expiration et les contrôles compensatoires."
+      ],
+      "relations": [
+        { "type": "belongs-to", "target": "policy", "summary": "Les exceptions sont gérées dans le contexte d'une seule politique." },
+        { "type": "may-relate-to", "target": "finding", "summary": "Une exception peut faire référence à un constat qui l'a déclenchée ou justifiée." },
+        { "type": "may-increase", "target": "risk", "summary": "Une exception peut laisser le risque partiellement non traité." }
+      ],
+      "order": 251
+    }
+  ]
+}

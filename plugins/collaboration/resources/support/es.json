@@ -1,0 +1,180 @@
+{
+  "guide": [
+    {
+      "id": "collaboration-primitives-overview",
+      "title": "Primitivas de colaboración",
+      "summary": "Usa borradores, comentarios y solicitudes de seguimiento para mantener dentro del espacio de trabajo la conversación operativa y los siguientes pasos asociados al sujeto.",
+      "body": [
+        "Los borradores compartidos mantienen visibles para otros usuarios los comentarios o solicitudes de seguimiento que aún no están publicados.",
+        "Los comentarios son notas de discusión ligeras vinculadas a un registro concreto, como una revisión de proveedor.",
+        "Las solicitudes de seguimiento convierten el siguiente paso en un elemento rastreable con estado, prioridad, responsable y fecha límite.",
+        "Los plugins pueden consumir estas primitivas sin inventar su propio modelo local de comentarios o tareas."
+      ],
+      "concept_ids": [
+        "collaboration-external-collaboration-hardening",
+        "collaboration-external-collaborator",
+        "collaboration-external-link",
+        "collaboration-draft",
+        "collaboration-comment",
+        "collaboration-request"
+      ],
+      "order": 420
+    }
+  ],
+  "concepts": [
+    {
+      "id": "collaboration-external-collaboration-hardening",
+      "label": "Línea base de refuerzo de colaboración externa",
+      "category": "security",
+      "summary": "Controles mínimos de despliegue y ejecución necesarios cuando se exponen portales de colaboración en Internet.",
+      "why_it_exists": "Las rutas de colaboración externa tratan datos sensibles de revisión y no deben depender de suposiciones de alojamiento por defecto.",
+      "how_to_use": [
+        "Impón acceso solo por HTTPS y protege los secretos de despliegue.",
+        "Mantén estrictos los controles de subida y bloquea los tipos de carga ejecutables.",
+        "Usa el control de ciclo de vida en tiempo de ejecución para bloquear colaboradores y hacer expirar enlaces.",
+        "Trata los programadores de recordatorios, resúmenes y limpieza como mejoras operativas, no como controles de seguridad de acceso."
+      ],
+      "relations": [
+        {
+          "type": "applies-to",
+          "target": "collaboration-external-collaborator",
+          "summary": "Los controles del ciclo de vida del colaborador forman parte de la línea base de refuerzo."
+        },
+        {
+          "type": "applies-to",
+          "target": "collaboration-external-link",
+          "summary": "La emisión y el acceso a enlaces externos deben seguir la línea base de refuerzo."
+        }
+      ],
+      "order": 416
+    },
+    {
+      "id": "collaboration-external-collaborator",
+      "label": "Colaborador externo de colaboración",
+      "category": "operations",
+      "summary": "Una identidad de participante externo acotada por objeto que agrupa los enlaces emitidos y aplica controles de ciclo de vida.",
+      "why_it_exists": "Separa el estado del ciclo de vida del colaborador de los enlaces individuales para que un colaborador bloqueado no siga accediendo mediante un token antiguo.",
+      "how_to_use": [
+        "Registra un colaborador por cada correo de contacto dentro del ámbito del objeto compartido.",
+        "Mueve el estado del ciclo de vida entre activo y bloqueado según el riesgo o las decisiones de revisión.",
+        "Usa el control de ciclo de vida del colaborador cuando necesites suspender el acceso sin borrar enlaces históricos ni registros de auditoría.",
+        "La aplicación del acceso se hace en tiempo de ejecución en cada solicitud del portal y no requiere tareas CRON en segundo plano."
+      ],
+      "relations": [
+        {
+          "type": "has-many",
+          "target": "collaboration-external-link",
+          "summary": "Un colaborador puede poseer varios enlaces emitidos a lo largo del tiempo para el mismo objeto acotado."
+        }
+      ],
+      "order": 417
+    },
+    {
+      "id": "collaboration-external-link",
+      "label": "Enlace externo de colaboración",
+      "category": "operations",
+      "summary": "Un enlace con token revocable y con caducidad, acotado a un registro sujeto y perteneciente a un componente de plugin concreto.",
+      "why_it_exists": "Proporciona una primitiva de acceso externo reutilizable que cualquier plugin de dominio puede consumir sin crear tablas de enlaces propias.",
+      "how_to_use": [
+        "Emite enlaces por cada registro sujeto concreto y por el componente propietario.",
+        "Acota explícitamente los permisos para que el participante externo solo pueda hacer las acciones permitidas.",
+        "Haz seguimiento del envío, el acceso, la caducidad y la revocación desde un único modelo compartido."
+      ],
+      "relations": [
+        {
+          "type": "belongs-to",
+          "target": "collaboration-external-collaborator",
+          "summary": "Cada enlace externo pertenece a una identidad de colaborador acotada."
+        },
+        {
+          "type": "may-support",
+          "target": "collaboration-comment",
+          "summary": "Los enlaces externos pueden soportar flujos de comentarios o solicitudes mediante portales específicos del dominio."
+        },
+        {
+          "type": "may-support",
+          "target": "collaboration-request",
+          "summary": "Los plugins de dominio pueden mapear la participación por enlace externo a flujos de solicitudes de seguimiento."
+        }
+      ],
+      "order": 418
+    },
+    {
+      "id": "collaboration-draft",
+      "label": "Borrador de colaboración",
+      "category": "operations",
+      "summary": "Un registro compartido de colaboración aún no terminado que después puede promocionarse a comentario publicado o solicitud de seguimiento.",
+      "why_it_exists": "Preserva la continuidad cuando un usuario empieza el trabajo pero otro necesita terminarlo o publicarlo después en el mismo espacio.",
+      "how_to_use": [
+        "Guarda un borrador cuando la nota o la solicitud de seguimiento aún no esté lista para publicarse.",
+        "Usa borradores compartidos para mantener el trabajo incompleto visible para varios revisores en lugar de esconderlo en notas personales.",
+        "Promociona el borrador a comentario o solicitud de seguimiento cuando el contenido esté listo para formar parte del registro operativo."
+      ],
+      "relations": [
+        {
+          "type": "may-be-promoted-to",
+          "target": "collaboration-comment",
+          "summary": "Un borrador puede convertirse en un comentario publicado."
+        },
+        {
+          "type": "may-be-promoted-to",
+          "target": "collaboration-request",
+          "summary": "Un borrador puede convertirse en una solicitud de seguimiento publicada."
+        }
+      ],
+      "order": 419
+    },
+    {
+      "id": "collaboration-comment",
+      "label": "Comentario de colaboración",
+      "category": "operations",
+      "summary": "Una nota de discusión ligera almacenada sobre un registro sujeto concreto.",
+      "why_it_exists": "Mantiene el contexto operativo cerca del registro en lugar de dispersar pequeños puntos de discusión por correo o chat.",
+      "how_to_use": [
+        "Añade comentarios para aclaraciones, notas de revisión, justificación de decisiones o pequeñas actualizaciones de coordinación.",
+        "Menciona actores funcionales cuando quieras que la nota cree una señal explícita para las identidades principales vinculadas a esos actores.",
+        "Usa comentarios para discusión y contexto, no para trabajo estructurado de seguimiento que necesite un responsable y una fecha límite."
+      ],
+      "relations": [
+        {
+          "type": "may-support",
+          "target": "collaboration-request",
+          "summary": "Los comentarios pueden explicar por qué se creó o actualizó una solicitud de seguimiento."
+        },
+        {
+          "type": "may-come-from",
+          "target": "collaboration-draft",
+          "summary": "Algunos comentarios empiezan como borradores compartidos antes de publicarse."
+        }
+      ],
+      "order": 420
+    },
+    {
+      "id": "collaboration-request",
+      "label": "Solicitud de seguimiento de colaboración",
+      "category": "operations",
+      "summary": "Un elemento de seguimiento con control de estado vinculado a un registro concreto, con prioridad, responsable, estado y fecha límite opcional.",
+      "why_it_exists": "Convierte la plataforma de un simple archivo de registros en un seguimiento operativo explícito sin obligar a cada plugin a construir su propio modelo de tareas.",
+      "how_to_use": [
+        "Crea una solicitud cuando el siguiente paso necesite titularidad o seguimiento de fecha límite.",
+        "Actualiza el estado a medida que el trabajo pasa de abierto a en curso, en espera, terminado o cancelado.",
+        "Usa la fase de traspaso para mostrar si la solicitud pertenece a revisión, remediación, aprobación o al cierre del circuito de seguimiento.",
+        "Usa actores mencionados cuando varios roles gobernados deban recibir una señal visible aunque solo un actor sea el responsable de la solicitud.",
+        "Asigna la solicitud a un actor funcional cuando la responsabilidad deba seguir anclada a un rol gobernado y no a un único inicio de sesión."
+      ],
+      "relations": [
+        {
+          "type": "may-be-explained-by",
+          "target": "collaboration-comment",
+          "summary": "Los comentarios pueden capturar el razonamiento o el contexto de una solicitud."
+        },
+        {
+          "type": "may-come-from",
+          "target": "collaboration-draft",
+          "summary": "Algunas solicitudes de seguimiento empiezan como borradores compartidos antes de publicarse."
+        }
+      ],
+      "order": 421
+    }
+  ]
+}

@@ -1,0 +1,32 @@
+{
+  "guide": [
+    {
+      "id": "manage-people-and-access",
+      "title": "Gestiona por separado a las personas y el acceso a la organización",
+      "summary": "Crear una persona no es lo mismo que conceder acceso a una organización.",
+      "body": [
+        "Crea o sincroniza primero a la persona y luego concede el acceso a la organización mediante membresías.",
+        "Así mantienes la administración de identidades separada de la gobernanza operativa del acceso."
+      ],
+      "concept_ids": ["local-person", "membership"],
+      "order": 40
+    }
+  ],
+  "concepts": [
+    {
+      "id": "local-person",
+      "label": "Persona local",
+      "category": "identity",
+      "summary": "Un registro de persona administrado localmente con nombre de usuario, correo electrónico y métodos de inicio de sesión opcionales.",
+      "why_it_exists": "La plataforma necesita una forma integrada de crear administradores, usuarios locales, usuarios temporales o colaboradores externos incluso cuando no hay un directorio externo disponible.",
+      "how_to_use": [
+        "Crea personas locales en administración cuando necesiten una identidad de plataforma.",
+        "Concede el acceso a la organización por separado mediante membresías."
+      ],
+      "relations": [
+        { "type": "becomes", "target": "principal", "summary": "Una persona local se representa mediante un principal para las comprobaciones de acceso." }
+      ],
+      "order": 110
+    }
+  ]
+}

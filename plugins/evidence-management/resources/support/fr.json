@@ -1,0 +1,35 @@
+{
+  "guide": [
+    {
+      "id": "evidence-library-overview",
+      "title": "Bibliothèque de preuves",
+      "summary": "Utilisez la bibliothèque de preuves pour conserver le matériel probant dans un seul espace gouverné et le réutiliser dans les évaluations, les contrôles, les constats et d'autres zones de travail.",
+      "body": [
+        "Un registre de preuve encapsule un fichier ou un artefact existant avec des métadonnées métier telles que l'état, la validité, les dates de revue et les registres liés.",
+        "Un seul registre de preuve peut soutenir plusieurs contrôles, évaluations ou constats sans téléverser à nouveau le même fichier."
+      ],
+      "order": 240
+    }
+  ],
+  "concepts": [
+    {
+      "id": "evidence-record",
+      "label": "Registre de preuve",
+      "summary": "Un élément probant gouverné avec état, dates, notes de validation et liens vers les registres associés.",
+      "why_it_exists": "Il transforme un fichier téléversé brut en quelque chose que l'équipe conformité peut examiner, réutiliser et suivre dans le temps.",
+      "how_to_use_it": [
+        "Créez un registre de preuve à partir d'un nouveau fichier ou promouvez un artefact existant.",
+        "Reliez-le aux contrôles, évaluations, constats, risques ou plans qui en dépendent.",
+        "Gardez à jour l'état de validation et les dates de validité."
+      ],
+      "related_to": [
+        "assessment-campaign",
+        "control",
+        "finding",
+        "risk"
+      ],
+      "area": "app",
+      "order": 240
+    }
+  ]
+}

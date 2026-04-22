@@ -1,0 +1,42 @@
+{
+  "plugin.framework-nis2.framework.name": "Paquete marco NIS2",
+  "plugin.framework-nis2.framework.description": "Paquete marco de cumplimiento para la Directiva NIS2 (UE 2022/2555). Prepara los artículos y obligaciones clave para entidades esenciales e importantes.",
+
+  "plugin.framework-nis2.elements.nis2-chapter-2.title": "Divulgación coordinada de vulnerabilidades y estrategias de ciberseguridad",
+  "plugin.framework-nis2.elements.nis2-chapter-4.title": "Obligaciones de gestión y notificación del riesgo de ciberseguridad",
+  "plugin.framework-nis2.elements.nis2-chapter-5.title": "Jurisdicción y registro",
+
+  "plugin.framework-nis2.elements.nis2-article-21.title": "Medidas de gestión del riesgo de ciberseguridad",
+  "plugin.framework-nis2.elements.nis2-article-21.description": "Las entidades esenciales e importantes adoptarán medidas técnicas, operativas y organizativas adecuadas y proporcionadas para gestionar los riesgos para la seguridad de las redes y los sistemas de información.",
+
+  "plugin.framework-nis2.elements.nis2-21-a.title": "Políticas sobre análisis de riesgos y seguridad de los sistemas de información",
+  "plugin.framework-nis2.elements.nis2-21-a.description": "Políticas sobre análisis de riesgos y seguridad de los sistemas de información.",
+  "plugin.framework-nis2.elements.nis2-21-b.title": "Gestión de incidentes",
+  "plugin.framework-nis2.elements.nis2-21-b.description": "Gestión de incidentes, incluida la prevención, detección y respuesta.",
+  "plugin.framework-nis2.elements.nis2-21-c.title": "Continuidad de negocio y gestión de crisis",
+  "plugin.framework-nis2.elements.nis2-21-c.description": "Continuidad de negocio, como la gestión de copias de seguridad y la recuperación ante desastres, y gestión de crisis.",
+  "plugin.framework-nis2.elements.nis2-21-d.title": "Seguridad de la cadena de suministro",
+  "plugin.framework-nis2.elements.nis2-21-d.description": "Seguridad de la cadena de suministro, incluidos los aspectos de seguridad relacionados con la relación entre cada entidad y sus proveedores o prestadores de servicios directos.",
+  "plugin.framework-nis2.elements.nis2-21-e.title": "Seguridad en la adquisición de sistemas de redes y de información",
+  "plugin.framework-nis2.elements.nis2-21-e.description": "Seguridad en la adquisición, desarrollo y mantenimiento de sistemas de redes y de información, incluida la gestión y divulgación de vulnerabilidades.",
+  "plugin.framework-nis2.elements.nis2-21-f.title": "Políticas y procedimientos para evaluar la eficacia",
+  "plugin.framework-nis2.elements.nis2-21-f.description": "Políticas y procedimientos para evaluar la eficacia de las medidas de gestión del riesgo de ciberseguridad.",
+  "plugin.framework-nis2.elements.nis2-21-g.title": "Prácticas básicas de higiene cibernética y formación",
+  "plugin.framework-nis2.elements.nis2-21-g.description": "Prácticas básicas de higiene cibernética y formación en ciberseguridad.",
+  "plugin.framework-nis2.elements.nis2-21-h.title": "Políticas y procedimientos sobre criptografía",
+  "plugin.framework-nis2.elements.nis2-21-h.description": "Políticas y procedimientos relativos al uso de la criptografía y, cuando proceda, al cifrado.",
+  "plugin.framework-nis2.elements.nis2-21-i.title": "Seguridad de recursos humanos y políticas de control de acceso",
+  "plugin.framework-nis2.elements.nis2-21-i.description": "Seguridad de recursos humanos, políticas de control de acceso y gestión de activos.",
+  "plugin.framework-nis2.elements.nis2-21-j.title": "Uso de autenticación multifactor",
+  "plugin.framework-nis2.elements.nis2-21-j.description": "Uso de autenticación multifactor o autenticación continua, comunicaciones seguras de voz, vídeo y texto, y sistemas seguros de comunicación de emergencia dentro de la entidad, cuando proceda.",
+
+  "plugin.framework-nis2.elements.nis2-article-23.title": "Obligaciones de notificación",
+  "plugin.framework-nis2.elements.nis2-article-23.description": "Las entidades esenciales e importantes notificarán, sin dilación indebida, al CSIRT o, cuando proceda, a la autoridad competente, cualquier incidente con un impacto significativo en la prestación de sus servicios.",
+
+  "plugin.framework-nis2.elements.nis2-23-1.title": "Alerta temprana en 24 horas",
+  "plugin.framework-nis2.elements.nis2-23-1.description": "Una alerta temprana, sin dilación indebida y en todo caso dentro de las 24 horas desde que se tuvo conocimiento del incidente significativo, indicando si se sospecha que el incidente significativo ha sido causado por una acción ilícita o maliciosa.",
+  "plugin.framework-nis2.elements.nis2-23-2.title": "Notificación del incidente en 72 horas",
+  "plugin.framework-nis2.elements.nis2-23-2.description": "Una notificación del incidente, sin dilación indebida y en todo caso dentro de las 72 horas desde que se tuvo conocimiento del incidente significativo, actualizando la información a que se refiere el apartado a) e indicando una evaluación inicial del incidente significativo, incluida su gravedad e impacto.",
+  "plugin.framework-nis2.elements.nis2-23-3.title": "Informe final en un mes",
+  "plugin.framework-nis2.elements.nis2-23-3.description": "Un informe final, a más tardar un mes después de la presentación de la notificación del incidente, que incluya: una descripción detallada del incidente, el tipo de amenaza o la causa raíz, las medidas de mitigación aplicadas y en curso, y el impacto transfronterizo del incidente."
+}

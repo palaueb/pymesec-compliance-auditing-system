@@ -1,76 +1,76 @@
 <section class="module-screen">
     <div class="surface-note">
-        This screen uses system-controlled continuity values for workflow, exercise types, outcomes, and execution status. Business-managed vocabularies such as impact tiers and dependency kinds are governed separately in `Reference catalogs`.
+        {{ __('This screen uses system-controlled continuity values for workflow, exercise types, outcomes, and execution status. Business-managed vocabularies such as impact tiers and dependency kinds are governed separately in `Reference catalogs`.') }}
     </div>
 
     @if (is_array($selected_plan))
         <div class="surface-card" style="padding:16px; display:grid; gap:16px;">
             <div class="row-between" style="align-items:flex-start;">
                 <div>
-                    <div class="eyebrow">Recovery plan</div>
+                    <div class="eyebrow">{{ __('Recovery plan') }}</div>
                     <h2 class="screen-title" style="font-size:28px;">{{ $selected_plan['title'] }}</h2>
                     <div class="table-note">{{ $selected_plan['id'] }}</div>
                     <div class="table-note">{{ $selected_plan['service']['title'] }}</div>
                 </div>
-                <span class="pill">{{ $selected_plan['state'] }}</span>
+                <span class="pill">{{ __($selected_plan['state']) }}</span>
             </div>
 
             <div class="overview-grid">
-                <div class="metric-card"><div class="metric-label">Test due</div><div class="metric-value">{{ $selected_plan['test_due_on'] !== '' ? $selected_plan['test_due_on'] : 'None' }}</div></div>
-                <div class="metric-card"><div class="metric-label">Evidence</div><div class="metric-value">{{ count($selected_plan['artifacts']) }}</div></div>
-                <div class="metric-card"><div class="metric-label">Exercises</div><div class="metric-value">{{ count($selected_plan['exercises']) }}</div></div>
-                <div class="metric-card"><div class="metric-label">Test runs</div><div class="metric-value">{{ count($selected_plan['executions']) }}</div></div>
+                <div class="metric-card"><div class="metric-label">{{ __('Test due') }}</div><div class="metric-value">{{ $selected_plan['test_due_on'] !== '' ? $selected_plan['test_due_on'] : __('None') }}</div></div>
+                <div class="metric-card"><div class="metric-label">{{ __('Evidence') }}</div><div class="metric-value">{{ count($selected_plan['artifacts']) }}</div></div>
+                <div class="metric-card"><div class="metric-label">{{ __('Exercises') }}</div><div class="metric-value">{{ count($selected_plan['exercises']) }}</div></div>
+                <div class="metric-card"><div class="metric-label">{{ __('Test runs') }}</div><div class="metric-value">{{ count($selected_plan['executions']) }}</div></div>
             </div>
 
             <div class="surface-note">
-                Recovery Plan Detail keeps workflow, linked records, ownership, evidence, exercises, and test runs in one record workspace. The list view stays focused on summaries and navigation.
+                {{ __('Recovery Plan Detail keeps workflow, linked records, ownership, evidence, exercises, and test runs in one record workspace. The list view stays focused on summaries and navigation.') }}
             </div>
 
             <div class="overview-grid" style="grid-template-columns:repeat(3, minmax(0, 1fr));">
                 <div class="surface-card" style="padding:14px;">
-                    <div class="metric-label">Plan summary</div>
+                    <div class="metric-label">{{ __('Plan summary') }}</div>
                     <div class="entity-title" style="margin-top:10px;">{{ $selected_plan['strategy_summary'] }}</div>
                     <div class="data-stack" style="margin-top:12px;">
                         <div class="data-item">
-                            <div class="field-label">Continuity service</div>
+                            <div class="field-label">{{ __('Continuity service') }}</div>
                             <div class="entity-title">{{ $selected_plan['service_link']['label'] }}</div>
-                            <a class="button button-ghost" href="{{ $selected_plan['service_link']['url'] }}" style="margin-top:8px;">Open continuity service</a>
+                            <a class="button button-ghost" href="{{ $selected_plan['service_link']['url'] }}" style="margin-top:8px;">{{ __('Open continuity service') }}</a>
                         </div>
                         <div class="data-item">
-                            <div class="field-label">Scope</div>
-                            <div class="entity-title">{{ $selected_plan['scope_id'] !== '' ? $selected_plan['scope_id'] : 'Organization-wide' }}</div>
-                            <div class="table-note">Test due: {{ $selected_plan['test_due_on'] !== '' ? $selected_plan['test_due_on'] : 'No review date set' }}</div>
+                            <div class="field-label">{{ __('Scope') }}</div>
+                            <div class="entity-title">{{ $selected_plan['scope_id'] !== '' ? $selected_plan['scope_id'] : __('Organization-wide') }}</div>
+                            <div class="table-note">{{ $selected_plan['test_due_on'] !== '' ? __('Test due: :date', ['date' => $selected_plan['test_due_on']]) : __('No review date set') }}</div>
                         </div>
                     </div>
                 </div>
 
                 <div class="surface-card" style="padding:14px;">
-                    <div class="metric-label">Linked records</div>
+                    <div class="metric-label">{{ __('Linked records') }}</div>
                     <div class="data-stack" style="margin-top:10px;">
                         <div class="data-item">
-                            <div class="field-label">Policy</div>
+                            <div class="field-label">{{ __('Policy') }}</div>
                             @if (is_array($selected_plan['linked_policy']))
                                 <div class="entity-title">{{ $selected_plan['linked_policy']['label'] }}</div>
-                                <a class="button button-ghost" href="{{ $selected_plan['linked_policy']['url'] }}" style="margin-top:8px;">Open linked policy</a>
+                                <a class="button button-ghost" href="{{ $selected_plan['linked_policy']['url'] }}" style="margin-top:8px;">{{ __('Open linked policy') }}</a>
                             @else
-                                <span class="muted-note">No linked policy</span>
+                                <span class="muted-note">{{ __('No linked policy') }}</span>
                             @endif
                         </div>
                         <div class="data-item">
-                            <div class="field-label">Finding</div>
+                            <div class="field-label">{{ __('Finding') }}</div>
                             @if (is_array($selected_plan['linked_finding']))
                                 <div class="entity-title">{{ $selected_plan['linked_finding']['label'] }}</div>
-                                <a class="button button-ghost" href="{{ $selected_plan['linked_finding']['url'] }}" style="margin-top:8px;">Open linked finding</a>
+                                <a class="button button-ghost" href="{{ $selected_plan['linked_finding']['url'] }}" style="margin-top:8px;">{{ __('Open linked finding') }}</a>
                             @else
-                                <span class="muted-note">No linked finding</span>
+                                <span class="muted-note">{{ __('No linked finding') }}</span>
                             @endif
                         </div>
                     </div>
                 </div>
 
                 <div class="surface-card" style="padding:14px;">
-                    <div class="metric-label">Accountability</div>
-                    <div class="table-note" style="margin-top:10px;">Owners: {{ count($selected_plan['owner_assignments']) }}</div>
+                    <div class="metric-label">{{ __('Accountability') }}</div>
+                    <div class="table-note" style="margin-top:10px;">{{ __('Owners: :count', ['count' => count($selected_plan['owner_assignments'])]) }}</div>
                     <div class="data-stack" style="margin-top:10px;">
                         @forelse ($selected_plan['owner_assignments'] as $owner)
                             <div class="data-item">
@@ -85,12 +85,12 @@
                                         <input type="hidden" name="menu" value="plugin.continuity-bcm.plans">
                                         <input type="hidden" name="plan_id" value="{{ $selected_plan['id'] }}">
                                         <input type="hidden" name="membership_id" value="{{ $query['membership_ids'][0] ?? 'membership-org-a-hello' }}">
-                                        <button class="button button-ghost" type="submit">Remove owner</button>
+                                        <button class="button button-ghost" type="submit">{{ __('Remove owner') }}</button>
                                     </form>
                                 @endif
                             </div>
                         @empty
-                            <span class="muted-note">No owner assigned</span>
+                            <span class="muted-note">{{ __('No owner assigned') }}</span>
                         @endforelse
                     </div>
                 </div>
@@ -99,8 +99,8 @@
             <div class="surface-card" style="padding:14px;">
                 <div class="row-between" style="align-items:flex-start;">
                     <div>
-                        <div class="metric-label">Governance actions</div>
-                        <div class="table-note" style="margin-top:8px;">Edit plan metadata, links, due dates, and ownership from this detail page.</div>
+                        <div class="metric-label">{{ __('Governance actions') }}</div>
+                        <div class="table-note" style="margin-top:8px;">{{ __('Edit plan metadata, links, due dates, and ownership from this detail page.') }}</div>
                     </div>
                     <span class="pill">{{ $selected_plan['state'] }}</span>
                 </div>
@@ -116,17 +116,17 @@
                                     <input type="hidden" name="menu" value="plugin.continuity-bcm.plans">
                                     <input type="hidden" name="plan_id" value="{{ $selected_plan['id'] }}">
                                     <input type="hidden" name="membership_id" value="{{ $query['membership_ids'][0] ?? 'membership-org-a-hello' }}">
-                                    <button class="button button-secondary" type="submit">{{ ucwords(str_replace('-', ' ', $transition)) }}</button>
+                                    <button class="button button-secondary" type="submit">{{ __($transition) }}</button>
                                 </form>
                             @endforeach
                         </div>
                     @else
-                        <div class="table-note" style="margin-top:10px;">View-only access</div>
+                        <div class="table-note" style="margin-top:10px;">{{ __('View-only access') }}</div>
                     @endif
 
                     @if ($can_manage_continuity)
                         <details style="margin-top:12px;">
-                            <summary class="button button-ghost" style="display:inline-flex;">Edit plan</summary>
+                            <summary class="button button-ghost" style="display:inline-flex;">{{ __('Edit plan') }}</summary>
                             <form class="upload-form" method="POST" action="{{ $selected_plan['update_route'] }}" style="margin-top:10px;">
                                 @csrf
                                 <input type="hidden" name="principal_id" value="{{ $query['principal_id'] ?? '' }}">
@@ -136,57 +136,57 @@
                                 <input type="hidden" name="plan_id" value="{{ $selected_plan['id'] }}">
                                 <input type="hidden" name="membership_id" value="{{ $query['membership_ids'][0] ?? 'membership-org-a-hello' }}">
                                 <div class="field">
-                                    <label class="field-label">Title</label>
+                                    <label class="field-label">{{ __('Title') }}</label>
                                     <input class="field-input" name="title" value="{{ $selected_plan['title'] }}" required>
                                 </div>
                                 <div class="field">
-                                    <label class="field-label">Strategy summary</label>
+                                    <label class="field-label">{{ __('Strategy summary') }}</label>
                                     <input class="field-input" name="strategy_summary" value="{{ $selected_plan['strategy_summary'] }}" required>
                                 </div>
                                 <div class="field">
-                                    <label class="field-label">Test due</label>
+                                    <label class="field-label">{{ __('Test due') }}</label>
                                     <input class="field-input" name="test_due_on" type="date" value="{{ $selected_plan['test_due_on'] }}">
                                 </div>
                                 <div class="field">
-                                    <label class="field-label">Linked policy</label>
+                                    <label class="field-label">{{ __('Linked policy') }}</label>
                                     <select class="field-select" name="linked_policy_id">
-                                        <option value="">No linked policy</option>
+                                        <option value="">{{ __('No linked policy') }}</option>
                                         @foreach ($policy_options as $policy)
                                             <option value="{{ $policy['id'] }}" @selected($selected_plan['linked_policy_id'] === $policy['id'])>{{ $policy['label'] }}</option>
                                         @endforeach
                                     </select>
                                 </div>
                                 <div class="field">
-                                    <label class="field-label">Linked finding</label>
+                                    <label class="field-label">{{ __('Linked finding') }}</label>
                                     <select class="field-select" name="linked_finding_id">
-                                        <option value="">No linked finding</option>
+                                        <option value="">{{ __('No linked finding') }}</option>
                                         @foreach ($finding_options as $finding)
                                             <option value="{{ $finding['id'] }}" @selected($selected_plan['linked_finding_id'] === $finding['id'])>{{ $finding['label'] }}</option>
                                         @endforeach
                                     </select>
                                 </div>
                                 <div class="field">
-                                    <label class="field-label">Scope</label>
+                                    <label class="field-label">{{ __('Scope') }}</label>
                                     <select class="field-select" name="scope_id">
-                                        <option value="">Organization-wide</option>
+                                        <option value="">{{ __('Organization-wide') }}</option>
                                         @foreach ($scope_options as $scope)
                                             <option value="{{ $scope['id'] }}" @selected($selected_plan['scope_id'] === $scope['id'])>{{ $scope['name'] }}</option>
                                         @endforeach
                                     </select>
                                 </div>
                                 <div class="field">
-                                    <label class="field-label">Add owner actor</label>
+                                    <label class="field-label">{{ __('Add owner actor') }}</label>
                                     <select class="field-select" name="owner_actor_id">
-                                        <option value="">Do not add owner</option>
+                                        <option value="">{{ __('Do not add owner') }}</option>
                                         @foreach ($owner_actor_options as $actor)
                                             <option value="{{ $actor['id'] }}">{{ $actor['label'] }}</option>
                                         @endforeach
                                     </select>
-                                    <div class="table-note">Selecting an actor adds another owner instead of replacing the current set.</div>
+                                    <div class="table-note">{{ __('Selecting an actor adds another owner instead of replacing the current set.') }}</div>
                                 </div>
                                 @if (($selected_plan['owner_assignments'] ?? []) !== [])
                                     <div class="field" style="grid-column:1 / -1;">
-                                        <label class="field-label">Current owners</label>
+                                        <label class="field-label">{{ __('Current owners') }}</label>
                                         <div class="data-stack">
                                             @foreach ($selected_plan['owner_assignments'] as $owner)
                                                 <div class="data-item">
@@ -200,7 +200,7 @@
                                                         <input type="hidden" name="menu" value="plugin.continuity-bcm.plans">
                                                         <input type="hidden" name="plan_id" value="{{ $selected_plan['id'] }}">
                                                         <input type="hidden" name="membership_id" value="{{ $query['membership_ids'][0] ?? 'membership-org-a-hello' }}">
-                                                        <button class="button button-ghost" type="submit">Remove owner</button>
+                                                        <button class="button button-ghost" type="submit">{{ __('Remove owner') }}</button>
                                                     </form>
                                                 </div>
                                             @endforeach
@@ -208,7 +208,7 @@
                                     </div>
                                 @endif
                                 <div class="action-cluster">
-                                    <button class="button button-secondary" type="submit">Save changes</button>
+                                    <button class="button button-secondary" type="submit">{{ __('Save changes') }}</button>
                                 </div>
                             </form>
                             </details>
@@ -219,10 +219,10 @@
             <div class="overview-grid" style="grid-template-columns:repeat(3, minmax(0, 1fr));">
                 <div class="surface-card" style="padding:14px;">
                     <div class="row-between">
-                        <div class="metric-label">Exercises</div>
+                        <div class="metric-label">{{ __('Exercises') }}</div>
                         @if ($can_manage_continuity)
                             <details>
-                                <summary class="button button-ghost" style="display:inline-flex;">Log exercise</summary>
+                                <summary class="button button-ghost" style="display:inline-flex;">{{ __('Log exercise') }}</summary>
                                 <form class="upload-form" method="POST" action="{{ $selected_plan['exercise_store_route'] }}" style="margin-top:10px;">
                                     @csrf
                                     <input type="hidden" name="principal_id" value="{{ $query['principal_id'] ?? '' }}">
@@ -237,14 +237,14 @@
                                             <option value="{{ $exerciseType['id'] }}">{{ $exerciseType['label'] }}</option>
                                         @endforeach
                                     </select>
-                                    <input type="text" name="scenario_summary" placeholder="Exercise scenario" required>
+                                    <input type="text" name="scenario_summary" placeholder="{{ __('Exercise scenario') }}" required>
                                     <select class="field-select" name="outcome">
                                         @foreach ($exercise_outcome_options as $outcome)
                                             <option value="{{ $outcome['id'] }}">{{ $outcome['label'] }}</option>
                                         @endforeach
                                     </select>
-                                    <input type="text" name="follow_up_summary" placeholder="Follow-up">
-                                    <button class="button button-secondary" type="submit">Save exercise</button>
+                                    <input type="text" name="follow_up_summary" placeholder="{{ __('Follow-up') }}">
+                                    <button class="button button-secondary" type="submit">{{ __('Save exercise') }}</button>
                                 </form>
                             </details>
                         @endif
@@ -259,17 +259,17 @@
                                 @endif
                             </div>
                         @empty
-                            <span class="muted-note">No exercises logged</span>
+                            <span class="muted-note">{{ __('No exercises logged') }}</span>
                         @endforelse
                     </div>
                 </div>
 
                 <div class="surface-card" style="padding:14px;">
                     <div class="row-between">
-                        <div class="metric-label">Test runs</div>
+                        <div class="metric-label">{{ __('Test runs') }}</div>
                         @if ($can_manage_continuity)
                             <details>
-                                <summary class="button button-ghost" style="display:inline-flex;">Log test run</summary>
+                                <summary class="button button-ghost" style="display:inline-flex;">{{ __('Log test run') }}</summary>
                                 <form class="upload-form" method="POST" action="{{ $selected_plan['execution_store_route'] }}" style="margin-top:10px;">
                                     @csrf
                                     <input type="hidden" name="principal_id" value="{{ $query['principal_id'] ?? '' }}">
@@ -289,9 +289,9 @@
                                             <option value="{{ $status['id'] }}">{{ $status['label'] }}</option>
                                         @endforeach
                                     </select>
-                                    <input type="text" name="participants" placeholder="Participants">
-                                    <input type="text" name="notes" placeholder="Execution note">
-                                    <button class="button button-secondary" type="submit">Save test run</button>
+                                    <input type="text" name="participants" placeholder="{{ __('Participants') }}">
+                                    <input type="text" name="notes" placeholder="{{ __('Execution note') }}">
+                                    <button class="button button-secondary" type="submit">{{ __('Save test run') }}</button>
                                 </form>
                             </details>
                         @endif
@@ -309,17 +309,17 @@
                                 @endif
                             </div>
                         @empty
-                            <span class="muted-note">No test runs logged</span>
+                            <span class="muted-note">{{ __('No test runs logged') }}</span>
                         @endforelse
                     </div>
                 </div>
 
                 <div class="surface-card" style="padding:14px;">
                     <div class="row-between">
-                        <div class="metric-label">Evidence</div>
+                        <div class="metric-label">{{ __('Evidence') }}</div>
                         @if ($can_manage_continuity)
                             <details>
-                                <summary class="button button-ghost" style="display:inline-flex;">Attach evidence</summary>
+                                <summary class="button button-ghost" style="display:inline-flex;">{{ __('Attach evidence') }}</summary>
                                 <form class="upload-form" method="POST" action="{{ $selected_plan['artifact_upload_route'] }}" enctype="multipart/form-data" style="margin-top:10px;">
                                     @csrf
                                     <input type="hidden" name="principal_id" value="{{ $query['principal_id'] ?? '' }}">
@@ -329,9 +329,9 @@
                                     <input type="hidden" name="plan_id" value="{{ $selected_plan['id'] }}">
                                     <input type="hidden" name="membership_id" value="{{ $query['membership_ids'][0] ?? 'membership-org-a-hello' }}">
                                     <input type="hidden" name="artifact_type" value="recovery-plan">
-                                    <input type="text" name="label" placeholder="Evidence label">
+                                    <input type="text" name="label" placeholder="{{ __('Evidence label') }}">
                                     <input type="file" name="artifact" required>
-                                    <button class="button button-secondary" type="submit">Upload evidence</button>
+                                    <button class="button button-secondary" type="submit">{{ __('Upload evidence') }}</button>
                                 </form>
                             </details>
                         @endif
@@ -351,12 +351,12 @@
                                         <input type="hidden" name="scope_id" value="{{ $selected_plan['scope_id'] }}">
                                         <input type="hidden" name="locale" value="{{ $query['locale'] }}">
                                         <input type="hidden" name="membership_id" value="{{ $query['membership_ids'][0] ?? 'membership-org-a-hello' }}">
-                                        <button class="button button-ghost" type="submit">Promote to evidence</button>
+                                        <button class="button button-ghost" type="submit">{{ __('Promote to evidence') }}</button>
                                     </form>
                                 </div>
                             </div>
                         @empty
-                            <span class="muted-note">No evidence yet</span>
+                            <span class="muted-note">{{ __('No evidence yet') }}</span>
                         @endforelse
                     </div>
                 </div>
@@ -364,20 +364,20 @@
         </div>
     @else
         <div class="overview-grid">
-            <div class="metric-card"><div class="metric-label">Plans</div><div class="metric-value">{{ count($plans) }}</div></div>
-            <div class="metric-card"><div class="metric-label">Active</div><div class="metric-value">{{ collect($plans)->where('state', 'active')->count() }}</div></div>
-            <div class="metric-card"><div class="metric-label">Under review</div><div class="metric-value">{{ collect($plans)->where('state', 'review')->count() }}</div></div>
-            <div class="metric-card"><div class="metric-label">With evidence</div><div class="metric-value">{{ collect($plans)->filter(fn ($plan) => count($plan['artifacts']) > 0)->count() }}</div></div>
+            <div class="metric-card"><div class="metric-label">{{ __('Plans') }}</div><div class="metric-value">{{ count($plans) }}</div></div>
+            <div class="metric-card"><div class="metric-label">{{ __('Active') }}</div><div class="metric-value">{{ collect($plans)->where('state', 'active')->count() }}</div></div>
+            <div class="metric-card"><div class="metric-label">{{ __('Under review') }}</div><div class="metric-value">{{ collect($plans)->where('state', 'review')->count() }}</div></div>
+            <div class="metric-card"><div class="metric-label">{{ __('With evidence') }}</div><div class="metric-value">{{ collect($plans)->filter(fn ($plan) => count($plan['artifacts']) > 0)->count() }}</div></div>
         </div>
 
         <div class="surface-card" style="padding:14px;">
             <div class="row-between" style="gap:12px; align-items:flex-start;">
                 <div>
-                    <div class="entity-title">Recovery plans list</div>
-                    <div class="table-note">This list stays summary-only. Open a plan to manage evidence, exercises, test runs, links, ownership, and workflow. To create a new recovery plan, first open the related continuity service.</div>
+                    <div class="entity-title">{{ __('Recovery plans list') }}</div>
+                    <div class="table-note">{{ __('This list stays summary-only. Open a plan to manage evidence, exercises, test runs, links, ownership, and workflow. To create a new recovery plan, first open the related continuity service.') }}</div>
                 </div>
                 @if ($can_manage_continuity)
-                    <a class="button button-secondary" href="{{ route('core.shell.index', [...$list_query, 'menu' => 'plugin.continuity-bcm.root']) }}#continuity-service-plans">Choose service</a>
+                    <a class="button button-secondary" href="{{ route('core.shell.index', [...$list_query, 'menu' => 'plugin.continuity-bcm.root']) }}#continuity-service-plans">{{ __('Choose service') }}</a>
                 @endif
             </div>
         </div>
@@ -386,14 +386,14 @@
             <table class="entity-table">
                 <thead>
                     <tr>
-                        <th>Recovery Plan</th>
-                        <th>Service</th>
-                        <th>Owner</th>
-                        <th>Operations</th>
-                        <th>Links</th>
-                        <th>Test Due</th>
-                        <th>State</th>
-                        <th>Actions</th>
+                        <th>{{ __('Recovery Plan') }}</th>
+                        <th>{{ __('Service') }}</th>
+                        <th>{{ __('Owner') }}</th>
+                        <th>{{ __('Operations') }}</th>
+                        <th>{{ __('Links') }}</th>
+                        <th>{{ __('Test Due') }}</th>
+                        <th>{{ __('State') }}</th>
+                        <th>{{ __('Actions') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -409,12 +409,13 @@
                                 @if (($plan['owner_assignments'] ?? []) !== [])
                                     <div>{{ $plan['owner_assignments'][0]['display_name'] }}</div>
                                     @if (count($plan['owner_assignments']) > 1)
-                                        <div class="table-note">+{{ count($plan['owner_assignments']) - 1 }} more owner{{ count($plan['owner_assignments']) > 2 ? 's' : '' }}</div>
+                                        @php $extraOwners = count($plan['owner_assignments']) - 1; @endphp
+                                        <div class="table-note">+{{ $extraOwners }} {{ __($extraOwners === 1 ? 'more owner' : 'more owners') }}</div>
                                     @else
                                         <div class="table-note">{{ $plan['owner_assignments'][0]['kind'] }}</div>
                                     @endif
                                 @else
-                                    <span class="muted-note">No owner assigned</span>
+                                    <span class="muted-note">{{ __('No owner assigned') }}</span>
                                 @endif
                             </td>
                             <td>
@@ -423,14 +424,14 @@
                                 <div class="table-note">{{ count($plan['artifacts']) }} evidence item{{ count($plan['artifacts']) === 1 ? '' : 's' }}</div>
                             </td>
                             <td>
-                                @if (is_array($plan['linked_policy'])) <span class="tag">Policy</span> @endif
-                                @if (is_array($plan['linked_finding'])) <span class="tag">Finding</span> @endif
+                                @if (is_array($plan['linked_policy'])) <span class="tag">{{ __('Policy') }}</span> @endif
+                                @if (is_array($plan['linked_finding'])) <span class="tag">{{ __('Finding') }}</span> @endif
                                 @if (! is_array($plan['linked_policy']) && ! is_array($plan['linked_finding'])) <span class="muted-note">—</span> @endif
                             </td>
-                            <td>{{ $plan['test_due_on'] !== '' ? $plan['test_due_on'] : 'No test date' }}</td>
-                            <td><span class="pill">{{ $plan['state'] }}</span></td>
+                            <td>{{ $plan['test_due_on'] !== '' ? $plan['test_due_on'] : __('No test date') }}</td>
+                            <td><span class="pill">{{ __($plan['state']) }}</span></td>
                             <td>
-                                <a class="button button-secondary" href="{{ $plan['open_url'] }}&{{ http_build_query(['context_label' => 'Recovery Plans', 'context_back_url' => $plans_list_url]) }}">Open</a>
+                                <a class="button button-secondary" href="{{ $plan['open_url'] }}&{{ http_build_query(['context_label' => __('Recovery Plans'), 'context_back_url' => $plans_list_url]) }}">{{ __('Open') }}</a>
                             </td>
                         </tr>
                     @endforeach

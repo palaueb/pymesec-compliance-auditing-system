@@ -1,0 +1,5 @@
+{
+    "plugin.automation-catalog.nav.root": "Automatisierung",
+    "plugin.automation-catalog.screen.root.title": "Automatisierungskatalog",
+    "plugin.automation-catalog.screen.root.subtitle": "Verwalte Automatisierungspakete, Lebenszyklus, Verantwortliche, Herkunft, Betriebszustand und Ausgabemappings."
+}

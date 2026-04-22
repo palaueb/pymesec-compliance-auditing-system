@@ -1,0 +1,42 @@
+{
+  "plugin.framework-nis2.framework.name": "NIS2-Rahmenwerk",
+  "plugin.framework-nis2.framework.description": "Compliance-Rahmenwerk für die NIS2-Richtlinie (EU 2022/2555). Es legt die zentralen Artikel und Pflichten für wesentliche und wichtige Einrichtungen an.",
+
+  "plugin.framework-nis2.elements.nis2-chapter-2.title": "Koordinierte Schwachstellenoffenlegung und Cybersicherheitsstrategien",
+  "plugin.framework-nis2.elements.nis2-chapter-4.title": "Pflichten zur Cybersicherheits-Risikosteuerung und Meldung",
+  "plugin.framework-nis2.elements.nis2-chapter-5.title": "Zuständigkeit und Registrierung",
+
+  "plugin.framework-nis2.elements.nis2-article-21.title": "Maßnahmen zur Cybersicherheits-Risikosteuerung",
+  "plugin.framework-nis2.elements.nis2-article-21.description": "Wesentliche und wichtige Einrichtungen müssen angemessene und verhältnismäßige technische, operative und organisatorische Maßnahmen ergreifen, um Risiken für die Sicherheit von Netz- und Informationssystemen zu steuern.",
+
+  "plugin.framework-nis2.elements.nis2-21-a.title": "Richtlinien zur Risikoanalyse und Sicherheit von Informationssystemen",
+  "plugin.framework-nis2.elements.nis2-21-a.description": "Richtlinien zur Risikoanalyse und Sicherheit von Informationssystemen.",
+  "plugin.framework-nis2.elements.nis2-21-b.title": "Vorfallbearbeitung",
+  "plugin.framework-nis2.elements.nis2-21-b.description": "Vorfallbearbeitung einschließlich Prävention, Erkennung und Reaktion.",
+  "plugin.framework-nis2.elements.nis2-21-c.title": "Geschäftskontinuität und Krisenmanagement",
+  "plugin.framework-nis2.elements.nis2-21-c.description": "Geschäftskontinuität, etwa Backup-Management und Disaster Recovery, sowie Krisenmanagement.",
+  "plugin.framework-nis2.elements.nis2-21-d.title": "Sicherheit der Lieferkette",
+  "plugin.framework-nis2.elements.nis2-21-d.description": "Sicherheit der Lieferkette einschließlich sicherheitsrelevanter Aspekte der Beziehungen zwischen jeder Einrichtung und ihren direkten Lieferanten oder Dienstleistern.",
+  "plugin.framework-nis2.elements.nis2-21-e.title": "Sicherheit bei Beschaffung, Entwicklung und Wartung von Netz- und Informationssystemen",
+  "plugin.framework-nis2.elements.nis2-21-e.description": "Sicherheit bei der Beschaffung, Entwicklung und Wartung von Netz- und Informationssystemen einschließlich Schwachstellenmanagement und Offenlegung.",
+  "plugin.framework-nis2.elements.nis2-21-f.title": "Richtlinien und Verfahren zur Bewertung der Wirksamkeit",
+  "plugin.framework-nis2.elements.nis2-21-f.description": "Richtlinien und Verfahren zur Bewertung der Wirksamkeit von Maßnahmen zur Cybersicherheits-Risikosteuerung.",
+  "plugin.framework-nis2.elements.nis2-21-g.title": "Grundlegende Cyber-Hygiene und Schulung",
+  "plugin.framework-nis2.elements.nis2-21-g.description": "Grundlegende Cyber-Hygiene-Praktiken und Cybersicherheitsschulungen.",
+  "plugin.framework-nis2.elements.nis2-21-h.title": "Richtlinien und Verfahren zur Kryptografie",
+  "plugin.framework-nis2.elements.nis2-21-h.description": "Richtlinien und Verfahren zum Einsatz von Kryptografie und, wo angemessen, Verschlüsselung.",
+  "plugin.framework-nis2.elements.nis2-21-i.title": "Sicherheit der Personalprozesse und Zugriffskontrollrichtlinien",
+  "plugin.framework-nis2.elements.nis2-21-i.description": "Sicherheit der Personalprozesse, Zugriffskontrollrichtlinien und Asset-Management.",
+  "plugin.framework-nis2.elements.nis2-21-j.title": "Einsatz von Multi-Faktor-Authentifizierung",
+  "plugin.framework-nis2.elements.nis2-21-j.description": "Einsatz von Multi-Faktor-Authentifizierung oder kontinuierlichen Authentifizierungslösungen, gesicherter Sprach-, Video- und Textkommunikation sowie gesicherter Notfallkommunikationssysteme innerhalb der Einrichtung, soweit angemessen.",
+
+  "plugin.framework-nis2.elements.nis2-article-23.title": "Meldepflichten",
+  "plugin.framework-nis2.elements.nis2-article-23.description": "Wesentliche und wichtige Einrichtungen melden dem CSIRT oder, sofern anwendbar, der zuständigen Behörde unverzüglich jeden Vorfall mit erheblichen Auswirkungen auf die Erbringung ihrer Dienste.",
+
+  "plugin.framework-nis2.elements.nis2-23-1.title": "Frühwarnung innerhalb von 24 Stunden",
+  "plugin.framework-nis2.elements.nis2-23-1.description": "Eine Frühwarnung, unverzüglich und in jedem Fall innerhalb von 24 Stunden nach Kenntnisnahme des erheblichen Vorfalls, mit der Angabe, ob der erhebliche Vorfall mutmaßlich durch unrechtmäßige oder böswillige Handlungen verursacht wurde.",
+  "plugin.framework-nis2.elements.nis2-23-2.title": "Vorfallmeldung innerhalb von 72 Stunden",
+  "plugin.framework-nis2.elements.nis2-23-2.description": "Eine Vorfallmeldung, unverzüglich und in jedem Fall innerhalb von 72 Stunden nach Kenntnisnahme des erheblichen Vorfalls, mit Aktualisierung der unter Buchstabe a genannten Informationen und einer ersten Bewertung des erheblichen Vorfalls einschließlich Schwere und Auswirkungen.",
+  "plugin.framework-nis2.elements.nis2-23-3.title": "Abschlussbericht innerhalb eines Monats",
+  "plugin.framework-nis2.elements.nis2-23-3.description": "Ein Abschlussbericht spätestens einen Monat nach der Vorfallmeldung, einschließlich einer detaillierten Beschreibung des Vorfalls, der Art der Bedrohung oder der Hauptursache, der angewendeten und laufenden Minderungsmaßnahmen sowie der grenzüberschreitenden Auswirkungen des Vorfalls."
+}

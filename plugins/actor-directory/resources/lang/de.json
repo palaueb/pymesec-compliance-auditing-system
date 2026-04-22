@@ -1,0 +1,8 @@
+{
+  "plugin.actor-directory.nav.root": "Akteure",
+  "plugin.actor-directory.nav.assignments": "Zuordnungen",
+  "plugin.actor-directory.screen.directory.title": "Funktionale Akteure",
+  "plugin.actor-directory.screen.directory.subtitle": "Verzeichnis verantwortlicher Personen und Teams, getrennt von der Zugriffsidentität.",
+  "plugin.actor-directory.screen.assignments.title": "Funktionale Zuordnungen",
+  "plugin.actor-directory.screen.assignments.subtitle": "Verantwortungsverknüpfungen zwischen funktionalen Akteuren und Fachobjekten."
+}

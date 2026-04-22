@@ -1,0 +1,24 @@
+{
+  "plugin.framework-ens.framework.name": "ENS-Rahmenwerk",
+  "plugin.framework-ens.framework.description": "Starter-Rahmenwerk für das Esquema Nacional de Seguridad (ENS). Es legt Basiskategorien und Maßnahmen für Governance, Zugriffskontrolle, Überwachung, Sicherung und Wiederherstellung an.",
+
+  "plugin.framework-ens.elements.ens-domain-org.title": "Organisatorische Governance",
+  "plugin.framework-ens.elements.ens-domain-org.description": "Governance-Maßnahmen, Richtlinienverantwortung und Zuständigkeit.",
+  "plugin.framework-ens.elements.ens-domain-protect.title": "Schutzmaßnahmen",
+  "plugin.framework-ens.elements.ens-domain-protect.description": "Präventive Maßnahmen für Zugriff, Sicherung und Systemschutz.",
+  "plugin.framework-ens.elements.ens-domain-detect.title": "Erkennungsmaßnahmen",
+  "plugin.framework-ens.elements.ens-domain-detect.description": "Funktionen für Überwachung und Anomalieerkennung.",
+  "plugin.framework-ens.elements.ens-domain-recover.title": "Wiederherstellungsmaßnahmen",
+  "plugin.framework-ens.elements.ens-domain-recover.description": "Funktionen für Kontinuität und Wiederherstellung nach Vorfällen oder Ausfällen.",
+
+  "plugin.framework-ens.elements.ens-org-governance.title": "Sicherheitsgovernance und Richtlinienverantwortung",
+  "plugin.framework-ens.elements.ens-org-governance.description": "Definiert Verantwortliche, Richtlinienstruktur und Governance-Meilensteine für das Sicherheitsmodell.",
+  "plugin.framework-ens.elements.ens-protect-access.title": "Identitäts- und Zugriffsschutz",
+  "plugin.framework-ens.elements.ens-protect-access.description": "Steuert Zugriffsrechte, privilegierte Zugriffe und die regelmäßige Rezertifizierung von Berechtigungen.",
+  "plugin.framework-ens.elements.ens-protect-backup.title": "Schutz und Integrität von Sicherungen",
+  "plugin.framework-ens.elements.ens-protect-backup.description": "Schützt Sicherungen, prüft ihre Integrität und stellt die Wiederherstellbarkeit sicher.",
+  "plugin.framework-ens.elements.ens-detect-monitoring.title": "Überwachung von Sicherheitsereignissen",
+  "plugin.framework-ens.elements.ens-detect-monitoring.description": "Überwacht relevante Systeme und dokumentiert Nachweise für auffällige Aktivitäten und Reaktionen.",
+  "plugin.framework-ens.elements.ens-recover-continuity.title": "Dienstkontinuität und Wiederherstellung",
+  "plugin.framework-ens.elements.ens-recover-continuity.description": "Hält Wiederherstellungspläne, Kontinuitätsübungen und Wiederherstellungsnachweise für kritische Dienste aktuell."
+}

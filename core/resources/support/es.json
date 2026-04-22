@@ -1,0 +1,240 @@
+{
+  "guide": [
+    {
+      "id": "start-with-organization",
+      "title": "Empieza por la organización",
+      "summary": "Una organización es el límite principal de trabajo de la aplicación.",
+      "body": [
+        "Crea o elige primero la organización. Casi todos los registros operativos de la plataforma pertenecen a una organización.",
+        "Si tu empresa necesita espacios separados para filiales, entidades legales o unidades de negocio independientes, modela esos límites como organizaciones separadas."
+      ],
+      "concept_ids": ["organization", "scope"],
+      "order": 10
+    },
+    {
+      "id": "understand-access",
+      "title": "Después define quién puede trabajar allí",
+      "summary": "El acceso se basa en identidades principales, membresías, roles y ámbitos.",
+      "body": [
+        "Una persona inicia sesión como principal. Ese principal recibe una o varias membresías en una organización.",
+        "Los roles describen qué puede hacer la persona. Los ámbitos acotan dónde puede hacerlo."
+      ],
+      "concept_ids": ["principal", "membership", "role", "scope"],
+      "order": 20
+    },
+    {
+      "id": "work-with-records",
+      "title": "El trabajo operativo vive en los registros",
+      "summary": "Activos, controles, riesgos, hallazgos, registros de privacidad y planes de continuidad son los registros del día a día del espacio de trabajo.",
+      "body": [
+        "Usa los plugins operativos para mantener visible y auditable el estado actual de la organización.",
+        "Adjunta evidencias cuando necesites prueba y apóyate en la pista de auditoría cuando necesites trazabilidad."
+      ],
+      "concept_ids": ["asset", "control", "risk", "finding", "artifact", "audit-trail"],
+      "order": 30
+    },
+    {
+      "id": "api-and-openapi",
+      "title": "Integración de API y OpenAPI",
+      "summary": "Los dominios operativos se exponen mediante contratos de API REST y un documento OpenAPI generado.",
+      "body": [
+        "Usa /openapi.json como contrato canónico legible por máquina para las operaciones de API disponibles en la plataforma, incluidos activos, riesgos, controles, evaluaciones, hallazgos, acciones de remediación y revisiones de evaluación.",
+        "Para los campos gobernados, obtén siempre las opciones permitidas desde los endpoints de consulta antes de enviar operaciones de escritura.",
+        "Los endpoints de escritura publican los contratos de solicitud a partir de los metadatos de ruta y de las reglas de validación de FormRequest, de modo que las integraciones puedan confiar en una sola fuente de verdad.",
+        "Cuando un campo de escritura referencia otro registro (por ejemplo, titular, control, riesgo o marco), inspecciona los metadatos de consulta de la operación y consulta el endpoint referido antes de enviar la carga útil."
+      ],
+      "concept_ids": ["audit-trail", "api-access-token"],
+      "order": 40
+    },
+    {
+      "id": "official-mcp-server",
+      "title": "Usa el servidor MCP oficial",
+      "summary": "Los agentes pueden operar a través de la superficie MCP oficial manteniendo los límites de seguridad de la API.",
+      "body": [
+        "Ejecuta el broker oficial con el binario Go `pymesec-mcp` y autentícate con un token de API acotado (`PYMESEC_API_TOKEN` o argumento de token por herramienta).",
+        "Las herramientas MCP envían cada operación a través de `/api/v1`, así que la multitenencia, las comprobaciones de permisos, las reglas de acceso a nivel de objeto y el registro de auditoría de la API siguen aplicándose.",
+        "El binario puede cargar automáticamente `/openapi/v1.json` para resolver llamadas por `operation_id`, y aun así debes resolver las consultas gobernadas antes de las operaciones de escritura."
+      ],
+      "concept_ids": ["mcp-server", "api-access-token", "audit-trail"],
+      "order": 45
+    },
+    {
+      "id": "api-token-governance",
+      "title": "Gestiona los tokens de API desde administración",
+      "summary": "Emite tokens de integración por usuario y revócalos rápido cuando cambie el riesgo.",
+      "body": [
+        "Usa Administración > Tokens de API para emitir credenciales vinculadas a una identidad principal.",
+        "Usa rotate cuando necesites un secreto nuevo sin cambiar los límites de titularidad o ámbito; el secreto anterior deja de ser válido inmediatamente.",
+        "Define límites opcionales de organización y ámbito para reducir el radio de impacto de las integraciones externas.",
+        "Las capacidades del token se aplican por solicitud y no pueden superar los permisos efectivos del titular en el contexto seleccionado.",
+        "Copia los secretos del token inmediatamente después de la emisión porque el valor en claro solo se muestra una vez."
+      ],
+      "concept_ids": ["api-access-token", "principal", "audit-trail"],
+      "order": 50
+    }
+  ],
+  "concepts": [
+    {
+      "id": "organization",
+      "label": "Organización",
+      "category": "foundation",
+      "summary": "El límite principal del espacio de trabajo para registros, acceso y contexto operativo.",
+      "why_it_exists": "Las organizaciones separan datos, permisos y contexto para que empresas distintas o grandes límites de negocio no mezclen sus registros por error.",
+      "how_to_use": [
+        "Crea una organización por cada límite de negocio que deba gestionarse por separado.",
+        "Elige la organización antes de crear o revisar registros operativos."
+      ],
+      "relations": [
+        { "type": "contains", "target": "scope", "summary": "Los ámbitos viven dentro de una organización." },
+        { "type": "contains", "target": "membership", "summary": "Las membresías sitúan a las personas dentro de una organización." },
+        { "type": "contains", "target": "asset", "summary": "Los registros operativos normalmente pertenecen a una organización." }
+      ],
+      "order": 10
+    },
+    {
+      "id": "scope",
+      "label": "Ámbito",
+      "category": "foundation",
+      "summary": "Un área de trabajo más estrecha dentro de una organización, como un departamento, un dominio o un límite regional.",
+      "why_it_exists": "Los ámbitos te permiten limitar el acceso y centrar el trabajo sin crear una organización completamente separada.",
+      "how_to_use": [
+        "Crea ámbitos cuando una organización necesite varias áreas de trabajo acotadas.",
+        "Asigna acceso al ámbito solo a las membresías que deban ver ese subconjunto de registros."
+      ],
+      "relations": [
+        { "type": "belongs-to", "target": "organization", "summary": "Un ámbito solo existe dentro de una organización." },
+        { "type": "limits", "target": "membership", "summary": "Las membresías pueden restringirse a uno o varios ámbitos." }
+      ],
+      "order": 20
+    },
+    {
+      "id": "principal",
+      "label": "Principal",
+      "category": "access",
+      "summary": "La identidad de acceso que inicia sesión y recibe permisos.",
+      "why_it_exists": "La plataforma necesita un modelo de identidad de acceso coherente tanto si la persona viene de una cuenta local como de un directorio externo.",
+      "how_to_use": [
+        "Piensa en el principal como la identidad que inicia sesión, no como una responsabilidad de negocio.",
+        "Concede acceso a la organización mediante membresías, no adjuntando todo directamente al principal."
+      ],
+      "relations": [
+        { "type": "receives", "target": "membership", "summary": "Las membresías conectan un principal con una organización." },
+        { "type": "may-link-to", "target": "functional-actor", "summary": "Un principal puede vincularse a un actor funcional, pero no es lo mismo." }
+      ],
+      "order": 30
+    },
+    {
+      "id": "membership",
+      "label": "Membresía",
+      "category": "access",
+      "summary": "La colocación de un principal dentro de una organización, con roles y ámbitos opcionales.",
+      "why_it_exists": "La membresía es lo que hace operativo el acceso. Responde a dónde pertenece un principal y qué responsabilidades de espacio de trabajo están activas allí.",
+      "how_to_use": [
+        "Crea una membresía cuando una persona necesite acceso a una organización.",
+        "Adjunta roles operativos y restricciones de ámbito a la membresía."
+      ],
+      "relations": [
+        { "type": "belongs-to", "target": "organization", "summary": "Cada membresía pertenece a una organización." },
+        { "type": "assigned-to", "target": "principal", "summary": "Una membresía siempre es para un principal." },
+        { "type": "carries", "target": "role", "summary": "Los roles suelen concederse a través de membresías." }
+      ],
+      "order": 40
+    },
+    {
+      "id": "role",
+      "label": "Rol",
+      "category": "access",
+      "summary": "Un conjunto nombrado de permisos usado para simplificar la gestión del acceso.",
+      "why_it_exists": "Los roles permiten a los administradores asignar acceso en paquetes comprensibles en lugar de permisos individuales uno por uno.",
+      "how_to_use": [
+        "Usa roles de plataforma para administración y roles operativos para el trabajo diario.",
+        "Asigna roles operativos mediante membresías para que el acceso siga ligado a la organización."
+      ],
+      "relations": [
+        { "type": "granted-through", "target": "membership", "summary": "Los roles operativos normalmente se conceden mediante membresías." }
+      ],
+      "order": 50
+    },
+    {
+      "id": "functional-actor",
+      "label": "Actor funcional",
+      "category": "governance",
+      "summary": "Una identidad de negocio o de gobernanza, como CISO, DPO, propietario de servicio o equipo.",
+      "why_it_exists": "La responsabilidad de negocio no es lo mismo que el acceso de inicio de sesión. Los actores funcionales describen responsabilidad, titularidad y funciones de gobernanza.",
+      "how_to_use": [
+        "Usa actores funcionales para expresar titularidad o responsabilidad en el modelo de dominio.",
+        "Vincúlalos con identidades principales solo cuando necesites conectar responsabilidad de negocio con identidades de acceso reales."
+      ],
+      "relations": [
+        { "type": "may-link-to", "target": "principal", "summary": "Un actor funcional puede vincularse a una o varias identidades principales por política." }
+      ],
+      "order": 60
+    },
+    {
+      "id": "artifact",
+      "label": "Artefacto",
+      "category": "evidence",
+      "summary": "Un archivo de evidencia o adjunto almacenado y vinculado a un registro operativo.",
+      "why_it_exists": "El trabajo de cumplimiento suele necesitar pruebas. Los artefactos guardan documentos, exportaciones, capturas de pantalla u otras evidencias vinculadas a un registro de negocio.",
+      "how_to_use": [
+        "Adjunta artefactos al registro relevante cuando necesites evidencia trazable.",
+        "Usa etiquetas consistentes para que los revisores entiendan por qué existe cada adjunto."
+      ],
+      "relations": [
+        { "type": "supports", "target": "control", "summary": "Los controles a menudo necesitan evidencia." },
+        { "type": "supports", "target": "risk", "summary": "Los riesgos pueden incluir análisis o pruebas de apoyo." },
+        { "type": "supports", "target": "finding", "summary": "Los hallazgos suelen requerir evidencia del problema o de la remediación." }
+      ],
+      "order": 70
+    },
+    {
+      "id": "audit-trail",
+      "label": "Pista de auditoría",
+      "category": "governance",
+      "summary": "El historial registrado de acciones sensibles y cambios en toda la plataforma.",
+      "why_it_exists": "La pista de auditoría aporta responsabilidad, apoyo a la investigación y evidencia de quién cambió qué y cuándo.",
+      "how_to_use": [
+        "Usa la pantalla de auditoría cuando necesites revisar cambios importantes o investigar actividad.",
+        "Trata la pista de auditoría como trazabilidad, no como sustituto de una buena documentación del proceso."
+      ],
+      "relations": [
+        { "type": "records-changes-to", "target": "membership", "summary": "Los cambios de acceso deben ser trazables." },
+        { "type": "records-changes-to", "target": "asset", "summary": "Los cambios operativos deben ser observables." },
+        { "type": "records-changes-to", "target": "risk", "summary": "Las decisiones y transiciones de riesgo deben poder auditarse." }
+      ],
+      "order": 80
+    },
+    {
+      "id": "api-access-token",
+      "label": "Token de acceso de API",
+      "category": "access",
+      "summary": "Una credencial acotada usada para autenticar llamadas REST API fuera de sesiones web interactivas.",
+      "why_it_exists": "La automatización y las integraciones externas necesitan acceso autenticado a la API sin sesiones de navegador, manteniendo trazabilidad y controles de revocación.",
+      "how_to_use": [
+        "Emite tokens con principal titular explícito y límites opcionales de organización o ámbito.",
+        "Revoca los tokens de inmediato cuando ya no sean necesarios y supervisa la actividad de solicitudes en la pista de auditoría."
+      ],
+      "relations": [
+        { "type": "used-by", "target": "principal", "summary": "Cada token pertenece a una única identidad principal." },
+        { "type": "recorded-in", "target": "audit-trail", "summary": "Las operaciones de API deben seguir siendo trazables en registros de solo adición." }
+      ],
+      "order": 90
+    },
+    {
+      "id": "mcp-server",
+      "label": "Servidor MCP",
+      "category": "integration",
+      "summary": "Un servidor JSON-RPC sobre stdio que expone flujos de trabajo de la API de PymeSec a herramientas para agentes.",
+      "why_it_exists": "Los runtimes de agentes necesitan un puente estable que preserve exactamente el modelo de seguridad y multitenencia de la API en lugar de saltárselo con acceso directo a la base de datos.",
+      "how_to_use": [
+        "Ejecuta el binario compilado `pymesec-mcp` y proporciona un token de API con el mínimo privilegio.",
+        "Usa las herramientas MCP para llamar a operaciones `/api/v1` directamente o por `operation_id`, y luego sigue el patrón de consulta primero para escrituras en campos gobernados y relacionales."
+      ],
+      "relations": [
+        { "type": "proxies-to", "target": "api-access-token", "summary": "La autenticación y las restricciones de ámbito se aplican a través del contexto del token de API." },
+        { "type": "records-in", "target": "audit-trail", "summary": "Las operaciones siguen siendo visibles en la pista de auditoría compartida de la API." }
+      ],
+      "order": 95
+    }
+  ]
+}

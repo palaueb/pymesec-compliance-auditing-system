@@ -1,0 +1,33 @@
+{
+  "guide": [
+    {
+      "id": "configure-directory-sync",
+      "title": "Utilisez LDAP pour synchroniser les personnes, pas pour remplacer le modèle d'accès",
+      "summary": "LDAP remplit le cache local des personnes et des groupes, mais la plateforme fonctionne toujours avec des identités principales et des adhésions.",
+      "body": [
+        "Configurez une connexion d'annuaire par organisation lorsque cette organisation gère les personnes dans LDAP.",
+        "Après la synchronisation, vérifiez comment les groupes LDAP se mappent aux rôles et aux périmètres de l'organisation."
+      ],
+      "concept_ids": ["ldap-directory-sync", "principal", "membership"],
+      "order": 50
+    }
+  ],
+  "concepts": [
+    {
+      "id": "ldap-directory-sync",
+      "label": "Synchronisation d'annuaire LDAP",
+      "category": "identity",
+      "summary": "Le connecteur qui importe les utilisateurs et les groupes depuis LDAP vers le runtime d'identité local.",
+      "why_it_exists": "La plateforme a besoin d'un chemin maintenu pour l'intégration d'annuaires externes tout en gardant des décisions d'accès cohérentes dans l'application.",
+      "how_to_use": [
+        "Configurez la connexion, le base DN, le compte de liaison et les mappages d'attributs.",
+        "Lancez la synchronisation et examinez les mappages des groupes vers les rôles et les périmètres."
+      ],
+      "relations": [
+        { "type": "creates-or-updates", "target": "principal", "summary": "Les entrées d'annuaire deviennent des identités d'accès mises en cache localement." },
+        { "type": "maps-to", "target": "membership", "summary": "Les groupes peuvent donner accès à l'organisation via des adhésions." }
+      ],
+      "order": 120
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+{
+  "plugin.framework-gdpr.framework.name": "Pack cadre RGPD",
+  "plugin.framework-gdpr.framework.description": "Pack cadre initial pour les opérations GDPR / LOPDGDD. Il prépare les articles clés sur les principes, les registres, la sécurité, la notification des violations et les DPIA.",
+
+  "plugin.framework-gdpr.elements.gdpr-domain-principles.title": "Principes de traitement",
+  "plugin.framework-gdpr.elements.gdpr-domain-principles.description": "Principes fondamentaux qui encadrent un traitement licite et responsable.",
+  "plugin.framework-gdpr.elements.gdpr-domain-governance.title": "Gouvernance et registres",
+  "plugin.framework-gdpr.elements.gdpr-domain-governance.description": "Gouvernance opérationnelle, registres des activités de traitement et obligations de sécurité.",
+  "plugin.framework-gdpr.elements.gdpr-domain-incidents.title": "Gestion des incidents et notification",
+  "plugin.framework-gdpr.elements.gdpr-domain-incidents.description": "Obligations de notification et de réponse en cas de violation de données personnelles.",
+
+  "plugin.framework-gdpr.elements.gdpr-article-5.title": "Principes relatifs au traitement des données à caractère personnel",
+  "plugin.framework-gdpr.elements.gdpr-article-5.description": "Les données personnelles doivent être traitées de manière licite, loyale, transparente, pour des finalités déterminées, avec minimisation des données, intégrité et responsabilité.",
+  "plugin.framework-gdpr.elements.gdpr-article-30.title": "Registres des activités de traitement",
+  "plugin.framework-gdpr.elements.gdpr-article-30.description": "Les responsables du traitement et sous-traitants tiennent des registres des activités de traitement et les preuves de gouvernance associées.",
+  "plugin.framework-gdpr.elements.gdpr-article-32.title": "Sécurité du traitement",
+  "plugin.framework-gdpr.elements.gdpr-article-32.description": "Mettre en œuvre des mesures techniques et organisationnelles appropriées pour garantir un niveau de sécurité adapté au risque.",
+  "plugin.framework-gdpr.elements.gdpr-article-33.title": "Notification d'une violation de données à caractère personnel à l'autorité de contrôle",
+  "plugin.framework-gdpr.elements.gdpr-article-33.description": "Notifier sans retard injustifié l'autorité de contrôle compétente lorsqu'une violation de données personnelles devant être notifiée se produit.",
+  "plugin.framework-gdpr.elements.gdpr-article-35.title": "Analyse d'impact relative à la protection des données",
+  "plugin.framework-gdpr.elements.gdpr-article-35.description": "Réaliser une DPIA lorsque le traitement est susceptible d'engendrer un risque élevé pour les droits et libertés."
+}

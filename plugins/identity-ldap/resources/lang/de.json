@@ -1,0 +1,6 @@
+{
+  "plugin.identity-ldap.plugin.name": "Verzeichnissynchronisierung",
+  "plugin.identity-ldap.nav.directory": "Verzeichnissynchronisierung",
+  "plugin.identity-ldap.screen.directory.title": "Verzeichnissynchronisierung",
+  "plugin.identity-ldap.screen.directory.subtitle": "Führe einen LDAP-Connector pro Organisation, ordne externe Gruppen zu und zwischenspeichere Personen für den lokalen Fallback."
+}

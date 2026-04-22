@@ -1,0 +1,54 @@
+{
+  "guide": [
+    {
+      "id": "manage-policies-and-approved-deviations",
+      "title": "Usa el detalle de la política para gestionar juntos la regla y sus desviaciones aprobadas",
+      "summary": "El registro de política es el ancla de gobernanza. Las excepciones son registros subordinados usados cuando se acepta deliberadamente una desviación.",
+      "body": [
+        "Mantén en el espacio de trabajo de la política la declaración, el control vinculado, la cadencia de revisión, los responsables y los documentos.",
+        "Crea una excepción solo cuando la organización permita deliberadamente una desviación acotada.",
+        "Usa el estado de la excepción, la caducidad, la justificación y las notas de controles compensatorios para que la desviación siga siendo revisable."
+      ],
+      "concept_ids": [
+        "policy",
+        "policy-exception"
+      ],
+      "order": 250
+    }
+  ],
+  "concepts": [
+    {
+      "id": "policy",
+      "label": "Política",
+      "category": "governance",
+      "summary": "Una declaración gobernada de práctica esperada, titularidad y cadencia de revisión.",
+      "why_it_exists": "Las políticas proporcionan la línea base de la regla a la que otros registros, como controles y excepciones, pueden referirse.",
+      "how_to_use": [
+        "Mantén actualizados la declaración, la versión, los responsables, el control vinculado y la fecha de revisión.",
+        "Usa documentos adjuntos para el material de trabajo o los artefactos aprobados de la política."
+      ],
+      "relations": [
+        { "type": "may-link-to", "target": "control", "summary": "Las políticas pueden apuntar al control que gobiernan o justifican." },
+        { "type": "may-have", "target": "policy-exception", "summary": "Una política puede tener varias excepciones aprobadas o solicitadas a lo largo del tiempo." }
+      ],
+      "order": 250
+    },
+    {
+      "id": "policy-exception",
+      "label": "Excepción de política",
+      "category": "governance",
+      "summary": "Una decisión registrada formalmente para permitir una desviación respecto a una política o regla esperada.",
+      "why_it_exists": "A veces las organizaciones aceptan desviaciones limitadas. Una excepción de política mantiene esa decisión visible, revisada y acotada en el tiempo.",
+      "how_to_use": [
+        "Usa una excepción cuando no se pueda seguir una regla y la desviación vaya a aceptarse deliberadamente.",
+        "Registra el motivo, el responsable, el estado de aprobación, la caducidad y los controles compensatorios."
+      ],
+      "relations": [
+        { "type": "belongs-to", "target": "policy", "summary": "Las excepciones se gestionan en el contexto de una sola política." },
+        { "type": "may-relate-to", "target": "finding", "summary": "Una excepción puede hacer referencia a un hallazgo que la desencadenó o justificó." },
+        { "type": "may-increase", "target": "risk", "summary": "Una excepción puede dejar el riesgo parcialmente sin tratar." }
+      ],
+      "order": 251
+    }
+  ]
+}

@@ -1,0 +1,301 @@
+{
+  "guide": [
+    {
+      "id": "vendor-review-workspace-overview",
+      "title": "Espacio de trabajo de revisión de proveedores",
+      "summary": "Usa el espacio de trabajo de revisión de proveedores para mantener juntos la entrada, las respuestas del cuestionario, las evidencias, los registros vinculados y las decisiones de aprobación de una sola revisión de tercero.",
+      "body": [
+        "El registro de proveedores se mantiene ligero y sirve sobre todo para explorar proveedores, ver el estado actual y abrir la revisión activa.",
+        "Usa los filtros del registro para centrarte en revisiones pendientes de decisión, próximas a vencer o ya vencidas para reevaluación.",
+        "El espacio de trabajo de revisión es donde sucede el trabajo real: captura respuestas del cuestionario, adjunta artefactos, revisa hallazgos y acciones de remediación vinculados, mueve la revisión por estados de aprobación, coordina borradores compartidos, comentarios y solicitudes de seguimiento, elige acceso externo directo o recogida intermediada, y usa la línea de tiempo de actividad para entender qué ha pasado recientemente."
+      ],
+      "concept_ids": [
+        "vendor-external-collaboration-hardening",
+        "vendor-record",
+        "vendor-review",
+        "vendor-review-profile",
+        "vendor-questionnaire-template",
+        "vendor-brokered-collection-request",
+        "vendor-external-review-link",
+        "vendor-questionnaire-item",
+        "collaboration-draft",
+        "collaboration-comment",
+        "collaboration-request"
+      ],
+      "order": 255
+    }
+  ],
+  "concepts": [
+    {
+      "id": "vendor-external-collaboration-hardening",
+      "label": "Refuerzo de colaboración externa de proveedor",
+      "category": "security",
+      "summary": "Controles operativos y de despliegue necesarios antes de exponer el portal externo de revisión de proveedores.",
+      "why_it_exists": "Las revisiones de proveedores pueden contener controles, evidencias y contexto de hallazgos sensibles, así que las rutas externas necesitan una guía explícita de refuerzo.",
+      "how_to_use": [
+        "Expón el portal solo por HTTPS y mantén los secretos de despliegue protegidos.",
+        "Mantén estrictos los controles de subida y bloquea los tipos de archivo ejecutables.",
+        "Usa el control de ciclo de vida del colaborador y la revocación del enlace para detener el acceso de inmediato cuando haga falta.",
+        "Considera los programadores de recordatorios, resúmenes y limpieza como mejoras operativas, no como controles de seguridad de acceso."
+      ],
+      "relations": [
+        {
+          "type": "applies-to",
+          "target": "vendor-external-collaborator",
+          "summary": "El ciclo de vida del colaborador forma parte de la base de seguridad."
+        },
+        {
+          "type": "applies-to",
+          "target": "vendor-external-review-link",
+          "summary": "La emisión y uso de enlaces externos debe seguir la base de refuerzo."
+        }
+      ],
+      "order": 254
+    },
+    {
+      "id": "vendor-record",
+      "label": "Registro de proveedor",
+      "category": "operations",
+      "summary": "Una entrada del registro de terceros que identifica al proveedor, el contexto del servicio, los datos de contacto, el nivel y el estado actual del ciclo de vida.",
+      "why_it_exists": "Separa la identidad del proveedor de un ciclo de revisión concreto para que la organización pueda conservar el historial a largo plazo de terceros.",
+      "how_to_use": [
+        "Crea un registro de proveedor por cada tercero que necesites evaluar o vigilar.",
+        "Mantén actualizados el nivel, el resumen del servicio, la información de contacto y el estado actual."
+      ],
+      "relations": [
+        {
+          "type": "has-review",
+          "target": "vendor-review",
+          "summary": "Un proveedor puede tener uno o varios ciclos de revisión a lo largo del tiempo."
+        }
+      ],
+      "order": 255
+    },
+    {
+      "id": "vendor-review",
+      "label": "Revisión de proveedor",
+      "category": "operations",
+      "summary": "El espacio operativo de revisión para un ciclo de evaluación de proveedor, incluyendo riesgo inherente, respuestas del cuestionario, evidencias, notas de decisión y estado de aprobación.",
+      "why_it_exists": "Da al equipo un único lugar para hacer la diligencia debida y registrar una decisión clara antes de aprobar o reevaluar.",
+      "how_to_use": [
+        "Abre la revisión de proveedor cuando necesites evaluar un proveedor nuevo o revisar uno ya aprobado.",
+        "Úsala para recoger respuestas, evidencias, notas de seguimiento y riesgos o hallazgos vinculados.",
+        "Cuando ya haya un hallazgo enlazado, usa el resumen del espacio para seguir las acciones de remediación sin perder el contexto de la revisión.",
+        "Usa borradores compartidos cuando un revisor empiece una nota o elemento de seguimiento y otro pueda terminarlo o publicarlo después.",
+        "Usa comentarios y solicitudes de seguimiento para mantener la coordinación de revisores dentro del mismo espacio que las evidencias y decisiones de la revisión.",
+        "Usa las fases de traspaso de seguimiento para mostrar si la siguiente acción pertenece a revisión, remediación, aprobación o al ciclo cerrado tras la decisión.",
+        "Menciona actores funcionales cuando quieras que las identidades principales vinculadas reciban una señal explícita sin cambiar la titularidad formal de la solicitud.",
+        "Usa la sección de línea temporal para revisar transiciones de flujo de trabajo, subidas de evidencias, cambios en el cuestionario, eventos de colaboración externa y eventos de colaboración en un único lugar."
+      ],
+      "relations": [
+        {
+          "type": "belongs-to",
+          "target": "vendor-record",
+          "summary": "Cada revisión pertenece a un único registro de proveedor."
+        },
+        {
+          "type": "includes",
+          "target": "vendor-questionnaire-item",
+          "summary": "Los ítems del cuestionario permanecen vinculados a la revisión que los recopiló."
+        },
+        {
+          "type": "may-link-to",
+          "target": "risk",
+          "summary": "Una revisión puede apuntar a un registro de riesgo existente cuando el tercero forma parte de una postura de riesgo más amplia."
+        },
+        {
+          "type": "may-link-to",
+          "target": "finding",
+          "summary": "Una revisión puede enlazar o dar lugar a hallazgos cuando la diligencia debida identifica una brecha concreta."
+        },
+        {
+          "type": "may-include",
+          "target": "collaboration-draft",
+          "summary": "Los borradores compartidos mantienen visible la colaboración incompleta dentro de la revisión antes de publicarse."
+        },
+        {
+          "type": "may-include",
+          "target": "collaboration-comment",
+          "summary": "Los comentarios mantienen la discusión de revisores y el contexto operativo dentro de la revisión."
+        },
+        {
+          "type": "may-include",
+          "target": "collaboration-request",
+          "summary": "Las solicitudes de seguimiento mantienen explícita la siguiente acción dentro del espacio de trabajo de revisión."
+        }
+      ],
+      "order": 256
+    },
+    {
+      "id": "vendor-review-profile",
+      "label": "Perfil de revisión de proveedor",
+      "category": "operations",
+      "summary": "Un perfil reutilizable de profundidad y cadencia de revisión que se usa para definir cómo debe ejecutarse una revisión de proveedor.",
+      "why_it_exists": "Los perfiles de revisión permiten al equipo aplicar un patrón coherente de diligencia debida para proveedores con exposición, nivel o características de servicio similares.",
+      "how_to_use": [
+        "Elige el perfil de revisión al crear o editar una revisión de proveedor.",
+        "Usa el perfil para impulsar la plantilla de cuestionario por defecto y la cadencia de reevaluación esperada."
+      ],
+      "relations": [
+        {
+          "type": "may-shape",
+          "target": "vendor-review",
+          "summary": "A una revisión se le puede asignar un perfil para guiar su profundidad y cadencia."
+        },
+        {
+          "type": "may-have",
+          "target": "vendor-questionnaire-template",
+          "summary": "Los perfiles pueden tener una o varias plantillas de cuestionario."
+        }
+      ],
+      "order": 257
+    },
+    {
+      "id": "vendor-questionnaire-template",
+      "label": "Plantilla de cuestionario de proveedor",
+      "category": "operations",
+      "summary": "Un conjunto de preguntas reutilizable vinculado a un perfil de revisión y copiado a una revisión de proveedor concreta cuando se aplica.",
+      "why_it_exists": "Las plantillas mantienen coherentes las revisiones recurrentes de terceros sin obligar a que cada revisión empiece desde un cuestionario en blanco.",
+      "how_to_use": [
+        "Selecciona una plantilla de cuestionario para la revisión y aplícala para crear ítems de pregunta vinculados a la revisión.",
+        "Usa los ítems vinculados a la revisión para respuestas reales, estado y notas de seguimiento una vez copiada la plantilla.",
+        "Usa títulos de sección para agrupar preguntas relacionadas como gobierno de acceso, gestión de incidentes o subencargados.",
+        "El almacenamiento compartido y la semántica de respuesta ahora vienen del plugin transversal de cuestionarios aunque este espacio siga siendo dueño del flujo de trabajo de revisión de proveedor."
+      ],
+      "relations": [
+        {
+          "type": "belongs-to",
+          "target": "vendor-review-profile",
+          "summary": "Cada plantilla pertenece a un perfil de revisión."
+        },
+        {
+          "type": "can-create",
+          "target": "vendor-questionnaire-item",
+          "summary": "Aplicar una plantilla crea ítems de cuestionario vinculados a la revisión."
+        }
+      ],
+      "order": 258
+    },
+    {
+      "id": "vendor-questionnaire-item",
+      "label": "Ítem de cuestionario de proveedor",
+      "category": "operations",
+      "summary": "Una entrada de pregunta y respuesta vinculada a una revisión usada para capturar respuestas de diligencia debida, su estado de revisión y notas de seguimiento.",
+      "why_it_exists": "Permite al equipo recopilar respuestas estructuradas dentro de una única revisión concreta de proveedor reutilizando el plugin compartido de cuestionarios para el almacenamiento y la semántica de respuestas.",
+      "how_to_use": [
+        "Añade un ítem por cada pregunta que necesites seguir durante la revisión.",
+        "Actualiza la respuesta, el estado de respuesta y las notas de seguimiento conforme avance la revisión.",
+        "Asigna un título de sección cuando quieras que preguntas relacionadas se rendericen juntas para revisores internos y proveedores externos.",
+        "Guarda respuestas estables en la biblioteca de cuestionarios cuando quieras que revisiones similares reutilicen la misma respuesta base.",
+        "Usa la acción de revisión dedicada para marcar respuestas como aceptadas o pendientes de seguimiento y mantener las notas del revisor en el propio ítem.",
+        "Configura un modo de adjunto y un perfil de subida cuando la pregunta espere un archivo de apoyo, y usa la promoción a evidencia solo cuando el adjunto deba convertirse en evidencia gobernada."
+      ],
+      "relations": [
+        {
+          "type": "belongs-to",
+          "target": "vendor-review",
+          "summary": "Los ítems de cuestionario se almacenan dentro de una revisión concreta de proveedor."
+        },
+        {
+          "type": "may-come-from",
+          "target": "vendor-questionnaire-template",
+          "summary": "Algunos ítems de pregunta se copian desde una plantilla de cuestionario aplicada."
+        }
+      ],
+      "order": 259
+    },
+    {
+      "id": "vendor-brokered-collection-request",
+      "label": "Solicitud intermediada de recogida de proveedor",
+      "category": "operations",
+      "summary": "Una solicitud de recogida rastreada en la que un intermediario interno recopila respuestas o material de apoyo del proveedor fuera de la plataforma sin abrir el portal externo.",
+      "why_it_exists": "Ofrece una vía intermedia controlada entre la completación totalmente interna y el acceso directo al portal externo.",
+      "how_to_use": [
+        "Crea una solicitud intermediada cuando el proveedor deba responder por correo, reunión, llamada o intercambio de documentos en lugar de usar el portal.",
+        "Asigna o confirma el intermediario principal, captura las instrucciones de recogida y actualiza el estado de la solicitud conforme avanza la entrada.",
+        "Usa las notas del intermediario para explicar qué se recogió y qué sigue pendiente de revisión antes de que la respuesta pueda aceptarse."
+      ],
+      "relations": [
+        {
+          "type": "belongs-to",
+          "target": "vendor-review",
+          "summary": "Cada solicitud intermediada está acotada a una revisión concreta de proveedor."
+        },
+        {
+          "type": "supports",
+          "target": "vendor-questionnaire-item",
+          "summary": "Las solicitudes intermediadas proporcionan la vía de recogida fuera de la plataforma para respuestas de cuestionarios vinculadas a la revisión."
+        }
+      ],
+      "order": 260
+    },
+    {
+      "id": "vendor-external-collaborator",
+      "label": "Colaborador externo del proveedor",
+      "category": "operations",
+      "summary": "Una identidad de participante externo acotada a la revisión con un estado de ciclo de vida explícito.",
+      "why_it_exists": "Permite al equipo suspender o restaurar un colaborador a través de todos sus enlaces de revisión sin borrar registros históricos.",
+      "how_to_use": [
+        "Usa un registro de colaborador por cada correo de contacto dentro de cada revisión de proveedor.",
+        "Pon el ciclo de vida en bloqueado cuando el acceso externo deba detenerse inmediatamente en todos los enlaces actuales.",
+        "Restaura el ciclo de vida a activo cuando la colaboración pueda continuar bajo la misma identidad acotada.",
+        "La aplicación del acceso al portal se hace en tiempo de ejecución, así que el bloqueo es inmediato y no depende de la ejecución de CRON."
+      ],
+      "relations": [
+        {
+          "type": "belongs-to",
+          "target": "vendor-review",
+          "summary": "Cada colaborador está acotado a una revisión concreta de proveedor."
+        },
+        {
+          "type": "has-many",
+          "target": "vendor-external-review-link",
+          "summary": "Un colaborador puede tener varios enlaces emitidos a lo largo del tiempo para la misma revisión."
+        }
+      ],
+      "order": 261
+    },
+    {
+      "id": "vendor-external-review-link",
+      "label": "Enlace externo de revisión de proveedor",
+      "category": "operations",
+      "summary": "Un enlace externo revocable y con caducidad, acotado a una revisión de proveedor.",
+      "why_it_exists": "Permite una colaboración externa controlada sin exponer el espacio interno completo ni registros ajenos.",
+      "how_to_use": [
+        "Emite un enlace externo solo para la revisión concreta que quieras compartir.",
+        "Elige si el destinatario puede responder ítems de cuestionario, subir evidencias o ambas cosas.",
+        "Decide si el enlace permanece solo manual o si el espacio debe enviar la invitación mediante el conector SMTP de la organización.",
+        "Revoca el enlace cuando termine la ventana de colaboración o cuando el acceso deba terminar de inmediato.",
+        "Usa el estado de ciclo de vida del colaborador para bloquear o restaurar todo el acceso al portal para un contacto externo."
+      ],
+      "relations": [
+        {
+          "type": "belongs-to",
+          "target": "vendor-external-collaborator",
+          "summary": "Cada enlace pertenece a una identidad de colaborador externo para el control de ciclo de vida."
+        },
+        {
+          "type": "belongs-to",
+          "target": "vendor-review",
+          "summary": "Cada enlace externo está acotado a una revisión de proveedor."
+        },
+        {
+          "type": "may-allow",
+          "target": "vendor-questionnaire-item",
+          "summary": "Un enlace puede permitir que el participante externo envíe respuestas para ítems de cuestionario vinculados a la revisión."
+        },
+        {
+          "type": "may-allow",
+          "target": "artifact",
+          "summary": "Un enlace puede permitir subidas de evidencias externas al espacio de trabajo de revisión."
+        },
+        {
+          "type": "may-use",
+          "target": "notification-mail-settings",
+          "summary": "La entrega por correo de la invitación para el enlace usa el conector de correo saliente de la organización cuando está habilitado."
+        }
+      ],
+      "order": 262
+    }
+  ]
+}

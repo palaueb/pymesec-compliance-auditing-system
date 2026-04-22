@@ -1,0 +1,301 @@
+{
+  "guide": [
+    {
+      "id": "vendor-review-workspace-overview",
+      "title": "Espace de travail de revue fournisseur",
+      "summary": "Utilisez l'espace de travail de revue fournisseur pour garder ensemble l'intake, les réponses au questionnaire, les preuves, les registres liés et les décisions d'approbation d'une revue tierce.",
+      "body": [
+        "Le registre fournisseurs reste léger et sert surtout à parcourir les fournisseurs, l'état courant et l'ouverture de la revue active.",
+        "Utilisez les filtres du registre pour vous concentrer sur les revues en attente de décision, bientôt dues ou déjà en retard pour réévaluation.",
+        "L'espace de travail de revue est l'endroit où le vrai travail se fait : capturez les réponses au questionnaire, joignez des artefacts, examinez les constats et actions de remédiation liés, faites avancer la revue à travers les états d'approbation, coordonnez les brouillons partagés, les commentaires et les demandes de suivi, choisissez l'accès externe direct ou la collecte relayée, et utilisez la frise d'activité pour comprendre ce qui s'est passé récemment."
+      ],
+      "concept_ids": [
+        "vendor-external-collaboration-hardening",
+        "vendor-record",
+        "vendor-review",
+        "vendor-review-profile",
+        "vendor-questionnaire-template",
+        "vendor-brokered-collection-request",
+        "vendor-external-review-link",
+        "vendor-questionnaire-item",
+        "collaboration-draft",
+        "collaboration-comment",
+        "collaboration-request"
+      ],
+      "order": 255
+    }
+  ],
+  "concepts": [
+    {
+      "id": "vendor-external-collaboration-hardening",
+      "label": "Durcissement de la collaboration externe fournisseur",
+      "category": "security",
+      "summary": "Contrôles opérationnels et de déploiement requis avant d'exposer le portail externe de revue fournisseur.",
+      "why_it_exists": "Les revues fournisseur peuvent contenir des contrôles, preuves et contextes de constats sensibles, donc les routes externes ont besoin d'une guidance explicite de durcissement.",
+      "how_to_use": [
+        "Exposer le portail uniquement en HTTPS et garder les secrets de déploiement protégés.",
+        "Maintenir des contrôles de téléversement stricts et bloquer les types de fichiers exécutables.",
+        "Utiliser l'état de cycle de vie du collaborateur et la révocation du lien pour couper l'accès immédiatement quand nécessaire.",
+        "Considérer les planificateurs de rappels, de résumés et de nettoyage comme des améliorations opérationnelles, pas comme des contrôles de sécurité d'accès."
+      ],
+      "relations": [
+        {
+          "type": "applies-to",
+          "target": "vendor-external-collaborator",
+          "summary": "Le cycle de vie du collaborateur fait partie de la base de sécurité."
+        },
+        {
+          "type": "applies-to",
+          "target": "vendor-external-review-link",
+          "summary": "L'émission et l'utilisation des liens externes doivent suivre la base de durcissement."
+        }
+      ],
+      "order": 254
+    },
+    {
+      "id": "vendor-record",
+      "label": "Registre fournisseur",
+      "category": "operations",
+      "summary": "Une entrée du registre tiers qui identifie le fournisseur, le contexte du service, les coordonnées, le niveau et l'état courant du cycle de vie.",
+      "why_it_exists": "Elle sépare l'identité fournisseur d'un cycle de revue précis afin que l'organisation puisse conserver l'historique tiers à long terme.",
+      "how_to_use": [
+        "Créez un registre fournisseur par tiers que vous devez évaluer ou surveiller.",
+        "Gardez à jour le niveau, le résumé de service, les coordonnées et l'état courant."
+      ],
+      "relations": [
+        {
+          "type": "has-review",
+          "target": "vendor-review",
+          "summary": "Un fournisseur peut avoir un ou plusieurs cycles de revue dans le temps."
+        }
+      ],
+      "order": 255
+    },
+    {
+      "id": "vendor-review",
+      "label": "Revue fournisseur",
+      "category": "operations",
+      "summary": "L'espace de travail opérationnel d'une revue de fournisseur, comprenant le risque inhérent, les réponses au questionnaire, les preuves, les notes de décision et l'état d'approbation.",
+      "why_it_exists": "Il donne à l'équipe un seul endroit pour effectuer la diligence raisonnable et enregistrer une décision claire avant approbation ou réévaluation.",
+      "how_to_use": [
+        "Ouvrez la revue fournisseur lorsque vous devez évaluer un nouveau fournisseur ou revisiter un fournisseur déjà approuvé.",
+        "Utilisez-la pour collecter réponses, preuves, notes de suivi et constats ou risques liés.",
+        "Lorsqu'un constat est déjà lié, utilisez le résumé de l'espace pour suivre les actions de remédiation sans perdre le contexte de revue.",
+        "Utilisez les brouillons partagés lorsqu'un réviseur commence une note ou un suivi et qu'un autre peut devoir le finir ou le publier plus tard.",
+        "Utilisez les commentaires et les demandes de suivi pour garder la coordination des réviseurs dans le même espace que les preuves et décisions de la revue.",
+        "Utilisez les étapes de transfert de suivi pour montrer si la prochaine action relève de la revue, de la remédiation, de l'approbation ou de la boucle close après décision.",
+        "Mentionnez les acteurs fonctionnels lorsque vous voulez que les identités principales liées reçoivent un signal explicite sans changer la responsabilité formelle de la demande.",
+        "Utilisez la section frise d'activité pour revoir les transitions de workflow, les téléversements de preuves, les changements de questionnaire, les événements de collaboration externe et les événements de collaboration au même endroit."
+      ],
+      "relations": [
+        {
+          "type": "belongs-to",
+          "target": "vendor-record",
+          "summary": "Chaque revue appartient à un seul registre fournisseur."
+        },
+        {
+          "type": "includes",
+          "target": "vendor-questionnaire-item",
+          "summary": "Les éléments de questionnaire restent liés à la revue qui les a collectés."
+        },
+        {
+          "type": "may-link-to",
+          "target": "risk",
+          "summary": "Une revue peut pointer vers un registre de risque existant lorsque le tiers fait partie d'une posture de risque plus large."
+        },
+        {
+          "type": "may-link-to",
+          "target": "finding",
+          "summary": "Une revue peut lier ou conduire à des constats lorsque la diligence raisonnable identifie un écart concret."
+        },
+        {
+          "type": "may-include",
+          "target": "collaboration-draft",
+          "summary": "Les brouillons partagés gardent visible la collaboration inachevée dans la revue avant publication."
+        },
+        {
+          "type": "may-include",
+          "target": "collaboration-comment",
+          "summary": "Les commentaires gardent la discussion des réviseurs et le contexte opérationnel dans la revue."
+        },
+        {
+          "type": "may-include",
+          "target": "collaboration-request",
+          "summary": "Les demandes de suivi gardent explicite la prochaine action dans l'espace de travail de revue."
+        }
+      ],
+      "order": 256
+    },
+    {
+      "id": "vendor-review-profile",
+      "label": "Profil de revue fournisseur",
+      "category": "operations",
+      "summary": "Un profil réutilisable de profondeur et de cadence de revue utilisé pour définir comment une revue fournisseur doit être menée.",
+      "why_it_exists": "Les profils de revue permettent à l'équipe d'appliquer un schéma de diligence raisonnable cohérent pour les fournisseurs ayant une exposition, un niveau ou des caractéristiques de service similaires.",
+      "how_to_use": [
+        "Choisissez le profil de revue lors de la création ou de la modification d'une revue fournisseur.",
+        "Utilisez le profil pour piloter le modèle de questionnaire par défaut et la cadence de réévaluation attendue."
+      ],
+      "relations": [
+        {
+          "type": "may-shape",
+          "target": "vendor-review",
+          "summary": "Une revue peut se voir attribuer un profil pour guider sa profondeur et sa cadence."
+        },
+        {
+          "type": "may-have",
+          "target": "vendor-questionnaire-template",
+          "summary": "Les profils peuvent posséder un ou plusieurs modèles de questionnaire."
+        }
+      ],
+      "order": 257
+    },
+    {
+      "id": "vendor-questionnaire-template",
+      "label": "Modèle de questionnaire fournisseur",
+      "category": "operations",
+      "summary": "Un ensemble de questions réutilisable lié à un profil de revue et copié dans une revue fournisseur concrète lorsqu'il est appliqué.",
+      "why_it_exists": "Les modèles gardent les revues tierces récurrentes cohérentes sans obliger chaque revue à partir d'un questionnaire vierge.",
+      "how_to_use": [
+        "Sélectionnez un modèle de questionnaire pour la revue et appliquez-le pour créer des éléments de question liés à la revue.",
+        "Utilisez les éléments liés à la revue pour les vraies réponses, l'état et les notes de suivi une fois le modèle copié.",
+        "Utilisez les titres de section pour regrouper des questions comme la gouvernance d'accès, le traitement d'incident ou les sous-traitants.",
+        "Le stockage partagé et la sémantique de réponse viennent désormais du plugin transversal questionnaires même si cet espace reste responsable du workflow de revue fournisseur."
+      ],
+      "relations": [
+        {
+          "type": "belongs-to",
+          "target": "vendor-review-profile",
+          "summary": "Chaque modèle appartient à un profil de revue."
+        },
+        {
+          "type": "can-create",
+          "target": "vendor-questionnaire-item",
+          "summary": "L'application d'un modèle crée des éléments de questionnaire liés à la revue."
+        }
+      ],
+      "order": 258
+    },
+    {
+      "id": "vendor-questionnaire-item",
+      "label": "Élément de questionnaire fournisseur",
+      "category": "operations",
+      "summary": "Une entrée de question et réponse liée à une revue, utilisée pour capturer les réponses de diligence raisonnable, leur état de revue et les notes de suivi.",
+      "why_it_exists": "Elle permet à l'équipe de recueillir des réponses structurées dans une revue fournisseur concrète tout en réutilisant le plugin partagé questionnaires pour le stockage et la sémantique de réponse.",
+      "how_to_use": [
+        "Ajoutez un élément par question à suivre pendant la revue.",
+        "Mettez à jour la réponse, l'état de réponse et les notes de suivi au fur et à mesure de l'avancement.",
+        "Attribuez un titre de section lorsque vous voulez que des questions liées s'affichent ensemble pour les réviseurs internes et les fournisseurs externes.",
+        "Enregistrez des réponses stables dans la bibliothèque de questionnaires lorsque vous voulez que des revues similaires réutilisent la même réponse de base.",
+        "Utilisez l'action de revue dédiée pour marquer les réponses comme acceptées ou nécessitant un suivi et gardez les notes du réviseur sur l'élément lui-même.",
+        "Définissez un mode de pièce jointe et un profil de téléversement lorsque la question attend un fichier d'appui, et utilisez la promotion en preuve seulement lorsque la pièce jointe doit devenir une preuve gouvernée."
+      ],
+      "relations": [
+        {
+          "type": "belongs-to",
+          "target": "vendor-review",
+          "summary": "Les éléments de questionnaire sont stockés dans une revue fournisseur concrète."
+        },
+        {
+          "type": "may-come-from",
+          "target": "vendor-questionnaire-template",
+          "summary": "Certains éléments de question sont copiés depuis un modèle de questionnaire appliqué."
+        }
+      ],
+      "order": 259
+    },
+    {
+      "id": "vendor-brokered-collection-request",
+      "label": "Demande de collecte relayée fournisseur",
+      "category": "operations",
+      "summary": "Une demande de collecte suivie où un intermédiaire interne collecte hors plateforme les réponses ou le matériel d'appui du fournisseur sans ouvrir le portail externe.",
+      "why_it_exists": "Elle offre une voie intermédiaire contrôlée entre la complétion totalement interne et l'accès direct au portail externe.",
+      "how_to_use": [
+        "Créez une demande relayée lorsque le fournisseur doit répondre par e-mail, réunion, appel ou échange de documents plutôt que via le portail.",
+        "Affectez ou confirmez l'intermédiaire principal, capturez les instructions de collecte et mettez à jour l'état de la demande au fil de l'intake.",
+        "Utilisez les notes de l'intermédiaire pour expliquer ce qui a été collecté et ce qui doit encore être revu avant acceptation de la réponse."
+      ],
+      "relations": [
+        {
+          "type": "belongs-to",
+          "target": "vendor-review",
+          "summary": "Chaque demande relayée est limitée à une revue fournisseur concrète."
+        },
+        {
+          "type": "supports",
+          "target": "vendor-questionnaire-item",
+          "summary": "Les demandes relayées fournissent la voie de collecte hors plateforme pour les réponses de questionnaires liées à la revue."
+        }
+      ],
+      "order": 260
+    },
+    {
+      "id": "vendor-external-collaborator",
+      "label": "Collaborateur externe fournisseur",
+      "category": "operations",
+      "summary": "Une identité de participant externe limitée à la revue avec un état de cycle de vie explicite.",
+      "why_it_exists": "Elle permet à l'équipe de suspendre ou rétablir un collaborateur sur tous ses liens de revue sans supprimer les historiques.",
+      "how_to_use": [
+        "Utilisez un registre de collaborateur par adresse e-mail de contact dans chaque revue fournisseur.",
+        "Passez le cycle de vie en bloqué lorsque l'accès externe doit s'arrêter immédiatement sur tous les liens actuels.",
+        "Restaurez le cycle de vie à actif lorsque la collaboration peut reprendre sous la même identité limitée.",
+        "L'application de l'accès au portail se fait à l'exécution, donc le blocage est immédiat et ne dépend pas de CRON."
+      ],
+      "relations": [
+        {
+          "type": "belongs-to",
+          "target": "vendor-review",
+          "summary": "Chaque collaborateur est limité à une revue fournisseur concrète."
+        },
+        {
+          "type": "has-many",
+          "target": "vendor-external-review-link",
+          "summary": "Un collaborateur peut avoir plusieurs liens émis au fil du temps pour la même revue."
+        }
+      ],
+      "order": 261
+    },
+    {
+      "id": "vendor-external-review-link",
+      "label": "Lien externe de revue fournisseur",
+      "category": "operations",
+      "summary": "Un lien externe révocable et expirant, limité à une revue fournisseur.",
+      "why_it_exists": "Il permet une collaboration externe contrôlée sans exposer tout l'espace interne ni des registres non liés.",
+      "how_to_use": [
+        "Émettez un lien externe uniquement pour la revue concrète que vous voulez partager.",
+        "Choisissez si le destinataire peut répondre aux éléments de questionnaire, téléverser des preuves ou les deux.",
+        "Décidez si le lien reste manuel uniquement ou si l'espace doit envoyer l'invitation via le connecteur SMTP de l'organisation.",
+        "Révoquez le lien lorsque la fenêtre de collaboration est terminée ou que l'accès doit cesser immédiatement.",
+        "Utilisez l'état de cycle de vie du collaborateur pour bloquer ou rétablir tout accès au portail pour un contact externe."
+      ],
+      "relations": [
+        {
+          "type": "belongs-to",
+          "target": "vendor-external-collaborator",
+          "summary": "Chaque lien appartient à une identité de collaborateur externe pour le contrôle du cycle de vie."
+        },
+        {
+          "type": "belongs-to",
+          "target": "vendor-review",
+          "summary": "Chaque lien externe est limité à une revue fournisseur."
+        },
+        {
+          "type": "may-allow",
+          "target": "vendor-questionnaire-item",
+          "summary": "Un lien peut permettre au participant externe de soumettre des réponses pour des éléments de questionnaire liés à la revue."
+        },
+        {
+          "type": "may-allow",
+          "target": "artifact",
+          "summary": "Un lien peut permettre des téléversements de preuves externes dans l'espace de travail de revue."
+        },
+        {
+          "type": "may-use",
+          "target": "notification-mail-settings",
+          "summary": "La livraison de l'invitation par e-mail pour le lien utilise le connecteur d'envoi de l'organisation lorsqu'il est activé."
+        }
+      ],
+      "order": 262
+    }
+  ]
+}

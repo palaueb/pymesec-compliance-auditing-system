@@ -31,7 +31,7 @@ class ContinuityBcmPlugin implements PluginInterface
         $context->app()->make(WorkflowRegistryInterface::class)->register(new WorkflowDefinition(
             key: 'plugin.continuity-bcm.service-lifecycle',
             owner: 'continuity-bcm',
-            label: 'Continuity service lifecycle',
+            label: __('Continuity service lifecycle'),
             initialState: 'draft',
             states: ['draft', 'review', 'active', 'retired'],
             transitions: [
@@ -65,7 +65,7 @@ class ContinuityBcmPlugin implements PluginInterface
         $context->app()->make(WorkflowRegistryInterface::class)->register(new WorkflowDefinition(
             key: 'plugin.continuity-bcm.plan-lifecycle',
             owner: 'continuity-bcm',
-            label: 'Continuity recovery plan lifecycle',
+            label: __('Continuity recovery plan lifecycle'),
             initialState: 'draft',
             states: ['draft', 'review', 'active', 'retired'],
             transitions: [
@@ -109,12 +109,12 @@ class ContinuityBcmPlugin implements PluginInterface
                 if (is_string($screenContext->query['service_id'] ?? null) && ($screenContext->query['service_id'] ?? '') !== '') {
                     return [
                         new ToolbarAction(
-                            label: 'Back to services',
+                            label: __('Back to services'),
                             url: route('core.shell.index', [...$query, 'menu' => 'plugin.continuity-bcm.root']),
                             variant: 'secondary',
                         ),
                         new ToolbarAction(
-                            label: 'Recovery plans',
+                            label: __('Recovery plans'),
                             url: route('core.shell.index', [...$query, 'menu' => 'plugin.continuity-bcm.plans']),
                             variant: 'secondary',
                         ),
@@ -123,12 +123,12 @@ class ContinuityBcmPlugin implements PluginInterface
 
                 return [
                     new ToolbarAction(
-                        label: 'Add continuity service',
+                        label: __('Add continuity service'),
                         url: '#toggle-continuity-service-editor',
                         variant: 'primary',
                     ),
                     new ToolbarAction(
-                        label: 'Recovery plans',
+                        label: __('Recovery plans'),
                         url: route('core.shell.index', [...$query, 'menu' => 'plugin.continuity-bcm.plans']),
                         variant: 'secondary',
                     ),
@@ -145,21 +145,21 @@ class ContinuityBcmPlugin implements PluginInterface
             dataResolver: fn (ScreenRenderContext $screenContext): array => $this->plansData($context, $screenContext),
             toolbarResolver: function (ScreenRenderContext $screenContext): array {
                 $actions = [
-                    new ToolbarAction(
-                        label: 'Choose service',
-                        url: route('core.shell.index', [...$this->baseQuery($screenContext, false), 'menu' => 'plugin.continuity-bcm.root']).'#continuity-service-plans',
-                        variant: 'primary',
-                    ),
-                    new ToolbarAction(
-                        label: 'Continuity services',
-                        url: route('core.shell.index', [...$this->baseQuery($screenContext, false), 'menu' => 'plugin.continuity-bcm.root']),
-                        variant: 'secondary',
-                    ),
+                new ToolbarAction(
+                    label: __('Choose service'),
+                    url: route('core.shell.index', [...$this->baseQuery($screenContext, false), 'menu' => 'plugin.continuity-bcm.root']).'#continuity-service-plans',
+                    variant: 'primary',
+                ),
+                new ToolbarAction(
+                    label: __('Continuity services'),
+                    url: route('core.shell.index', [...$this->baseQuery($screenContext, false), 'menu' => 'plugin.continuity-bcm.root']),
+                    variant: 'secondary',
+                ),
                 ];
 
                 if (is_string($screenContext->query['plan_id'] ?? null) && ($screenContext->query['plan_id'] ?? '') !== '') {
                     array_unshift($actions, new ToolbarAction(
-                        label: 'Back to plans',
+                        label: __('Back to plans'),
                         url: route('core.shell.index', [...$this->baseQuery($screenContext, false), 'menu' => 'plugin.continuity-bcm.plans']),
                         variant: 'secondary',
                     ));
@@ -172,7 +172,7 @@ class ContinuityBcmPlugin implements PluginInterface
 
     public function boot(PluginContext $context): void
     {
-        //
+        app('translator')->addJsonPath($context->path('resources/lang'));
     }
 
     /**

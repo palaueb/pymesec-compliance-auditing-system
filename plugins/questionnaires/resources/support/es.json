@@ -1,0 +1,57 @@
+{
+  "guides": [
+    {
+      "id": "questionnaire-engine-overview",
+      "title": "Usa plantillas de cuestionario e ítems vinculados al sujeto como capa de recogida reutilizable",
+      "summary": "El plugin de cuestionarios es el dueño de la plantilla reutilizable y del modelo de respuestas que los plugins de dominio pueden aplicar a revisiones de proveedores y futuros flujos de recogida.",
+      "body": [
+        "Mantén la lógica específica de la revisión en el plugin de dominio, pero reutiliza plantillas de cuestionario, reglas de respuesta tipada, agrupación por secciones, ítems vinculados al sujeto, entradas de la biblioteca de respuestas, solicitudes intermediadas y semántica de adjuntos por ítem desde el plugin de cuestionarios.",
+        "Una plantilla define la estructura repetible del cuestionario. Los ítems vinculados al sujeto guardan las respuestas reales, los estados, las notas de seguimiento y cualquier expectativa de adjunto para un sujeto concreto del flujo de trabajo."
+      ],
+      "related_concepts": [
+        "questionnaire-template",
+        "questionnaire-subject-item",
+        "questionnaire-brokered-request"
+      ]
+    }
+  ],
+  "concepts": [
+    {
+      "id": "questionnaire-template",
+      "label": "Plantilla de cuestionario",
+      "summary": "Una definición reutilizable de cuestionario que puede aplicarse a uno o varios sujetos de flujo de trabajo.",
+      "when_to_use": [
+        "Usa plantillas para mantener coherentes las revisiones y recogidas recurrentes.",
+        "Usa los ítems de plantilla para definir el orden de las preguntas, los títulos de sección, el tipo de respuesta esperado y la orientación opcional."
+      ]
+    },
+    {
+      "id": "questionnaire-subject-item",
+      "label": "Ítem de cuestionario vinculado al sujeto",
+      "summary": "Un ítem concreto de cuestionario asociado a un sujeto real del flujo de trabajo, como una revisión de proveedor.",
+      "when_to_use": [
+        "Usa los ítems vinculados al sujeto para respuestas reales, estado de revisión y notas de seguimiento.",
+        "Un ítem de sujeto puede crearse manualmente o copiarse desde un ítem de plantilla de cuestionario.",
+        "Usa la configuración de adjuntos por ítem cuando una pregunta espere un documento de apoyo o un archivo de evidencia y quieras promoverlo después de forma controlada a evidencia gobernada."
+      ]
+    },
+    {
+      "id": "questionnaire-answer-library-entry",
+      "label": "Entrada de la biblioteca de respuestas",
+      "summary": "Un fragmento de respuesta reutilizable almacenado para una organización, una familia de sujetos y un tipo de respuesta.",
+      "when_to_use": [
+        "Guarda una respuesta cuando los revisores reutilizan una y otra vez la misma respuesta base en cuestionarios similares.",
+        "Usa las entradas de la biblioteca de respuestas como sugerencias para el revisor, no como verdad automática copiada sin revisión."
+      ]
+    },
+    {
+      "id": "questionnaire-brokered-request",
+      "label": "Solicitud intermediada de cuestionario",
+      "summary": "Un registro de recogida intermediada usado cuando un intermediario interno reúne respuestas de cuestionario fuera de la plataforma para un sujeto concreto del flujo de trabajo.",
+      "when_to_use": [
+        "Usa una solicitud intermediada cuando no quieras conceder acceso directo al portal pero sí necesites un paso de recogida rastreable.",
+        "Registra el contacto, el canal de recogida, el intermediario, el estado y las notas del intermediario para que la revisión posterior conserve una ruta de entrada trazable."
+      ]
+    }
+  ]
+}

@@ -1,0 +1,53 @@
+{
+  "guide": [
+    {
+      "id": "run-finding-follow-up",
+      "title": "Utilisez l'espace du constat pour gérer le suivi des problèmes, pas seulement leur enregistrement",
+      "summary": "Un constat devient utile lorsque les preuves, la responsabilité, le workflow et les actions de remédiation restent ensemble dans un même registre.",
+      "body": [
+        "Créez un constat pour un problème confirmé ou une non-conformité, pas pour une inquiétude purement hypothétique.",
+        "Utilisez des actions de remédiation pour découper le suivi en tâches concrètes avec responsables, dates et état.",
+        "Joignez des preuves et mettez à jour l'état du workflow jusqu'à ce que la clôture puisse être justifiée."
+      ],
+      "concept_ids": [
+        "finding",
+        "remediation-action"
+      ],
+      "order": 240
+    }
+  ],
+  "concepts": [
+    {
+      "id": "finding",
+      "label": "Constat",
+      "category": "operations",
+      "summary": "Un problème, un écart ou une non-conformité détecté qui nécessite un suivi et une clôture.",
+      "why_it_exists": "Les constats transforment une observation en travail comptabilisé. Ils gardent les problèmes visibles jusqu'à ce qu'une action soit prise et que la clôture soit justifiée.",
+      "how_to_use": [
+        "Créez un constat lorsque vous identifiez un problème réel, pas seulement un risque possible.",
+        "Suivez l'état de remédiation jusqu'à ce que le problème soit clôturé ou formellement accepté."
+      ],
+      "relations": [
+        { "type": "may-reference", "target": "asset", "summary": "Un constat peut pointer vers l'actif concerné." },
+        { "type": "may-reference", "target": "control", "summary": "Un constat peut décrire une lacune ou une défaillance de contrôle." },
+        { "type": "may-reference", "target": "risk", "summary": "Un constat peut soutenir ou affiner la vision du risque." }
+      ],
+      "order": 240
+    },
+    {
+      "id": "remediation-action",
+      "label": "Action de remédiation",
+      "category": "operations",
+      "summary": "Une tâche de suivi concrète créée sous un constat pour faire progresser le problème vers sa résolution.",
+      "why_it_exists": "Un constat nécessite souvent plus d'une étape. Les actions de remédiation rendent visibles la responsabilité, les délais et l'exécution.",
+      "how_to_use": [
+        "Créez une action par élément distinct de suivi.",
+        "Définissez l'état, l'échéance, le responsable et les notes afin que le constat puisse être revu opérationnellement."
+      ],
+      "relations": [
+        { "type": "belongs-to", "target": "finding", "summary": "Les actions restent associées au constat qu'elles remédient." }
+      ],
+      "order": 241
+    }
+  ]
+}

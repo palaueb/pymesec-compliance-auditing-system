@@ -1,0 +1,52 @@
+{
+  "guide": [
+    {
+      "id": "manage-privacy-records-through-data-flows",
+      "title": "Nutze den Arbeitsbereich für Datenflüsse, um operative Datenschutzdatensätze prüfbar zu halten",
+      "summary": "Der Flussdatensatz ist nicht nur ein Platzhalter im Diagramm. Er enthält Workflow-Status, Prüfzyklus, Verantwortliche, verknüpfte Datensätze und unterstützende Dateien.",
+      "body": [
+        "Erfasse Quelle, Ziel, Übertragungsart und die Zusammenfassung der Datenkategorie, damit die Bewegung verständlich ist.",
+        "Verknüpfe den Fluss mit dem relevanten Asset, Risiko oder der Verarbeitungstätigkeit, wenn das die operative Nachvollziehbarkeit verbessert.",
+        "Nutze Workflow-Status, Verantwortliche, Prüfdatum und hochgeladene Datensätze, um die Datenschutzprüfung aktuell zu halten."
+      ],
+      "concept_ids": [
+        "data-flow",
+        "processing-activity"
+      ],
+      "order": 260
+    }
+  ],
+  "concepts": [
+    {
+      "id": "data-flow",
+      "label": "Datenfluss",
+      "category": "privacy",
+      "summary": "Eine Beschreibung, wie Daten zwischen Personen, Systemen oder externen Parteien bewegt werden.",
+      "why_it_exists": "Datenflüsse machen Datenschutzarbeit konkret. Sie zeigen, woher personenbezogene oder sensible Daten kommen, wohin sie gehen und wer sie verarbeitet.",
+      "how_to_use": [
+        "Erfasse den Hauptfluss, die Quelle, das Ziel, die Übertragungsart und das Prüfdatum.",
+        "Halte den Fluss nach Möglichkeit mit der relevanten Verarbeitungstätigkeit oder anderen operativen Datensätzen verknüpft."
+      ],
+      "relations": [
+        { "type": "supports", "target": "processing-activity", "summary": "Ein Datenfluss erklärt oft einen Teil einer Verarbeitungstätigkeit." },
+        { "type": "may-link-to", "target": "risk", "summary": "Ein Fluss kann mit einem breiteren Datenschutz- oder Übertragungsrisiko verknüpft werden." }
+      ],
+      "order": 260
+    },
+    {
+      "id": "processing-activity",
+      "label": "Verarbeitungstätigkeit",
+      "category": "privacy",
+      "summary": "Ein Datensatz zu einer Geschäftstätigkeit, die Daten für einen definierten Zweck verarbeitet.",
+      "why_it_exists": "Verarbeitungstätigkeiten helfen der Organisation zu erklären, warum Daten verarbeitet werden, von wem und mit welchen Schutzmaßnahmen.",
+      "how_to_use": [
+        "Erfasse Zweck, Kontext und die wichtigsten Verarbeitungsdetails der Tätigkeit.",
+        "Nutze verknüpfte Datenflüsse, damit die Tätigkeit in der Praxis verständlich wird."
+      ],
+      "relations": [
+        { "type": "may-be-described-by", "target": "data-flow", "summary": "Datenflüsse können erklären, wie die Tätigkeit in der Praxis funktioniert." }
+      ],
+      "order": 261
+    }
+  ]
+}

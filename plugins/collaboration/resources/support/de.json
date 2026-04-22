@@ -1,0 +1,180 @@
+{
+  "guide": [
+    {
+      "id": "collaboration-primitives-overview",
+      "title": "Kollaborationsprimitive",
+      "summary": "Nutze Entwürfe, Kommentare und Folgeanfragen, um operative Gespräche und nächste Schritte innerhalb des Arbeitsbereichs beim betreffenden Subjekt zu halten.",
+      "body": [
+        "Geteilte Entwürfe halten unvollständige Kommentare oder Folgeanfragen für andere Benutzer sichtbar, bevor sie veröffentlicht werden.",
+        "Kommentare sind leichte Diskussionsnotizen, die an einen konkreten Datensatz wie eine Lieferantenprüfung gebunden sind.",
+        "Folgeanfragen machen den nächsten Schritt zu einem nachverfolgbaren Element mit Status, Priorität, Verantwortlichem und Fälligkeitsdatum.",
+        "Plugins können diese Primitive nutzen, ohne ihr eigenes lokales Kommentar- oder Aufgabenmodell zu erfinden."
+      ],
+      "concept_ids": [
+        "collaboration-external-collaboration-hardening",
+        "collaboration-external-collaborator",
+        "collaboration-external-link",
+        "collaboration-draft",
+        "collaboration-comment",
+        "collaboration-request"
+      ],
+      "order": 420
+    }
+  ],
+  "concepts": [
+    {
+      "id": "collaboration-external-collaboration-hardening",
+      "label": "Härtungsbasis für externe Zusammenarbeit",
+      "category": "security",
+      "summary": "Minimale Bereitstellungs- und Laufzeitkontrollen, die nötig sind, wenn Zusammenarbeitsportale im Internet exponiert werden.",
+      "why_it_exists": "Externe Zusammenarbeitsrouten verarbeiten sensible Prüfungsdaten und dürfen sich nicht auf Standardannahmen zum Hosting verlassen.",
+      "how_to_use": [
+        "Erzwinge ausschließlich HTTPS und schütze Bereitstellungsgeheimnisse.",
+        "Halte Upload-Kontrollen streng und blockiere ausführbare Nutzlasttypen.",
+        "Nutze Laufzeit-Lebenszyklussteuerung, um Beteiligte zu blockieren und Links ablaufen zu lassen.",
+        "Behandle Erinnerungs-, Digest- und Bereinigungsplaner als operative Verbesserungen, nicht als Zugriffssicherheitskontrollen."
+      ],
+      "relations": [
+        {
+          "type": "applies-to",
+          "target": "collaboration-external-collaborator",
+          "summary": "Lebenszykluskontrollen für Beteiligte sind Teil der Härtungsbasis."
+        },
+        {
+          "type": "applies-to",
+          "target": "collaboration-external-link",
+          "summary": "Ausgabe und Zugriff auf externe Links müssen der Härtungsbasis folgen."
+        }
+      ],
+      "order": 416
+    },
+    {
+      "id": "collaboration-external-collaborator",
+      "label": "Externer Kollaborationsbeteiligter",
+      "category": "operations",
+      "summary": "Eine objektgebundene externe Teilnehmeridentität, die ausgegebene Links bündelt und Lebenszykluskontrollen durchsetzt.",
+      "why_it_exists": "Sie trennt den Lebenszyklusstatus des Beteiligten von einzelnen Links, damit ein blockierter Beteiligter nicht über ein älteres Token weiter zugreifen kann.",
+      "how_to_use": [
+        "Verfolge einen Beteiligten pro Kontakt-E-Mail innerhalb des Geltungsbereichs des geteilten Objekts.",
+        "Wechsle den Lebenszyklusstatus zwischen aktiv und blockiert je nach Risiko oder Review-Entscheidung.",
+        "Nutze die Lebenszyklussteuerung für Beteiligte, wenn du Zugriff sperren musst, ohne historische Links und Audit-Einträge zu löschen.",
+        "Die Zugriffsdurchsetzung erfolgt zur Laufzeit bei jeder Portal-Anfrage und benötigt keine Hintergrund-CRON-Jobs."
+      ],
+      "relations": [
+        {
+          "type": "has-many",
+          "target": "collaboration-external-link",
+          "summary": "Ein Beteiligter kann im Laufe der Zeit mehrere ausgegebene Links für dasselbe begrenzte Objekt besitzen."
+        }
+      ],
+      "order": 417
+    },
+    {
+      "id": "collaboration-external-link",
+      "label": "Externer Kollaborationslink",
+      "category": "operations",
+      "summary": "Ein widerrufbarer, ablaufender Token-Link, der auf einen Subjektdatensatz begrenzt ist und einem Plugin-Komponentenbesitzer gehört.",
+      "why_it_exists": "Er bietet ein wiederverwendbares externes Zugriffsprimitive, das jedes Fach-Plugin konsumieren kann, ohne eigene Linktabellen zu bauen.",
+      "how_to_use": [
+        "Gib Links pro konkretem Subjektdatensatz und Eigentümerkomponente aus.",
+        "Begrenze Berechtigungen explizit, damit der externe Teilnehmer nur erlaubte Aktionen ausführen kann.",
+        "Verfolge Zustellung, Zugriff, Ablauf und Widerruf über ein gemeinsames Modell."
+      ],
+      "relations": [
+        {
+          "type": "belongs-to",
+          "target": "collaboration-external-collaborator",
+          "summary": "Jeder externe Link gehört zu einer begrenzten Beteiligtenidentität."
+        },
+        {
+          "type": "may-support",
+          "target": "collaboration-comment",
+          "summary": "Externe Links können Kommentar- oder Anfrageströme über fachspezifische Portale unterstützen."
+        },
+        {
+          "type": "may-support",
+          "target": "collaboration-request",
+          "summary": "Fach-Plugins können externe Linkteilnahme in Folgeanfrage-Workflows abbilden."
+        }
+      ],
+      "order": 418
+    },
+    {
+      "id": "collaboration-draft",
+      "label": "Kollaborationsentwurf",
+      "category": "operations",
+      "summary": "Ein gemeinsamer, noch unvollständiger Kollaborationsdatensatz, der später zu einem veröffentlichten Kommentar oder einer Folgeanfrage befördert werden kann.",
+      "why_it_exists": "Er erhält die Kontinuität, wenn ein Benutzer die Arbeit beginnt, aber ein anderer sie später im selben Arbeitsbereich fertigstellen oder veröffentlichen muss.",
+      "how_to_use": [
+        "Speichere einen Entwurf, wenn die Notiz oder Folgeanfrage noch nicht publikationsreif ist.",
+        "Nutze geteilte Entwürfe, um unvollständige Arbeit für mehrere Prüfer sichtbar zu halten, statt sie in persönlichen Notizen zu verstecken.",
+        "Befördere den Entwurf zu Kommentar oder Folgeanfrage, wenn der Inhalt bereit ist, Teil des operativen Datensatzes zu werden."
+      ],
+      "relations": [
+        {
+          "type": "may-be-promoted-to",
+          "target": "collaboration-comment",
+          "summary": "Ein Entwurf kann zu einem veröffentlichten Kommentar werden."
+        },
+        {
+          "type": "may-be-promoted-to",
+          "target": "collaboration-request",
+          "summary": "Ein Entwurf kann zu einer veröffentlichten Folgeanfrage werden."
+        }
+      ],
+      "order": 419
+    },
+    {
+      "id": "collaboration-comment",
+      "label": "Kollaborationskommentar",
+      "category": "operations",
+      "summary": "Eine leichte Diskussionsnotiz, die an einen konkreten Subjektdatensatz angehängt ist.",
+      "why_it_exists": "Er hält operativen Kontext nahe am Datensatz, statt kurze Diskussionspunkte über E-Mail oder Chat zu verteilen.",
+      "how_to_use": [
+        "Füge Kommentare für Klarstellungen, Prüfernotizen, Entscheidungsbegründungen oder kleine Koordinationsupdates hinzu.",
+        "Erwähne funktionale Akteure, wenn die Notiz einen expliziten Hinweis für die mit diesen Akteuren verknüpften Principals schaffen soll.",
+        "Nutze Kommentare für Diskussion und Kontext, nicht für strukturiertes Folgearbeiten mit Verantwortlichem und Fälligkeitsdatum."
+      ],
+      "relations": [
+        {
+          "type": "may-support",
+          "target": "collaboration-request",
+          "summary": "Kommentare können erklären, warum eine Folgeanfrage erstellt oder aktualisiert wurde."
+        },
+        {
+          "type": "may-come-from",
+          "target": "collaboration-draft",
+          "summary": "Einige Kommentare beginnen als geteilte Entwürfe, bevor sie veröffentlicht werden."
+        }
+      ],
+      "order": 420
+    },
+    {
+      "id": "collaboration-request",
+      "label": "Kollaborationsfolgeanfrage",
+      "category": "operations",
+      "summary": "Ein nachverfolgbares Folgeelement an einem konkreten Datensatz mit Priorität, Verantwortlichem, Status und optionalem Fälligkeitsdatum.",
+      "why_it_exists": "Es macht aus der Plattform mehr als reine Aufzeichnung, indem explizite operative Nachverfolgung entsteht, ohne dass jedes Plugin sein eigenes Aufgabenmodell baut.",
+      "how_to_use": [
+        "Erstelle eine Anfrage, wenn der nächste Schritt Verantwortlichkeit oder Fälligkeit braucht.",
+        "Aktualisiere den Status, wenn die Arbeit von offen zu in Arbeit, wartend, erledigt oder abgebrochen wechselt.",
+        "Nutze die Übergabephase, um zu zeigen, ob die Anfrage zu Review, Remediation, Freigabe oder dem geschlossenen Folgekreis gehört.",
+        "Nutze erwähnte Akteure, wenn mehrere gesteuerte Rollen ein sichtbares Signal erhalten sollen, auch wenn nur ein Akteur die Anfrage verantwortet.",
+        "Weise die Anfrage einem funktionalen Akteur zu, wenn Verantwortlichkeit an eine gesteuerte Rolle und nicht an einen einzelnen Login gebunden bleiben soll."
+      ],
+      "relations": [
+        {
+          "type": "may-be-explained-by",
+          "target": "collaboration-comment",
+          "summary": "Kommentare können die Begründung oder den Kontext einer Anfrage festhalten."
+        },
+        {
+          "type": "may-come-from",
+          "target": "collaboration-draft",
+          "summary": "Einige Folgeanfragen beginnen als geteilte Entwürfe, bevor sie veröffentlicht werden."
+        }
+      ],
+      "order": 421
+    }
+  ]
+}

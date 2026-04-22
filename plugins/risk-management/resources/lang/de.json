@@ -1,0 +1,8 @@
+{
+  "plugin.risk-management.nav.root": "Risiken",
+  "plugin.risk-management.nav.board": "Board",
+  "plugin.risk-management.screen.register.title": "Risikoregister",
+  "plugin.risk-management.screen.register.subtitle": "Risikoregister verknüpft mit Assets, Kontrollen, Verantwortlichen, Workflow und Nachweisen.",
+  "plugin.risk-management.screen.board.title": "Risikoboard",
+  "plugin.risk-management.screen.board.subtitle": "Lebenszyklus- und Nachweisboard für behandelte und akzeptierte Risiken."
+}

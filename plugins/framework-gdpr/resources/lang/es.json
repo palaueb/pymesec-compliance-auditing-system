@@ -1,0 +1,22 @@
+{
+  "plugin.framework-gdpr.framework.name": "Paquete marco RGPD",
+  "plugin.framework-gdpr.framework.description": "Paquete marco inicial para operaciones RGPD / LOPDGDD. Prepara artículos clave sobre principios, registros, seguridad, notificación de brechas y EIPD.",
+
+  "plugin.framework-gdpr.elements.gdpr-domain-principles.title": "Principios del tratamiento",
+  "plugin.framework-gdpr.elements.gdpr-domain-principles.description": "Principios básicos que rigen un tratamiento lícito y responsable.",
+  "plugin.framework-gdpr.elements.gdpr-domain-governance.title": "Gobernanza y registros",
+  "plugin.framework-gdpr.elements.gdpr-domain-governance.description": "Gobernanza operativa, registros de actividades de tratamiento y obligaciones de seguridad.",
+  "plugin.framework-gdpr.elements.gdpr-domain-incidents.title": "Gestión de incidentes y notificación",
+  "plugin.framework-gdpr.elements.gdpr-domain-incidents.description": "Obligaciones de notificación y respuesta ante brechas de datos personales.",
+
+  "plugin.framework-gdpr.elements.gdpr-article-5.title": "Principios relativos al tratamiento de datos personales",
+  "plugin.framework-gdpr.elements.gdpr-article-5.description": "Los datos personales deben tratarse de forma lícita, leal, transparente, con fines determinados y con minimización de datos, integridad y responsabilidad.",
+  "plugin.framework-gdpr.elements.gdpr-article-30.title": "Registros de actividades de tratamiento",
+  "plugin.framework-gdpr.elements.gdpr-article-30.description": "Los responsables y encargados mantienen registros de las actividades de tratamiento y las evidencias de gobernanza asociadas.",
+  "plugin.framework-gdpr.elements.gdpr-article-32.title": "Seguridad del tratamiento",
+  "plugin.framework-gdpr.elements.gdpr-article-32.description": "Aplica medidas técnicas y organizativas adecuadas para garantizar un nivel de seguridad acorde al riesgo.",
+  "plugin.framework-gdpr.elements.gdpr-article-33.title": "Notificación de una brecha de datos personales a la autoridad de control",
+  "plugin.framework-gdpr.elements.gdpr-article-33.description": "Notifica sin dilación indebida a la autoridad de control cuando se produzcan brechas de datos personales notificables.",
+  "plugin.framework-gdpr.elements.gdpr-article-35.title": "Evaluación de impacto relativa a la protección de datos",
+  "plugin.framework-gdpr.elements.gdpr-article-35.description": "Realiza una EIPD cuando el tratamiento pueda implicar un alto riesgo para los derechos y libertades."
+}

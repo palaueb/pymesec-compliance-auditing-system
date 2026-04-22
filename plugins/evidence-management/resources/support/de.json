@@ -1,0 +1,35 @@
+{
+  "guide": [
+    {
+      "id": "evidence-library-overview",
+      "title": "Nachweisbibliothek",
+      "summary": "Nutze die Nachweisbibliothek, um Beweismaterial an einem gesteuerten Ort zu halten und es in Assessments, Kontrollen, Befunden und anderen Arbeitsbereichen wiederzuverwenden.",
+      "body": [
+        "Ein Nachweisdatensatz verpackt eine Datei oder ein vorhandenes Artefakt mit Geschäftsmetadaten wie Status, Gültigkeit, Prüfdatum und verknüpften Datensätzen.",
+        "Ein einzelner Nachweisdatensatz kann mehr als eine Kontrolle, Bewertung oder einen Befund unterstützen, ohne dieselbe Datei erneut hochzuladen."
+      ],
+      "order": 240
+    }
+  ],
+  "concepts": [
+    {
+      "id": "evidence-record",
+      "label": "Nachweisdatensatz",
+      "summary": "Ein gesteuertes Beweisobjekt mit Status, Daten, Validierungshinweisen und Verknüpfungen zu zugehörigen Datensätzen.",
+      "why_it_exists": "Er macht aus einer Rohdatei etwas, das das Compliance-Team prüfen, wiederverwenden und über die Zeit verfolgen kann.",
+      "how_to_use_it": [
+        "Erstelle einen Nachweisdatensatz aus einer neuen Datei oder befördere ein vorhandenes Artefakt.",
+        "Verknüpfe ihn mit den Kontrollen, Bewertungen, Befunden, Risiken oder Plänen, die darauf angewiesen sind.",
+        "Halte den Validierungsstatus und die Gültigkeitsdaten aktuell."
+      ],
+      "related_to": [
+        "assessment-campaign",
+        "control",
+        "finding",
+        "risk"
+      ],
+      "area": "app",
+      "order": 240
+    }
+  ]
+}

@@ -1,0 +1,240 @@
+{
+  "guide": [
+    {
+      "id": "start-with-organization",
+      "title": "Commencez par l'organisation",
+      "summary": "Une organisation est la principale frontière de travail de l'application.",
+      "body": [
+        "Créez ou choisissez d'abord l'organisation. Presque tous les registres opérationnels de la plateforme appartiennent à une organisation.",
+        "Si votre entreprise a besoin d'espaces séparés pour des filiales, des entités juridiques ou des unités métier indépendantes, modélisez ces frontières comme des organisations distinctes."
+      ],
+      "concept_ids": ["organization", "scope"],
+      "order": 10
+    },
+    {
+      "id": "understand-access",
+      "title": "Définissez ensuite qui peut y travailler",
+      "summary": "L'accès repose sur les identités principales, les adhésions, les rôles et les périmètres.",
+      "body": [
+        "Une personne se connecte en tant que principal. Ce principal reçoit une ou plusieurs adhésions dans une organisation.",
+        "Les rôles décrivent ce que la personne peut faire. Les périmètres réduisent l'endroit où elle peut le faire."
+      ],
+      "concept_ids": ["principal", "membership", "role", "scope"],
+      "order": 20
+    },
+    {
+      "id": "work-with-records",
+      "title": "Le travail opérationnel se fait dans les registres",
+      "summary": "Les actifs, contrôles, risques, constats, registres de confidentialité et plans de continuité sont les registres quotidiens de l'espace de travail.",
+      "body": [
+        "Utilisez les plugins opérationnels pour garder l'état courant de l'organisation visible et auditable.",
+        "Joignez des preuves quand vous avez besoin de démonstration, et appuyez-vous sur la piste d'audit quand vous avez besoin de traçabilité."
+      ],
+      "concept_ids": ["asset", "control", "risk", "finding", "artifact", "audit-trail"],
+      "order": 30
+    },
+    {
+      "id": "api-and-openapi",
+      "title": "Intégration API et OpenAPI",
+      "summary": "Les domaines opérationnels sont exposés via des contrats d'API REST et un document OpenAPI généré.",
+      "body": [
+        "Utilisez /openapi.json comme contrat canonique lisible par machine pour les opérations API actuellement disponibles dans la plateforme, y compris les actifs, risques, contrôles, évaluations, constats, actions de remédiation et revues d'évaluation.",
+        "Pour les champs gouvernés, récupérez toujours les options autorisées depuis les endpoints de recherche avant de soumettre des opérations d'écriture.",
+        "Les endpoints d'écriture publient des contrats de requête à partir des métadonnées de route et des règles de validation FormRequest, afin que les intégrations puissent s'appuyer sur une seule source de vérité.",
+        "Lorsqu'un champ d'écriture référence un autre registre (par exemple propriétaire, contrôle, risque, cadre), inspectez les métadonnées de recherche de l'opération et interrogez l'endpoint référencé avant d'envoyer la charge utile."
+      ],
+      "concept_ids": ["audit-trail", "api-access-token"],
+      "order": 40
+    },
+    {
+      "id": "official-mcp-server",
+      "title": "Utilisez le serveur MCP officiel",
+      "summary": "Les agents peuvent opérer via la surface MCP officielle tout en gardant les frontières de sécurité de l'API.",
+      "body": [
+        "Lancez le broker officiel avec le binaire Go `pymesec-mcp` et authentifiez-vous avec un token API limité (`PYMESEC_API_TOKEN` ou argument de token par outil).",
+        "Les outils MCP font passer chaque opération par `/api/v1`, donc la multitenance, les vérifications de permissions, les règles d'accès au niveau objet et la journalisation d'audit API restent appliquées.",
+        "Le binaire peut charger automatiquement `/openapi/v1.json` pour résoudre les appels `operation_id`, et vous devez toujours résoudre les recherches gouvernées avant les opérations d'écriture."
+      ],
+      "concept_ids": ["mcp-server", "api-access-token", "audit-trail"],
+      "order": 45
+    },
+    {
+      "id": "api-token-governance",
+      "title": "Gérez les tokens API depuis l'administration",
+      "summary": "Émettez des tokens d'intégration par utilisateur et révoquez-les vite lorsque le risque change.",
+      "body": [
+        "Utilisez Administration > Tokens API pour émettre des identifiants liés à un principal unique.",
+        "Utilisez rotate quand vous avez besoin d'un nouveau secret sans changer la responsabilité ou les frontières de périmètre ; l'ancien secret devient immédiatement invalide.",
+        "Définissez des frontières optionnelles d'organisation et de périmètre pour réduire le rayon d'impact des intégrations externes.",
+        "Les capacités du token sont appliquées par requête et ne peuvent pas dépasser les permissions effectives du propriétaire dans le contexte choisi.",
+        "Copiez les secrets du token immédiatement après émission car la valeur en clair n'est affichée qu'une seule fois."
+      ],
+      "concept_ids": ["api-access-token", "principal", "audit-trail"],
+      "order": 50
+    }
+  ],
+  "concepts": [
+    {
+      "id": "organization",
+      "label": "Organisation",
+      "category": "foundation",
+      "summary": "La principale frontière d'espace de travail pour les registres, l'accès et le contexte opérationnel.",
+      "why_it_exists": "Les organisations séparent les données, les permissions et le contexte afin que des entreprises différentes ou de grandes frontières métier ne mélangent pas leurs registres par erreur.",
+      "how_to_use": [
+        "Créez une organisation pour chaque frontière métier qui doit être gérée séparément.",
+        "Choisissez l'organisation avant de créer ou de revoir des registres opérationnels."
+      ],
+      "relations": [
+        { "type": "contains", "target": "scope", "summary": "Les périmètres vivent à l'intérieur d'une organisation." },
+        { "type": "contains", "target": "membership", "summary": "Les adhésions placent les personnes dans une organisation." },
+        { "type": "contains", "target": "asset", "summary": "Les registres opérationnels appartiennent normalement à une organisation." }
+      ],
+      "order": 10
+    },
+    {
+      "id": "scope",
+      "label": "Périmètre",
+      "category": "foundation",
+      "summary": "Une zone de travail plus étroite à l'intérieur d'une organisation, comme un département, un domaine ou une frontière régionale.",
+      "why_it_exists": "Les périmètres vous permettent de limiter l'accès et de concentrer le travail sans créer une organisation complètement séparée.",
+      "how_to_use": [
+        "Créez des périmètres lorsqu'une organisation a besoin de plusieurs espaces de travail bornés.",
+        "Attribuez l'accès au périmètre uniquement aux adhésions qui doivent voir ce sous-ensemble de registres."
+      ],
+      "relations": [
+        { "type": "belongs-to", "target": "organization", "summary": "Un périmètre n'existe que dans une organisation." },
+        { "type": "limits", "target": "membership", "summary": "Les adhésions peuvent être restreintes à un ou plusieurs périmètres." }
+      ],
+      "order": 20
+    },
+    {
+      "id": "principal",
+      "label": "Principal",
+      "category": "access",
+      "summary": "L'identité d'accès qui se connecte et reçoit des permissions.",
+      "why_it_exists": "La plateforme a besoin d'un modèle d'identité d'accès cohérent, que la personne vienne d'un compte local ou d'un annuaire externe.",
+      "how_to_use": [
+        "Considérez le principal comme l'identité connectée, pas comme une responsabilité métier.",
+        "Accordez l'accès à l'organisation via les adhésions, pas en attachant tout directement au principal."
+      ],
+      "relations": [
+        { "type": "receives", "target": "membership", "summary": "Les adhésions relient un principal à une organisation." },
+        { "type": "may-link-to", "target": "functional-actor", "summary": "Un principal peut être lié à un acteur fonctionnel, mais ce n'est pas la même chose." }
+      ],
+      "order": 30
+    },
+    {
+      "id": "membership",
+      "label": "Adhésion",
+      "category": "access",
+      "summary": "La place d'un principal dans une organisation, avec des rôles et des périmètres optionnels.",
+      "why_it_exists": "L'adhésion rend l'accès opérationnel. Elle répond à l'endroit où un principal appartient et aux responsabilités actives dans cet espace de travail.",
+      "how_to_use": [
+        "Créez une adhésion lorsqu'une personne a besoin d'accéder à une organisation.",
+        "Attachez des rôles opérationnels et des restrictions de périmètre à l'adhésion."
+      ],
+      "relations": [
+        { "type": "belongs-to", "target": "organization", "summary": "Chaque adhésion appartient à une organisation." },
+        { "type": "assigned-to", "target": "principal", "summary": "Une adhésion est toujours pour un principal." },
+        { "type": "carries", "target": "role", "summary": "Les rôles sont généralement accordés via des adhésions." }
+      ],
+      "order": 40
+    },
+    {
+      "id": "role",
+      "label": "Rôle",
+      "category": "access",
+      "summary": "Un ensemble nommé de permissions utilisé pour simplifier la gestion des accès.",
+      "why_it_exists": "Les rôles permettent aux administrateurs d'accorder l'accès en paquets compréhensibles au lieu de permissions individuelles une par une.",
+      "how_to_use": [
+        "Utilisez les rôles de plateforme pour l'administration et les rôles opérationnels pour le travail quotidien.",
+        "Attribuez les rôles opérationnels via les adhésions afin que l'accès reste lié à l'organisation."
+      ],
+      "relations": [
+        { "type": "granted-through", "target": "membership", "summary": "Les rôles opérationnels sont normalement accordés via des adhésions." }
+      ],
+      "order": 50
+    },
+    {
+      "id": "functional-actor",
+      "label": "Acteur fonctionnel",
+      "category": "governance",
+      "summary": "Une identité métier ou de gouvernance comme CISO, DPO, propriétaire de service ou équipe.",
+      "why_it_exists": "La responsabilité métier n'est pas la même chose que l'accès de connexion. Les acteurs fonctionnels décrivent la responsabilité, la responsabilité d'exécution et les rôles de gouvernance.",
+      "how_to_use": [
+        "Utilisez les acteurs fonctionnels pour exprimer la responsabilité ou la propriété dans le modèle de domaine.",
+        "Reliez-les aux identités principales uniquement lorsque vous devez connecter la responsabilité métier à de vraies identités d'accès."
+      ],
+      "relations": [
+        { "type": "may-link-to", "target": "principal", "summary": "Un acteur fonctionnel peut être lié à une ou plusieurs identités principales par politique." }
+      ],
+      "order": 60
+    },
+    {
+      "id": "artifact",
+      "label": "Artefact",
+      "category": "evidence",
+      "summary": "Un fichier de preuve ou une pièce jointe stockée liée à un registre opérationnel.",
+      "why_it_exists": "Le travail de conformité a souvent besoin de preuves. Les artefacts contiennent des documents, exports, captures d'écran ou autres preuves liées à un registre métier.",
+      "how_to_use": [
+        "Joignez des artefacts au registre pertinent lorsque vous avez besoin de preuves traçables.",
+        "Utilisez des libellés cohérents pour que les réviseurs comprennent pourquoi chaque pièce jointe existe."
+      ],
+      "relations": [
+        { "type": "supports", "target": "control", "summary": "Les contrôles ont souvent besoin de preuves." },
+        { "type": "supports", "target": "risk", "summary": "Les risques peuvent inclure des analyses ou des preuves de soutien." },
+        { "type": "supports", "target": "finding", "summary": "Les constats nécessitent souvent une preuve du problème ou de la remédiation." }
+      ],
+      "order": 70
+    },
+    {
+      "id": "audit-trail",
+      "label": "Piste d'audit",
+      "category": "governance",
+      "summary": "L'historique enregistré des actions sensibles et des changements dans toute la plateforme.",
+      "why_it_exists": "La piste d'audit fournit la responsabilité, l'aide à l'investigation et la preuve de qui a changé quoi et quand.",
+      "how_to_use": [
+        "Utilisez l'écran d'audit lorsque vous devez revoir des changements importants ou enquêter sur une activité.",
+        "Considérez la piste d'audit comme de la traçabilité, pas comme un substitut à une bonne documentation de processus."
+      ],
+      "relations": [
+        { "type": "records-changes-to", "target": "membership", "summary": "Les changements d'accès doivent être traçables." },
+        { "type": "records-changes-to", "target": "asset", "summary": "Les changements opérationnels doivent être observables." },
+        { "type": "records-changes-to", "target": "risk", "summary": "Les décisions et transitions de risque doivent pouvoir être auditées." }
+      ],
+      "order": 80
+    },
+    {
+      "id": "api-access-token",
+      "label": "Jeton d'accès API",
+      "category": "access",
+      "summary": "Un jeton borné utilisé pour authentifier des appels REST API en dehors des sessions web interactives.",
+      "why_it_exists": "L'automatisation et les intégrations externes ont besoin d'un accès API authentifié sans session navigateur, tout en gardant la traçabilité et les contrôles de révocation.",
+      "how_to_use": [
+        "Émettez des jetons avec un principal propriétaire explicite et des frontières optionnelles d'organisation ou de périmètre.",
+        "Révoquez les jetons immédiatement lorsqu'ils ne sont plus nécessaires et surveillez l'activité des requêtes dans la piste d'audit."
+      ],
+      "relations": [
+        { "type": "used-by", "target": "principal", "summary": "Chaque jeton appartient à une seule identité principale." },
+        { "type": "recorded-in", "target": "audit-trail", "summary": "Les opérations API doivent rester traçables dans des journaux en ajout seul." }
+      ],
+      "order": 90
+    },
+    {
+      "id": "mcp-server",
+      "label": "Serveur MCP",
+      "category": "integration",
+      "summary": "Un serveur JSON-RPC sur stdio qui expose les workflows API de PymeSec aux outils d'agents.",
+      "why_it_exists": "Les runtimes d'agents ont besoin d'un pont stable qui préserve exactement le modèle de sécurité et de multitenance de l'API au lieu de le contourner avec un accès direct à la base de données.",
+      "how_to_use": [
+        "Lancez le binaire compilé `pymesec-mcp` et fournissez un token API avec le moindre privilège.",
+        "Utilisez les outils MCP pour appeler directement des opérations `/api/v1` ou par `operation_id`, puis suivez le schéma de lecture préalable pour les écritures sur les champs gouvernés et relationnels."
+      ],
+      "relations": [
+        { "type": "proxies-to", "target": "api-access-token", "summary": "L'authentification et les contraintes de périmètre sont appliquées via le contexte du token API." },
+        { "type": "records-in", "target": "audit-trail", "summary": "Les opérations restent visibles dans la piste d'audit partagée de l'API." }
+      ],
+      "order": 95
+    }
+  ]
+}

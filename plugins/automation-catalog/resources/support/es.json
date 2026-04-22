@@ -1,0 +1,174 @@
+{
+  "guide": [
+    {
+      "id": "automation-catalog-overview",
+      "title": "Catálogo de automatización",
+      "summary": "Usa el catálogo de automatización para registrar metadatos de paquetes, controlar el estado de instalación y activación, seguir la salud operativa y mapear resultados a evidencias y acciones de flujo de trabajo.",
+      "body": [
+        "Un paquete de automatización es una unidad de despliegue gobernada para conectores, trabajos de recopilación de evidencias o tareas operativas de cumplimiento.",
+        "La sección superior del catálogo muestra solo los paquetes instalados, para que los operadores gestionen las automatizaciones activas sin ruido de descubrimiento.",
+        "Los metadatos de titularidad y procedencia hacen que cada paquete sea trazable hasta un principal responsable y una fuente.",
+        "Los mapeos de salida permiten dirigir los resultados de automatización a registros de actualización de evidencias o a transiciones de flujo de trabajo usando objetivos explícitos o el modo de resolución por ámbito para activo/riesgo.",
+        "La capa de ejecución admite ejecuciones manuales desde el detalle del paquete y ejecuciones programadas vía CLI/CRON, con historial persistido por paquete.",
+        "El ciclo de vida del paquete, el repositorio, la ejecución y las acciones de mapeo de salida también están expuestos por API REST bajo /api/v1/automation-catalog y se publican en openapi.json.",
+        "Los resultados por objetivo se persisten en cada ejecución en tiempo de ejecución para que los resultados puedan auditarse a nivel de objeto.",
+        "Los mapeos pueden propagar opcionalmente la postura de estado en tiempo de ejecución hacia objetivos de activo/riesgo mediante una puerta de política.",
+        "Cuando la propagación de postura está habilitada, las actualizaciones de postura de activo/riesgo mantienen referencias de procedencia a la última ejecución de automatización y al último resultado de comprobación.",
+        "Cada mapeo puede limitarse por modo de ejecución para que funcione en tiempo de ejecución, aplicación manual o ambos.",
+        "Los mapeos también pueden aplicar una política de fallo para generar hallazgos deduplicados, con creación opcional de acciones de remediación, cuando fallan las comprobaciones en tiempo de ejecución.",
+        "La política de evidencias puede configurarse como siempre, en fallo o en cambio para controlar la rotación de evidencias en tiempo de ejecución.",
+        "Los repositorios externos de paquetes pueden registrarse con nivel de confianza y clave pública para validar los índices del repositorio antes de ingerirlos.",
+        "Cuando no hay repositorio configurado, la página abre una vista de incorporación con activación del repositorio oficial y registro de repositorios personalizados.",
+        "Abrir un paquete entra en una vista de detalle enfocada y oculta los paneles del catálogo padre hasta que vuelvas a la lista."
+      ],
+      "concept_ids": [
+        "automation-pack",
+        "automation-pack-lifecycle",
+        "automation-pack-health",
+        "automation-pack-runtime",
+        "automation-output-mapping",
+        "automation-package-repository"
+      ],
+      "order": 430
+    }
+  ],
+  "concepts": [
+    {
+      "id": "automation-pack",
+      "label": "Paquete de automatización",
+      "category": "operations",
+      "summary": "Una unidad de automatización catalogada e identificada por clave de paquete, versión, origen, tipo de proveedor y metadatos de titularidad.",
+      "why_it_exists": "Establece un modelo de objeto reutilizable para que las funciones de automatización puedan gestionarse como entidades de producto de primera clase en lugar de scripts implícitos.",
+      "how_to_use": [
+        "Registra paquetes con claves estables y nombres significativos.",
+        "Guarda el origen y la procedencia para dejar explícita la cadena de suministro.",
+        "Asigna titularidad para que la responsabilidad operativa quede clara."
+      ],
+      "relations": [
+        {
+          "type": "has-lifecycle",
+          "target": "automation-pack-lifecycle",
+          "summary": "Cada paquete tiene un estado de ciclo de vida gestionado."
+        },
+        {
+          "type": "has-health",
+          "target": "automation-pack-health",
+          "summary": "Cada paquete tiene una postura de salud en tiempo de ejecución."
+        }
+      ],
+      "order": 431
+    },
+    {
+      "id": "automation-pack-lifecycle",
+      "label": "Ciclo de vida del paquete de automatización",
+      "category": "operations",
+      "summary": "El estado de ciclo de vida indica si un paquete está descubierto, instalado, activado o desactivado.",
+      "why_it_exists": "Permite a los operadores controlar la superficie activa de automatización en lugar de cargar todos los paquetes disponibles.",
+      "how_to_use": [
+        "Instala los paquetes antes de activarlos en flujos de trabajo de producción.",
+        "Activa solo los paquetes necesarios para el modelo operativo actual.",
+        "Desactiva los paquetes que no se necesiten en ese momento.",
+        "Usa desinstalar para quitar un registro de paquete del catálogo local cuando ya no quieras conservarlo.",
+        "Usa la tabla de catálogo externa para instalar versiones descubiertas antes de que aparezcan en el catálogo de paquetes instalados."
+      ],
+      "order": 432
+    },
+    {
+      "id": "automation-pack-health",
+      "label": "Salud del paquete de automatización",
+      "category": "operations",
+      "summary": "La salud operativa sigue la última ejecución, el último éxito o fallo y el estado de salud actual.",
+      "why_it_exists": "Da a los operadores una visibilidad inmediata de si la automatización instalada está sana, degradada o fallando.",
+      "how_to_use": [
+        "Sigue los estados desconocido, sano, degradado y en fallo.",
+        "Mantén actualizadas las marcas de tiempo de la última ejecución y los motivos del fallo.",
+        "Usa la postura de salud para priorizar decisiones de remediación y desactivación."
+      ],
+      "order": 433
+    },
+    {
+      "id": "automation-pack-runtime",
+      "label": "Ejecución del paquete de automatización",
+      "category": "operations",
+      "summary": "La capa de ejecución manual y programada que ejecuta mapeos activos para paquetes instalados y activos, y almacena el historial.",
+      "why_it_exists": "Lleva el catálogo de un control de ciclo de vida estático a operaciones reales en tiempo de ejecución con resultados trazables.",
+      "how_to_use": [
+        "Ejecuta un paquete manualmente desde el detalle cuando necesites ejecución inmediata.",
+        "Configura una política de programación por paquete (cron + zona horaria) cuando la ejecución deba ser recurrente.",
+        "Ejecuta lotes programados con el comando CLI de automatización desde CRON.",
+        "Usa --respect_schedule=1 en la CLI de automatización cuando CRON solo deba ejecutar los paquetes que estén vencidos por su programación.",
+        "Revisa el historial de ejecuciones para inspeccionar el modo de disparo, el estado, la duración y los contadores de mapeos.",
+        "Los mapeos de evidencias en tiempo de ejecución generan ahora cargas útiles mediante el contrato del ejecutor y las promocionan automáticamente a registros de evidencia gobernados.",
+        "Los mapeos por resolución de ámbito se ejecutan desde el runtime del paquete (ejecutar ahora o ejecución programada), no desde una aplicación puntual manual.",
+        "Usa los últimos resultados de comprobación en el detalle del paquete para revisar el estado y el resultado por objetivo en cada ejecución.",
+        "Cada resultado de comprobación mantiene ahora IDs de trazabilidad directos para artefacto de evidencia, registro de evidencia, hallazgo y acción de remediación cuando esos objetos se producen.",
+        "Los mapeos pueden aplicar guardarraíles de ejecución (máximo de objetivos, tamaño de carga) y política de reintentos (intentos, backoff) para una ejecución más segura."
+      ],
+      "relations": [
+        {
+          "type": "updates",
+          "target": "automation-pack-health",
+          "summary": "Cada ejecución actualiza la salud del paquete y la postura de última ejecución."
+        },
+        {
+          "type": "executes",
+          "target": "automation-output-mapping",
+          "summary": "El runtime ejecuta los mapeos activos y registra el estado de éxito, fallo o omitido."
+        }
+      ],
+      "order": 434
+    },
+    {
+      "id": "automation-output-mapping",
+      "label": "Mapeo de salida de automatización",
+      "category": "operations",
+      "summary": "Una regla ligada a un paquete que mapea la salida de automatización a una actualización de evidencia o a la ejecución de una transición de flujo de trabajo.",
+      "why_it_exists": "Convierte la salida bruta de automatización en efectos operativos gobernados sin exigir procedimientos manuales ad hoc de copiar y pegar.",
+      "how_to_use": [
+        "Define un mapeo por intención operativa, como actualización de evidencias para un control o transición para un sujeto de flujo de trabajo.",
+        "Usa el modo de vinculación explícita para un único ID de objeto objetivo fijo.",
+        "Usa el modo de vinculación por ámbito para selectores de activo/riesgo (ID de ámbito más etiquetas opcionales).",
+        "Activa la política de propagación de postura solo cuando quieras que el estado en tiempo de ejecución actualice los campos de postura de automatización de activo/riesgo.",
+        "Usa el modo de ejecución para restringir un mapeo a solo tiempo de ejecución, solo aplicación manual o ambos.",
+        "Usa la política de fallo generar-hallazgo cuando los fallos deban abrir un hallazgo sin triaje manual.",
+        "Usa la política de fallo generar-hallazgo-y-acción cuando los fallos deban abrir tanto un hallazgo como una acción de remediación planificada.",
+        "Usa los últimos resultados de comprobación para abrir directamente evidencias, hallazgos y acciones de remediación generados cuando las políticas de tiempo de ejecución los creen.",
+        "Usa la política de evidencias en-cambio para evitar subir artefactos idénticos cuando la huella de la carga no cambie.",
+        "Usa la política de reintentos del runtime para reintentar entregas fallidas y registrar los reintentos en los diagnósticos del resultado de comprobación.",
+        "Usa los guardarraíles de runtime para limitar el número de objetivos resueltos y el tamaño de la carga antes de la entrega.",
+        "Usa los mapeos de evidencia para subir o referenciar artefactos de salida y promocionarlos a registros de evidencia gobernados.",
+        "Usa los mapeos de flujo de trabajo para aplicar una transición específica sobre un ID de sujeto concreto con clave de flujo y clave de transición explícitas.",
+        "Haz seguimiento del último estado y mensaje de entrega para que los operadores puedan diagnosticar rápido los fallos de mapeo."
+      ],
+      "relations": [
+        {
+          "type": "owned-by",
+          "target": "automation-pack",
+          "summary": "Cada mapeo de salida pertenece a exactamente un paquete de automatización."
+        }
+      ],
+      "order": 435
+    },
+    {
+      "id": "automation-package-repository",
+      "label": "Repositorio de paquetes de automatización",
+      "category": "operations",
+      "summary": "Una fuente de índice externa firmada que publica versiones y metadatos de paquetes de automatización.",
+      "why_it_exists": "Permite a los operadores descubrir paquetes desde catálogos externos sin cargar cada paquete como un plugin de Laravel.",
+      "how_to_use": [
+        "Registra la URL del repositorio, la URL de firma, el nivel de confianza y la clave pública.",
+        "Usa la instalación oficial de un solo clic cuando quieras una fuente de confianza preconfigurada.",
+        "Actualiza los metadatos del repositorio para que el catálogo valide la firma e ingiera las últimas versiones.",
+        "Revisa las versiones descubiertas en el catálogo externo e instala solo los paquetes que quieras activos en el espacio de trabajo."
+      ],
+      "relations": [
+        {
+          "type": "feeds",
+          "target": "automation-pack",
+          "summary": "Las últimas versiones descubiertas se replican en los registros locales de paquetes de automatización."
+        }
+      ],
+      "order": 436
+    }
+  ]
+}

@@ -1,0 +1,57 @@
+{
+  "guides": [
+    {
+      "id": "questionnaire-engine-overview",
+      "title": "Nutze Fragebogenvorlagen und an Subjekte gebundene Einträge als wiederverwendbare Erfassungsschicht",
+      "summary": "Das Questionnaires-Plugin besitzt die wiederverwendbare Vorlage und das Antwortmodell, das Fach-Plugins auf Lieferantenprüfungen und zukünftige Erfassungs-Workflows anwenden können.",
+      "body": [
+        "Halte die produktspezifische Prüfungslogik im Fach-Plugin, nutze aber Fragebogenvorlagen, typisierte Antwortregeln, Abschnittsgruppen, an Subjekte gebundene Einträge, Antwortbibliothekseinträge, vermittelte Erfassungsanfragen und die Anhänge-Semantik auf Eintragsebene aus dem Questionnaires-Plugin wieder.",
+        "Eine Vorlage definiert die wiederholbare Struktur des Fragebogens. Subjektgebundene Einträge halten die echten Antworten, Zustände, Folgehinweise und alle Anhangserwartungen für ein konkretes Workflow-Subjekt."
+      ],
+      "related_concepts": [
+        "questionnaire-template",
+        "questionnaire-subject-item",
+        "questionnaire-brokered-request"
+      ]
+    }
+  ],
+  "concepts": [
+    {
+      "id": "questionnaire-template",
+      "label": "Fragebogenvorlage",
+      "summary": "Eine wiederverwendbare Fragebogendefinition, die auf ein oder mehrere Workflow-Subjekte angewendet werden kann.",
+      "when_to_use": [
+        "Nutze Vorlagen, um wiederkehrende Prüfungen und Erfassungen konsistent zu halten.",
+        "Nutze Vorlageneinträge, um Fragenreihenfolge, Abschnittstitel, erwarteten Antworttyp und optionale Hinweise zu definieren."
+      ]
+    },
+    {
+      "id": "questionnaire-subject-item",
+      "label": "Subjektgebundener Fragebogeneintrag",
+      "summary": "Ein konkreter Fragebogeneintrag, der an ein echtes Workflow-Subjekt wie eine Lieferantenprüfung gebunden ist.",
+      "when_to_use": [
+        "Nutze subjektgebundene Einträge für echte Antworten, Prüfstatus und Folgehinweise.",
+        "Ein Subjekteintrag kann manuell erstellt oder aus einem Vorlageneintrag kopiert werden.",
+        "Nutze Anhänge auf Eintragsebene, wenn eine Frage ein unterstützendes Dokument oder eine Nachweisdatei erwartet und du sie später kontrolliert in gesteuerten Nachweis überführen willst."
+      ]
+    },
+    {
+      "id": "questionnaire-answer-library-entry",
+      "label": "Antwortbibliothekseintrag",
+      "summary": "Ein wiederverwendbarer Antwortausschnitt, der für eine Organisation, eine Subjektfamilie und einen Antworttyp gespeichert wird.",
+      "when_to_use": [
+        "Speichere eine Antwort, wenn Prüfer immer wieder dieselbe Basisantwort in ähnlichen Fragebögen verwenden.",
+        "Nutze Antwortbibliothekseinträge als Vorschläge für den Prüfer, nicht als automatisch übernommene Wahrheit ohne Prüfung."
+      ]
+    },
+    {
+      "id": "questionnaire-brokered-request",
+      "label": "Vermittelte Fragebogenanfrage",
+      "summary": "Ein Vermittlungsdatensatz für Erfassung, wenn ein interner Broker Fragebogenantworten außerhalb der Plattform für ein konkretes Workflow-Subjekt sammelt.",
+      "when_to_use": [
+        "Nutze eine vermittelte Anfrage, wenn du keinen direkten Portalzugriff vergeben willst, aber dennoch einen nachverfolgbaren Erfassungsschritt brauchst.",
+        "Erfasse Kontakt, Erfassungskanal, Broker, Status und Broker-Notizen, damit die spätere Prüfung einen nachvollziehbaren Eingangspfad behält."
+      ]
+    }
+  ]
+}

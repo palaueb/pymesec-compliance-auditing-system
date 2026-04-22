@@ -9,8 +9,8 @@ class CollaborationEngine implements CollaborationEngineInterface
     public function collaboratorLifecycleStates(): array
     {
         return [
-            'active' => 'Active',
-            'blocked' => 'Blocked',
+            'active' => $this->translatedLabel('plugin.collaboration.collaborator_lifecycle.active', 'Active'),
+            'blocked' => $this->translatedLabel('plugin.collaboration.collaborator_lifecycle.blocked', 'Blocked'),
         ];
     }
 
@@ -27,8 +27,8 @@ class CollaborationEngine implements CollaborationEngineInterface
     public function draftTypes(): array
     {
         return [
-            'comment' => 'Comment draft',
-            'request' => 'Follow-up draft',
+            'comment' => $this->translatedLabel('plugin.collaboration.draft_type.comment', 'Comment draft'),
+            'request' => $this->translatedLabel('plugin.collaboration.draft_type.request', 'Follow-up draft'),
         ];
     }
 
@@ -45,11 +45,11 @@ class CollaborationEngine implements CollaborationEngineInterface
     public function requestStatuses(): array
     {
         return [
-            'open' => 'Open',
-            'in-progress' => 'In progress',
-            'waiting' => 'Waiting',
-            'done' => 'Done',
-            'cancelled' => 'Cancelled',
+            'open' => $this->translatedLabel('plugin.collaboration.request_status.open', 'Open'),
+            'in-progress' => $this->translatedLabel('plugin.collaboration.request_status.in_progress', 'In progress'),
+            'waiting' => $this->translatedLabel('plugin.collaboration.request_status.waiting', 'Waiting'),
+            'done' => $this->translatedLabel('plugin.collaboration.request_status.done', 'Done'),
+            'cancelled' => $this->translatedLabel('plugin.collaboration.request_status.cancelled', 'Cancelled'),
         ];
     }
 
@@ -66,10 +66,10 @@ class CollaborationEngine implements CollaborationEngineInterface
     public function requestPriorities(): array
     {
         return [
-            'low' => 'Low',
-            'normal' => 'Normal',
-            'high' => 'High',
-            'urgent' => 'Urgent',
+            'low' => $this->translatedLabel('plugin.collaboration.request_priority.low', 'Low'),
+            'normal' => $this->translatedLabel('plugin.collaboration.request_priority.normal', 'Normal'),
+            'high' => $this->translatedLabel('plugin.collaboration.request_priority.high', 'High'),
+            'urgent' => $this->translatedLabel('plugin.collaboration.request_priority.urgent', 'Urgent'),
         ];
     }
 
@@ -86,10 +86,10 @@ class CollaborationEngine implements CollaborationEngineInterface
     public function handoffStates(): array
     {
         return [
-            'review' => 'Review',
-            'remediation' => 'Remediation',
-            'approval' => 'Approval',
-            'closed-loop' => 'Closed loop',
+            'review' => $this->translatedLabel('plugin.collaboration.handoff_state.review', 'Review'),
+            'remediation' => $this->translatedLabel('plugin.collaboration.handoff_state.remediation', 'Remediation'),
+            'approval' => $this->translatedLabel('plugin.collaboration.handoff_state.approval', 'Approval'),
+            'closed-loop' => $this->translatedLabel('plugin.collaboration.handoff_state.closed_loop', 'Closed loop'),
         ];
     }
 
@@ -101,5 +101,48 @@ class CollaborationEngine implements CollaborationEngineInterface
     public function handoffStateLabel(string $handoffState): string
     {
         return $this->handoffStates()[$handoffState] ?? ucwords(str_replace('-', ' ', $handoffState));
+    }
+
+    private function translatedLabel(string $key, string $fallback): string
+    {
+        $catalogue = $this->catalogue();
+
+        return is_string($catalogue[$key] ?? null) && $catalogue[$key] !== ''
+            ? $catalogue[$key]
+            : $fallback;
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function catalogue(): array
+    {
+        static $cache = [];
+
+        $locale = (string) app()->getLocale();
+
+        if (isset($cache[$locale])) {
+            return $cache[$locale];
+        }
+
+        $basePath = dirname(__DIR__).'/resources/lang';
+        $english = $this->loadCatalogue($basePath.'/en.json');
+        $localized = $locale === 'en' ? [] : $this->loadCatalogue($basePath.'/'.$locale.'.json');
+
+        return $cache[$locale] = array_replace($english, $localized);
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function loadCatalogue(string $path): array
+    {
+        if (! is_file($path)) {
+            return [];
+        }
+
+        $decoded = json_decode((string) file_get_contents($path), true, 512, JSON_THROW_ON_ERROR);
+
+        return is_array($decoded) ? array_filter($decoded, static fn (mixed $value): bool => is_string($value)) : [];
     }
 }

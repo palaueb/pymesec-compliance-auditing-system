@@ -1,0 +1,6 @@
+{
+  "plugin.identity-ldap.plugin.name": "Synchronisation d'annuaire",
+  "plugin.identity-ldap.nav.directory": "Synchronisation d'annuaire",
+  "plugin.identity-ldap.screen.directory.title": "Synchronisation d'annuaire",
+  "plugin.identity-ldap.screen.directory.subtitle": "Conservez un connecteur LDAP par organisation, mappez les groupes externes et mettez en cache les personnes pour le repli local."
+}

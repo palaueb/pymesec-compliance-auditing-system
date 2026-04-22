@@ -1,0 +1,8 @@
+{
+  "plugin.findings-remediation.nav.root": "Constats",
+  "plugin.findings-remediation.nav.board": "Remédiation",
+  "plugin.findings-remediation.screen.register.title": "Registre des constats",
+  "plugin.findings-remediation.screen.register.subtitle": "Suivez les non-conformités, écarts et responsabilités de remédiation liées.",
+  "plugin.findings-remediation.screen.board.title": "Tableau de remédiation",
+  "plugin.findings-remediation.screen.board.subtitle": "Actions correctives par statut, responsable et date limite."
+}

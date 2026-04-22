@@ -1,0 +1,22 @@
+{
+  "plugin.framework-gdpr.framework.name": "DSGVO-Rahmenwerk",
+  "plugin.framework-gdpr.framework.description": "Starter-Rahmenwerk für DSGVO / LOPDGDD-Betrieb. Es legt die zentralen Artikel für Grundsätze, Verzeichnisse, Sicherheit, Meldepflichten bei Datenschutzverletzungen und DSFA an.",
+
+  "plugin.framework-gdpr.elements.gdpr-domain-principles.title": "Verarbeitungsgrundsätze",
+  "plugin.framework-gdpr.elements.gdpr-domain-principles.description": "Grundlegende Prinzipien für eine rechtmäßige und verantwortliche Verarbeitung.",
+  "plugin.framework-gdpr.elements.gdpr-domain-governance.title": "Governance und Verzeichnisse",
+  "plugin.framework-gdpr.elements.gdpr-domain-governance.description": "Operative Governance, Verzeichnisse der Verarbeitungstätigkeiten und Sicherheitsverpflichtungen.",
+  "plugin.framework-gdpr.elements.gdpr-domain-incidents.title": "Vorfallbearbeitung und Meldung",
+  "plugin.framework-gdpr.elements.gdpr-domain-incidents.description": "Melde- und Reaktionspflichten bei Datenschutzverletzungen.",
+
+  "plugin.framework-gdpr.elements.gdpr-article-5.title": "Grundsätze für die Verarbeitung personenbezogener Daten",
+  "plugin.framework-gdpr.elements.gdpr-article-5.description": "Personenbezogene Daten müssen rechtmäßig, fair, transparent, für festgelegte Zwecke und mit Datenminimierung, Integrität und Verantwortlichkeit verarbeitet werden.",
+  "plugin.framework-gdpr.elements.gdpr-article-30.title": "Verzeichnisse von Verarbeitungstätigkeiten",
+  "plugin.framework-gdpr.elements.gdpr-article-30.description": "Verantwortliche und Auftragsverarbeiter führen Verzeichnisse der Verarbeitungstätigkeiten und die dazugehörigen Governance-Nachweise.",
+  "plugin.framework-gdpr.elements.gdpr-article-32.title": "Sicherheit der Verarbeitung",
+  "plugin.framework-gdpr.elements.gdpr-article-32.description": "Geeignete technische und organisatorische Maßnahmen umsetzen, um ein dem Risiko angemessenes Sicherheitsniveau zu gewährleisten.",
+  "plugin.framework-gdpr.elements.gdpr-article-33.title": "Meldung einer Verletzung des Schutzes personenbezogener Daten an die Aufsichtsbehörde",
+  "plugin.framework-gdpr.elements.gdpr-article-33.description": "Die zuständige Aufsichtsbehörde unverzüglich benachrichtigen, wenn meldepflichtige Datenschutzverletzungen auftreten.",
+  "plugin.framework-gdpr.elements.gdpr-article-35.title": "Datenschutz-Folgenabschätzung",
+  "plugin.framework-gdpr.elements.gdpr-article-35.description": "Eine DSFA durchführen, wenn die Verarbeitung voraussichtlich ein hohes Risiko für die Rechte und Freiheiten mit sich bringt."
+}

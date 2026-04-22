@@ -1,0 +1,69 @@
+{
+  "guide": [
+    {
+      "id": "separate-functional-ownership-from-sign-in-access",
+      "title": "Nutze funktionale Akteure für Verantwortlichkeit, nicht als Ersatz für Zugriffskontrolle",
+      "summary": "Das Akteurenverzeichnis erklärt, wer für Geschäftsdatensätze verantwortlich ist. Es ersetzt keine Principals, Mitgliedschaften oder Berechtigungsprüfungen.",
+      "body": [
+        "Lege funktionale Akteure für Personen oder Teams an, die eine sichtbare operative Verantwortlichkeit brauchen.",
+        "Verknüpfe Akteure mit Principals, wenn du Nachvollziehbarkeit zwischen einer echten Anmeldeidentität und einer geschäftsorientierten Verantwortungsrolle brauchst.",
+        "Nutze Zuweisungen, um zu zeigen, wer Eigentümer eines Assets, einer Kontrolle, eines Risikos oder eines anderen gesteuerten Datensatzes ist."
+      ],
+      "concept_ids": [
+        "functional-actor",
+        "actor-principal-link",
+        "ownership-assignment"
+      ],
+      "order": 280
+    }
+  ],
+  "concepts": [
+    {
+      "id": "functional-actor",
+      "label": "Funktionaler Akteur",
+      "category": "governance",
+      "summary": "Ein geschäftsorientierter Personen- oder Teamdatensatz zur Ausdruck von Verantwortlichkeit über gesteuerte Datensätze.",
+      "why_it_exists": "Die Plattform braucht stabile Verantwortlichkeitsdatensätze, auch wenn sich Anmeldeidentitäten, Teams oder das Mitgliedschaftsmodell ändern.",
+      "how_to_use": [
+        "Lege Akteure für Rollen, benannte Personen oder Teams an, die als Verantwortliche von Geschäftsdatensätzen erscheinen sollen.",
+        "Nutze Akteurdaten, um Governance-Verantwortung sichtbar zu halten, ohne sie an die Anmeldemechanik zu koppeln."
+      ],
+      "relations": [
+        { "type": "may-have", "target": "ownership-assignment", "summary": "Akteure können als Verantwortliche oder zuständige Parteien zu gesteuerten Datensätzen zugewiesen werden." }
+      ],
+      "order": 280
+    },
+    {
+      "id": "actor-principal-link",
+      "label": "Akteur-Principal-Verknüpfung",
+      "category": "identity",
+      "summary": "Eine Verbindung zwischen einem funktionalen Akteur und einem Anmelde-Principal.",
+      "why_it_exists": "Diese Verbindung trennt operative Verantwortlichkeit von Zugriffskontrolle und erlaubt dennoch eine Beziehung zwischen beiden.",
+      "how_to_use": [
+        "Nutze die Verknüpfung, wenn ein funktionaler Akteur einem echten lokalen oder synchronisierten Principal entspricht.",
+        "Gehe nicht davon aus, dass die Verknüpfung selbst Berechtigungen vergibt."
+      ],
+      "relations": [
+        { "type": "connects", "target": "functional-actor", "summary": "Die Verknüpfung geht von einem funktionalen Akteur aus." },
+        { "type": "connects", "target": "principal", "summary": "Die Verknüpfung kann auf einen Anmelde-Principal zeigen." }
+      ],
+      "order": 281
+    },
+    {
+      "id": "ownership-assignment",
+      "label": "Verantwortungszuweisung",
+      "category": "governance",
+      "summary": "Eine Verbindung zwischen einem funktionalen Akteur und einem Geschäftsdatensatz, um Verantwortlichkeit oder Eigentum auszudrücken.",
+      "why_it_exists": "Die Plattform braucht eine Möglichkeit zu zeigen, wer für etwas verantwortlich ist, ohne diese Verantwortung mit dem Anmeldezugang zu verwechseln.",
+      "how_to_use": [
+        "Weise den richtigen funktionalen Akteur den Datensätzen zu, die einen sichtbaren Eigentümer oder Verantwortungsrolle brauchen.",
+        "Behandle Verantwortungszuweisungen nicht als implizite Berechtigungsvergabe."
+      ],
+      "relations": [
+        { "type": "uses", "target": "functional-actor", "summary": "Zuweisungen zeigen auf funktionale Akteure." },
+        { "type": "may-reference", "target": "asset", "summary": "Assets können Verantwortungszuweisungen haben." }
+      ],
+      "order": 282
+    }
+  ]
+}

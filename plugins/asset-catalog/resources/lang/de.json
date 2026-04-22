@@ -1,8 +1,8 @@
 {
-    "plugin.asset-catalog.nav.root": "Assets",
-    "plugin.asset-catalog.nav.lifecycle": "Lebenszyklus",
-    "plugin.asset-catalog.screen.catalog.title": "Asset-Katalog",
-    "plugin.asset-catalog.screen.catalog.subtitle": "Verwalte Geschaftsassets, Ownership und Lifecycle-Status.",
-    "plugin.asset-catalog.screen.lifecycle.title": "Lebenszyklus-Board",
-    "plugin.asset-catalog.screen.lifecycle.subtitle": "Prufe Lifecycle-Ubergange und aktuellen Status der Assets."
+  "plugin.asset-catalog.nav.root": "Assets",
+  "plugin.asset-catalog.nav.lifecycle": "Lebenszyklus",
+  "plugin.asset-catalog.screen.catalog.title": "Asset-Katalog",
+  "plugin.asset-catalog.screen.catalog.subtitle": "Verfolge Unternehmens-Assets, Verantwortlichkeiten und den Status des Lebenszyklus.",
+  "plugin.asset-catalog.screen.lifecycle.title": "Lebenszyklus-Übersicht",
+  "plugin.asset-catalog.screen.lifecycle.subtitle": "Prüfe die Übergänge im Lebenszyklus und den aktuellen Status der Assets."
 }

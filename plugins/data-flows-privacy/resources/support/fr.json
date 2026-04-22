@@ -1,0 +1,52 @@
+{
+  "guide": [
+    {
+      "id": "manage-privacy-records-through-data-flows",
+      "title": "Utilisez l'espace de travail des flux de données pour garder les registres opérationnels de confidentialité révisables",
+      "summary": "Le registre de flux n'est pas seulement un espace réservé de diagramme. Il contient l'état du workflow, la cadence de revue, les responsables, les registres liés et les fichiers d'appui.",
+      "body": [
+        "Enregistrez la source, la destination, le type de transfert et le résumé de la catégorie de données pour que le mouvement soit compréhensible.",
+        "Reliez le flux à l'actif, au risque ou à l'activité de traitement pertinente lorsque cela améliore la traçabilité opérationnelle.",
+        "Utilisez l'état du workflow, les responsables, la date de revue et les registres téléversés pour garder la revue de confidentialité à jour."
+      ],
+      "concept_ids": [
+        "data-flow",
+        "processing-activity"
+      ],
+      "order": 260
+    }
+  ],
+  "concepts": [
+    {
+      "id": "data-flow",
+      "label": "Flux de données",
+      "category": "privacy",
+      "summary": "Une description de la manière dont les données circulent entre des personnes, des systèmes ou des parties externes.",
+      "why_it_exists": "Les flux de données rendent le travail de confidentialité concret. Ils montrent d'où viennent les données personnelles ou sensibles, où elles vont et qui les traite.",
+      "how_to_use": [
+        "Enregistrez le flux principal, la source, la destination, le type de transfert et la date de revue.",
+        "Conservez le flux relié à l'activité de traitement pertinente ou à d'autres registres opérationnels lorsque c'est possible."
+      ],
+      "relations": [
+        { "type": "supports", "target": "processing-activity", "summary": "Un flux de données explique souvent une partie d'une activité de traitement." },
+        { "type": "may-link-to", "target": "risk", "summary": "Un flux peut être lié à un registre de risque de confidentialité ou de transfert plus large." }
+      ],
+      "order": 260
+    },
+    {
+      "id": "processing-activity",
+      "label": "Activité de traitement",
+      "category": "privacy",
+      "summary": "Le registre d'une activité métier qui traite des données pour une finalité définie.",
+      "why_it_exists": "Les activités de traitement aident l'organisation à expliquer pourquoi les données sont traitées, par qui et avec quelles protections.",
+      "how_to_use": [
+        "Enregistrez la finalité, le contexte et les détails clés du traitement de l'activité.",
+        "Utilisez les flux de données liés pour rendre l'activité compréhensible dans la pratique."
+      ],
+      "relations": [
+        { "type": "may-be-described-by", "target": "data-flow", "summary": "Les flux de données peuvent expliquer comment l'activité fonctionne en pratique." }
+      ],
+      "order": 261
+    }
+  ]
+}

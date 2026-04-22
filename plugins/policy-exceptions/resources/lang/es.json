@@ -1,0 +1,8 @@
+{
+  "plugin.policy-exceptions.nav.root": "Políticas",
+  "plugin.policy-exceptions.nav.exceptions": "Excepciones",
+  "plugin.policy-exceptions.screen.register.title": "Registro de políticas",
+  "plugin.policy-exceptions.screen.register.subtitle": "Políticas de gobernanza con responsables, ciclo de vida, vínculos con controles y cadencia de revisión.",
+  "plugin.policy-exceptions.screen.exceptions.title": "Excepciones de política",
+  "plugin.policy-exceptions.screen.exceptions.subtitle": "Haz seguimiento de desviaciones aprobadas, controles compensatorios, fechas de caducidad y hallazgos vinculados."
+}

@@ -1,0 +1,69 @@
+{
+  "guide": [
+    {
+      "id": "separate-functional-ownership-from-sign-in-access",
+      "title": "Utilisez les acteurs fonctionnels pour la responsabilité, pas comme substitut au contrôle d'accès",
+      "summary": "L'annuaire des acteurs explique qui est responsable des registres métier. Il ne remplace pas les identités principales, les adhésions ni les vérifications de permissions.",
+      "body": [
+        "Créez des acteurs fonctionnels pour les personnes ou les équipes qui ont besoin d'une responsabilité opérationnelle visible.",
+        "Reliez les acteurs aux identités principales lorsque vous voulez une traçabilité entre une identité réelle de connexion et un rôle de responsabilité orienté métier.",
+        "Utilisez les affectations pour montrer qui est responsable d'un actif, d'un contrôle, d'un risque ou de tout autre registre gouverné."
+      ],
+      "concept_ids": [
+        "functional-actor",
+        "actor-principal-link",
+        "ownership-assignment"
+      ],
+      "order": 280
+    }
+  ],
+  "concepts": [
+    {
+      "id": "functional-actor",
+      "label": "Acteur fonctionnel",
+      "category": "governance",
+      "summary": "Une fiche de personne ou d'équipe orientée métier, utilisée pour exprimer la responsabilité sur des registres gouvernés.",
+      "why_it_exists": "La plateforme a besoin de registres de responsabilité stables même lorsque les identités de connexion, les équipes ou le modèle d'adhésion changent.",
+      "how_to_use": [
+        "Créez des acteurs pour les rôles, les personnes nommées ou les équipes qui doivent apparaître comme responsables de registres métier.",
+        "Utilisez les fiches d'acteur pour garder visibles les responsabilités de gouvernance sans les lier à la mécanique de connexion."
+      ],
+      "relations": [
+        { "type": "may-have", "target": "ownership-assignment", "summary": "Les acteurs peuvent être affectés à des registres gouvernés comme responsables ou parties comptables." }
+      ],
+      "order": 280
+    },
+    {
+      "id": "actor-principal-link",
+      "label": "Lien acteur-principal",
+      "category": "identity",
+      "summary": "Un lien entre un acteur fonctionnel et un principal de connexion.",
+      "why_it_exists": "Ce lien conserve la séparation entre la responsabilité opérationnelle et le contrôle d'accès tout en permettant de les relier.",
+      "how_to_use": [
+        "Utilisez le lien lorsqu'un acteur fonctionnel correspond à un principal local ou synchronisé réel.",
+        "Ne supposez pas que le lien accorde à lui seul des permissions."
+      ],
+      "relations": [
+        { "type": "connects", "target": "functional-actor", "summary": "Le lien part d'un acteur fonctionnel." },
+        { "type": "connects", "target": "principal", "summary": "Le lien peut pointer vers un principal de connexion." }
+      ],
+      "order": 281
+    },
+    {
+      "id": "ownership-assignment",
+      "label": "Affectation de responsabilité",
+      "category": "governance",
+      "summary": "Un lien entre un acteur fonctionnel et un registre métier pour exprimer la responsabilité ou la titularité.",
+      "why_it_exists": "La plateforme a besoin d'un moyen d'indiquer qui est responsable de quelque chose sans confondre cette responsabilité avec la connexion.",
+      "how_to_use": [
+        "Affectez le bon acteur fonctionnel aux registres qui ont besoin d'un responsable visible ou d'un rôle comptable.",
+        "Ne considérez pas les affectations de responsabilité comme des concessions de permissions implicites."
+      ],
+      "relations": [
+        { "type": "uses", "target": "functional-actor", "summary": "Les affectations pointent vers des acteurs fonctionnels." },
+        { "type": "may-reference", "target": "asset", "summary": "Les actifs peuvent avoir des affectations de responsabilité." }
+      ],
+      "order": 282
+    }
+  ]
+}

@@ -1,0 +1,69 @@
+{
+  "guide": [
+    {
+      "id": "run-continuity-planning-per-service",
+      "title": "Nutze einen einzigen Arbeitsbereich pro Service, um Kontinuitätsziele, Abhängigkeiten, Pläne und Dokumente zusammenzuhalten",
+      "summary": "Kontinuitätsarbeit ist leichter zu pflegen, wenn der Service-Datensatz zum Anker für Wiederherstellungsplanung und Nachweise wird.",
+      "body": [
+        "Definiere zuerst den Service, die Auswirkungsstufe, die Wiederherstellungsziele, das verknüpfte Asset oder Risiko und die Verantwortlichkeit.",
+        "Erfasse Abhängigkeiten und einen oder mehrere Wiederherstellungspläne, damit der Service als operative Einheit geprüft werden kann.",
+        "Nutze Workflow, Plan-Details und Dokumente, um die Kontinuitätslage aktuell zu halten."
+      ],
+      "concept_ids": [
+        "continuity-service",
+        "service-dependency",
+        "recovery-plan"
+      ],
+      "order": 270
+    }
+  ],
+  "concepts": [
+    {
+      "id": "continuity-service",
+      "label": "Kontinuitätsservice",
+      "category": "continuity",
+      "summary": "Ein geschäftlicher oder technischer Service, den die Organisation weiter betreiben oder schnell wiederherstellen muss.",
+      "why_it_exists": "Kontinuitätsarbeit lässt sich leichter um Services herum planen als um abstrakte Verpflichtungen.",
+      "how_to_use": [
+        "Erfasse jeden wichtigen Service und beschreibe, wovon er abhängt.",
+        "Nutze Wiederherstellungspläne, Übungen und unterstützende Dokumente, um die Bereitschaft aktuell zu halten."
+      ],
+      "relations": [
+        { "type": "may-depend-on", "target": "service-dependency", "summary": "Kontinuitätsservices können operative Abhängigkeiten auflisten, die für die Wiederherstellung wichtig sind." },
+        { "type": "may-have", "target": "recovery-plan", "summary": "Ein Kontinuitätsservice kann einen oder mehrere Wiederherstellungspläne haben." }
+      ],
+      "order": 270
+    },
+    {
+      "id": "service-dependency",
+      "label": "Serviceabhängigkeit",
+      "category": "continuity",
+      "summary": "Eine erfasste Abhängigkeit, auf die der Service für den Normalbetrieb oder die Wiederherstellung angewiesen ist.",
+      "why_it_exists": "Wiederherstellungsplanung ist schwächer, wenn kritische Abhängigkeiten implizit bleiben.",
+      "how_to_use": [
+        "Erfasse die wichtigste Abhängigkeit und ihre Art, damit Wiederherstellungsannahmen explizit sind.",
+        "Prüfe Abhängigkeiten immer dann, wenn sich Servicearchitektur, Lieferantenmodell oder Fallback-Muster ändern."
+      ],
+      "relations": [
+        { "type": "belongs-to", "target": "continuity-service", "summary": "Abhängigkeiten werden innerhalb eines Service-Arbeitsbereichs gepflegt." },
+        { "type": "may-reference", "target": "asset", "summary": "Eine Abhängigkeit kann auf ein Asset oder eine andere operative Komponente verweisen." }
+      ],
+      "order": 271
+    },
+    {
+      "id": "recovery-plan",
+      "label": "Wiederherstellungsplan",
+      "category": "continuity",
+      "summary": "Ein dokumentierter Plan, der beschreibt, wie ein Service nach einer Störung wiederhergestellt oder aufrechterhalten wird.",
+      "why_it_exists": "Ein Wiederherstellungsplan macht aus einer Kontinuitätsabsicht handlungsfähige Schritte, die geprüft und getestet werden können.",
+      "how_to_use": [
+        "Schreibe einen Plan pro wichtigem Wiederherstellungsansatz oder Fallback-Muster.",
+        "Nutze verknüpfte Richtlinie, Befund, Testtermine und Verantwortungszuweisungen, um den Plan gesteuert zu halten."
+      ],
+      "relations": [
+        { "type": "belongs-to", "target": "continuity-service", "summary": "Pläne werden erstellt, um einen Service zu unterstützen." }
+      ],
+      "order": 272
+    }
+  ]
+}

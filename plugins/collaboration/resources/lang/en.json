@@ -1,0 +1,19 @@
+{
+  "plugin.collaboration.collaborator_lifecycle.active": "Active",
+  "plugin.collaboration.collaborator_lifecycle.blocked": "Blocked",
+  "plugin.collaboration.draft_type.comment": "Comment draft",
+  "plugin.collaboration.draft_type.request": "Follow-up draft",
+  "plugin.collaboration.request_status.open": "Open",
+  "plugin.collaboration.request_status.in_progress": "In progress",
+  "plugin.collaboration.request_status.waiting": "Waiting",
+  "plugin.collaboration.request_status.done": "Done",
+  "plugin.collaboration.request_status.cancelled": "Cancelled",
+  "plugin.collaboration.request_priority.low": "Low",
+  "plugin.collaboration.request_priority.normal": "Normal",
+  "plugin.collaboration.request_priority.high": "High",
+  "plugin.collaboration.request_priority.urgent": "Urgent",
+  "plugin.collaboration.handoff_state.review": "Review",
+  "plugin.collaboration.handoff_state.remediation": "Remediation",
+  "plugin.collaboration.handoff_state.approval": "Approval",
+  "plugin.collaboration.handoff_state.closed_loop": "Closed loop"
+}

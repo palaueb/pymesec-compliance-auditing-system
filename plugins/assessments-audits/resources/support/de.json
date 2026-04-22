@@ -1,0 +1,93 @@
+{
+  "concepts": [
+    {
+      "id": "assessment-campaign",
+      "label": "Bewertungskampagne",
+      "category": "verification",
+      "summary": "Eine begrenzte Prüfmaßnahme für eine definierte Organisation, einen Bereich, ein Zeitfenster und einen Satz von Kontrollen.",
+      "why_it_exists": "Bewertungen organisieren Audit-Arbeit in eine wiederholbare Übung statt Kontrollen und Nachweise getrennt zu lassen.",
+      "how_to_use": [
+        "Erstelle eine Bewertung für einen bestimmten Prüfzeitraum.",
+        "Begrenze sie auf einen Bereich, wenn das Audit nicht organisationsweit ist.",
+        "Wähle die Kontrollen aus, die in dieser Übung geprüft werden."
+      ],
+      "related_to": [
+        "organization",
+        "scope",
+        "control"
+      ]
+    },
+    {
+      "id": "assessment-review",
+      "label": "Bewertungsprüfung",
+      "category": "verification",
+      "summary": "Der Prüfdatensatz für eine Kontrolle innerhalb einer Bewertung.",
+      "why_it_exists": "Prüfungen sind der Ort, an dem die eigentliche Audit-Arbeit festgehalten wird: Ergebnis, Notizen, Schlussfolgerung, Nachweise und ein aus dem Test erzeugter Befund.",
+      "how_to_use": [
+        "Öffne die Checkliste der Bewertung.",
+        "Erfasse das Ergebnis für jede geprüfte Kontrolle.",
+        "Hänge Arbeitspapiere an und erstelle einen Befund, wenn die Kontrolle eine Lücke hat."
+      ],
+      "related_to": [
+        "assessment-campaign",
+        "control",
+        "finding",
+        "artifact"
+      ]
+    },
+    {
+      "id": "assessment-workpaper",
+      "label": "Bewertungsarbeitspapier",
+      "category": "evidence",
+      "summary": "Eine Datei, die an eine Kontrollprüfung innerhalb einer Bewertung angehängt ist.",
+      "why_it_exists": "Arbeitspapiere halten Stichprobe, Screenshot, Export oder Notizpaket zusammen mit der Prüfung, die sie verwendet hat.",
+      "how_to_use": [
+        "Lade die Datei aus dem Prüfpanel der Kontrolle hoch.",
+        "Gib ihr ein klares Label, damit der Prüfer weiß, was sie belegt.",
+        "Nutze Arbeitspapiere, um die Schlussfolgerung oder den verknüpften Befund zu stützen."
+      ],
+      "related_to": [
+        "assessment-review",
+        "artifact"
+      ]
+    }
+  ],
+  "guide": [
+    {
+      "id": "assessment-campaigns",
+      "title": "Führe eine Bewertung aus",
+      "summary": "Nutze Bewertungen, um die Kontrollen zu gruppieren, die du in einem Audit-Zyklus prüfen willst.",
+      "body": [
+        "Wähle zuerst die Organisation, den optionalen Bereich und das Zeitfenster.",
+        "Wähle danach die Kontrollen aus, die zur Prüfung gehören.",
+        "Nutze die Kampagnenliste, um nachzuverfolgen, ob die Übung noch Entwurf, aktiv oder bereits geschlossen ist.",
+        "Öffne die Checkliste, um Kontrollergebnisse zu erfassen, Arbeitspapiere hochzuladen und Befunde zu erzeugen."
+      ],
+      "concept_ids": [
+        "assessment-campaign",
+        "assessment-review",
+        "assessment-workpaper"
+      ]
+    }
+  ],
+  "relationships": [
+    {
+      "source": "assessment-campaign",
+      "type": "includes",
+      "target": "control",
+      "summary": "Eine Bewertungskampagne bündelt die Kontrollen, die während der Übung geprüft werden."
+    },
+    {
+      "source": "assessment-review",
+      "type": "can-create",
+      "target": "finding",
+      "summary": "Eine Prüfung kann einen Befund erzeugen, wenn der Test eine Lücke oder Nichtkonformität aufdeckt."
+    },
+    {
+      "source": "assessment-review",
+      "type": "is-supported-by",
+      "target": "artifact",
+      "summary": "Eine Prüfung kann angehängte Arbeitspapiere als unterstützende Nachweise haben."
+    }
+  ]
+}

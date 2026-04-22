@@ -31,7 +31,7 @@ class ControlsCatalogPlugin implements PluginInterface
         $context->app()->make(WorkflowRegistryInterface::class)->register(new WorkflowDefinition(
             key: 'plugin.controls-catalog.control-lifecycle',
             owner: 'controls-catalog',
-            label: 'Control lifecycle',
+            label: __('Control lifecycle'),
             initialState: 'draft',
             states: ['draft', 'review', 'approved', 'deprecated'],
             transitions: [
@@ -89,8 +89,8 @@ class ControlsCatalogPlugin implements PluginInterface
                 foreach ($actors->linksForActor($assignment->functionalActorId) as $link) {
                     $notifications->notify(
                         type: 'plugin.controls-catalog.review-requested',
-                        title: 'Control review requested',
-                        body: sprintf('Control [%s] entered review.', $subjectId),
+                        title: __('Control review requested'),
+                        body: __('Control :id entered review.', ['id' => $subjectId]),
                         principalId: $link->principalId,
                         functionalActorId: $assignment->functionalActorId,
                         organizationId: $organizationId,
@@ -120,17 +120,17 @@ class ControlsCatalogPlugin implements PluginInterface
                 if (is_string($screenContext->query['control_id'] ?? null) && ($screenContext->query['control_id'] ?? '') !== '') {
                     return [
                         new ToolbarAction(
-                            label: 'Back to controls',
+                            label: __('Back to controls'),
                             url: route('core.shell.index', [...$query, 'menu' => 'plugin.controls-catalog.catalog']),
                             variant: 'secondary',
                         ),
                         new ToolbarAction(
-                            label: 'Framework adoption',
+                            label: __('Framework adoption'),
                             url: route('core.shell.index', [...$query, 'menu' => 'plugin.controls-catalog.framework-adoption']),
                             variant: 'secondary',
                         ),
                         new ToolbarAction(
-                            label: 'Review queue',
+                            label: __('Review queue'),
                             url: route('core.shell.index', [...$query, 'menu' => 'plugin.controls-catalog.reviews']),
                             variant: 'secondary',
                         ),
@@ -139,17 +139,17 @@ class ControlsCatalogPlugin implements PluginInterface
 
                 return [
                     new ToolbarAction(
-                        label: 'New control',
+                        label: __('New control'),
                         url: '#control-editor',
                         variant: 'primary',
                     ),
                     new ToolbarAction(
-                        label: 'Framework adoption',
+                        label: __('Framework adoption'),
                         url: route('core.shell.index', [...$query, 'menu' => 'plugin.controls-catalog.framework-adoption']),
                         variant: 'secondary',
                     ),
                     new ToolbarAction(
-                        label: 'Review queue',
+                        label: __('Review queue'),
                         url: route('core.shell.index', [...$query, 'menu' => 'plugin.controls-catalog.reviews']),
                         variant: 'secondary',
                     ),
@@ -166,12 +166,12 @@ class ControlsCatalogPlugin implements PluginInterface
             dataResolver: fn (ScreenRenderContext $screenContext): array => $this->frameworkAdoptionData($context, $screenContext),
             toolbarResolver: fn (ScreenRenderContext $screenContext): array => [
                 new ToolbarAction(
-                    label: 'Control catalog',
+                    label: __('Control catalog'),
                     url: route('core.shell.index', [...$this->baseQuery($screenContext), 'menu' => 'plugin.controls-catalog.catalog']),
                     variant: 'secondary',
                 ),
                 new ToolbarAction(
-                    label: 'Review queue',
+                    label: __('Review queue'),
                     url: route('core.shell.index', [...$this->baseQuery($screenContext), 'menu' => 'plugin.controls-catalog.reviews']),
                     variant: 'secondary',
                 ),
@@ -187,12 +187,12 @@ class ControlsCatalogPlugin implements PluginInterface
             dataResolver: fn (ScreenRenderContext $screenContext): array => $this->reviewData($context, $screenContext),
             toolbarResolver: fn (ScreenRenderContext $screenContext): array => [
                 new ToolbarAction(
-                    label: 'Control catalog',
+                    label: __('Control catalog'),
                     url: route('core.shell.index', [...$this->baseQuery($screenContext), 'menu' => 'plugin.controls-catalog.catalog']),
                     variant: 'secondary',
                 ),
                 new ToolbarAction(
-                    label: 'Framework adoption',
+                    label: __('Framework adoption'),
                     url: route('core.shell.index', [...$this->baseQuery($screenContext), 'menu' => 'plugin.controls-catalog.framework-adoption']),
                     variant: 'secondary',
                 ),
@@ -202,7 +202,7 @@ class ControlsCatalogPlugin implements PluginInterface
 
     public function boot(PluginContext $context): void
     {
-        //
+        app('translator')->addJsonPath($context->path('resources/lang'));
     }
 
     /**
@@ -361,14 +361,14 @@ class ControlsCatalogPlugin implements PluginInterface
             'create_framework_route' => route('plugin.controls-catalog.frameworks.store'),
             'create_requirement_route' => route('plugin.controls-catalog.requirements.store'),
             'framework_adoption_status_options' => [
-                'active' => 'Active',
-                'in-progress' => 'In progress',
-                'inactive' => 'Inactive',
+                'active' => __('Active'),
+                'in-progress' => __('In progress'),
+                'inactive' => __('Inactive'),
             ],
             'framework_target_level_options' => [
-                'basic' => 'Basic',
-                'medium' => 'Medium',
-                'high' => 'High',
+                'basic' => __('Basic'),
+                'medium' => __('Medium'),
+                'high' => __('High'),
             ],
         ];
     }
@@ -434,8 +434,8 @@ class ControlsCatalogPlugin implements PluginInterface
                     ? (int) round(($mappedCount / $requirementCount) * 100)
                     : 0,
                 'source_label' => (($framework['organization_id'] ?? '') === '')
-                    ? 'Global pack'
-                    : 'Custom framework',
+                    ? __('Global pack')
+                    : __('Custom framework'),
             ];
         }, $frameworks);
     }
@@ -535,11 +535,11 @@ class ControlsCatalogPlugin implements PluginInterface
             $frameworkAssessmentSnapshots
         ): array {
             $adoption = $frameworkAdoptions[$framework['id']] ?? null;
-            $scopeLabel = 'Not adopted';
+            $scopeLabel = __('Not adopted');
             $mandateArtifacts = [];
 
             if (is_array($adoption)) {
-                $scopeLabel = 'Organization-wide';
+                $scopeLabel = __('Organization-wide');
 
                 if (($adoption['scope_id'] ?? '') !== '') {
                     foreach ($scopeContext->scopes as $scope) {
@@ -626,44 +626,44 @@ class ControlsCatalogPlugin implements PluginInterface
         $snapshot = is_array($framework['assessment_snapshot'] ?? null) ? $framework['assessment_snapshot'] : null;
         $gaps = [];
         $state = 'inactive';
-        $label = 'Not adopted';
+        $label = __('Not adopted');
 
         if (($framework['adoption_status'] ?? 'not-adopted') === 'in-progress') {
             $state = 'onboarding';
-            $label = 'Onboarding';
+            $label = __('Onboarding');
 
             if (($framework['mandate_document_count'] ?? 0) === 0) {
-                $gaps[] = 'Signed mandate document still missing.';
+                $gaps[] = __('Signed mandate document still missing.');
             }
 
             if ($snapshot === null) {
-                $gaps[] = 'No assessment report is linked to this framework yet.';
+                $gaps[] = __('No assessment report is linked to this framework yet.');
             }
         } elseif (($framework['adoption_status'] ?? 'not-adopted') === 'active') {
             $state = 'ready';
-            $label = 'Ready';
+            $label = __('Ready');
 
             if (($framework['mandate_document_count'] ?? 0) === 0) {
-                $gaps[] = 'Signed mandate document still missing.';
+                $gaps[] = __('Signed mandate document still missing.');
             }
 
             if (($framework['coverage_percent'] ?? 0) < 60) {
-                $gaps[] = 'Coverage is still below the current readiness threshold.';
+                $gaps[] = __('Coverage is still below the current readiness threshold.');
             }
 
             if ($snapshot === null) {
-                $gaps[] = 'No assessment report is linked to this framework yet.';
+                $gaps[] = __('No assessment report is linked to this framework yet.');
             } elseif (($snapshot['review_summary']['fail'] ?? 0) > 0) {
-                $gaps[] = 'The latest assessment still contains failed control reviews.';
+                $gaps[] = __('The latest assessment still contains failed control reviews.');
             }
 
             if ($gaps !== []) {
                 $state = 'attention';
-                $label = 'Needs attention';
+                $label = __('Needs attention');
             }
         } elseif (($framework['adoption_status'] ?? 'not-adopted') === 'inactive') {
             $state = 'inactive';
-            $label = 'Inactive';
+            $label = __('Inactive');
         }
 
         $reviewSummary = is_array($snapshot['review_summary'] ?? null) ? $snapshot['review_summary'] : [

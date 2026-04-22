@@ -1,0 +1,87 @@
+{
+  "guide": [
+    {
+      "id": "manage-control-coverage-in-one-place",
+      "title": "Nutze die Kontrolldetails, um Verantwortlichkeit, Nachweise, Workflow und Anforderungsabdeckung zusammenzuhalten",
+      "summary": "Die Katalogliste dient zum Durchsuchen. Im Arbeitsbereich der ausgewählten Kontrolle werden Zuordnungen und Begleitmaterial gepflegt.",
+      "body": [
+        "Erstelle interne Kontrollen, die die Schutzmaßnahme oder die erwartete Praxis beschreiben, die du steuern möchtest.",
+        "Verknüpfe die Anforderungen des Rahmens mit jeder Kontrolle, wenn du die Abdeckung gegenüber einem Standard oder einer Regulierung nachweisen musst.",
+        "Halte Verantwortliche, Workflow-Status, Nachweiszusammenfassung und Artefakte im Detailarbeitsbereich der Kontrolle aktuell."
+      ],
+      "concept_ids": [
+        "control",
+        "control-framework",
+        "control-requirement",
+        "control-coverage-mapping"
+      ],
+      "order": 220
+    }
+  ],
+  "concepts": [
+    {
+      "id": "control",
+      "label": "Kontrolle",
+      "category": "operations",
+      "summary": "Eine Schutzmaßnahme, Anforderung oder erwartete Praxis, die bestehen und überprüft werden sollte.",
+      "why_it_exists": "Kontrollen zeigen, wie gute Governance oder Schutz aussehen sollte. Sie werden zu einem zentralen Bezugspunkt für Nachweise und Überprüfung.",
+      "how_to_use": [
+        "Erstelle Kontrollen für die Schutzmaßnahmen, die deine Organisation verfolgen möchte.",
+        "Überprüfe sie regelmäßig und füge bei Bedarf Nachweise hinzu."
+      ],
+      "relations": [
+        { "type": "may-support", "target": "asset", "summary": "Kontrollen helfen, Assets zu schützen oder zu steuern." },
+        { "type": "may-reduce", "target": "risk", "summary": "Kontrollen sind eine der wichtigsten Möglichkeiten, Risiken zu senken." },
+        { "type": "may-map-to", "target": "control-framework", "summary": "Kontrollen können an Rahmenwerke und Anforderungen ausgerichtet werden." }
+      ],
+      "order": 220
+    },
+    {
+      "id": "control-framework",
+      "label": "Kontrollrahmen",
+      "category": "catalogue",
+      "summary": "Ein benannter Rahmen oder Standard, der einen Satz von Kontrollanforderungen bündelt.",
+      "why_it_exists": "Kontrollrahmen helfen der Organisation zu erklären, woher eine Kontrollanforderung stammt.",
+      "how_to_use": [
+        "Registriere zuerst den Rahmen und füge dann die zugehörigen Anforderungen hinzu.",
+        "Verknüpfe deine internen Kontrollen mit diesen Anforderungen, wenn du Nachvollziehbarkeit brauchst."
+      ],
+      "relations": [
+        { "type": "contains", "target": "control-requirement", "summary": "Anforderungen leben innerhalb eines Rahmens." }
+      ],
+      "order": 225
+    },
+    {
+      "id": "control-requirement",
+      "label": "Kontrollanforderung",
+      "category": "catalogue",
+      "summary": "Eine Anforderung oder Klausel innerhalb eines Rahmens.",
+      "why_it_exists": "Anforderungen schaffen die nachvollziehbare Verbindung zwischen internen Kontrollen und externen Pflichten oder Standards.",
+      "how_to_use": [
+        "Füge Anforderungen unter dem Rahmen hinzu, zu dem sie gehören.",
+        "Verknüpfe interne Kontrollen, wenn du die Abdeckung nachweisen musst."
+      ],
+      "relations": [
+        { "type": "belongs-to", "target": "control-framework", "summary": "Eine Anforderung gehört zu genau einem Rahmen." },
+        { "type": "may-be-covered-by", "target": "control", "summary": "Interne Kontrollen können eine oder mehrere Anforderungen abdecken." }
+      ],
+      "order": 226
+    },
+    {
+      "id": "control-coverage-mapping",
+      "label": "Zuordnung der Kontrollabdeckung",
+      "category": "catalogue",
+      "summary": "Die explizite Beziehung zwischen einer internen Kontrolle und einer Rahmenanforderung, einschließlich des angegebenen Abdeckungsgrads.",
+      "why_it_exists": "Die Zuordnung der Kontrollabdeckung macht Rahmenumsetzung und Audit-Nachvollziehbarkeit konkret statt implizit.",
+      "how_to_use": [
+        "Verknüpfe die Anforderung mit der Kontrolle und wähle den Abdeckungsgrad, der die Realität am besten widerspiegelt.",
+        "Füge eine kurze Notiz hinzu, wenn die Beziehung Kontext oder Nuancen braucht."
+      ],
+      "relations": [
+        { "type": "connects", "target": "control", "summary": "Die Zuordnung gehört zu genau einer internen Kontrolle." },
+        { "type": "connects", "target": "control-requirement", "summary": "Die Zuordnung verweist auf eine Rahmenanforderung." }
+      ],
+      "order": 227
+    }
+  ]
+}

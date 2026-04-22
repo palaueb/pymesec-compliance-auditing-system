@@ -25,6 +25,7 @@ use PymeSec\Core\Workflows\Contracts\WorkflowServiceInterface;
 use PymeSec\Core\Workflows\WorkflowDefinition;
 use PymeSec\Core\Workflows\WorkflowTransitionDefinition;
 use PymeSec\Core\Workflows\WorkflowTransitionRecord;
+use PymeSec\Plugins\FindingsRemediation\FindingsReferenceData;
 use PymeSec\Plugins\FindingsRemediation\FindingsRemediationRepository;
 
 class ThirdPartyRiskPlugin implements PluginInterface
@@ -41,7 +42,7 @@ class ThirdPartyRiskPlugin implements PluginInterface
         $context->app()->make(WorkflowRegistryInterface::class)->register(new WorkflowDefinition(
             key: 'plugin.third-party-risk.review-lifecycle',
             owner: 'third-party-risk',
-            label: 'Vendor review lifecycle',
+            label: __('Vendor review lifecycle'),
             initialState: 'prospective',
             states: ['prospective', 'in-review', 'approved', 'approved-with-conditions', 'rejected'],
             transitions: [
@@ -91,7 +92,7 @@ class ThirdPartyRiskPlugin implements PluginInterface
                 if (is_string($screenContext->query['vendor_id'] ?? null) && ($screenContext->query['vendor_id'] ?? '') !== '') {
                     return [
                         new ToolbarAction(
-                            label: 'Back to vendors',
+                            label: __('Back to vendors'),
                             url: route('core.shell.index', [...$query, 'menu' => 'plugin.third-party-risk.root']),
                             variant: 'secondary',
                         ),
@@ -100,7 +101,7 @@ class ThirdPartyRiskPlugin implements PluginInterface
 
                 return [
                     new ToolbarAction(
-                        label: 'Add vendor',
+                        label: __('Add vendor'),
                         url: '#vendor-editor',
                         variant: 'primary',
                     ),
@@ -380,18 +381,28 @@ class ThirdPartyRiskPlugin implements PluginInterface
 
             $allVendors[] = [
                 ...$vendor,
+                'tier_label' => $this->tierLabel($vendor['tier']),
+                'vendor_status_label' => $this->vendorStatusLabel($vendor['vendor_status']),
                 'current_review' => [
                     ...$currentReview,
-                    'review_profile' => $reviewProfilesById[$currentReview['review_profile_id']] ?? null,
+                    'review_profile' => is_array($reviewProfilesById[$currentReview['review_profile_id']] ?? null)
+                        ? [
+                            ...$reviewProfilesById[$currentReview['review_profile_id']],
+                            'tier_label' => $this->tierLabel((string) $reviewProfilesById[$currentReview['review_profile_id']]['tier']),
+                            'default_inherent_risk_label' => $this->inherentRiskLabel((string) $reviewProfilesById[$currentReview['review_profile_id']]['default_inherent_risk']),
+                        ]
+                        : null,
                     'questionnaire_template' => $questionnaireTemplatesById[$currentReview['questionnaire_template_id']] ?? null,
                     'state' => $instance->currentState,
                     'state_label' => $this->stateLabel($instance->currentState),
+                    'inherent_risk_label' => $this->inherentRiskLabel($currentReview['inherent_risk']),
                     'is_decision_pending' => $isDecisionPending,
                     'is_due_soon' => $isDueSoon,
                     'is_overdue' => $isOverdue,
                     'open_questionnaire_count' => $openQuestionnaireCount,
                     'open_action_count' => $linkedFinding['open_action_count'] ?? 0,
                     'transitions' => $canManage ? $this->transitionsForState($instance->currentState) : [],
+                    'transition_labels' => $canManage ? $this->transitionLabelsForState($instance->currentState) : [],
                     'history' => $workflowHistory,
                     'artifacts' => $reviewArtifacts,
                     'questionnaire_items' => $questionnaireItems,
@@ -401,8 +412,8 @@ class ThirdPartyRiskPlugin implements PluginInterface
                         return [
                             ...$link,
                             'collaborator_lifecycle_state_label' => $link['collaborator_lifecycle_state'] !== ''
-                                ? ucwords(str_replace('-', ' ', $link['collaborator_lifecycle_state']))
-                                : 'Active',
+                                ? $this->collaboratorLifecycleStateLabel($link['collaborator_lifecycle_state'])
+                                : __('Active'),
                             'portal_url' => route('plugin.third-party-risk.external.portal.show', ['token' => '__TOKEN__']),
                             'revoke_route' => route('plugin.third-party-risk.external.links.revoke', [
                                 'vendorId' => $vendor['id'],
@@ -423,6 +434,7 @@ class ThirdPartyRiskPlugin implements PluginInterface
                         + count(array_filter($collaborationRequests, static fn (array $request): bool => (bool) ($request['has_mention_cue'] ?? false))),
                     'activity_timeline' => $this->reviewActivityTimeline(
                         audit: $context->app()->make(AuditTrailInterface::class),
+                        questionnaires: $questionnaires,
                         review: $currentReview,
                         workflowHistory: $workflowHistory,
                         artifacts: $reviewArtifacts,
@@ -488,25 +500,25 @@ class ThirdPartyRiskPlugin implements PluginInterface
             'register_filters' => [
                 [
                     'id' => 'all',
-                    'label' => 'All vendors',
+                    'label' => __('All vendors'),
                     'count' => count($allVendors),
                     'url' => route('core.shell.index', [...$baseQuery, 'menu' => 'plugin.third-party-risk.root', 'register_filter' => 'all']),
                 ],
                 [
                     'id' => 'decision-pending',
-                    'label' => 'Decision pending',
+                    'label' => __('Decision pending'),
                     'count' => count(array_filter($allVendors, static fn (array $vendor): bool => (bool) ($vendor['current_review']['is_decision_pending'] ?? false))),
                     'url' => route('core.shell.index', [...$baseQuery, 'menu' => 'plugin.third-party-risk.root', 'register_filter' => 'decision-pending']),
                 ],
                 [
                     'id' => 'due-soon',
-                    'label' => 'Due soon',
+                    'label' => __('Due soon'),
                     'count' => count(array_filter($allVendors, static fn (array $vendor): bool => (bool) ($vendor['current_review']['is_due_soon'] ?? false))),
                     'url' => route('core.shell.index', [...$baseQuery, 'menu' => 'plugin.third-party-risk.root', 'register_filter' => 'due-soon']),
                 ],
                 [
                     'id' => 'overdue',
-                    'label' => 'Overdue',
+                    'label' => __('Overdue'),
                     'count' => count(array_filter($allVendors, static fn (array $vendor): bool => (bool) ($vendor['current_review']['is_overdue'] ?? false))),
                     'url' => route('core.shell.index', [...$baseQuery, 'menu' => 'plugin.third-party-risk.root', 'register_filter' => 'overdue']),
                 ],
@@ -522,9 +534,10 @@ class ThirdPartyRiskPlugin implements PluginInterface
                 return [
                     'id' => $profile['id'],
                     'label' => sprintf(
-                        '%s [%s tier%s]',
+                        '%s [%s %s%s]',
                         $profile['name'],
-                        ucfirst($profile['tier']),
+                        $this->tierLabel((string) $profile['tier']),
+                        __('tier'),
                         $profile['review_interval_days'] !== '' ? ' · '.$profile['review_interval_days'].'d' : ''
                     ),
                 ];
@@ -541,10 +554,10 @@ class ThirdPartyRiskPlugin implements PluginInterface
             'questionnaire_response_status_options' => $questionnaires->responseStatuses(),
             'questionnaire_attachment_mode_options' => $questionnaires->attachmentModes(),
             'questionnaire_attachment_upload_profile_options' => [
-                'documents_only' => 'Documents only',
-                'documents_and_spreadsheets' => 'Documents and spreadsheets',
-                'images_only' => 'Images only',
-                'review_artifacts' => 'Mixed review artifacts',
+                'documents_only' => __('Documents only'),
+                'documents_and_spreadsheets' => __('Documents and spreadsheets'),
+                'images_only' => __('Images only'),
+                'review_artifacts' => __('Mixed review artifacts'),
             ],
             'collaboration_request_status_options' => $collaboration->requestStatuses(),
             'collaboration_request_priority_options' => $collaboration->requestPriorities(),
@@ -584,7 +597,68 @@ class ThirdPartyRiskPlugin implements PluginInterface
 
     private function stateLabel(string $state): string
     {
-        return ucwords(str_replace('-', ' ', $state));
+        return match ($state) {
+            'prospective' => __('Prospective'),
+            'in-review' => __('In review'),
+            'approved' => __('Approved'),
+            'approved-with-conditions' => __('Approved with conditions'),
+            'rejected' => __('Rejected'),
+            default => ucfirst(str_replace('-', ' ', $state)),
+        };
+    }
+
+    private function transitionLabel(string $transition): string
+    {
+        return match ($transition) {
+            'start-review' => __('Start review'),
+            'approve' => __('Approve'),
+            'approve-with-conditions' => __('Approve with conditions'),
+            'reject' => __('Reject'),
+            'reopen' => __('Reopen'),
+            default => ucfirst(str_replace('-', ' ', $transition)),
+        };
+    }
+
+    /**
+     * @return array<int, string>
+     */
+    private function transitionLabelsForState(string $state): array
+    {
+        return array_map(fn (string $transition): string => $this->transitionLabel($transition), $this->transitionsForState($state));
+    }
+
+    private function tierLabel(string $tier): string
+    {
+        return match ($tier) {
+            'low' => __('Low'),
+            'medium' => __('Medium'),
+            'high' => __('High'),
+            'critical' => __('Critical'),
+            default => ucfirst($tier),
+        };
+    }
+
+    private function inherentRiskLabel(string $risk): string
+    {
+        return $this->tierLabel($risk);
+    }
+
+    private function vendorStatusLabel(string $status): string
+    {
+        return match ($status) {
+            'prospective' => __('Prospective'),
+            'active' => __('Active'),
+            default => ucfirst(str_replace('-', ' ', $status)),
+        };
+    }
+
+    private function collaboratorLifecycleStateLabel(string $state): string
+    {
+        return match ($state) {
+            'active' => __('Active'),
+            'blocked' => __('Blocked'),
+            default => ucfirst(str_replace('-', ' ', $state)),
+        };
     }
 
     /**
@@ -611,7 +685,7 @@ class ThirdPartyRiskPlugin implements PluginInterface
         $actions = array_map(function (array $action) use ($today): array {
             return [
                 ...$action,
-                'status_label' => ucwords(str_replace('-', ' ', $action['status'])),
+                'status_label' => FindingsReferenceData::remediationStatusLabel($action['status']),
                 'is_overdue' => $action['due_on'] !== '' && Carbon::parse($action['due_on'])->lt($today),
             ];
         }, $findings->actionsForFinding($finding['id']));
@@ -620,7 +694,7 @@ class ThirdPartyRiskPlugin implements PluginInterface
 
         return [
             ...$finding,
-            'severity_label' => ucfirst($finding['severity']),
+            'severity_label' => $this->tierLabel($finding['severity']),
             'actions' => $actions,
             'open_action_count' => $openActionCount,
             'open_url' => route('core.shell.index', [...$baseQuery, 'menu' => 'plugin.findings-remediation.root', 'finding_id' => $finding['id']]),
@@ -637,6 +711,7 @@ class ThirdPartyRiskPlugin implements PluginInterface
      */
     private function reviewActivityTimeline(
         AuditTrailInterface $audit,
+        QuestionnaireEngineInterface $questionnaires,
         array $review,
         array $workflowHistory,
         array $artifacts,
@@ -648,7 +723,7 @@ class ThirdPartyRiskPlugin implements PluginInterface
         if (($review['created_at'] ?? '') !== '') {
             $entries[] = [
                 'at' => $review['created_at'],
-                'title' => 'Review created',
+                'title' => __('Review created'),
                 'detail' => $review['title'],
                 'kind' => 'review',
             ];
@@ -657,8 +732,8 @@ class ThirdPartyRiskPlugin implements PluginInterface
         foreach ($workflowHistory as $record) {
             $entries[] = [
                 'at' => $record->createdAt,
-                'title' => 'Workflow transition',
-                'detail' => sprintf('%s: %s -> %s', ucwords(str_replace('-', ' ', $record->transitionKey)), $this->stateLabel($record->fromState), $this->stateLabel($record->toState)),
+                'title' => __('Workflow transition'),
+                'detail' => sprintf('%s: %s -> %s', $this->transitionLabel($record->transitionKey), $this->stateLabel($record->fromState), $this->stateLabel($record->toState)),
                 'kind' => 'workflow',
             ];
         }
@@ -666,7 +741,7 @@ class ThirdPartyRiskPlugin implements PluginInterface
         foreach ($artifacts as $artifact) {
             $entries[] = [
                 'at' => (string) ($artifact['created_at'] ?? ''),
-                'title' => 'Evidence attached',
+                'title' => __('Evidence attached'),
                 'detail' => sprintf('%s (%s)', (string) $artifact['label'], (string) $artifact['original_filename']),
                 'kind' => 'artifact',
             ];
@@ -679,8 +754,8 @@ class ThirdPartyRiskPlugin implements PluginInterface
 
             $entries[] = [
                 'at' => $item['updated_at'],
-                'title' => 'Questionnaire updated',
-                'detail' => sprintf('%s. %s [%s]', $item['position'], $item['prompt'], ucwords(str_replace('-', ' ', $item['response_status']))),
+                'title' => __('Questionnaire updated'),
+                'detail' => sprintf('%s. %s [%s]', $item['position'], $item['prompt'], $questionnaires->responseStatusLabel($item['response_status'])),
                 'kind' => 'questionnaire',
             ];
         }
@@ -711,36 +786,36 @@ class ThirdPartyRiskPlugin implements PluginInterface
             }
 
             $label = match ($record->eventType) {
-                'plugin.third-party-risk.external-link.issued' => 'External link issued',
-                'plugin.third-party-risk.external-link.revoked' => 'External link revoked',
-                'plugin.third-party-risk.external-link.accessed' => 'External portal accessed',
-                'plugin.third-party-risk.external-link.delivered' => 'Invitation email sent',
-                'plugin.third-party-risk.external-link.delivery-failed' => 'Invitation email failed',
-                'plugin.third-party-risk.external-link.delivery-skipped' => 'Invitation email skipped',
-                'plugin.third-party-risk.external-link.questionnaire-submitted' => 'External questionnaire submitted',
-                'plugin.third-party-risk.external-link.artifact-submitted' => 'External evidence uploaded',
-                'plugin.third-party-risk.questionnaire-item.artifact-uploaded' => 'Questionnaire attachment uploaded',
-                'plugin.third-party-risk.external-link.questionnaire-artifact-submitted' => 'External questionnaire attachment uploaded',
-                'plugin.third-party-risk.external-collaborator.blocked' => 'External collaborator blocked',
-                'plugin.third-party-risk.external-collaborator.activated' => 'External collaborator activated',
-                'plugin.third-party-risk.external-collaborator.updated' => 'External collaborator updated',
-                'plugin.third-party-risk.brokered-request.issued' => 'Brokered request issued',
-                'plugin.third-party-risk.brokered-request.updated' => 'Brokered request updated',
-                'plugin.third-party-risk.brokered-request.started' => 'Brokered request started',
-                'plugin.third-party-risk.brokered-request.submitted' => 'Brokered request submitted',
-                'plugin.third-party-risk.brokered-request.completed' => 'Brokered request completed',
-                'plugin.third-party-risk.brokered-request.cancelled' => 'Brokered request cancelled',
-                'plugin.third-party-risk.collaboration-comment.added' => 'Comment added',
-                'plugin.third-party-risk.collaboration-draft.saved' => 'Shared draft saved',
-                'plugin.third-party-risk.collaboration-draft.updated' => 'Shared draft updated',
-                'plugin.third-party-risk.collaboration-draft.promoted-comment' => 'Draft promoted to comment',
-                'plugin.third-party-risk.collaboration-draft.promoted-request' => 'Draft promoted to follow-up request',
-                'plugin.third-party-risk.collaboration-request.created' => 'Follow-up request created',
-                'plugin.third-party-risk.collaboration-request.updated' => 'Follow-up request updated',
-                'plugin.third-party-risk.collaboration-request.started' => 'Follow-up request started',
-                'plugin.third-party-risk.collaboration-request.waiting' => 'Follow-up request waiting',
-                'plugin.third-party-risk.collaboration-request.completed' => 'Follow-up request completed',
-                'plugin.third-party-risk.collaboration-request.cancelled' => 'Follow-up request cancelled',
+                'plugin.third-party-risk.external-link.issued' => __('External link issued'),
+                'plugin.third-party-risk.external-link.revoked' => __('External link revoked'),
+                'plugin.third-party-risk.external-link.accessed' => __('External portal accessed'),
+                'plugin.third-party-risk.external-link.delivered' => __('Invitation email sent'),
+                'plugin.third-party-risk.external-link.delivery-failed' => __('Invitation email failed'),
+                'plugin.third-party-risk.external-link.delivery-skipped' => __('Invitation email skipped'),
+                'plugin.third-party-risk.external-link.questionnaire-submitted' => __('External questionnaire submitted'),
+                'plugin.third-party-risk.external-link.artifact-submitted' => __('External evidence uploaded'),
+                'plugin.third-party-risk.questionnaire-item.artifact-uploaded' => __('Questionnaire attachment uploaded'),
+                'plugin.third-party-risk.external-link.questionnaire-artifact-submitted' => __('External questionnaire attachment uploaded'),
+                'plugin.third-party-risk.external-collaborator.blocked' => __('External collaborator blocked'),
+                'plugin.third-party-risk.external-collaborator.activated' => __('External collaborator activated'),
+                'plugin.third-party-risk.external-collaborator.updated' => __('External collaborator updated'),
+                'plugin.third-party-risk.brokered-request.issued' => __('Brokered request issued'),
+                'plugin.third-party-risk.brokered-request.updated' => __('Brokered request updated'),
+                'plugin.third-party-risk.brokered-request.started' => __('Brokered request started'),
+                'plugin.third-party-risk.brokered-request.submitted' => __('Brokered request submitted'),
+                'plugin.third-party-risk.brokered-request.completed' => __('Brokered request completed'),
+                'plugin.third-party-risk.brokered-request.cancelled' => __('Brokered request cancelled'),
+                'plugin.third-party-risk.collaboration-comment.added' => __('Comment added'),
+                'plugin.third-party-risk.collaboration-draft.saved' => __('Shared draft saved'),
+                'plugin.third-party-risk.collaboration-draft.updated' => __('Shared draft updated'),
+                'plugin.third-party-risk.collaboration-draft.promoted-comment' => __('Draft promoted to comment'),
+                'plugin.third-party-risk.collaboration-draft.promoted-request' => __('Draft promoted to follow-up request'),
+                'plugin.third-party-risk.collaboration-request.created' => __('Follow-up request created'),
+                'plugin.third-party-risk.collaboration-request.updated' => __('Follow-up request updated'),
+                'plugin.third-party-risk.collaboration-request.started' => __('Follow-up request started'),
+                'plugin.third-party-risk.collaboration-request.waiting' => __('Follow-up request waiting'),
+                'plugin.third-party-risk.collaboration-request.completed' => __('Follow-up request completed'),
+                'plugin.third-party-risk.collaboration-request.cancelled' => __('Follow-up request cancelled'),
                 default => null,
             };
 
@@ -775,7 +850,7 @@ class ThirdPartyRiskPlugin implements PluginInterface
             }
 
             if (is_string($record->summary['collection_channel'] ?? null) && $record->summary['collection_channel'] !== '') {
-                $detailParts[] = ucwords(str_replace('-', ' ', (string) $record->summary['collection_channel']));
+                $detailParts[] = $this->brokeredCollectionChannelLabel((string) $record->summary['collection_channel']);
             }
 
             $entries[] = [
@@ -796,35 +871,35 @@ class ThirdPartyRiskPlugin implements PluginInterface
     private function brokeredCollectionStatusLabel(string $status): string
     {
         return match ($status) {
-            'queued' => 'Queued',
-            'in-progress' => 'In progress',
-            'submitted' => 'Submitted',
-            'completed' => 'Completed',
-            'cancelled' => 'Cancelled',
-            default => ucwords(str_replace('-', ' ', $status)),
+            'queued' => __('Queued'),
+            'in-progress' => __('In progress'),
+            'submitted' => __('Submitted'),
+            'completed' => __('Completed'),
+            'cancelled' => __('Cancelled'),
+            default => __(ucwords(str_replace('-', ' ', $status))),
         };
     }
 
     private function brokeredCollectionChannelLabel(string $channel): string
     {
         return match ($channel) {
-            'email' => 'Email',
-            'meeting' => 'Meeting',
-            'call' => 'Call',
-            'uploaded-docs' => 'Uploaded docs',
-            'broker-note' => 'Broker note',
-            default => ucwords(str_replace('-', ' ', $channel)),
+            'email' => __('Email'),
+            'meeting' => __('Meeting'),
+            'call' => __('Call'),
+            'uploaded-docs' => __('Uploaded docs'),
+            'broker-note' => __('Broker note'),
+            default => __(ucwords(str_replace('-', ' ', $channel))),
         };
     }
 
     private function attachmentUploadProfileLabel(string $profile): string
     {
         return match ($profile) {
-            'documents_only' => 'Documents only',
-            'documents_and_spreadsheets' => 'Documents and spreadsheets',
-            'images_only' => 'Images only',
-            'review_artifacts' => 'Mixed review artifacts',
-            default => $profile !== '' ? ucwords(str_replace('-', ' ', $profile)) : 'Default review artifacts',
+            'documents_only' => __('Documents only'),
+            'documents_and_spreadsheets' => __('Documents and spreadsheets'),
+            'images_only' => __('Images only'),
+            'review_artifacts' => __('Mixed review artifacts'),
+            default => $profile !== '' ? __(ucwords(str_replace('-', ' ', $profile))) : __('Default review artifacts'),
         };
     }
 

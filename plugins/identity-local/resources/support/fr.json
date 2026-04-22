@@ -1,0 +1,32 @@
+{
+  "guide": [
+    {
+      "id": "manage-people-and-access",
+      "title": "Gérez séparément les personnes et l'accès à l'organisation",
+      "summary": "Créer une personne n'est pas la même chose qu'accorder un accès à une organisation.",
+      "body": [
+        "Créez ou synchronisez d'abord la personne, puis accordez l'accès à l'organisation via des adhésions.",
+        "Cela garde l'administration des identités séparée de la gouvernance opérationnelle des accès."
+      ],
+      "concept_ids": ["local-person", "membership"],
+      "order": 40
+    }
+  ],
+  "concepts": [
+    {
+      "id": "local-person",
+      "label": "Personne locale",
+      "category": "identity",
+      "summary": "Une fiche de personne gérée localement avec nom d'utilisateur, e-mail et méthodes de connexion facultatives.",
+      "why_it_exists": "La plateforme a besoin d'un moyen intégré pour créer des administrateurs, des utilisateurs locaux, des utilisateurs temporaires ou des collaborateurs externes, même lorsqu'aucun annuaire externe n'est disponible.",
+      "how_to_use": [
+        "Créez des personnes locales dans l'administration lorsqu'elles ont besoin d'une identité de plateforme.",
+        "Accordez l'accès à l'organisation séparément via des adhésions."
+      ],
+      "relations": [
+        { "type": "becomes", "target": "principal", "summary": "Une personne locale est représentée par un principal pour les vérifications d'accès." }
+      ],
+      "order": 110
+    }
+  ]
+}

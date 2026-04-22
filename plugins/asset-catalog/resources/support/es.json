@@ -1,0 +1,34 @@
+{
+  "guide": [
+    {
+      "id": "start-with-assets",
+      "title": "Empieza tu modelo operativo con los activos",
+      "summary": "Los activos describen lo que la organización necesita proteger, operar o recuperar.",
+      "body": [
+        "Registra como activos los sistemas, conjuntos de datos, servicios y recursos empresariales importantes.",
+        "Después, otros registros como riesgos y planes de continuidad pueden apuntar a esos activos."
+      ],
+      "concept_ids": ["asset"],
+      "order": 60
+    }
+  ],
+  "concepts": [
+    {
+      "id": "asset",
+      "label": "Activo",
+      "category": "operations",
+      "summary": "Un elemento de negocio, técnico o de información que la organización necesita gestionar y proteger.",
+      "why_it_exists": "Los activos dan al resto del modelo de cumplimiento un sujeto concreto. Riesgos, controles y trabajo de recuperación se entienden mejor cuando apuntan a la cosa que importa.",
+      "how_to_use": [
+        "Crea activos para sistemas, conjuntos de datos, servicios, proveedores o recursos empresariales críticos.",
+        "Mantén actualizados la titularidad, el estado del ciclo de vida y los campos descriptivos."
+      ],
+      "relations": [
+        { "type": "may-have", "target": "risk", "summary": "Los riesgos pueden describir amenazas o debilidades que afectan a un activo." },
+        { "type": "may-be-covered-by", "target": "control", "summary": "Los controles pueden apoyar cómo se protege o gobierna un activo." },
+        { "type": "may-be-needed-by", "target": "continuity-service", "summary": "Los servicios y planes pueden depender del activo." }
+      ],
+      "order": 210
+    }
+  ]
+}

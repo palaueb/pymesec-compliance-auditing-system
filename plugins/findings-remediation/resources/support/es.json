@@ -1,0 +1,53 @@
+{
+  "guide": [
+    {
+      "id": "run-finding-follow-up",
+      "title": "Usa el espacio del hallazgo para gestionar el seguimiento de incidencias, no solo el registro",
+      "summary": "Un hallazgo cobra utilidad cuando las evidencias, la titularidad, el flujo de trabajo y las acciones de remediación permanecen juntos en un mismo registro.",
+      "body": [
+        "Crea un hallazgo para una incidencia confirmada o una no conformidad, no para una preocupación puramente hipotética.",
+        "Usa acciones de remediación para dividir el seguimiento en tareas concretas con responsables, fechas y estado.",
+        "Adjunta evidencias y actualiza el estado del flujo de trabajo hasta que el cierre pueda justificarse."
+      ],
+      "concept_ids": [
+        "finding",
+        "remediation-action"
+      ],
+      "order": 240
+    }
+  ],
+  "concepts": [
+    {
+      "id": "finding",
+      "label": "Hallazgo",
+      "category": "operations",
+      "summary": "Una incidencia, brecha o no conformidad detectada que necesita seguimiento y cierre.",
+      "why_it_exists": "Los hallazgos convierten una observación en trabajo con responsable. Mantienen visibles las incidencias hasta que se toma una acción y el cierre puede justificarse.",
+      "how_to_use": [
+        "Crea un hallazgo cuando identifiques una incidencia real, no solo un riesgo posible.",
+        "Haz seguimiento del estado de remediación hasta que la incidencia se cierre o se acepte formalmente."
+      ],
+      "relations": [
+        { "type": "may-reference", "target": "asset", "summary": "Un hallazgo puede apuntar al activo afectado." },
+        { "type": "may-reference", "target": "control", "summary": "Un hallazgo puede describir una brecha o un fallo de control." },
+        { "type": "may-reference", "target": "risk", "summary": "Un hallazgo puede apoyar o refinar la visión del riesgo." }
+      ],
+      "order": 240
+    },
+    {
+      "id": "remediation-action",
+      "label": "Acción de remediación",
+      "category": "operations",
+      "summary": "Una tarea concreta de seguimiento creada dentro de un hallazgo para llevar la incidencia hacia su resolución.",
+      "why_it_exists": "Un hallazgo suele requerir más de un paso. Las acciones de remediación hacen visible la responsabilidad, los plazos y la ejecución.",
+      "how_to_use": [
+        "Crea una acción por cada pieza discreta de seguimiento.",
+        "Define estado, fecha límite, responsable y notas para que el hallazgo pueda revisarse operativamente."
+      ],
+      "relations": [
+        { "type": "belongs-to", "target": "finding", "summary": "Las acciones permanecen asociadas al hallazgo que remediarán." }
+      ],
+      "order": 241
+    }
+  ]
+}

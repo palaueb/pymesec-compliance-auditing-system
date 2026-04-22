@@ -1,0 +1,52 @@
+{
+  "guide": [
+    {
+      "id": "manage-privacy-records-through-data-flows",
+      "title": "Usa el espacio de trabajo de flujos de datos para mantener revisables los registros operativos de privacidad",
+      "summary": "El registro de flujo no es solo un marcador de diagrama. Alberga el estado del flujo de trabajo, la cadencia de revisión, los responsables, los registros vinculados y los archivos de apoyo.",
+      "body": [
+        "Registra el origen, el destino, el tipo de transferencia y el resumen de la categoría de datos para que el movimiento se entienda.",
+        "Vincula el flujo al activo, riesgo o actividad de tratamiento relevante cuando eso aporte mejor trazabilidad operativa.",
+        "Usa el estado del flujo de trabajo, los responsables, la fecha de revisión y los registros subidos para mantener actualizada la revisión de privacidad."
+      ],
+      "concept_ids": [
+        "data-flow",
+        "processing-activity"
+      ],
+      "order": 260
+    }
+  ],
+  "concepts": [
+    {
+      "id": "data-flow",
+      "label": "Flujo de datos",
+      "category": "privacy",
+      "summary": "Una descripción de cómo los datos se mueven entre personas, sistemas o partes externas.",
+      "why_it_exists": "Los flujos de datos hacen tangible el trabajo de privacidad. Muestran de dónde vienen los datos personales o sensibles, adónde van y quién los toca.",
+      "how_to_use": [
+        "Registra el flujo principal, el origen, el destino, el tipo de transferencia y la fecha de revisión.",
+        "Mantén el flujo vinculado a la actividad de tratamiento relevante u otros registros operativos cuando sea posible."
+      ],
+      "relations": [
+        { "type": "supports", "target": "processing-activity", "summary": "Un flujo de datos suele explicar una parte de una actividad de tratamiento." },
+        { "type": "may-link-to", "target": "risk", "summary": "Un flujo puede vincularse a un registro de riesgo de privacidad o de transferencia más amplio." }
+      ],
+      "order": 260
+    },
+    {
+      "id": "processing-activity",
+      "label": "Actividad de tratamiento",
+      "category": "privacy",
+      "summary": "Un registro de una actividad de negocio que trata datos para una finalidad definida.",
+      "why_it_exists": "Las actividades de tratamiento ayudan a la organización a explicar por qué se tratan datos, quién los trata y con qué salvaguardas.",
+      "how_to_use": [
+        "Registra la finalidad, el contexto y los detalles clave de tratamiento de la actividad.",
+        "Usa los flujos de datos relacionados para que la actividad se entienda en la práctica."
+      ],
+      "relations": [
+        { "type": "may-be-described-by", "target": "data-flow", "summary": "Los flujos de datos pueden explicar cómo funciona la actividad en la práctica." }
+      ],
+      "order": 261
+    }
+  ]
+}

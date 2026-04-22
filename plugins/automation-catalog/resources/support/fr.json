@@ -1,0 +1,174 @@
+{
+  "guide": [
+    {
+      "id": "automation-catalog-overview",
+      "title": "Catalogue d'automatisation",
+      "summary": "Utilisez le catalogue d'automatisation pour enregistrer les métadonnées des paquets, contrôler l'état d'installation et d'activation, suivre la santé opérationnelle et mapper les résultats vers des preuves et des actions de workflow.",
+      "body": [
+        "Un paquet d'automatisation est une unité de déploiement gouvernée pour les connecteurs, les travaux de collecte de preuves ou les tâches opérationnelles de conformité.",
+        "La partie supérieure du catalogue liste uniquement les paquets installés, afin que les opérateurs gèrent les automatisations actives sans bruit de découverte.",
+        "Les métadonnées de responsabilité et de provenance rendent chaque paquet traçable jusqu'à un principal responsable et une source.",
+        "Les mappages de sortie permettent d'orienter les résultats d'automatisation vers des registres de mise à jour de preuves ou des transitions de workflow à l'aide de cibles explicites ou du mode de résolution par périmètre pour actif/risque.",
+        "La couche d'exécution prend en charge les lancements manuels depuis le détail du paquet et les lancements planifiés via CLI/CRON, avec un historique persistant par paquet.",
+        "Le cycle de vie du paquet, le dépôt, l'exécution et les actions de mappage de sortie sont aussi exposés par API REST sous /api/v1/automation-catalog et publiés dans openapi.json.",
+        "Les résultats par cible sont conservés à chaque exécution afin que les résultats puissent être audités au niveau objet.",
+        "Les mappages peuvent éventuellement propager la posture d'exécution vers les cibles actif/risque via une garde politique.",
+        "Lorsque la propagation de posture est activée, les mises à jour de posture actif/risque gardent des références de provenance vers la dernière exécution et le dernier résultat de contrôle.",
+        "Chaque mappage peut être limité par mode d'exécution pour fonctionner en exécution, application manuelle ou les deux.",
+        "Les mappages peuvent aussi appliquer une politique d'échec pour créer des constats dédupliqués, avec création optionnelle d'actions de remédiation, lorsque les contrôles échouent.",
+        "La politique de preuves peut être définie sur toujours, sur échec ou sur changement afin de contrôler le renouvellement des preuves.",
+        "Les dépôts externes de paquets peuvent être enregistrés avec un niveau de confiance et une clé publique pour valider les index du dépôt avant ingestion.",
+        "Lorsqu'aucun dépôt n'est configuré, la page ouvre un écran d'intégration avec activation du dépôt officiel et enregistrement de dépôts personnalisés.",
+        "L'ouverture d'un paquet entre dans une vue de détail focalisée et masque les panneaux du catalogue parent jusqu'au retour à la liste."
+      ],
+      "concept_ids": [
+        "automation-pack",
+        "automation-pack-lifecycle",
+        "automation-pack-health",
+        "automation-pack-runtime",
+        "automation-output-mapping",
+        "automation-package-repository"
+      ],
+      "order": 430
+    }
+  ],
+  "concepts": [
+    {
+      "id": "automation-pack",
+      "label": "Paquet d'automatisation",
+      "category": "operations",
+      "summary": "Une unité d'automatisation cataloguée, identifiée par clé de paquet, version, source, type de fournisseur et métadonnées de responsabilité.",
+      "why_it_exists": "Il établit un modèle d'objet réutilisable pour que les fonctions d'automatisation soient gérées comme des entités produit à part entière plutôt que comme des scripts implicites.",
+      "how_to_use": [
+        "Enregistrez des paquets avec des clés stables et des noms parlants.",
+        "Conservez la source et la provenance pour rendre la chaîne d'approvisionnement explicite.",
+        "Attribuez la responsabilité pour que la comptabilité opérationnelle soit claire."
+      ],
+      "relations": [
+        {
+          "type": "has-lifecycle",
+          "target": "automation-pack-lifecycle",
+          "summary": "Chaque paquet a un état de cycle de vie géré."
+        },
+        {
+          "type": "has-health",
+          "target": "automation-pack-health",
+          "summary": "Chaque paquet a une posture de santé à l'exécution suivie."
+        }
+      ],
+      "order": 431
+    },
+    {
+      "id": "automation-pack-lifecycle",
+      "label": "Cycle de vie du paquet d'automatisation",
+      "category": "operations",
+      "summary": "L'état de cycle de vie indique si un paquet est découvert, installé, activé ou désactivé.",
+      "why_it_exists": "Il permet aux opérateurs de contrôler la surface active d'automatisation au lieu de charger tous les paquets disponibles.",
+      "how_to_use": [
+        "Installez les paquets avant de les activer dans les workflows de production.",
+        "N'activez que les paquets nécessaires au modèle opérationnel courant.",
+        "Désactivez les paquets qui ne sont pas nécessaires à l'instant.",
+        "Utilisez la désinstallation pour retirer un registre de paquet du catalogue local lorsque vous ne souhaitez plus le conserver.",
+        "Utilisez la table de catalogue externe pour installer les versions découvertes avant leur apparition dans le catalogue des paquets installés."
+      ],
+      "order": 432
+    },
+    {
+      "id": "automation-pack-health",
+      "label": "Santé du paquet d'automatisation",
+      "category": "operations",
+      "summary": "La santé opérationnelle suit la dernière exécution, le dernier succès ou échec et l'état de santé actuel.",
+      "why_it_exists": "Elle offre aux opérateurs une visibilité immédiate sur le fait que l'automatisation installée est saine, dégradée ou en échec.",
+      "how_to_use": [
+        "Suivez les états inconnu, sain, dégradé et en échec.",
+        "Gardez à jour les horodatages de dernière exécution et les raisons d'échec.",
+        "Utilisez la posture de santé pour prioriser les décisions de remédiation et de désactivation."
+      ],
+      "order": 433
+    },
+    {
+      "id": "automation-pack-runtime",
+      "label": "Exécution du paquet d'automatisation",
+      "category": "operations",
+      "summary": "La couche d'exécution manuelle et planifiée qui lance les mappages actifs pour les paquets installés et activés et stocke l'historique.",
+      "why_it_exists": "Elle fait passer le catalogue d'un contrôle de cycle de vie statique à de vraies opérations à l'exécution avec des résultats traçables.",
+      "how_to_use": [
+        "Lancez un paquet manuellement depuis le détail du paquet lorsque vous avez besoin d'une exécution immédiate.",
+        "Configurez une politique de planification par paquet (cron + fuseau horaire) lorsque l'exécution doit se faire à cadence récurrente.",
+        "Exécutez les lots planifiés avec la commande CLI d'automatisation lancée par CRON.",
+        "Utilisez --respect_schedule=1 sur la CLI d'exécution pour que CRON ne lance que les paquets arrivés à échéance selon leur planification.",
+        "Consultez l'historique des exécutions pour inspecter le mode de déclenchement, l'état, la durée et les compteurs de mappage.",
+        "Les mappages de preuve à l'exécution génèrent désormais les charges utiles via le contrat du moteur d'exécution et les promeuvent automatiquement vers des registres de preuve gouvernés.",
+        "Les mappages par résolution de périmètre sont exécutés depuis l'exécution du paquet (lancer maintenant ou exécution planifiée), pas depuis un apply ponctuel.",
+        "Utilisez les derniers résultats de contrôle dans le détail du paquet pour revoir l'état et le résultat par cible à chaque exécution.",
+        "Chaque résultat de contrôle conserve désormais des identifiants de traçabilité directs pour l'artefact de preuve, le registre de preuve, le constat et l'action de remédiation lorsque ces objets sont produits.",
+        "Les mappages peuvent appliquer des garde-fous d'exécution (nombre maximal de cibles, taille de charge) et une politique de réessais (tentatives, backoff) pour une exécution plus sûre."
+      ],
+      "relations": [
+        {
+          "type": "updates",
+          "target": "automation-pack-health",
+          "summary": "Chaque exécution met à jour la santé du paquet et la posture de dernière exécution."
+        },
+        {
+          "type": "executes",
+          "target": "automation-output-mapping",
+          "summary": "L'exécution lance les mappages actifs et enregistre les états de réussite, d'échec ou d'ignoré."
+        }
+      ],
+      "order": 434
+    },
+    {
+      "id": "automation-output-mapping",
+      "label": "Mappage de sortie d'automatisation",
+      "category": "operations",
+      "summary": "Une règle liée à un paquet qui mappe la sortie d'automatisation vers une mise à jour de preuve ou l'exécution d'une transition de workflow.",
+      "why_it_exists": "Il transforme la sortie brute d'automatisation en effets opérationnels gouvernés sans procédures manuelles ad hoc de copier-coller.",
+      "how_to_use": [
+        "Définissez un mappage par intention opérationnelle, comme une mise à jour de preuve pour un contrôle ou une transition pour un sujet de workflow.",
+        "Utilisez le mode de liaison explicite pour un seul identifiant d'objet cible fixe.",
+        "Utilisez le mode de liaison par périmètre pour les sélecteurs d'actif/risque (identifiant de périmètre plus balises facultatives).",
+        "Activez la politique de propagation de posture uniquement lorsque vous voulez que l'état d'exécution mette à jour les champs de posture d'automatisation des actifs/risques.",
+        "Utilisez le mode d'exécution pour limiter un mappage à l'exécution seule, à l'application manuelle seule ou aux deux.",
+        "Utilisez la politique d'échec créer-constat lorsque les contrôles échoués doivent ouvrir un constat sans triage manuel.",
+        "Utilisez la politique d'échec créer-constat-et-action lorsque les contrôles échoués doivent ouvrir à la fois un constat et une action de remédiation planifiée.",
+        "Utilisez les derniers résultats de contrôle pour ouvrir directement les preuves, constats et actions de remédiation générés lorsque les politiques d'exécution les créent.",
+        "Utilisez la politique de preuve sur-changement pour éviter de téléverser des artefacts identiques lorsque l'empreinte utile n'a pas changé.",
+        "Utilisez la politique de réessais d'exécution pour retenter les livraisons échouées et suivre les réessais dans les diagnostics du résultat de contrôle.",
+        "Utilisez les garde-fous d'exécution pour plafonner les cibles résolues et la taille de la charge avant livraison.",
+        "Utilisez les mappages de preuve pour téléverser ou référencer les artefacts de sortie et les promouvoir vers des registres de preuve gouvernés.",
+        "Utilisez les mappages de workflow pour appliquer une transition spécifique sur un identifiant de sujet précis avec une clé de workflow et une clé de transition explicites.",
+        "Suivez le dernier état et message de livraison pour que les opérateurs puissent diagnostiquer rapidement les échecs de mappage."
+      ],
+      "relations": [
+        {
+          "type": "owned-by",
+          "target": "automation-pack",
+          "summary": "Chaque mappage de sortie appartient à un seul paquet d'automatisation."
+        }
+      ],
+      "order": 435
+    },
+    {
+      "id": "automation-package-repository",
+      "label": "Dépôt de paquets d'automatisation",
+      "category": "operations",
+      "summary": "Une source d'index externe signée qui publie les versions et métadonnées de paquets d'automatisation.",
+      "why_it_exists": "Elle permet aux opérateurs de découvrir des paquets depuis des catalogues externes sans charger chaque paquet comme un plugin Laravel.",
+      "how_to_use": [
+        "Enregistrez l'URL du dépôt, l'URL de signature du dépôt, le niveau de confiance et la clé publique.",
+        "Utilisez l'installation officielle en un clic lorsque vous voulez une source préconfigurée de confiance.",
+        "Actualisez les métadonnées du dépôt pour que le catalogue valide la signature et ingère les dernières versions.",
+        "Examinez les versions découvertes dans le catalogue externe et n'installez que les paquets que vous voulez actifs dans l'espace de travail."
+      ],
+      "relations": [
+        {
+          "type": "feeds",
+          "target": "automation-pack",
+          "summary": "Les dernières versions découvertes sont répliquées dans les registres locaux de paquets d'automatisation."
+        }
+      ],
+      "order": 436
+    }
+  ]
+}

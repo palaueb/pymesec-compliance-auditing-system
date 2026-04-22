@@ -1,0 +1,15 @@
+{
+  "plugin.questionnaires.response_type.yes_no": "Sí / no",
+  "plugin.questionnaires.response_type.long_text": "Texto largo",
+  "plugin.questionnaires.response_type.date": "Fecha",
+  "plugin.questionnaires.response_type.evidence_list": "Lista de evidencias",
+  "plugin.questionnaires.response_status.draft": "Borrador",
+  "plugin.questionnaires.response_status.sent": "Enviado",
+  "plugin.questionnaires.response_status.submitted": "Presentado",
+  "plugin.questionnaires.response_status.under_review": "En revisión",
+  "plugin.questionnaires.response_status.accepted": "Aceptado",
+  "plugin.questionnaires.response_status.needs_follow_up": "Requiere seguimiento",
+  "plugin.questionnaires.attachment_mode.none": "Sin adjunto requerido",
+  "plugin.questionnaires.attachment_mode.supporting_document": "Documento de apoyo",
+  "plugin.questionnaires.attachment_mode.supporting_evidence": "Evidencia de apoyo"
+}

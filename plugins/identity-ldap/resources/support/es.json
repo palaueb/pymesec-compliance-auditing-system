@@ -1,0 +1,33 @@
+{
+  "guide": [
+    {
+      "id": "configure-directory-sync",
+      "title": "Usa LDAP para sincronizar personas, no para reemplazar el modelo de acceso",
+      "summary": "LDAP llena la caché local de personas y grupos, pero la plataforma sigue trabajando con identidades principales y membresías.",
+      "body": [
+        "Configura una conexión de directorio por organización cuando esa organización gestione personas en LDAP.",
+        "Después de la sincronización, revisa cómo los grupos LDAP se mapean a roles y ámbitos de la organización."
+      ],
+      "concept_ids": ["ldap-directory-sync", "principal", "membership"],
+      "order": 50
+    }
+  ],
+  "concepts": [
+    {
+      "id": "ldap-directory-sync",
+      "label": "Sincronización de directorio LDAP",
+      "category": "identity",
+      "summary": "El conector que importa usuarios y grupos desde LDAP al runtime de identidad local.",
+      "why_it_exists": "La plataforma necesita una vía mantenida para la integración con directorios externos sin perder coherencia en las decisiones de acceso dentro de la aplicación.",
+      "how_to_use": [
+        "Configura la conexión, el base DN, la cuenta de enlace y los mapeos de atributos.",
+        "Ejecuta la sincronización y revisa los mapeos de grupos a roles y ámbitos."
+      ],
+      "relations": [
+        { "type": "creates-or-updates", "target": "principal", "summary": "Las entradas del directorio se convierten en identidades de acceso cacheadas localmente." },
+        { "type": "maps-to", "target": "membership", "summary": "Los grupos pueden resultar en acceso a la organización mediante membresías." }
+      ],
+      "order": 120
+    }
+  ]
+}

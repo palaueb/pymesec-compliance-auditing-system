@@ -1,0 +1,24 @@
+{
+  "plugin.framework-ens.framework.name": "Référentiel ENS",
+  "plugin.framework-ens.framework.description": "Pack cadre initial pour l'Esquema Nacional de Seguridad (ENS). Il prépare des catégories et mesures de base pour la gouvernance, le contrôle d'accès, la supervision, les sauvegardes et la reprise.",
+
+  "plugin.framework-ens.elements.ens-domain-org.title": "Gouvernance organisationnelle",
+  "plugin.framework-ens.elements.ens-domain-org.description": "Mesures de gouvernance, propriété des politiques et responsabilités.",
+  "plugin.framework-ens.elements.ens-domain-protect.title": "Mesures de protection",
+  "plugin.framework-ens.elements.ens-domain-protect.description": "Mesures préventives pour l'accès, les sauvegardes et la protection des systèmes.",
+  "plugin.framework-ens.elements.ens-domain-detect.title": "Mesures de détection",
+  "plugin.framework-ens.elements.ens-domain-detect.description": "Capacités de supervision et de détection des anomalies.",
+  "plugin.framework-ens.elements.ens-domain-recover.title": "Mesures de reprise",
+  "plugin.framework-ens.elements.ens-domain-recover.description": "Capacités de continuité et de reprise après incident ou interruption.",
+
+  "plugin.framework-ens.elements.ens-org-governance.title": "Gouvernance de sécurité et propriété des politiques",
+  "plugin.framework-ens.elements.ens-org-governance.description": "Définir les responsables, la structure des politiques et les jalons de gouvernance du modèle de sécurité.",
+  "plugin.framework-ens.elements.ens-protect-access.title": "Protection de l'identité et des accès",
+  "plugin.framework-ens.elements.ens-protect-access.description": "Contrôler les droits d'accès, les accès privilégiés et la recertification périodique des autorisations.",
+  "plugin.framework-ens.elements.ens-protect-backup.title": "Protection et intégrité des sauvegardes",
+  "plugin.framework-ens.elements.ens-protect-backup.description": "Protéger les sauvegardes, valider leur intégrité et garantir la capacité de restauration.",
+  "plugin.framework-ens.elements.ens-detect-monitoring.title": "Supervision des événements de sécurité",
+  "plugin.framework-ens.elements.ens-detect-monitoring.description": "Surveiller les systèmes pertinents et consigner les preuves d'activité anormale et de réponse.",
+  "plugin.framework-ens.elements.ens-recover-continuity.title": "Continuité de service et reprise",
+  "plugin.framework-ens.elements.ens-recover-continuity.description": "Maintenir les plans de reprise, les exercices de continuité et les preuves de restauration pour les services critiques."
+}

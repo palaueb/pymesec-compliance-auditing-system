@@ -1,0 +1,87 @@
+{
+  "guide": [
+    {
+      "id": "manage-control-coverage-in-one-place",
+      "title": "Utilisez le détail du contrôle pour garder ensemble la responsabilité, les preuves, le workflow et la couverture des exigences",
+      "summary": "La liste du catalogue sert à parcourir. L’espace de travail du contrôle sélectionné est l’endroit où sont maintenues les correspondances et le matériel d'appui.",
+      "body": [
+        "Créez des contrôles internes qui décrivent la mesure de protection ou la pratique attendue que vous souhaitez gouverner.",
+        "Reliez les exigences du référentiel à chaque contrôle lorsque vous devez démontrer la couverture par rapport à une norme ou une réglementation.",
+        "Gardez à jour les responsables, l’état du workflow, le résumé des preuves et les artefacts dans l’espace de détail du contrôle."
+      ],
+      "concept_ids": [
+        "control",
+        "control-framework",
+        "control-requirement",
+        "control-coverage-mapping"
+      ],
+      "order": 220
+    }
+  ],
+  "concepts": [
+    {
+      "id": "control",
+      "label": "Contrôle",
+      "category": "operations",
+      "summary": "Une mesure de protection, une exigence ou une pratique attendue qui devrait exister et être revue.",
+      "why_it_exists": "Les contrôles décrivent à quoi devrait ressembler une bonne gouvernance ou protection. Ils deviennent un point central pour les preuves et la revue.",
+      "how_to_use": [
+        "Créez des contrôles pour les mesures de protection que votre organisation veut suivre.",
+        "Revoyez-les régulièrement et joignez des preuves lorsque c'est nécessaire."
+      ],
+      "relations": [
+        { "type": "may-support", "target": "asset", "summary": "Les contrôles aident à protéger ou à gouverner les actifs." },
+        { "type": "may-reduce", "target": "risk", "summary": "Les contrôles sont l’un des principaux moyens de réduire le risque." },
+        { "type": "may-map-to", "target": "control-framework", "summary": "Les contrôles peuvent être alignés sur des référentiels et des exigences." }
+      ],
+      "order": 220
+    },
+    {
+      "id": "control-framework",
+      "label": "Référentiel de contrôle",
+      "category": "catalogue",
+      "summary": "Un référentiel ou une norme nommée qui regroupe un ensemble d'exigences de contrôle.",
+      "why_it_exists": "Les référentiels aident l'organisation à expliquer d'où vient une exigence de contrôle.",
+      "how_to_use": [
+        "Enregistrez d'abord le référentiel, puis ajoutez les exigences associées.",
+        "Mappez vos contrôles internes à ces exigences lorsque vous avez besoin de traçabilité."
+      ],
+      "relations": [
+        { "type": "contains", "target": "control-requirement", "summary": "Les exigences vivent à l'intérieur d'un référentiel." }
+      ],
+      "order": 225
+    },
+    {
+      "id": "control-requirement",
+      "label": "Exigence de contrôle",
+      "category": "catalogue",
+      "summary": "Une exigence ou une clause à l'intérieur d'un référentiel.",
+      "why_it_exists": "Les exigences créent le lien traçable entre les contrôles internes et les obligations ou normes externes.",
+      "how_to_use": [
+        "Ajoutez les exigences sous le référentiel auquel elles appartiennent.",
+        "Mappez les contrôles internes lorsque vous devez démontrer la couverture."
+      ],
+      "relations": [
+        { "type": "belongs-to", "target": "control-framework", "summary": "Une exigence fait partie d'un seul référentiel." },
+        { "type": "may-be-covered-by", "target": "control", "summary": "Les contrôles internes peuvent couvrir une ou plusieurs exigences." }
+      ],
+      "order": 226
+    },
+    {
+      "id": "control-coverage-mapping",
+      "label": "Correspondance de couverture des contrôles",
+      "category": "catalogue",
+      "summary": "La relation explicite entre un contrôle interne et une exigence du référentiel, y compris le niveau de couverture déclaré.",
+      "why_it_exists": "La correspondance de couverture rend l'adoption du référentiel et la traçabilité d'audit concrètes au lieu d'être implicites.",
+      "how_to_use": [
+        "Reliez l'exigence au contrôle et choisissez le niveau de couverture qui reflète le mieux la réalité.",
+        "Ajoutez une note courte lorsque la relation a besoin de contexte ou de nuance."
+      ],
+      "relations": [
+        { "type": "connects", "target": "control", "summary": "La correspondance appartient à un seul contrôle interne." },
+        { "type": "connects", "target": "control-requirement", "summary": "La correspondance pointe vers une exigence du référentiel." }
+      ],
+      "order": 227
+    }
+  ]
+}

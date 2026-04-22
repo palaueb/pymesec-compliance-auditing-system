@@ -7,19 +7,19 @@
 
 <section class="module-screen">
     <div class="surface-card">
-        <div class="entity-title">Control review board</div>
-        <div class="table-note" style="margin-top:6px;">This view stays focused on workflow state, notifications, and review history. Open a control from the Controls Catalog when you need to manage transitions, evidence, or requirement mappings.</div>
+        <div class="entity-title">{{ __('Control review board') }}</div>
+        <div class="table-note" style="margin-top:6px;">{{ __('This view stays focused on workflow state, notifications, and review history. Open a control from the Controls Catalog when you need to manage transitions, evidence, or requirement mappings.') }}</div>
     </div>
 
     <div class="table-card">
         <table class="entity-table">
             <thead>
                 <tr>
-                    <th>Control</th>
-                    <th>Current state</th>
-                    <th>Transitions</th>
-                    <th>Notifications</th>
-                    <th>Artifacts</th>
+                    <th>{{ __('Control') }}</th>
+                    <th>{{ __('Current state') }}</th>
+                    <th>{{ __('Transitions') }}</th>
+                    <th>{{ __('Notifications') }}</th>
+                    <th>{{ __('Artifacts') }}</th>
                 </tr>
             </thead>
             <tbody>
@@ -37,17 +37,17 @@
                                 'archived' => 'pill-archived',
                                 default    => '',
                             }; @endphp
-                            <span class="pill {{ $wfPill }}">{{ $row['instance']->currentState }}</span>
+                            <span class="pill {{ $wfPill }}">{{ __($row['instance']->currentState) }}</span>
                         </td>
                         <td>
                             @if ($row['history'] === [])
-                                <span class="muted-note">No transitions yet</span>
+                                <span class="muted-note">{{ __('No transitions yet') }}</span>
                             @else
                                 <div class="data-stack">
                                     @foreach ($row['history'] as $history)
                                         <div class="data-item">
-                                            <span class="table-note">{{ $history->transitionKey }}:</span>
-                                            {{ $history->fromState }} → {{ $history->toState }}
+                                            <span class="table-note">{{ __($history->transitionKey) }}:</span>
+                                            {{ __($history->fromState) }} → {{ __($history->toState) }}
                                         </div>
                                     @endforeach
                                 </div>
@@ -56,7 +56,7 @@
                         <td>
                             @php $matches = collect($row['notifications'])->filter(fn ($notification) => ($notification->metadata['control_id'] ?? null) === $row['control']['id']); @endphp
                             @if ($matches->isEmpty())
-                                <span class="muted-note">None</span>
+                                <span class="muted-note">{{ __('None') }}</span>
                             @else
                                 <div class="data-stack">
                                     @foreach ($matches as $notification)
@@ -70,7 +70,7 @@
                         </td>
                         <td>
                             @if ($row['artifacts'] === [])
-                                <span class="muted-note">None</span>
+                                <span class="muted-note">{{ __('None') }}</span>
                             @else
                                 <div class="data-stack">
                                     @foreach ($row['artifacts'] as $artifact)
@@ -85,7 +85,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="5"><span class="muted-note">No controls with workflow activity yet.</span></td>
+                        <td colspan="5"><span class="muted-note">{{ __('No controls with workflow activity yet.') }}</span></td>
                     </tr>
                 @endforelse
             </tbody>

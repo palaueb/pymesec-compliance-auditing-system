@@ -1,0 +1,174 @@
+{
+  "guide": [
+    {
+      "id": "automation-catalog-overview",
+      "title": "Automatisierungskatalog",
+      "summary": "Nutze den Automatisierungskatalog, um Paketmetadaten zu registrieren, Installations- und Aktivierungsstatus zu steuern, den Betriebszustand zu verfolgen und Ausgaben auf Nachweise und Workflow-Aktionen abzubilden.",
+      "body": [
+        "Ein Automatisierungspaket ist eine gesteuerte Bereitstellungseinheit für Connectoren, Nachweiserfassungsjobs oder operative Compliance-Aufgaben.",
+        "Der obere Bereich des Katalogs listet nur installierte Pakete, damit Operatoren aktive Automatisierungen ohne Entdeckungsrauschen verwalten können.",
+        "Eigentums- und Herkunftsmetadaten machen jedes Paket bis zu einem verantwortlichen Principal und einer Quelle nachvollziehbar.",
+        "Ausgabenzuordnungen erlauben es, Automatisierungsergebnisse auf Nachweisaktualisierungen oder Workflow-Übergänge mit expliziten Zielen oder im Bereichsauflösungsmodus für Asset/Risiko zu routen.",
+        "Die Laufzeitausführung unterstützt manuelle Läufe aus dem Paketdetail und geplante Läufe per CLI/CRON mit dauerhaftem Laufverlauf pro Paket.",
+        "Lebenszyklus-, Repository-, Laufzeit- und Ausgabenzuordnungsaktionen sind auch per REST API unter /api/v1/automation-catalog verfügbar und in openapi.json veröffentlicht.",
+        "Ergebnisse pro Ziel werden bei jeder Laufzeitausführung gespeichert, damit die Resultate auf Objektebene geprüft werden können.",
+        "Zuordnungen können optional die Laufzeit-Statuslage über ein Richtlinien-Gate in Asset/Risiko-Ziele propagieren.",
+        "Wenn die Propagierung aktiviert ist, halten Asset/Risiko-Statusaktualisierungen Provenienzreferenzen auf den letzten Automatisierungslauf und das letzte Prüfergebnis.",
+        "Jede Zuordnung kann über den Ausführungsmodus begrenzt werden, sodass sie in Laufzeit, manueller Anwendung oder beidem läuft.",
+        "Zuordnungen können auch eine Fehlerpolitik erzwingen, um deduplizierte Befunde mit optionaler Erstellung von Abhilfemaßnahmen zu erzeugen, wenn Laufzeitprüfungen fehlschlagen.",
+        "Die Nachweispolitik kann auf immer, bei Fehler oder bei Änderung gesetzt werden, um die Laufzeit-Nachweisänderung zu steuern.",
+        "Externe Paket-Repositories können mit Vertrauensstufe und öffentlichem Schlüssel registriert werden, damit Repository-Indexe vor der Aufnahme validiert werden.",
+        "Wenn kein Repository konfiguriert ist, öffnet die Seite ein Onboarding-Layout mit Aktivierung des offiziellen Repositories und Registrierung benutzerdefinierter Repositories.",
+        "Das Öffnen eines Pakets wechselt in eine fokussierte Detailansicht und blendet die übergeordneten Katalog-Panels aus, bis du zur Liste zurückkehrst."
+      ],
+      "concept_ids": [
+        "automation-pack",
+        "automation-pack-lifecycle",
+        "automation-pack-health",
+        "automation-pack-runtime",
+        "automation-output-mapping",
+        "automation-package-repository"
+      ],
+      "order": 430
+    }
+  ],
+  "concepts": [
+    {
+      "id": "automation-pack",
+      "label": "Automatisierungspaket",
+      "category": "operations",
+      "summary": "Eine katalogisierte Automatisierungseinheit, identifiziert durch Paketkennung, Version, Quelle, Anbietertyp und Eigentumsmetadaten.",
+      "why_it_exists": "Sie schafft ein wiederverwendbares Objektmodell, damit Automatisierungsfunktionen als erstklassige Produkteinheiten statt als implizite Skripte verwaltet werden können.",
+      "how_to_use": [
+        "Registriere Pakete mit stabilen Kennungen und aussagekräftigen Namen.",
+        "Halte Quelle und Provenienz fest, damit die Lieferkette explizit bleibt.",
+        "Weise Eigentum zu, damit operative Verantwortlichkeit klar ist."
+      ],
+      "relations": [
+        {
+          "type": "has-lifecycle",
+          "target": "automation-pack-lifecycle",
+          "summary": "Jedes Paket hat einen gesteuerten Lebenszyklusstatus."
+        },
+        {
+          "type": "has-health",
+          "target": "automation-pack-health",
+          "summary": "Jedes Paket hat eine verfolgte Laufzeit-Gesundheitslage."
+        }
+      ],
+      "order": 431
+    },
+    {
+      "id": "automation-pack-lifecycle",
+      "label": "Lebenszyklus des Automatisierungspakets",
+      "category": "operations",
+      "summary": "Der Lebenszyklusstatus zeigt an, ob ein Paket entdeckt, installiert, aktiviert oder deaktiviert ist.",
+      "why_it_exists": "Er ermöglicht Operatoren, die aktive Automatisierungsfläche zu steuern, statt jedes verfügbare Paket zu laden.",
+      "how_to_use": [
+        "Installiere Pakete, bevor du sie in Produktions-Workflows aktivierst.",
+        "Aktiviere nur Pakete, die für das aktuelle Betriebsmodell erforderlich sind.",
+        "Deaktiviere Pakete, die gerade nicht benötigt werden.",
+        "Nutze Deinstallieren, um einen Paketeintrag aus dem lokalen Katalog zu entfernen, wenn du ihn nicht mehr behalten willst.",
+        "Nutze die externe Katalogtabelle, um entdeckte Releases zu installieren, bevor sie im installierten Paketkatalog erscheinen."
+      ],
+      "order": 432
+    },
+    {
+      "id": "automation-pack-health",
+      "label": "Gesundheit des Automatisierungspakets",
+      "category": "operations",
+      "summary": "Der Betriebszustand verfolgt den letzten Lauf, den letzten Erfolg oder Fehlschlag und den aktuellen Gesundheitsstatus.",
+      "why_it_exists": "Er gibt Operatoren unmittelbare Sicht darauf, ob installierte Automatisierung gesund, degradiert oder fehlerhaft ist.",
+      "how_to_use": [
+        "Verfolge die Zustände unbekannt, gesund, degradiert und fehlerhaft.",
+        "Halte Zeitstempel des letzten Laufs und Fehlergründe aktuell.",
+        "Nutze die Gesundheitslage, um Remediations- und Deaktivierungsentscheidungen zu priorisieren."
+      ],
+      "order": 433
+    },
+    {
+      "id": "automation-pack-runtime",
+      "label": "Laufzeit des Automatisierungspakets",
+      "category": "operations",
+      "summary": "Die manuelle und geplante Ausführungsschicht, die aktive Zuordnungen für installierte und aktivierte Pakete ausführt und den Ausführungsverlauf speichert.",
+      "why_it_exists": "Sie verschiebt den Katalog von statischer Lebenszykluskontrolle zu echten Laufzeitoperationen mit nachvollziehbaren Ergebnissen.",
+      "how_to_use": [
+        "Starte ein Paket manuell aus dem Paketdetail, wenn du sofortige Ausführung brauchst.",
+        "Konfiguriere eine paketbezogene Zeitplanung (cron + Zeitzone), wenn die Laufzeit in wiederkehrender Taktung ausführen soll.",
+        "Führe geplante Batches mit dem Automatisierungs-CLI-Befehl aus CRON aus.",
+        "Nutze --respect_schedule=1 in der Automatisierungs-CLI, wenn CRON nur Pakete ausführen soll, die gemäß Zeitplan fällig sind.",
+        "Prüfe den Laufverlauf, um Auslösemodus, Status, Dauer und Zuordnungszähler zu inspizieren.",
+        "Nachweiszuordnungen erzeugen Laufzeit-Payloads jetzt über den Vertrag des Laufzeitausführers und befördern sie automatisch in gesteuerte Nachweisdatensätze.",
+        "Bereichsauflösungs-Zuordnungen werden aus der Paketlaufzeit heraus ausgeführt (Jetzt ausführen oder geplante Laufzeit), nicht aus einer einmaligen manuellen Anwendung.",
+        "Nutze die letzten Prüfergebnisse im Paketdetail, um den Zielstatus und das Ergebnis pro Ausführung zu prüfen.",
+        "Jedes Prüfergebnis behält jetzt direkte Traceability-IDs für Nachweisartefakt, Nachweisdatensatz, Befund und Abhilfemaßnahme, wenn diese Objekte erzeugt werden.",
+        "Zuordnungen können Laufzeit-Leitplanken (maximale Ziele, Payload-Größe) und Wiederholungsrichtlinien (Versuche, Backoff) für sicherere Ausführung erzwingen."
+      ],
+      "relations": [
+        {
+          "type": "updates",
+          "target": "automation-pack-health",
+          "summary": "Jede Ausführung aktualisiert die Paketgesundheit und die Lage des letzten Laufs."
+        },
+        {
+          "type": "executes",
+          "target": "automation-output-mapping",
+          "summary": "Die Laufzeit führt aktive Zuordnungen aus und protokolliert Erfolg, Fehlschlag oder Übersprungen."
+        }
+      ],
+      "order": 434
+    },
+    {
+      "id": "automation-output-mapping",
+      "label": "Ausgabenzuordnung der Automatisierung",
+      "category": "operations",
+      "summary": "Eine paketgebundene Regel, die Automatisierungsausgaben auf Nachweisaktualisierung oder Workflow-Übergang abbildet.",
+      "why_it_exists": "Sie verwandelt rohe Automatisierungsausgaben in gesteuerte operative Effekte, ohne ad-hoc manuelle Copy/Paste-Prozesse zu erzwingen.",
+      "how_to_use": [
+        "Definiere eine Zuordnung pro operativer Absicht, etwa Nachweisaktualisierung für eine Kontrolle oder Transition für ein Workflow-Subjekt.",
+        "Nutze den expliziten Bindungsmodus für eine feste Zielobjekt-ID.",
+        "Nutze den Bereichsbindungsmodus für Asset/Risiko-Selektoren (Bereichs-ID plus optionale Tags).",
+        "Aktiviere die Lage-Propagierungsrichtlinie nur, wenn du willst, dass Laufzeitstatus die Automatisierungslage von Asset/Risiko-Feldern aktualisiert.",
+        "Nutze den Ausführungsmodus, um eine Zuordnung auf Laufzeit, manuelle Anwendung oder beides zu begrenzen.",
+        "Nutze die Fehlerpolitik Befund-erzeugen, wenn fehlgeschlagene Prüfungen ohne manuelle Triage einen Befund öffnen sollen.",
+        "Nutze die Fehlerpolitik Befund-und-Maßnahme-erzeugen, wenn fehlgeschlagene Prüfungen sowohl einen Befund als auch eine geplante Abhilfemaßnahme öffnen sollen.",
+        "Nutze die letzten Prüfergebnisse, um erzeugte Nachweise, Befunde und Abhilfemaßnahmen direkt zu öffnen, wenn Laufzeitpolitiken sie erstellen.",
+        "Nutze die Nachweispolitik bei-Änderung, um identische Artefakte nicht erneut hochzuladen, wenn sich der Payload-Fingerprint nicht ändert.",
+        "Nutze die Wiederholungsrichtlinie der Laufzeit, um fehlgeschlagene Lieferungen erneut zu versuchen und Wiederholungen in den Prüfergebnis-Diagnosen nachzuverfolgen.",
+        "Nutze Laufzeit-Leitplanken, um aufgelöste Ziele und Payload-Größe vor der Auslieferung zu begrenzen.",
+        "Nutze Nachweiszuordnungen, um Ausgabeartefakte hochzuladen oder zu referenzieren und sie in gesteuerte Nachweisdatensätze zu befördern.",
+        "Nutze Workflow-Zuordnungen, um eine bestimmte Transition auf einer konkreten Subjekt-ID mit explizitem Workflow- und Transitionsschlüssel anzuwenden.",
+        "Verfolge den letzten Lieferstatus und die Meldung, damit Operatoren Zuordnungsfehler schnell diagnostizieren können."
+      ],
+      "relations": [
+        {
+          "type": "owned-by",
+          "target": "automation-pack",
+          "summary": "Jede Ausgabenzuordnung gehört zu genau einem Automatisierungspaket."
+        }
+      ],
+      "order": 435
+    },
+    {
+      "id": "automation-package-repository",
+      "label": "Repository für Automatisierungspakete",
+      "category": "operations",
+      "summary": "Eine signierte externe Indexquelle, die Releases und Metadaten von Automatisierungspaketen veröffentlicht.",
+      "why_it_exists": "Sie erlaubt es Operatoren, Pakete aus externen Katalogen zu entdecken, ohne jedes Paket als Laravel-Plugin zu laden.",
+      "how_to_use": [
+        "Registriere Repository-URL, Signatur-URL, Vertrauensstufe und öffentlichen Schlüssel.",
+        "Nutze die offizielle Ein-Klick-Installation, wenn du eine vorkonfigurierte vertrauenswürdige Quelle willst.",
+        "Aktualisiere die Repository-Metadaten, damit der Katalog die Signatur validiert und die neuesten Releases einliest.",
+        "Prüfe entdeckte Releases im externen Katalog und installiere nur die Pakete, die im Arbeitsbereich aktiv sein sollen."
+      ],
+      "relations": [
+        {
+          "type": "feeds",
+          "target": "automation-pack",
+          "summary": "Die zuletzt entdeckten Releases werden in lokale Automatisierungspaket-Datensätze gespiegelt."
+        }
+      ],
+      "order": 436
+    }
+  ]
+}

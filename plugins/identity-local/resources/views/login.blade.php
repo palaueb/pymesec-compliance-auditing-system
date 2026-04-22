@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Sign in</title>
+    <title>{{ __('Sign in') }}</title>
     <style>
         :root {
             --bg: #f4f0e8;
@@ -89,25 +89,25 @@
 </head>
 <body>
     <main class="login-card">
-        <div class="eyebrow">Identity</div>
-        <h1>Sign in</h1>
-        <p>Use your username or work email. Local and directory-backed sign-in can require an email verification code, and some organizations also allow a cached email sign-in link.</p>
+        <div class="eyebrow">{{ __('Identity') }}</div>
+        <h1>{{ __('Sign in') }}</h1>
+        <p>{{ __('Use your username or work email. Local and directory-backed sign-in can require an email verification code, and some organizations also allow a cached email sign-in link.') }}</p>
 
         <form method="POST" action="{{ route('plugin.identity-local.auth.request') }}">
             @csrf
             <div class="field">
-                <label class="field-label" for="login-identifier">Username or email</label>
+                <label class="field-label" for="login-identifier">{{ __('Username or email') }}</label>
                 <input class="field-input" id="login-identifier" name="login" required autofocus>
             </div>
             <div class="field">
-                <label class="field-label" for="login-password">Password</label>
+                <label class="field-label" for="login-password">{{ __('Password') }}</label>
                 <input class="field-input" id="login-password" name="password" type="password">
             </div>
             <label class="field-label" style="display:flex; gap:10px; align-items:center; margin-top:16px;">
                 <input type="checkbox" name="use_email_link" value="1">
-                Sign in with email link instead
+                {{ __('Sign in with email link instead') }}
             </label>
-            <button class="button button-primary" type="submit">Continue</button>
+            <button class="button button-primary" type="submit">{{ __('Continue') }}</button>
         </form>
 
         @if (session('status'))

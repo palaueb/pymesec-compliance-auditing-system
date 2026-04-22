@@ -1,0 +1,33 @@
+{
+  "guide": [
+    {
+      "id": "configure-directory-sync",
+      "title": "Nutze LDAP zum Synchronisieren von Personen, nicht als Ersatz für das Zugriffsmodell",
+      "summary": "LDAP füllt den lokalen Cache von Personen und Gruppen, aber die Plattform arbeitet weiterhin mit Principals und Mitgliedschaften.",
+      "body": [
+        "Konfiguriere eine Verzeichnisverbindung pro Organisation, wenn diese Organisation Personen in LDAP verwaltet.",
+        "Prüfe nach der Synchronisierung, wie LDAP-Gruppen auf Organisationsrollen und Bereiche abgebildet werden."
+      ],
+      "concept_ids": ["ldap-directory-sync", "principal", "membership"],
+      "order": 50
+    }
+  ],
+  "concepts": [
+    {
+      "id": "ldap-directory-sync",
+      "label": "LDAP-Verzeichnissynchronisierung",
+      "category": "identity",
+      "summary": "Der Connector, der Benutzer und Gruppen aus LDAP in die lokale Identitätslaufzeit importiert.",
+      "why_it_exists": "Die Plattform braucht einen gepflegten Weg für die Integration externer Verzeichnisse und zugleich konsistente Zugriffsentscheidungen innerhalb der Anwendung.",
+      "how_to_use": [
+        "Konfiguriere die Verbindung, das Base DN, das Bind-Konto und die Attributzuordnungen.",
+        "Starte die Synchronisierung und prüfe die Zuordnungen von Gruppen zu Rollen und Bereichen."
+      ],
+      "relations": [
+        { "type": "creates-or-updates", "target": "principal", "summary": "Verzeichniseinträge werden zu lokal zwischengespeicherten Zugriffsidentitäten." },
+        { "type": "maps-to", "target": "membership", "summary": "Gruppen können über Mitgliedschaften Organisationszugriff erzeugen." }
+      ],
+      "order": 120
+    }
+  ]
+}

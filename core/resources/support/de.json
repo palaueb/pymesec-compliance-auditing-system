@@ -1,0 +1,240 @@
+{
+  "guide": [
+    {
+      "id": "start-with-organization",
+      "title": "Beginne mit der Organisation",
+      "summary": "Eine Organisation ist die wichtigste Arbeitsgrenze der Anwendung.",
+      "body": [
+        "Erstelle oder wähle zuerst die Organisation. Fast jeder operative Datensatz in der Plattform gehört zu einer Organisation.",
+        "Wenn dein Unternehmen getrennte Arbeitsbereiche für Tochtergesellschaften, juristische Einheiten oder unabhängige Geschäftseinheiten braucht, modelliere diese Grenzen als getrennte Organisationen."
+      ],
+      "concept_ids": ["organization", "scope"],
+      "order": 10
+    },
+    {
+      "id": "understand-access",
+      "title": "Dann definiere, wer dort arbeiten darf",
+      "summary": "Zugriff basiert auf Principals, Mitgliedschaften, Rollen und Bereichen.",
+      "body": [
+        "Eine Person meldet sich als Principal an. Dieser Principal erhält eine oder mehrere Mitgliedschaften in einer Organisation.",
+        "Rollen beschreiben, was die Person tun kann. Bereiche schränken ein, wo sie es tun kann."
+      ],
+      "concept_ids": ["principal", "membership", "role", "scope"],
+      "order": 20
+    },
+    {
+      "id": "work-with-records",
+      "title": "Operative Arbeit geschieht in Datensätzen",
+      "summary": "Assets, Kontrollen, Risiken, Befunde, Datenschutzdatensätze und Kontinuitätspläne sind die täglichen Datensätze des Arbeitsbereichs.",
+      "body": [
+        "Nutze die operativen Plugins, um den aktuellen Zustand der Organisation sichtbar und prüfbar zu halten.",
+        "Hänge Nachweise an, wenn du Belege brauchst, und verlasse dich auf den Audit-Trail, wenn du Nachvollziehbarkeit brauchst."
+      ],
+      "concept_ids": ["asset", "control", "risk", "finding", "artifact", "audit-trail"],
+      "order": 30
+    },
+    {
+      "id": "api-and-openapi",
+      "title": "API- und OpenAPI-Integration",
+      "summary": "Operative Domänen werden über REST-API-Verträge und ein generiertes OpenAPI-Dokument exponiert.",
+      "body": [
+        "Nutze /openapi.json als kanonischen maschinenlesbaren Vertrag für die aktuell verfügbaren API-Operationen in der Plattform, einschließlich Assets, Risiken, Kontrollen, Bewertungen, Befunden, Abhilfemaßnahmen und Bewertungsprüfungen.",
+        "Hole für gesteuerte Felder die erlaubten Optionen immer aus Lookup-Endpunkten, bevor du Schreiboperationen absendest.",
+        "Schreibendpunkte veröffentlichen Anfrageverträge aus Routemetadaten und FormRequest-Validierungsregeln, damit Integrationen sich auf eine einzige Wahrheitsquelle verlassen können.",
+        "Wenn ein Schreibfeld auf einen anderen Datensatz verweist (z. B. Eigentümer, Kontrolle, Risiko, Rahmen), prüfe die Lookup-Metadaten der Operation und frage den referenzierten Lookup-Endpunkt ab, bevor du die Nutzlast sendest."
+      ],
+      "concept_ids": ["audit-trail", "api-access-token"],
+      "order": 40
+    },
+    {
+      "id": "official-mcp-server",
+      "title": "Nutze den offiziellen MCP-Server",
+      "summary": "Agenten können über die offizielle MCP-Oberfläche arbeiten und dabei die API-Sicherheitsgrenzen beibehalten.",
+      "body": [
+        "Starte den offiziellen Broker mit dem Go-Binary `pymesec-mcp` und authentifiziere dich mit einem begrenzten API-Token (`PYMESEC_API_TOKEN` oder Token-Argument pro Tool).",
+        "Die MCP-Tools leiten jede Operation über `/api/v1`, sodass Multitenancy, Berechtigungsprüfungen, objektspezifische Zugriffsregeln und API-Audit-Logging weiterhin durchgesetzt werden.",
+        "Das Binary kann `/openapi/v1.json` automatisch laden, um `operation_id`-Aufrufe aufzulösen, und du solltest vor Schreiboperationen trotzdem weiterhin gesteuerte Lookups auflösen."
+      ],
+      "concept_ids": ["mcp-server", "api-access-token", "audit-trail"],
+      "order": 45
+    },
+    {
+      "id": "api-token-governance",
+      "title": "Verwalte API-Tokens über die Administration",
+      "summary": "Stelle Integrationstokens pro Benutzer aus und widerrufe sie schnell, wenn sich das Risiko ändert.",
+      "body": [
+        "Nutze Administration > API-Tokens, um Anmeldedaten auszustellen, die an einen einzelnen Principal gebunden sind.",
+        "Nutze rotate, wenn du ein neues Secret brauchst, ohne Eigentümer- oder Bereichsgrenzen zu ändern; das vorherige Secret wird sofort ungültig.",
+        "Setze optionale Organisations- und Bereichsgrenzen, um den Schadensradius externer Integrationen zu reduzieren.",
+        "Tokenfähigkeiten werden pro Anfrage durchgesetzt und können die effektiven Berechtigungen des Eigentümers im gewählten Kontext nicht überschreiten.",
+        "Kopiere Token-Secrets unmittelbar nach der Ausstellung, weil der Klartext nur einmal angezeigt wird."
+      ],
+      "concept_ids": ["api-access-token", "principal", "audit-trail"],
+      "order": 50
+    }
+  ],
+  "concepts": [
+    {
+      "id": "organization",
+      "label": "Organisation",
+      "category": "foundation",
+      "summary": "Die wichtigste Arbeitsbereichsgrenze für Datensätze, Zugriff und operativen Kontext.",
+      "why_it_exists": "Organisationen trennen Daten, Berechtigungen und Kontext, damit verschiedene Firmen oder große Geschäftsgrenzen ihre Datensätze nicht versehentlich vermischen.",
+      "how_to_use": [
+        "Lege für jede Geschäftsgrenze, die getrennt verwaltet werden soll, eine Organisation an.",
+        "Wähle die Organisation, bevor du operative Datensätze erstellst oder prüfst."
+      ],
+      "relations": [
+        { "type": "contains", "target": "scope", "summary": "Bereiche leben innerhalb einer Organisation." },
+        { "type": "contains", "target": "membership", "summary": "Mitgliedschaften ordnen Personen einer Organisation zu." },
+        { "type": "contains", "target": "asset", "summary": "Operative Datensätze gehören normalerweise zu einer Organisation." }
+      ],
+      "order": 10
+    },
+    {
+      "id": "scope",
+      "label": "Bereich",
+      "category": "foundation",
+      "summary": "Ein engerer Arbeitsbereich innerhalb einer Organisation, etwa eine Abteilung, ein Fachbereich oder eine regionale Grenze.",
+      "why_it_exists": "Bereiche erlauben dir, Zugriff zu begrenzen und Arbeit zu fokussieren, ohne eine komplett separate Organisation zu schaffen.",
+      "how_to_use": [
+        "Erstelle Bereiche, wenn eine Organisation mehrere abgegrenzte Arbeitsbereiche braucht.",
+        "Weise Bereichszugriff nur den Mitgliedschaften zu, die diesen Teil der Datensätze sehen sollen."
+      ],
+      "relations": [
+        { "type": "belongs-to", "target": "organization", "summary": "Ein Bereich existiert nur innerhalb einer Organisation." },
+        { "type": "limits", "target": "membership", "summary": "Mitgliedschaften können auf einen oder mehrere Bereiche beschränkt werden." }
+      ],
+      "order": 20
+    },
+    {
+      "id": "principal",
+      "label": "Principal",
+      "category": "access",
+      "summary": "Die Zugriffsidentität, die sich anmeldet und Berechtigungen erhält.",
+      "why_it_exists": "Die Plattform braucht ein einheitliches Zugriffsidentitätsmodell, unabhängig davon, ob die Person aus einem lokalen Konto oder einem externen Verzeichnis kommt.",
+      "how_to_use": [
+        "Betrachte den Principal als die angemeldete Identität, nicht als geschäftliche Verantwortung.",
+        "Gewähre Organisationszugriff über Mitgliedschaften und nicht, indem du alles direkt an den Principal hängst."
+      ],
+      "relations": [
+        { "type": "receives", "target": "membership", "summary": "Mitgliedschaften verbinden einen Principal mit einer Organisation." },
+        { "type": "may-link-to", "target": "functional-actor", "summary": "Ein Principal kann mit einem funktionalen Akteur verknüpft werden, ist aber nicht dasselbe." }
+      ],
+      "order": 30
+    },
+    {
+      "id": "membership",
+      "label": "Mitgliedschaft",
+      "category": "access",
+      "summary": "Die Zuordnung eines Principals zu einer Organisation, mit Rollen und optionalen Bereichen.",
+      "why_it_exists": "Mitgliedschaft macht Zugriff operativ. Sie beantwortet, wo ein Principal dazugehört und welche Arbeitsverantwortung dort aktiv ist.",
+      "how_to_use": [
+        "Erstelle eine Mitgliedschaft, wenn eine Person Zugriff auf eine Organisation braucht.",
+        "Hänge operative Rollen und Bereichseinschränkungen an die Mitgliedschaft."
+      ],
+      "relations": [
+        { "type": "belongs-to", "target": "organization", "summary": "Jede Mitgliedschaft gehört zu einer Organisation." },
+        { "type": "assigned-to", "target": "principal", "summary": "Eine Mitgliedschaft ist immer für einen Principal." },
+        { "type": "carries", "target": "role", "summary": "Rollen werden normalerweise über Mitgliedschaften vergeben." }
+      ],
+      "order": 40
+    },
+    {
+      "id": "role",
+      "label": "Rolle",
+      "category": "access",
+      "summary": "Ein benanntes Bündel von Berechtigungen, das die Zugriffsverwaltung vereinfacht.",
+      "why_it_exists": "Rollen erlauben es Administratoren, Zugriff in verständlichen Paketen statt einzeln zu vergeben.",
+      "how_to_use": [
+        "Nutze Plattformrollen für Administration und operative Rollen für die tägliche Arbeit.",
+        "Vergib operative Rollen über Mitgliedschaften, damit der Zugriff an die Organisation gebunden bleibt."
+      ],
+      "relations": [
+        { "type": "granted-through", "target": "membership", "summary": "Operative Rollen werden normalerweise über Mitgliedschaften vergeben." }
+      ],
+      "order": 50
+    },
+    {
+      "id": "functional-actor",
+      "label": "Funktionaler Akteur",
+      "category": "governance",
+      "summary": "Eine geschäftliche oder Governance-Identität wie CISO, DPO, Service Owner oder Team.",
+      "why_it_exists": "Geschäftliche Verantwortlichkeit ist nicht dasselbe wie Anmeldezugriff. Funktionale Akteure beschreiben Verantwortung, Eigentum und Governance-Rollen.",
+      "how_to_use": [
+        "Nutze funktionale Akteure, um Eigentum oder Verantwortung im Domänenmodell auszudrücken.",
+        "Verknüpfe sie nur dann mit Principals, wenn du geschäftliche Verantwortung mit echten Zugriffsidentitäten verbinden musst."
+      ],
+      "relations": [
+        { "type": "may-link-to", "target": "principal", "summary": "Ein funktionaler Akteur kann per Policy mit einem oder mehreren Principals verknüpft werden." }
+      ],
+      "order": 60
+    },
+    {
+      "id": "artifact",
+      "label": "Artefakt",
+      "category": "evidence",
+      "summary": "Eine gespeicherte Beweisdatei oder ein Anhang, der mit einem operativen Datensatz verknüpft ist.",
+      "why_it_exists": "Compliance-Arbeit braucht oft Belege. Artefakte speichern Dokumente, Exporte, Screenshots oder andere Nachweise, die an einen Geschäftsdatensatz gebunden sind.",
+      "how_to_use": [
+        "Hänge Artefakte an den relevanten Datensatz, wenn du nachvollziehbare Belege brauchst.",
+        "Nutze konsistente Bezeichnungen, damit Prüfer verstehen, warum jeder Anhang existiert."
+      ],
+      "relations": [
+        { "type": "supports", "target": "control", "summary": "Kontrollen brauchen oft Nachweise." },
+        { "type": "supports", "target": "risk", "summary": "Risiken können unterstützende Analysen oder Belege enthalten." },
+        { "type": "supports", "target": "finding", "summary": "Befunde benötigen oft Nachweise für das Problem oder die Remediation." }
+      ],
+      "order": 70
+    },
+    {
+      "id": "audit-trail",
+      "label": "Audit-Trail",
+      "category": "governance",
+      "summary": "Der aufgezeichnete Verlauf sensibler Aktionen und Änderungen in der gesamten Plattform.",
+      "why_it_exists": "Der Audit-Trail liefert Verantwortlichkeit, Unterstützung bei Untersuchungen und Belege dafür, wer was wann geändert hat.",
+      "how_to_use": [
+        "Nutze den Audit-Bildschirm, wenn du wichtige Änderungen prüfen oder Aktivitäten untersuchen musst.",
+        "Betrachte den Audit-Trail als Nachvollziehbarkeit, nicht als Ersatz für gute Prozessdokumentation."
+      ],
+      "relations": [
+        { "type": "records-changes-to", "target": "membership", "summary": "Zugriffsänderungen sollten nachvollziehbar sein." },
+        { "type": "records-changes-to", "target": "asset", "summary": "Operative Änderungen sollten beobachtbar sein." },
+        { "type": "records-changes-to", "target": "risk", "summary": "Risikoentscheidungen und -übergänge sollten auditierbar sein." }
+      ],
+      "order": 80
+    },
+    {
+      "id": "api-access-token",
+      "label": "API-Zugriffstoken",
+      "category": "access",
+      "summary": "Eine eingeschränkte Anmeldeinformation, die zur Authentifizierung von REST-API-Aufrufen außerhalb interaktiver Web-Sessions dient.",
+      "why_it_exists": "Automatisierung und externe Integrationen brauchen authentifizierten API-Zugriff ohne Browsersitzungen, während Nachvollziehbarkeit und Widerrufskontrollen erhalten bleiben.",
+      "how_to_use": [
+        "Stelle Tokens mit explizitem Eigentümer-Principal und optionalen Organisations- oder Bereichsgrenzen aus.",
+        "Widerrufe Tokens sofort, wenn sie nicht mehr benötigt werden, und überwache die Anfrageaktivität im Audit-Trail."
+      ],
+      "relations": [
+        { "type": "used-by", "target": "principal", "summary": "Jedes Token gehört zu genau einer Principal-Identität." },
+        { "type": "recorded-in", "target": "audit-trail", "summary": "API-Operationen müssen in Append-only-Protokollen nachvollziehbar bleiben." }
+      ],
+      "order": 90
+    },
+    {
+      "id": "mcp-server",
+      "label": "MCP-Server",
+      "category": "integration",
+      "summary": "Ein JSON-RPC-Server über stdio, der PymeSec-API-Workflows für Agententools verfügbar macht.",
+      "why_it_exists": "Agenten-Runtimes brauchen eine stabile Brücke, die das genaue Sicherheits- und Multitenancy-Modell der API bewahrt, statt es mit direktem Datenbankzugriff zu umgehen.",
+      "how_to_use": [
+        "Starte das kompilierte `pymesec-mcp`-Binary und verwende ein Token mit möglichst wenig Privilegien.",
+        "Nutze MCP-Tools, um `/api/v1`-Operationen direkt oder per `operation_id` aufzurufen, und halte dich bei Schreibvorgängen auf gesteuerten und relationalen Feldern an das Lookup-zuerst-Muster."
+      ],
+      "relations": [
+        { "type": "proxies-to", "target": "api-access-token", "summary": "Authentifizierung und Bereichsgrenzen werden über den API-Token-Kontext durchgesetzt." },
+        { "type": "records-in", "target": "audit-trail", "summary": "Operationen bleiben im gemeinsamen API-Audit-Trail sichtbar." }
+      ],
+      "order": 95
+    }
+  ]
+}

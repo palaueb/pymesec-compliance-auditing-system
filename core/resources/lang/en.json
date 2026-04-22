@@ -125,5 +125,126 @@
   "core.support.no_how_copy": "This concept does not yet have step-by-step usage notes.",
   "core.support.no_related_copy": "No explicit relationships have been documented for this concept yet.",
   "core.support.no_relationships_copy": "No concept relationships have been declared yet.",
-  "core.support.back_to_top": "Back to top"
+  "core.support.back_to_top": "Back to top",
+  "Back": "Back",
+  "This page is open in detail context and returns to its parent list.": "This page is open in detail context and returns to its parent list.",
+  "ID": "ID",
+  "Owner": "Owner",
+  "Route": "Route",
+  "Permission": "Permission",
+  "PymeSec v:version": "PymeSec v:version",
+  "Repository": "Repository",
+  "Edit this record without compressing the table layout.": "Edit this record without compressing the table layout.",
+  "Close": "Close",
+  "Assets in view": "Assets in view",
+  "Risks under assessment": "Risks under assessment",
+  "Controls in review": "Controls in review",
+  "Open findings": "Open findings",
+  "Requested exceptions": "Requested exceptions",
+  "Working inside :organization": "Working inside :organization",
+  "scope :scope": "scope :scope",
+  "Select an organization to focus the dashboard on one workspace.": "Select an organization to focus the dashboard on one workspace.",
+  "Current role sets: :roles.": "Current role sets: :roles.",
+  "Today in your workspace": "Today in your workspace",
+  "Open the areas that usually need review, evidence, or follow-up.": "Open the areas that usually need review, evidence, or follow-up.",
+  "No workspaces are visible for the current access context yet.": "No workspaces are visible for the current access context yet.",
+  "Audit focus": "Audit focus",
+  "What to review next": "What to review next",
+  "Use this as a quick triage view before diving into one module.": "Use this as a quick triage view before diving into one module.",
+  "Follow assets still under lifecycle review.": "Follow assets still under lifecycle review.",
+  "Check risks that remain in assessment.": "Check risks that remain in assessment.",
+  "Push controls waiting for evidence or approval.": "Push controls waiting for evidence or approval.",
+  "Keep findings and exceptions moving toward closure.": "Keep findings and exceptions moving toward closure.",
+  "Recent audit activity": "Recent audit activity",
+  "Latest sensitive changes recorded by the platform audit trail.": "Latest sensitive changes recorded by the platform audit trail.",
+  "Event": "Event",
+  "Outcome": "Outcome",
+  "Component": "Component",
+  "When": "When",
+  "No audit activity has been recorded yet.": "No audit activity has been recorded yet.",
+  "n/a": "n/a",
+  "Governance page. Use this area to define tenant boundaries, default workspace settings, and operational scopes. Day-to-day record maintenance stays in the application workspaces, not here.": "Governance page. Use this area to define tenant boundaries, default workspace settings, and operational scopes. Day-to-day record maintenance stays in the application workspaces, not here.",
+  "Organizations": "Organizations",
+  "Active scopes": "Active scopes",
+  "Memberships": "Memberships",
+  "Create organization": "Create organization",
+  "Start a new tenant boundary with its default locale and timezone.": "Start a new tenant boundary with its default locale and timezone.",
+  "Organization name": "Organization name",
+  "Slug": "Slug",
+  "Default locale": "Default locale",
+  "Default timezone": "Default timezone",
+  "optional-auto-slug": "optional-auto-slug",
+  "Create scope": "Create scope",
+  "Add a bounded workspace inside an existing organization.": "Add a bounded workspace inside an existing organization.",
+  "Scope name": "Scope name",
+  "Description": "Description",
+  "Optional working perimeter description": "Optional working perimeter description",
+  "Tenant boundaries, defaults, and current workspace state.": "Tenant boundaries, defaults, and current workspace state.",
+  "Defaults": "Defaults",
+  "Notes": "Notes",
+  "active": "active",
+  "archived": "archived",
+  "Edit": "Edit",
+  "Archive": "Archive",
+  "Reactivate": "Reactivate",
+  "Platform admins can change tenant metadata here.": "Platform admins can change tenant metadata here.",
+  "Edit organization": "Edit organization",
+  "Update tenant identity and defaults without squeezing the form into the table.": "Update tenant identity and defaults without squeezing the form into the table.",
+  "Name": "Name",
+  "Locale": "Locale",
+  "Timezone": "Timezone",
+  "Save organization": "Save organization",
+  "Scopes": "Scopes",
+  "Operational perimeters bound to one organization.": "Operational perimeters bound to one organization.",
+  "No description yet.": "No description yet.",
+  "Scope lifecycle is managed by platform administrators.": "Scope lifecycle is managed by platform administrators.",
+  "Edit scope": "Edit scope",
+  "Keep the table readable and open the editor only when you need it.": "Keep the table readable and open the editor only when you need it.",
+  "Save scope": "Save scope",
+  "Access assignments stay visible here, but user access is managed from People and Access.": "Access assignments stay visible here, but user access is managed from People and Access.",
+  "Use the identity screens to create memberships, assign scopes, and grant roles. This panel keeps tenancy structure and access structure clearly separated.": "Use the identity screens to create memberships, assign scopes, and grant roles. This panel keeps tenancy structure and access structure clearly separated.",
+  "Active workspace access": "Active workspace access",
+  "Inactive membership": "Inactive membership"
+  ,"Enabled": "Enabled"
+  ,"Booted": "Booted"
+  ,"Needs attention": "Needs attention"
+  ,"Overrides": "Overrides"
+  ,"Module activation changes are stored in :path. Module-specific setup lives in each module's own settings area.": "Module activation changes are stored in :path. Module-specific setup lives in each module's own settings area."
+  ,"Governance page. Enable or disable modules here, but keep module-specific business operations inside each module workspace.": "Governance page. Enable or disable modules here, but keep module-specific business operations inside each module workspace."
+  ,"enabled by config": "enabled by config"
+  ,"disabled by config": "disabled by config"
+  ,"enabled by override": "enabled by override"
+  ,"disabled by override": "disabled by override"
+  ,"runtime state": "runtime state"
+  ,"booted": "booted"
+  ,"not booted": "not booted"
+  ,"attention": "attention"
+  ,"No description provided yet.": "No description provided yet."
+  ,"Open module": "Open module"
+  ,"Open settings": "Open settings"
+  ,"Select an organization to configure this module.": "Select an organization to configure this module."
+  ,"Disable": "Disable"
+  ,"Enable": "Enable"
+  ,"Registered access rules.": "Registered access rules."
+  ,"Routes": "Routes"
+  ,"Available entry points.": "Available entry points."
+  ,"Menus": "Menus"
+  ,"Visible navigation items.": "Visible navigation items."
+  ,"Dependencies": "Dependencies"
+  ,"No required dependencies.": "No required dependencies."
+  ,"Missing: :values": "Missing: :values"
+  ,"Used by: :values": "Used by: :values"
+  ,"Availability": "Availability"
+  ,"Disable is blocked until dependent modules are disabled first.": "Disable is blocked until dependent modules are disabled first."
+  ,"Enable is blocked until required dependencies are enabled.": "Enable is blocked until required dependencies are enabled."
+  ,"This module can be disabled now.": "This module can be disabled now."
+  ,"This module can be enabled now.": "This module can be enabled now."
+  ,"Checks: :values": "Checks: :values"
+  ,"State source: :value": "State source: :value"
+  ,"Module": "Module"
+  ,"Access": "Access"
+  ,"Actions": "Actions"
+  ,"ok": "ok"
+  ,"none": "none"
+  ,"Settings": "Settings"
 }

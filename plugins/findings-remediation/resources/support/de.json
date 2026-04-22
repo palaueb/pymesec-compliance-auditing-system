@@ -1,0 +1,53 @@
+{
+  "guide": [
+    {
+      "id": "run-finding-follow-up",
+      "title": "Nutze den Befund-Arbeitsbereich für das Nachverfolgen von Problemen, nicht nur für die Erfassung",
+      "summary": "Ein Befund wird nützlich, wenn Nachweise, Verantwortlichkeit, Workflow und Abhilfemaßnahmen in einem Datensatz zusammenbleiben.",
+      "body": [
+        "Erstelle einen Befund für ein bestätigtes Problem oder eine Nichtkonformität, nicht für eine rein hypothetische Sorge.",
+        "Nutze Abhilfemaßnahmen, um die Nachverfolgung in konkrete Aufgaben mit Verantwortlichen, Terminen und Status zu zerlegen.",
+        "Hänge Nachweise an und aktualisiere den Workflow-Status, bis die Schließung begründet werden kann."
+      ],
+      "concept_ids": [
+        "finding",
+        "remediation-action"
+      ],
+      "order": 240
+    }
+  ],
+  "concepts": [
+    {
+      "id": "finding",
+      "label": "Befund",
+      "category": "operations",
+      "summary": "Ein festgestelltes Problem, eine Lücke oder eine Nichtkonformität, die nachverfolgt und geschlossen werden muss.",
+      "why_it_exists": "Befunde machen aus einer Beobachtung konkrete Arbeit. Sie halten Probleme sichtbar, bis gehandelt wurde und die Schließung begründet ist.",
+      "how_to_use": [
+        "Erstelle einen Befund, wenn du ein reales Problem identifizierst, nicht nur ein mögliches Risiko.",
+        "Verfolge den Abhilfestatus, bis das Problem geschlossen oder formal akzeptiert wird."
+      ],
+      "relations": [
+        { "type": "may-reference", "target": "asset", "summary": "Ein Befund kann auf das betroffene Asset zeigen." },
+        { "type": "may-reference", "target": "control", "summary": "Ein Befund kann eine Kontrolllücke oder ein Kontrollversagen beschreiben." },
+        { "type": "may-reference", "target": "risk", "summary": "Ein Befund kann das Risikobild stützen oder verfeinern." }
+      ],
+      "order": 240
+    },
+    {
+      "id": "remediation-action",
+      "label": "Abhilfemaßnahme",
+      "category": "operations",
+      "summary": "Eine konkrete Nachverfolgungsaufgabe innerhalb eines Befunds, um das Problem Richtung Lösung zu bewegen.",
+      "why_it_exists": "Ein Befund erfordert oft mehr als einen Schritt. Abhilfemaßnahmen machen Verantwortlichkeit, Timing und Ausführung sichtbar.",
+      "how_to_use": [
+        "Erstelle eine Maßnahme pro abgrenzbarem Nachverfolgungsschritt.",
+        "Setze Status, Fälligkeitsdatum, Verantwortlichen und Notizen, damit der Befund operativ geprüft werden kann."
+      ],
+      "relations": [
+        { "type": "belongs-to", "target": "finding", "summary": "Maßnahmen bleiben an den Befund gebunden, den sie beheben." }
+      ],
+      "order": 241
+    }
+  ]
+}

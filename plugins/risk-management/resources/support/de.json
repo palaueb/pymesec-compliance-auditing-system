@@ -1,0 +1,70 @@
+{
+  "guide": [
+    {
+      "id": "manage-risks-in-one-workspace",
+      "title": "Nutze den Risiko-Arbeitsbereich, um Bewertung, Behandlung, Verantwortlichkeit und Nachweise zusammenzuhalten",
+      "summary": "Das Risikoregister dient zum Durchsuchen. Im Arbeitsbereich des ausgewählten Risikos werden Bewertung, Workflow, verknüpfte Datensätze und Nachweise gepflegt.",
+      "body": [
+        "Erstelle ein Risiko mit klarem Kontext und halte dann die inhärenten und restlichen Scores aktuell, während sich die Bewertung entwickelt.",
+        "Verknüpfe das Risiko mit dem relevanten Asset oder der Kontrolle, wenn das die operative Nachvollziehbarkeit verbessert.",
+        "Nutze Behandlungsnotizen, Workflow-Status, Verantwortliche und Nachweise, damit der Datensatz über die Zeit prüfbar bleibt."
+      ],
+      "concept_ids": [
+        "risk",
+        "risk-treatment",
+        "risk-workflow"
+      ],
+      "order": 230
+    }
+  ],
+  "concepts": [
+    {
+      "id": "risk",
+      "label": "Risiko",
+      "category": "operations",
+      "summary": "Ein Datensatz zu Unsicherheit, Bedrohung, Schwäche oder möglichem Verlust, der für die Organisation relevant ist.",
+      "why_it_exists": "Risiken helfen der Organisation zu erkennen, was schiefgehen kann, wie schwer es wäre und wie reagiert werden soll.",
+      "how_to_use": [
+        "Erfasse Risiken mit klarer Beschreibung, Kontext und betroffenen Assets, wenn möglich.",
+        "Aktualisiere Status, Scores und verknüpfte Datensätze, während sich die Bewertung entwickelt."
+      ],
+      "relations": [
+        { "type": "may-affect", "target": "asset", "summary": "Risiken verweisen oft auf die Assets, die sie bedrohen." },
+        { "type": "may-be-reduced-by", "target": "control", "summary": "Kontrollen sind ein üblicher Umgang mit Risiken." },
+        { "type": "may-lead-to", "target": "finding", "summary": "Eine Risikoprüfung kann ein konkretes Problem aufdecken, das zum Befund wird." }
+      ],
+      "order": 230
+    },
+    {
+      "id": "risk-treatment",
+      "label": "Risikobehandlung",
+      "category": "operations",
+      "summary": "Die ausgewählte und erfasste Reaktion oder Umgangsweise für ein Risiko.",
+      "why_it_exists": "Ein Risikodatensatz ist unvollständig, wenn er nicht zeigt, was die Organisation dagegen tun will.",
+      "how_to_use": [
+        "Erfasse eine kurze Behandlungszusammenfassung, die den aktuellen Reaktionsplan erklärt.",
+        "Aktualisiere die Behandlung, wenn Kontrollen, Ausnahmen, Akzeptanzen oder Abhilfearbeiten den Umgang ändern."
+      ],
+      "relations": [
+        { "type": "belongs-to", "target": "risk", "summary": "Die Behandlung wird innerhalb des Risikodatensatzes gepflegt." },
+        { "type": "may-reference", "target": "control", "summary": "Die Behandlung hängt oft davon ab, dass Kontrollen implementiert oder verbessert werden." }
+      ],
+      "order": 231
+    },
+    {
+      "id": "risk-workflow",
+      "label": "Risiko-Workflow",
+      "category": "governance",
+      "summary": "Der systemgesteuerte Lebenszyklusstatus eines Risikos, etwa in Bewertung, akzeptiert oder geschlossen.",
+      "why_it_exists": "Workflow-Status zeigen, ob ein Risiko noch bearbeitet wird, formal akzeptiert wurde oder nicht mehr aktiv ist.",
+      "how_to_use": [
+        "Bewege das Risiko durch die Workflow-Übergänge, während Review und Entscheidung voranschreiten.",
+        "Nutze die Workflow-Historie zusammen mit Nachweisen und Behandlungsnotizen, um die Prüfbarkeit zu stützen."
+      ],
+      "relations": [
+        { "type": "applies-to", "target": "risk", "summary": "Jeder Risikodatensatz hat einen aktuellen Workflow-Status." }
+      ],
+      "order": 232
+    }
+  ]
+}

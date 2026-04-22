@@ -30,7 +30,7 @@ class DataFlowsPrivacyPlugin implements PluginInterface
         $context->app()->make(WorkflowRegistryInterface::class)->register(new WorkflowDefinition(
             key: 'plugin.data-flows-privacy.data-flow-lifecycle',
             owner: 'data-flows-privacy',
-            label: 'Privacy data flow lifecycle',
+            label: __('Privacy data flow lifecycle'),
             initialState: 'draft',
             states: ['draft', 'review', 'active', 'retired'],
             transitions: [
@@ -64,7 +64,7 @@ class DataFlowsPrivacyPlugin implements PluginInterface
         $context->app()->make(WorkflowRegistryInterface::class)->register(new WorkflowDefinition(
             key: 'plugin.data-flows-privacy.processing-activity-lifecycle',
             owner: 'data-flows-privacy',
-            label: 'Privacy processing activity lifecycle',
+            label: __('Privacy processing activity lifecycle'),
             initialState: 'draft',
             states: ['draft', 'review', 'active', 'retired'],
             transitions: [
@@ -108,12 +108,12 @@ class DataFlowsPrivacyPlugin implements PluginInterface
                 if (is_string($screenContext->query['flow_id'] ?? null) && ($screenContext->query['flow_id'] ?? '') !== '') {
                     return [
                         new ToolbarAction(
-                            label: 'Back to data flows',
+                            label: __('Back to data flows'),
                             url: route('core.shell.index', [...$query, 'menu' => 'plugin.data-flows-privacy.root']),
                             variant: 'secondary',
                         ),
                         new ToolbarAction(
-                            label: 'Processing activities',
+                            label: __('Processing activities'),
                             url: route('core.shell.index', [...$query, 'menu' => 'plugin.data-flows-privacy.activities']),
                             variant: 'secondary',
                         ),
@@ -122,12 +122,12 @@ class DataFlowsPrivacyPlugin implements PluginInterface
 
                 return [
                     new ToolbarAction(
-                        label: 'Add data flow',
+                        label: __('Add data flow'),
                         url: '#data-flow-editor',
                         variant: 'primary',
                     ),
                     new ToolbarAction(
-                        label: 'Processing activities',
+                        label: __('Processing activities'),
                         url: route('core.shell.index', [...$query, 'menu' => 'plugin.data-flows-privacy.activities']),
                         variant: 'secondary',
                     ),
@@ -148,12 +148,12 @@ class DataFlowsPrivacyPlugin implements PluginInterface
                 if (is_string($screenContext->query['activity_id'] ?? null) && ($screenContext->query['activity_id'] ?? '') !== '') {
                     return [
                         new ToolbarAction(
-                            label: 'Back to activities',
+                            label: __('Back to activities'),
                             url: route('core.shell.index', [...$query, 'menu' => 'plugin.data-flows-privacy.activities']),
                             variant: 'secondary',
                         ),
                         new ToolbarAction(
-                            label: 'Data flows register',
+                            label: __('Data flows register'),
                             url: route('core.shell.index', [...$query, 'menu' => 'plugin.data-flows-privacy.root']),
                             variant: 'secondary',
                         ),
@@ -162,12 +162,12 @@ class DataFlowsPrivacyPlugin implements PluginInterface
 
                 return [
                     new ToolbarAction(
-                        label: 'Add processing activity',
+                        label: __('Add processing activity'),
                         url: '#privacy-activity-editor',
                         variant: 'primary',
                     ),
                     new ToolbarAction(
-                        label: 'Data flows register',
+                        label: __('Data flows register'),
                         url: route('core.shell.index', [...$query, 'menu' => 'plugin.data-flows-privacy.root']),
                         variant: 'secondary',
                     ),
@@ -178,7 +178,7 @@ class DataFlowsPrivacyPlugin implements PluginInterface
 
     public function boot(PluginContext $context): void
     {
-        //
+        app('translator')->addJsonPath($context->path('resources/lang'));
     }
 
     /**

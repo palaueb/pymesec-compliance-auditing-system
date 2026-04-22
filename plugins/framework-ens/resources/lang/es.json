@@ -1,0 +1,24 @@
+{
+  "plugin.framework-ens.framework.name": "Esquema Nacional de Seguridad (ENS)",
+  "plugin.framework-ens.framework.description": "Paquete marco inicial para el Esquema Nacional de Seguridad (ENS). Prepara categorías y medidas base para gobernanza, control de acceso, monitorización, copias de seguridad y recuperación.",
+
+  "plugin.framework-ens.elements.ens-domain-org.title": "Gobernanza organizativa",
+  "plugin.framework-ens.elements.ens-domain-org.description": "Medidas de gobernanza, propiedad de políticas y responsabilidad.",
+  "plugin.framework-ens.elements.ens-domain-protect.title": "Salvaguardas de protección",
+  "plugin.framework-ens.elements.ens-domain-protect.description": "Salvaguardas preventivas para acceso, copias de seguridad y protección de sistemas.",
+  "plugin.framework-ens.elements.ens-domain-detect.title": "Salvaguardas de detección",
+  "plugin.framework-ens.elements.ens-domain-detect.description": "Capacidades de monitorización y detección de anomalías.",
+  "plugin.framework-ens.elements.ens-domain-recover.title": "Salvaguardas de recuperación",
+  "plugin.framework-ens.elements.ens-domain-recover.description": "Capacidades de continuidad y recuperación tras incidentes o interrupciones.",
+
+  "plugin.framework-ens.elements.ens-org-governance.title": "Gobernanza de seguridad y propiedad de políticas",
+  "plugin.framework-ens.elements.ens-org-governance.description": "Define responsables, estructura de políticas e hitos de gobernanza para el modelo de seguridad.",
+  "plugin.framework-ens.elements.ens-protect-access.title": "Protección de identidad y acceso",
+  "plugin.framework-ens.elements.ens-protect-access.description": "Controla los derechos de acceso, el acceso privilegiado y la recertificación periódica de permisos.",
+  "plugin.framework-ens.elements.ens-protect-backup.title": "Protección e integridad de las copias de seguridad",
+  "plugin.framework-ens.elements.ens-protect-backup.description": "Protege las copias de seguridad, valida su integridad y asegura la capacidad de restauración.",
+  "plugin.framework-ens.elements.ens-detect-monitoring.title": "Monitorización de eventos de seguridad",
+  "plugin.framework-ens.elements.ens-detect-monitoring.description": "Supervisa los sistemas relevantes y registra evidencias de actividad anómala y respuesta.",
+  "plugin.framework-ens.elements.ens-recover-continuity.title": "Continuidad del servicio y recuperación",
+  "plugin.framework-ens.elements.ens-recover-continuity.description": "Mantén planes de recuperación, ejercicios de continuidad y evidencias de restauración para los servicios críticos."
+}

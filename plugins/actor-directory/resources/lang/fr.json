@@ -1,0 +1,8 @@
+{
+  "plugin.actor-directory.nav.root": "Acteurs",
+  "plugin.actor-directory.nav.assignments": "Affectations",
+  "plugin.actor-directory.screen.directory.title": "Acteurs fonctionnels",
+  "plugin.actor-directory.screen.directory.subtitle": "Annuaire des personnes et équipes responsables, séparé de l'identité d'accès.",
+  "plugin.actor-directory.screen.assignments.title": "Affectations fonctionnelles",
+  "plugin.actor-directory.screen.assignments.subtitle": "Liens de responsabilité entre acteurs fonctionnels et objets métier."
+}

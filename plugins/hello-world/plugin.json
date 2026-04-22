@@ -59,7 +59,10 @@
   "translations": {
     "default_locale": "en",
     "supported_locales": [
-      "en"
+      "en",
+      "es",
+      "fr",
+      "de"
     ],
     "path": "resources/lang"
   },

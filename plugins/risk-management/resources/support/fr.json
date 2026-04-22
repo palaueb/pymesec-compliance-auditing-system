@@ -1,0 +1,70 @@
+{
+  "guide": [
+    {
+      "id": "manage-risks-in-one-workspace",
+      "title": "Utilisez l'espace de travail des risques pour garder ensemble l'évaluation, le traitement, la responsabilité et les preuves",
+      "summary": "Le registre des risques sert à parcourir. L'espace de travail du risque sélectionné est l'endroit où sont maintenus le score, le workflow, les registres liés et les preuves.",
+      "body": [
+        "Créez un risque avec un contexte clair, puis gardez à jour les scores inhérents et résiduels à mesure que l'évaluation évolue.",
+        "Reliez le risque à l'actif ou au contrôle pertinent lorsque cela apporte une meilleure traçabilité opérationnelle.",
+        "Utilisez les notes de traitement, l'état du workflow, les responsables et les preuves pour que le registre reste révisable dans le temps."
+      ],
+      "concept_ids": [
+        "risk",
+        "risk-treatment",
+        "risk-workflow"
+      ],
+      "order": 230
+    }
+  ],
+  "concepts": [
+    {
+      "id": "risk",
+      "label": "Risque",
+      "category": "operations",
+      "summary": "Un registre d'incertitude, de menace, de faiblesse ou de perte potentielle qui compte pour l'organisation.",
+      "why_it_exists": "Les risques permettent à l'organisation d'identifier ce qui peut mal tourner, d'évaluer la gravité et de décider comment réagir.",
+      "how_to_use": [
+        "Enregistrez les risques avec une description claire, le contexte et les actifs affectés lorsque c'est possible.",
+        "Mettez à jour l'état, les scores et les registres liés à mesure que l'évaluation évolue."
+      ],
+      "relations": [
+        { "type": "may-affect", "target": "asset", "summary": "Les risques pointent souvent vers les actifs qu'ils menacent." },
+        { "type": "may-be-reduced-by", "target": "control", "summary": "Les contrôles sont des réponses courantes au risque." },
+        { "type": "may-lead-to", "target": "finding", "summary": "Une revue de risque peut révéler un problème concret qui devient un constat." }
+      ],
+      "order": 230
+    },
+    {
+      "id": "risk-treatment",
+      "label": "Traitement du risque",
+      "category": "operations",
+      "summary": "La réponse ou l'approche de gestion choisie et enregistrée pour un risque.",
+      "why_it_exists": "Un registre de risque est incomplet s'il ne montre pas ce que l'organisation prévoit de faire.",
+      "how_to_use": [
+        "Enregistrez un bref résumé de traitement qui explique le plan de réponse actuel.",
+        "Mettez à jour le traitement lorsque des contrôles, des exceptions, des acceptations ou des travaux de remédiation modifient l'approche de gestion."
+      ],
+      "relations": [
+        { "type": "belongs-to", "target": "risk", "summary": "Le traitement est maintenu dans le registre de risque." },
+        { "type": "may-reference", "target": "control", "summary": "Le traitement dépend souvent de contrôles mis en œuvre ou améliorés." }
+      ],
+      "order": 231
+    },
+    {
+      "id": "risk-workflow",
+      "label": "Workflow du risque",
+      "category": "governance",
+      "summary": "L'état de cycle de vie contrôlé par le système pour un risque, comme en cours d'évaluation, accepté ou fermé.",
+      "why_it_exists": "Les états de workflow montrent si un risque est encore en cours de traitement, a été formellement accepté ou n'est plus actif.",
+      "how_to_use": [
+        "Faites évoluer le risque à travers les transitions du workflow au fur et à mesure que la revue et la décision progressent.",
+        "Utilisez l'historique du workflow avec les preuves et les notes de traitement pour soutenir l'auditabilité."
+      ],
+      "relations": [
+        { "type": "applies-to", "target": "risk", "summary": "Chaque registre de risque a un état de workflow actuel." }
+      ],
+      "order": 232
+    }
+  ]
+}

@@ -1,0 +1,8 @@
+{
+  "plugin.findings-remediation.nav.root": "Feststellungen",
+  "plugin.findings-remediation.nav.board": "Abhilfemaßnahmen",
+  "plugin.findings-remediation.screen.register.title": "Feststellungsregister",
+  "plugin.findings-remediation.screen.register.subtitle": "Verfolge Nichtkonformitäten, Lücken und verknüpfte Verantwortlichkeiten für Abhilfemaßnahmen.",
+  "plugin.findings-remediation.screen.board.title": "Abhilfemaßnahmen-Board",
+  "plugin.findings-remediation.screen.board.subtitle": "Korrekturmaßnahmen nach Status, Verantwortlichem und Fälligkeitsdatum."
+}

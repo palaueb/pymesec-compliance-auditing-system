@@ -1,0 +1,69 @@
+{
+  "guide": [
+    {
+      "id": "run-continuity-planning-per-service",
+      "title": "Usa un solo espacio de trabajo por servicio para mantener juntos los objetivos de continuidad, las dependencias, los planes y los documentos",
+      "summary": "El trabajo de continuidad es más fácil de mantener cuando el registro del servicio se convierte en el ancla de la planificación de recuperación y las evidencias.",
+      "body": [
+        "Define primero el servicio, el nivel de impacto, los objetivos de recuperación, el activo o riesgo vinculado y la titularidad.",
+        "Registra las dependencias y uno o varios planes de recuperación para que el servicio pueda revisarse como un todo operativo.",
+        "Usa el flujo de trabajo, los detalles del plan y los documentos para mantener actualizada la postura de continuidad."
+      ],
+      "concept_ids": [
+        "continuity-service",
+        "service-dependency",
+        "recovery-plan"
+      ],
+      "order": 270
+    }
+  ],
+  "concepts": [
+    {
+      "id": "continuity-service",
+      "label": "Servicio de continuidad",
+      "category": "continuity",
+      "summary": "Un servicio de negocio o técnico que la organización necesita mantener operativo o recuperar con rapidez.",
+      "why_it_exists": "Es más fácil planificar la continuidad alrededor de servicios que alrededor de obligaciones abstractas.",
+      "how_to_use": [
+        "Registra cada servicio importante y describe de qué depende.",
+        "Usa planes de recuperación, ejercicios y documentos de apoyo para mantener actualizada la preparación."
+      ],
+      "relations": [
+        { "type": "may-depend-on", "target": "service-dependency", "summary": "Los servicios de continuidad pueden listar dependencias operativas relevantes para la recuperación." },
+        { "type": "may-have", "target": "recovery-plan", "summary": "Un servicio de continuidad puede tener uno o varios planes de recuperación." }
+      ],
+      "order": 270
+    },
+    {
+      "id": "service-dependency",
+      "label": "Dependencia del servicio",
+      "category": "continuity",
+      "summary": "Una dependencia registrada de la que el servicio depende para su funcionamiento normal o su recuperación.",
+      "why_it_exists": "La planificación de recuperación es más débil cuando las dependencias críticas quedan implícitas.",
+      "how_to_use": [
+        "Registra la dependencia clave y su tipo para que los supuestos de recuperación sean explícitos.",
+        "Revisa las dependencias siempre que cambie la arquitectura del servicio, el modelo de proveedor o el patrón de respaldo."
+      ],
+      "relations": [
+        { "type": "belongs-to", "target": "continuity-service", "summary": "Las dependencias se mantienen dentro de un solo espacio de trabajo de servicio." },
+        { "type": "may-reference", "target": "asset", "summary": "Una dependencia puede apuntar a un activo u otro componente operativo." }
+      ],
+      "order": 271
+    },
+    {
+      "id": "recovery-plan",
+      "label": "Plan de recuperación",
+      "category": "continuity",
+      "summary": "Un plan documentado que describe cómo restaurar o mantener un servicio tras una interrupción.",
+      "why_it_exists": "Un plan de recuperación convierte la intención de continuidad en pasos accionables que pueden revisarse y probarse.",
+      "how_to_use": [
+        "Escribe un plan por cada enfoque de recuperación importante o patrón de respaldo.",
+        "Usa la política, el hallazgo, las fechas de prueba y las asignaciones de responsables enlazadas para mantener el plan gobernado."
+      ],
+      "relations": [
+        { "type": "belongs-to", "target": "continuity-service", "summary": "Los planes se crean para dar soporte a un servicio." }
+      ],
+      "order": 272
+    }
+  ]
+}

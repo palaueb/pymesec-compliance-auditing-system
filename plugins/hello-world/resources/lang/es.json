@@ -1,0 +1,5 @@
+{
+    "plugin.hello-world.name": "Hola mundo",
+    "plugin.hello-world.nav.root": "Hola mundo",
+    "plugin.hello-world.nav.examples": "Ejemplos"
+}

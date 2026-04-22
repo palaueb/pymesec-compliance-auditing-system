@@ -1,0 +1,8 @@
+{
+  "plugin.findings-remediation.nav.root": "Hallazgos",
+  "plugin.findings-remediation.nav.board": "Remediación",
+  "plugin.findings-remediation.screen.register.title": "Registro de hallazgos",
+  "plugin.findings-remediation.screen.register.subtitle": "Haz seguimiento de no conformidades, brechas y responsabilidades de remediación vinculadas.",
+  "plugin.findings-remediation.screen.board.title": "Panel de remediación",
+  "plugin.findings-remediation.screen.board.subtitle": "Acciones correctivas por estado, responsable y fecha límite."
+}

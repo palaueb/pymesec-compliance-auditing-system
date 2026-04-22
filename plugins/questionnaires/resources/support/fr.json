@@ -1,0 +1,57 @@
+{
+  "guides": [
+    {
+      "id": "questionnaire-engine-overview",
+      "title": "Utilisez les modèles de questionnaire et les éléments liés au sujet comme couche de collecte réutilisable",
+      "summary": "Le plugin questionnaires possède le modèle réutilisable et le modèle de réponse que les plugins métier peuvent appliquer aux revues fournisseurs et aux futurs workflows de collecte.",
+      "body": [
+        "Conservez la logique de revue spécifique au produit dans le plugin métier, mais réutilisez les modèles de questionnaire, les règles de réponse typées, le regroupement par sections, les éléments liés au sujet, les entrées de bibliothèque de réponses, les demandes relayées et la sémantique des pièces jointes au niveau de l'élément depuis le plugin questionnaires.",
+        "Un modèle définit la structure répétable du questionnaire. Les éléments liés au sujet stockent les vraies réponses, les états, les notes de suivi et toute attente de pièce jointe pour un sujet concret du workflow."
+      ],
+      "related_concepts": [
+        "questionnaire-template",
+        "questionnaire-subject-item",
+        "questionnaire-brokered-request"
+      ]
+    }
+  ],
+  "concepts": [
+    {
+      "id": "questionnaire-template",
+      "label": "Modèle de questionnaire",
+      "summary": "Une définition réutilisable de questionnaire qui peut être appliquée à un ou plusieurs sujets de workflow.",
+      "when_to_use": [
+        "Utilisez les modèles pour garder cohérentes les revues et collectes récurrentes.",
+        "Utilisez les éléments de modèle pour définir l'ordre des questions, les titres de section, le type de réponse attendu et l'aide optionnelle."
+      ]
+    },
+    {
+      "id": "questionnaire-subject-item",
+      "label": "Élément de questionnaire lié au sujet",
+      "summary": "Un élément concret de questionnaire rattaché à un vrai sujet de workflow, comme une revue fournisseur.",
+      "when_to_use": [
+        "Utilisez les éléments liés au sujet pour les vraies réponses, l'état de revue et les notes de suivi.",
+        "Un élément de sujet peut être créé manuellement ou copié depuis un élément de modèle de questionnaire.",
+        "Utilisez les paramètres de pièce jointe au niveau de l'élément lorsqu'une question attend un document d'appui ou un fichier de preuve et que vous voulez ensuite le promouvoir de façon contrôlée en preuve gouvernée."
+      ]
+    },
+    {
+      "id": "questionnaire-answer-library-entry",
+      "label": "Entrée de bibliothèque de réponses",
+      "summary": "Un extrait de réponse réutilisable stocké pour une organisation, une famille de sujets et un type de réponse.",
+      "when_to_use": [
+        "Enregistrez une réponse lorsque les réviseurs réutilisent sans cesse la même réponse de base dans des questionnaires similaires.",
+        "Utilisez les entrées de bibliothèque de réponses comme suggestions pour le réviseur, pas comme vérité automatique copiée sans revue."
+      ]
+    },
+    {
+      "id": "questionnaire-brokered-request",
+      "label": "Demande relayée de questionnaire",
+      "summary": "Un enregistrement de collecte relayée utilisé lorsqu'un intermédiaire interne recueille des réponses de questionnaire hors plateforme pour un sujet concret de workflow.",
+      "when_to_use": [
+        "Utilisez une demande relayée lorsque vous ne voulez pas donner un accès direct au portail mais avez besoin d'une étape de collecte traçable.",
+        "Enregistrez le contact, le canal de collecte, l'intermédiaire, l'état et les notes de l'intermédiaire pour que la revue ultérieure conserve une trace d'entrée vérifiable."
+      ]
+    }
+  ]
+}

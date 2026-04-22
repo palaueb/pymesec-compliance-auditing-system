@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Vendor Review Portal</title>
+    <title>{{ __('Vendor Review Portal') }}</title>
     <style>
         :root {
             --ink: #1f2a22;
@@ -159,13 +159,13 @@
 <body>
     <main class="page">
         <section class="card hero">
-            <div class="eyebrow">External Review Portal</div>
+            <div class="eyebrow">{{ __('External Review Portal') }}</div>
             <h1>{{ $vendor['legal_name'] }}</h1>
             <p class="muted">{{ $review['title'] }}</p>
             <p>{{ $review['review_summary'] }}</p>
             <p class="muted">
-                Shared with {{ $link['contact_name'] !== '' ? $link['contact_name'] : $link['contact_email'] }}.
-                {{ $link['expires_at'] !== '' ? 'This access expires on '.$link['expires_at'].'.' : 'This access has no explicit expiry date.' }}
+                {{ __('Shared with :name.', ['name' => $link['contact_name'] !== '' ? $link['contact_name'] : $link['contact_email']]) }}
+                {{ $link['expires_at'] !== '' ? __('This access expires on :date.', ['date' => $link['expires_at']]) : __('This access has no explicit expiry date.') }}
             </p>
         </section>
 
@@ -183,55 +183,55 @@
 
         <section class="metric-grid">
             <div class="metric">
-                <div class="metric-label">Vendor tier</div>
-                <div class="metric-value">{{ ucfirst($vendor['tier']) }}</div>
+                <div class="metric-label">{{ __('Vendor tier') }}</div>
+                <div class="metric-value">{{ $vendor['tier_label'] ?? ucfirst($vendor['tier']) }}</div>
             </div>
             <div class="metric">
-                <div class="metric-label">Inherent risk</div>
-                <div class="metric-value">{{ ucfirst($review['inherent_risk']) }}</div>
+                <div class="metric-label">{{ __('Inherent risk') }}</div>
+                <div class="metric-value">{{ $review['inherent_risk_label'] ?? ucfirst($review['inherent_risk']) }}</div>
             </div>
             <div class="metric">
-                <div class="metric-label">Questionnaire access</div>
-                <div class="metric-value">{{ $link['can_answer_questionnaire'] === '1' ? 'Enabled' : 'Read only' }}</div>
+                <div class="metric-label">{{ __('Questionnaire access') }}</div>
+                <div class="metric-value">{{ $link['can_answer_questionnaire'] === '1' ? __('Enabled') : __('Read only') }}</div>
             </div>
             <div class="metric">
-                <div class="metric-label">Evidence upload</div>
-                <div class="metric-value">{{ $link['can_upload_artifacts'] === '1' ? 'Enabled' : 'Not enabled' }}</div>
+                <div class="metric-label">{{ __('Evidence upload') }}</div>
+                <div class="metric-value">{{ $link['can_upload_artifacts'] === '1' ? __('Enabled') : __('Not enabled') }}</div>
             </div>
         </section>
 
         <section class="grid">
             <div class="card">
-                <h2>Questionnaire</h2>
-                <p class="muted">Only the questions explicitly shared in this review are available here.</p>
+                <h2>{{ __('Questionnaire') }}</h2>
+                <p class="muted">{{ __('Only the questions explicitly shared in this review are available here.') }}</p>
 
                 @forelse ($questionnaire_sections as $section)
                     <div class="eyebrow">{{ $section['title'] }}</div>
                     @foreach ($section['items'] as $item)
                         <article class="item">
                             <div>
-                                <div class="eyebrow">Question {{ $item['position'] }}</div>
+                                <div class="eyebrow">{{ __('Question :position', ['position' => $item['position']]) }}</div>
                                 <h3>{{ $item['prompt'] }}</h3>
                             </div>
                             <div class="actions">
-                                <span class="status">{{ $item['response_status_label'] ?? ucwords(str_replace('-', ' ', $item['response_status'])) }}</span>
-                                <span class="status">{{ $item['response_type_label'] ?? ucwords(str_replace('-', ' ', $item['response_type'])) }}</span>
+                                <span class="status">{{ $item['response_status_label'] ?? ucfirst(str_replace('-', ' ', $item['response_status'])) }}</span>
+                                <span class="status">{{ $item['response_type_label'] ?? ucfirst(str_replace('-', ' ', $item['response_type'])) }}</span>
                             </div>
                             @if (($item['supports_attachments'] ?? false) === true)
                                 <div class="field">
-                                    <label>Attachment request</label>
-                                    <div>{{ $item['attachment_mode_label'] ?? 'Attachment requested' }} · {{ $item['attachment_upload_profile_label'] ?? 'Default review artifacts' }}</div>
+                                    <label>{{ __('Attachment request') }}</label>
+                                    <div>{{ $item['attachment_mode_label'] ?? __('Attachment requested') }} · {{ $item['attachment_upload_profile_label'] ?? __('Default review artifacts') }}</div>
                                 </div>
                             @endif
                             @if ($link['can_answer_questionnaire'] === '1' && $item['response_status'] !== 'accepted')
                                 <form method="POST" action="{{ route('plugin.third-party-risk.external.questionnaire-items.update', ['token' => $token, 'itemId' => $item['id']]) }}">
                                     @csrf
                                     <div class="field">
-                                        <label>Answer</label>
+                                        <label>{{ __('Answer') }}</label>
                                         @if ($item['response_type'] === 'yes-no')
                                             <select name="answer_text" required>
-                                                <option value="">Choose an answer</option>
-                                                @foreach (['yes' => 'Yes', 'no' => 'No', 'not-applicable' => 'Not applicable'] as $value => $label)
+                                                <option value="">{{ __('Choose an answer') }}</option>
+                                                @foreach (['yes' => __('Yes'), 'no' => __('No'), 'not-applicable' => __('Not applicable')] as $value => $label)
                                                     <option value="{{ $value }}" @selected($item['answer_text'] === $value)>{{ $label }}</option>
                                                 @endforeach
                                             </select>
@@ -242,23 +242,23 @@
                                         @endif
                                     </div>
                                     <div class="actions">
-                                        <button type="submit">Submit answer</button>
+                                        <button type="submit">{{ __('Submit answer') }}</button>
                                     </div>
                                 </form>
                             @else
                                     <div class="field">
-                                        <label>Current answer</label>
-                                        <div>{{ $item['answer_text'] !== '' ? $item['answer_text'] : 'No answer recorded yet.' }}</div>
+                                        <label>{{ __('Current answer') }}</label>
+                                        <div>{{ $item['answer_text'] !== '' ? $item['answer_text'] : __('No answer recorded yet.') }}</div>
                                     </div>
                             @endif
                             @if (($item['supports_attachments'] ?? false) === true)
                                 <div class="field">
-                                    <label>Current attachments</label>
+                                    <label>{{ __('Current attachments') }}</label>
                                     <div>
                                         @forelse ($item['artifacts'] as $artifact)
                                             <div>{{ $artifact['label'] }} · {{ $artifact['original_filename'] }}</div>
                                         @empty
-                                            No attachment recorded yet.
+                                            {{ __('No attachment recorded yet.') }}
                                         @endforelse
                                     </div>
                                 </div>
@@ -266,15 +266,15 @@
                                     <form method="POST" action="{{ route('plugin.third-party-risk.external.questionnaire-items.artifacts.store', ['token' => $token, 'itemId' => $item['id']]) }}" enctype="multipart/form-data">
                                         @csrf
                                         <div class="field">
-                                            <label>Attachment label</label>
+                                            <label>{{ __('Attachment label') }}</label>
                                             <input type="text" name="label" required>
                                         </div>
                                         <div class="field">
-                                            <label>File</label>
+                                            <label>{{ __('File') }}</label>
                                             <input type="file" name="artifact" required>
                                         </div>
                                         <div class="actions">
-                                            <button type="submit">Upload question attachment</button>
+                                            <button type="submit">{{ __('Upload question attachment') }}</button>
                                         </div>
                                     </form>
                                 @endif
@@ -282,31 +282,31 @@
                         </article>
                     @endforeach
                 @empty
-                    <div class="muted">No questionnaire items have been shared on this review yet.</div>
+                    <div class="muted">{{ __('No questionnaire items have been shared on this review yet.') }}</div>
                 @endforelse
             </div>
 
             <div class="card">
-                <h2>Evidence Upload</h2>
-                <p class="muted">Upload only the documents requested for this review. Files are attached directly to the review workspace.</p>
+                <h2>{{ __('Evidence Upload') }}</h2>
+                <p class="muted">{{ __('Upload only the documents requested for this review. Files are attached directly to the review workspace.') }}</p>
 
                 @if ($link['can_upload_artifacts'] === '1')
                     <form method="POST" action="{{ route('plugin.third-party-risk.external.artifacts.store', ['token' => $token]) }}" enctype="multipart/form-data">
                         @csrf
                         <div class="field">
-                            <label>Document label</label>
+                            <label>{{ __('Document label') }}</label>
                             <input type="text" name="label" required>
                         </div>
                         <div class="field">
-                            <label>File</label>
+                            <label>{{ __('File') }}</label>
                             <input type="file" name="artifact" required>
                         </div>
                         <div class="actions">
-                            <button type="submit">Upload evidence</button>
+                            <button type="submit">{{ __('Upload evidence') }}</button>
                         </div>
                     </form>
                 @else
-                    <div class="muted">This collaboration link does not include artifact upload permission.</div>
+                    <div class="muted">{{ __('This collaboration link does not include artifact upload permission.') }}</div>
                 @endif
             </div>
         </section>

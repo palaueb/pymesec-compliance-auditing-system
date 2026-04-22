@@ -90,7 +90,10 @@
   "support": {
     "path": "resources/support",
     "supported_locales": [
-      "en"
+      "en",
+      "es",
+      "fr",
+      "de"
     ]
   },
   "lifecycle": {},

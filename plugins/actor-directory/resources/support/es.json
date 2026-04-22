@@ -1,0 +1,69 @@
+{
+  "guide": [
+    {
+      "id": "separate-functional-ownership-from-sign-in-access",
+      "title": "Usa actores funcionales para la responsabilidad, no como sustituto del control de acceso",
+      "summary": "El directorio de actores explica quién es responsable de los registros de negocio. No sustituye a las identidades principales, las membresías ni las comprobaciones de permisos.",
+      "body": [
+        "Crea actores funcionales para personas o equipos que necesiten una responsabilidad operativa visible.",
+        "Vincula los actores con las identidades principales cuando quieras trazabilidad entre una identidad real de inicio de sesión y un rol de titularidad orientado al negocio.",
+        "Usa las asignaciones para mostrar quién es titular de un activo, control, riesgo u otro registro gobernado."
+      ],
+      "concept_ids": [
+        "functional-actor",
+        "actor-principal-link",
+        "ownership-assignment"
+      ],
+      "order": 280
+    }
+  ],
+  "concepts": [
+    {
+      "id": "functional-actor",
+      "label": "Actor funcional",
+      "category": "governance",
+      "summary": "Un registro de persona o equipo orientado al negocio que se usa para expresar responsabilidad sobre registros gobernados.",
+      "why_it_exists": "La plataforma necesita registros de titularidad estables incluso cuando cambian las identidades de inicio de sesión, los equipos o el modelo de membresías.",
+      "how_to_use": [
+        "Crea actores para roles, personas con nombre o equipos que deban aparecer como titulares de registros de negocio.",
+        "Usa los registros de actor para mantener visibles las responsabilidades de gobernanza sin acoplarlas a la mecánica de acceso."
+      ],
+      "relations": [
+        { "type": "may-have", "target": "ownership-assignment", "summary": "Los actores pueden asignarse a registros gobernados como titulares o partes responsables." }
+      ],
+      "order": 280
+    },
+    {
+      "id": "actor-principal-link",
+      "label": "Vínculo actor-principal",
+      "category": "identity",
+      "summary": "Un vínculo entre un actor funcional y un principal de inicio de sesión.",
+      "why_it_exists": "Este vínculo conserva la separación entre la responsabilidad operativa y el control de acceso, pero permite relacionarlos.",
+      "how_to_use": [
+        "Usa el vínculo cuando un actor funcional corresponda a un principal local o sincronizado real.",
+        "No asumas que el vínculo por sí mismo concede permisos."
+      ],
+      "relations": [
+        { "type": "connects", "target": "functional-actor", "summary": "El vínculo parte de un actor funcional." },
+        { "type": "connects", "target": "principal", "summary": "El vínculo puede apuntar a un principal de inicio de sesión." }
+      ],
+      "order": 281
+    },
+    {
+      "id": "ownership-assignment",
+      "label": "Asignación de titularidad",
+      "category": "governance",
+      "summary": "Un vínculo entre un actor funcional y un registro de negocio para expresar responsabilidad o titularidad.",
+      "why_it_exists": "La plataforma necesita una forma de mostrar quién es responsable de algo sin confundir esa responsabilidad con el acceso de inicio de sesión.",
+      "how_to_use": [
+        "Asigna el actor funcional correcto a los registros que necesiten un titular visible o un rol responsable.",
+        "No trates las asignaciones de titularidad como concesiones de permisos implícitas."
+      ],
+      "relations": [
+        { "type": "uses", "target": "functional-actor", "summary": "Las asignaciones apuntan a actores funcionales." },
+        { "type": "may-reference", "target": "asset", "summary": "Los activos pueden tener asignaciones de titularidad." }
+      ],
+      "order": 282
+    }
+  ]
+}

@@ -47,20 +47,20 @@ class ExternalReviewInvitationDeliveryService
 
             return [
                 'status' => 'not-configured',
-                'error' => 'Outbound email delivery is not configured for this organization.',
+                'error' => __('Outbound email delivery is not configured for this organization.'),
             ];
         }
 
-        $subject = sprintf('Vendor review request: %s', $vendor['legal_name']);
+        $subject = __('Vendor review request: :name', ['name' => $vendor['legal_name']]);
         $body = implode("\n\n", array_filter([
-            sprintf('Hello%s,', $link['contact_name'] !== '' ? ' '.$link['contact_name'] : ''),
-            sprintf('You have been invited to contribute to the vendor review "%s" for %s.', $review['title'], $vendor['legal_name']),
-            $vendor['service_summary'] !== '' ? 'Service context: '.$vendor['service_summary'] : null,
+            __('Hello :name,', ['name' => $link['contact_name'] !== '' ? $link['contact_name'] : '']),
+            __('You have been invited to contribute to the vendor review ":title" for :vendor.', ['title' => $review['title'], 'vendor' => $vendor['legal_name']]),
+            $vendor['service_summary'] !== '' ? __('Service context: :summary', ['summary' => $vendor['service_summary']]) : null,
             $this->permissionSummary($link),
-            $link['expires_at'] !== '' ? 'Access expires: '.$link['expires_at'] : 'Access expires: no expiry set',
-            'Open the secure review portal using this link:',
+            $link['expires_at'] !== '' ? __('Access expires: :date', ['date' => $link['expires_at']]) : __('Access expires: no expiry set'),
+            __('Open the secure review portal using this link:'),
             $portalUrl,
-            'If you were not expecting this request, contact the sender before uploading any information.',
+            __('If you were not expecting this request, contact the sender before uploading any information.'),
         ]));
 
         try {
@@ -92,7 +92,7 @@ class ExternalReviewInvitationDeliveryService
 
             return [
                 'status' => 'failed',
-                'error' => $message !== '' ? $message : 'Outbound email delivery failed.',
+                'error' => $message !== '' ? $message : __('Outbound email delivery failed.'),
             ];
         }
 
@@ -126,17 +126,17 @@ class ExternalReviewInvitationDeliveryService
         $capabilities = [];
 
         if ($link['can_answer_questionnaire'] === '1') {
-            $capabilities[] = 'answer questionnaire items';
+            $capabilities[] = __('answer questionnaire items');
         }
 
         if ($link['can_upload_artifacts'] === '1') {
-            $capabilities[] = 'upload evidence';
+            $capabilities[] = __('upload evidence');
         }
 
         if ($capabilities === []) {
-            $capabilities[] = 'review the shared request';
+            $capabilities[] = __('review the shared request');
         }
 
-        return 'Shared capabilities: '.implode(' and ', $capabilities).'.';
+        return __('Shared capabilities: :capabilities.', ['capabilities' => implode(__(' and '), $capabilities)]);
     }
 }

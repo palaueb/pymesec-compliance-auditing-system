@@ -1262,8 +1262,8 @@
                 @elseif ($selectedMenu !== null)
                     @if ($screen !== null && $contextBackUrl !== null)
                         <nav class="context-breadcrumb" aria-label="Context navigation">
-                            <a class="button button-ghost" href="{{ $contextBackUrl }}">← {{ $contextLabel ?? 'Back' }}</a>
-                            <span class="context-breadcrumb-copy">This page is open in detail context and returns to its parent list.</span>
+                            <a class="button button-ghost" href="{{ $contextBackUrl }}">← {{ $contextLabel ?? __('Back') }}</a>
+                            <span class="context-breadcrumb-copy">{{ __('This page is open in detail context and returns to its parent list.') }}</span>
                         </nav>
                     @endif
 
@@ -1295,19 +1295,19 @@
                     @else
                         <div class="overview-grid">
                             <div class="metric-card">
-                                <div class="metric-label">ID</div>
+                                <div class="metric-label">{{ __('ID') }}</div>
                                 <div class="meta-copy">{{ $selectedMenu['id'] }}</div>
                             </div>
                             <div class="metric-card">
-                                <div class="metric-label">Owner</div>
+                                <div class="metric-label">{{ __('Owner') }}</div>
                                 <div class="meta-copy">{{ $selectedMenu['owner'] }}</div>
                             </div>
                             <div class="metric-card">
-                                <div class="metric-label">Route</div>
+                                <div class="metric-label">{{ __('Route') }}</div>
                                 <div class="meta-copy">{{ $selectedMenu['route'] ?? 'n/a' }}</div>
                             </div>
                             <div class="metric-card">
-                                <div class="metric-label">Permission</div>
+                                <div class="metric-label">{{ __('Permission') }}</div>
                                 <div class="meta-copy">{{ $selectedMenu['permission'] ?? 'n/a' }}</div>
                             </div>
                         </div>
@@ -1319,13 +1319,13 @@
 
                 <footer class="workspace-footer">
                     <div class="workspace-footer-meta">
-                        <span class="table-note">PymeSec v{{ $coreVersion }}</span>
+                        <span class="table-note">{{ __('PymeSec v:version', ['version' => $coreVersion]) }}</span>
                         <span class="workspace-footer-separator">·</span>
                         <span class="table-note">{{ strtoupper($shellArea) }}</span>
                         <span class="workspace-footer-separator">·</span>
                         <span class="table-note">&copy; {{ $currentYear }}</span>
                     </div>
-                    <a class="workspace-footer-link" href="{{ $repositoryUrl }}" target="_blank" rel="noreferrer">Repository</a>
+                    <a class="workspace-footer-link" href="{{ $repositoryUrl }}" target="_blank" rel="noreferrer">{{ __('Repository') }}</a>
                 </footer>
             </article>
         </section>
@@ -1453,14 +1453,14 @@
                 editorHeader.innerHTML = `
                     <div>
                         <div class="entity-title">${button.textContent}</div>
-                        <div class="table-note">Edit this record without compressing the table layout.</div>
+                        <div class="table-note">{{ __('Edit this record without compressing the table layout.') }}</div>
                     </div>
                 `;
 
                 const closeButton = document.createElement('button');
                 closeButton.type = 'button';
                 closeButton.className = 'button button-ghost';
-                closeButton.textContent = 'Close';
+                closeButton.textContent = @json(__('Close'));
                 closeButton.setAttribute('data-editor-toggle', targetId);
                 closeButton.setAttribute('aria-expanded', open ? 'true' : 'false');
                 editorHeader.appendChild(closeButton);

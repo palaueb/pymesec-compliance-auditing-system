@@ -1,0 +1,180 @@
+{
+  "guide": [
+    {
+      "id": "collaboration-primitives-overview",
+      "title": "Primitives de collaboration",
+      "summary": "Utilisez les brouillons, les commentaires et les demandes de suivi pour garder dans l'espace de travail la conversation opérationnelle et les prochaines étapes liées au sujet.",
+      "body": [
+        "Les brouillons partagés gardent visibles pour les autres utilisateurs les commentaires ou demandes de suivi qui ne sont pas encore publiés.",
+        "Les commentaires sont des notes de discussion légères liées à un registre concret, comme une revue fournisseur.",
+        "Les demandes de suivi transforment l'étape suivante en élément traçable avec état, priorité, responsable et échéance.",
+        "Les plugins peuvent consommer ces primitives sans inventer leur propre modèle local de commentaires ou de tâches."
+      ],
+      "concept_ids": [
+        "collaboration-external-collaboration-hardening",
+        "collaboration-external-collaborator",
+        "collaboration-external-link",
+        "collaboration-draft",
+        "collaboration-comment",
+        "collaboration-request"
+      ],
+      "order": 420
+    }
+  ],
+  "concepts": [
+    {
+      "id": "collaboration-external-collaboration-hardening",
+      "label": "Base de durcissement de la collaboration externe",
+      "category": "security",
+      "summary": "Contrôles minimaux de déploiement et d'exécution requis lorsque des portails de collaboration sont exposés sur Internet.",
+      "why_it_exists": "Les routes de collaboration externe gèrent des données de revue sensibles et ne doivent pas dépendre d'hypothèses d'hébergement par défaut.",
+      "how_to_use": [
+        "Imposez un accès uniquement via HTTPS et protégez les secrets de déploiement.",
+        "Gardez des contrôles de téléversement stricts et bloquez les types de charges exécutables.",
+        "Utilisez le contrôle du cycle de vie à l'exécution pour bloquer les collaborateurs et faire expirer les liens.",
+        "Considérez les planificateurs de rappels, de résumés et de nettoyage comme des améliorations opérationnelles, pas comme des contrôles de sécurité d'accès."
+      ],
+      "relations": [
+        {
+          "type": "applies-to",
+          "target": "collaboration-external-collaborator",
+          "summary": "Les contrôles du cycle de vie du collaborateur font partie de la base de durcissement."
+        },
+        {
+          "type": "applies-to",
+          "target": "collaboration-external-link",
+          "summary": "L'émission et l'accès aux liens externes doivent suivre la base de durcissement."
+        }
+      ],
+      "order": 416
+    },
+    {
+      "id": "collaboration-external-collaborator",
+      "label": "Collaborateur externe de collaboration",
+      "category": "operations",
+      "summary": "Une identité de participant externe, limitée par objet, qui regroupe les liens émis et applique les contrôles de cycle de vie.",
+      "why_it_exists": "Elle sépare l'état du cycle de vie du collaborateur des liens individuels afin qu'un collaborateur bloqué ne puisse pas continuer à accéder via un ancien jeton.",
+      "how_to_use": [
+        "Suivez un collaborateur par adresse e-mail de contact dans le périmètre de l'objet partagé.",
+        "Faites évoluer l'état du cycle de vie entre actif et bloqué selon le risque ou les décisions de revue.",
+        "Utilisez le contrôle du cycle de vie du collaborateur lorsque vous devez suspendre l'accès sans supprimer les liens historiques ni les journaux d'audit.",
+        "L'application de l'accès est effectuée à l'exécution pour chaque requête du portail et ne nécessite pas de tâches CRON en arrière-plan."
+      ],
+      "relations": [
+        {
+          "type": "has-many",
+          "target": "collaboration-external-link",
+          "summary": "Un collaborateur peut posséder plusieurs liens émis au fil du temps pour le même objet limité."
+        }
+      ],
+      "order": 417
+    },
+    {
+      "id": "collaboration-external-link",
+      "label": "Lien externe de collaboration",
+      "category": "operations",
+      "summary": "Un lien à jeton révocable et expirant, limité à un registre sujet et détenu par un composant de plugin précis.",
+      "why_it_exists": "Il fournit une primitive d'accès externe réutilisable que n'importe quel plugin métier peut consommer sans créer de tables de liens spécifiques.",
+      "how_to_use": [
+        "Émettez les liens pour chaque registre sujet concret et pour le composant propriétaire.",
+        "Limitez explicitement les permissions afin que le participant externe ne puisse effectuer que les actions autorisées.",
+        "Suivez la livraison, l'accès, l'expiration et la révocation depuis un seul modèle partagé."
+      ],
+      "relations": [
+        {
+          "type": "belongs-to",
+          "target": "collaboration-external-collaborator",
+          "summary": "Chaque lien externe appartient à une identité de collaborateur limitée."
+        },
+        {
+          "type": "may-support",
+          "target": "collaboration-comment",
+          "summary": "Les liens externes peuvent soutenir des workflows de commentaire ou de demande via des portails métiers spécifiques."
+        },
+        {
+          "type": "may-support",
+          "target": "collaboration-request",
+          "summary": "Les plugins métier peuvent mapper la participation par lien externe vers des workflows de demandes de suivi."
+        }
+      ],
+      "order": 418
+    },
+    {
+      "id": "collaboration-draft",
+      "label": "Brouillon de collaboration",
+      "category": "operations",
+      "summary": "Un registre de collaboration partagé et inachevé qui peut ensuite être promu en commentaire publié ou en demande de suivi.",
+      "why_it_exists": "Il préserve la continuité lorsqu'un utilisateur commence le travail mais qu'un autre doit le terminer ou le publier plus tard dans le même espace de travail.",
+      "how_to_use": [
+        "Enregistrez un brouillon lorsque la note ou la demande de suivi n'est pas encore prête à être publiée.",
+        "Utilisez les brouillons partagés pour garder le travail inachevé visible à plusieurs réviseurs au lieu de le cacher dans des notes personnelles.",
+        "Promouvez le brouillon en commentaire ou en demande de suivi lorsque le contenu est prêt à faire partie du registre opérationnel."
+      ],
+      "relations": [
+        {
+          "type": "may-be-promoted-to",
+          "target": "collaboration-comment",
+          "summary": "Un brouillon peut devenir un commentaire publié."
+        },
+        {
+          "type": "may-be-promoted-to",
+          "target": "collaboration-request",
+          "summary": "Un brouillon peut devenir une demande de suivi publiée."
+        }
+      ],
+      "order": 419
+    },
+    {
+      "id": "collaboration-comment",
+      "label": "Commentaire de collaboration",
+      "category": "operations",
+      "summary": "Une note de discussion légère stockée sur un registre sujet concret.",
+      "why_it_exists": "Il garde le contexte opérationnel près du registre au lieu de disperser les points de discussion par e-mail ou chat.",
+      "how_to_use": [
+        "Ajoutez des commentaires pour des clarifications, des notes de revue, la justification d'une décision ou de petites mises à jour de coordination.",
+        "Mentionnez les acteurs fonctionnels lorsque vous voulez que la note crée un signal explicite pour les identités principales liées à ces acteurs.",
+        "Utilisez les commentaires pour la discussion et le contexte, pas pour un travail structuré de suivi qui a besoin d'un responsable et d'une échéance."
+      ],
+      "relations": [
+        {
+          "type": "may-support",
+          "target": "collaboration-request",
+          "summary": "Les commentaires peuvent expliquer pourquoi une demande de suivi a été créée ou mise à jour."
+        },
+        {
+          "type": "may-come-from",
+          "target": "collaboration-draft",
+          "summary": "Certains commentaires commencent comme des brouillons partagés avant d'être publiés."
+        }
+      ],
+      "order": 420
+    },
+    {
+      "id": "collaboration-request",
+      "label": "Demande de suivi de collaboration",
+      "category": "operations",
+      "summary": "Un élément de suivi traçable lié à un registre concret, avec priorité, responsable, état et échéance facultative.",
+      "why_it_exists": "Il transforme le produit d'une simple tenue de registres en suivi opérationnel explicite sans forcer chaque plugin à créer son propre modèle de tâches.",
+      "how_to_use": [
+        "Créez une demande lorsque l'étape suivante nécessite une responsabilité ou un suivi d'échéance.",
+        "Mettez à jour l'état à mesure que le travail passe de ouvert à en cours, en attente, terminé ou annulé.",
+        "Utilisez l'étape de transfert pour montrer si la demande appartient à la revue, à la remédiation, à l'approbation ou à la boucle de suivi fermée.",
+        "Utilisez les acteurs mentionnés lorsque plusieurs rôles gouvernés doivent recevoir un signal visible même si un seul acteur est responsable de la demande.",
+        "Affectez la demande à un acteur fonctionnel lorsque la responsabilité doit rester ancrée à un rôle gouverné plutôt qu'à une connexion unique."
+      ],
+      "relations": [
+        {
+          "type": "may-be-explained-by",
+          "target": "collaboration-comment",
+          "summary": "Les commentaires peuvent capturer le raisonnement ou le contexte d'une demande."
+        },
+        {
+          "type": "may-come-from",
+          "target": "collaboration-draft",
+          "summary": "Certaines demandes de suivi commencent comme des brouillons partagés avant publication."
+        }
+      ],
+      "order": 421
+    }
+  ]
+}

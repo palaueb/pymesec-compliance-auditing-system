@@ -1,0 +1,301 @@
+{
+  "guide": [
+    {
+      "id": "vendor-review-workspace-overview",
+      "title": "Arbeitsbereich für Lieferantenprüfungen",
+      "summary": "Nutze den Arbeitsbereich für Lieferantenprüfungen, um Intake, Fragebogenantworten, Nachweise, verknüpfte Datensätze und Freigabeentscheidungen für eine einzelne Drittanbieterprüfung zusammenzuhalten.",
+      "body": [
+        "Das Lieferantenregister bleibt leichtgewichtig und dient vor allem zum Durchsuchen von Lieferanten, des aktuellen Status und zum Öffnen der aktiven Prüfung.",
+        "Nutze die Filter des Registers, um dich auf Prüfungen zu konzentrieren, die auf eine Entscheidung warten, bald fällig sind oder bereits überfällig für eine Neubewertung sind.",
+        "Der Prüf-Arbeitsbereich ist der Ort der eigentlichen Arbeit: Fragebogenantworten erfassen, Artefakte anhängen, verknüpfte Befunde und Abhilfemaßnahmen prüfen, die Prüfung durch Freigabestatus bewegen, geteilte Entwürfe, Kommentare und Folgeanfragen koordinieren, direkten externen Zugriff oder vermittelte Erfassung wählen und die Aktivitätszeitleiste nutzen, um das Recent zu verstehen."
+      ],
+      "concept_ids": [
+        "vendor-external-collaboration-hardening",
+        "vendor-record",
+        "vendor-review",
+        "vendor-review-profile",
+        "vendor-questionnaire-template",
+        "vendor-brokered-collection-request",
+        "vendor-external-review-link",
+        "vendor-questionnaire-item",
+        "collaboration-draft",
+        "collaboration-comment",
+        "collaboration-request"
+      ],
+      "order": 255
+    }
+  ],
+  "concepts": [
+    {
+      "id": "vendor-external-collaboration-hardening",
+      "label": "Härtung externer Lieferantenzusammenarbeit",
+      "category": "security",
+      "summary": "Operative und Bereitstellungskontrollen, die nötig sind, bevor das externe Lieferantenprüfportal exponiert wird.",
+      "why_it_exists": "Lieferantenprüfungen können sensible Kontrollen, Nachweise und Befundkontexte enthalten, daher brauchen externe Routen explizite Härtungsanleitung.",
+      "how_to_use": [
+        "Exponiere das Portal nur über HTTPS und halte Bereitstellungsgeheimnisse geschützt.",
+        "Halte Upload-Kontrollen streng und blockiere ausführbare Dateitypen.",
+        "Nutze Lebenszyklusstatus und Link-Widerruf, um den Zugriff sofort zu stoppen, wenn nötig.",
+        "Behandle Erinnerungs-, Digest- und Bereinigungsplaner als operative Verbesserungen, nicht als Zugriffssicherheitskontrollen."
+      ],
+      "relations": [
+        {
+          "type": "applies-to",
+          "target": "vendor-external-collaborator",
+          "summary": "Der Lebenszyklus des Beteiligten ist Teil der Sicherheitsbasis."
+        },
+        {
+          "type": "applies-to",
+          "target": "vendor-external-review-link",
+          "summary": "Ausgabe und Nutzung externer Links müssen der Härtungsbasis folgen."
+        }
+      ],
+      "order": 254
+    },
+    {
+      "id": "vendor-record",
+      "label": "Lieferantendatensatz",
+      "category": "operations",
+      "summary": "Ein Drittanbietereintrag, der den Lieferanten, den Servicekontext, Kontaktdaten, Stufe und den aktuellen Lebenszyklusstatus identifiziert.",
+      "why_it_exists": "Er trennt die Identität des Lieferanten von einem bestimmten Prüfzyklus, damit die Organisation die langfristige Drittanbietergeschichte behalten kann.",
+      "how_to_use": [
+        "Erstelle einen Lieferantendatensatz pro Drittanbieter, den du bewerten oder überwachen musst.",
+        "Halte Stufe, Servicezusammenfassung, Kontaktdaten und aktuellen Status aktuell."
+      ],
+      "relations": [
+        {
+          "type": "has-review",
+          "target": "vendor-review",
+          "summary": "Ein Lieferant kann über die Zeit einen oder mehrere Prüfzyklen haben."
+        }
+      ],
+      "order": 255
+    },
+    {
+      "id": "vendor-review",
+      "label": "Lieferantenprüfung",
+      "category": "operations",
+      "summary": "Der operative Prüf-Arbeitsbereich für einen Lieferantenbewertungszyklus, einschließlich inhärentem Risiko, Fragebogenantworten, Nachweisen, Entscheidungsnotizen und Freigabestatus.",
+      "why_it_exists": "Er gibt dem Team einen Ort für die Sorgfaltsprüfung und eine klare Entscheidung vor Freigabe oder Neubewertung.",
+      "how_to_use": [
+        "Öffne die Lieferantenprüfung, wenn du einen neuen Lieferanten bewerten oder einen bereits freigegebenen erneut ansehen willst.",
+        "Nutze sie, um Antworten, Nachweise, Folgehinweise und verknüpfte Befunde oder Risiken zu sammeln.",
+        "Wenn bereits ein Befund verknüpft ist, nutze die Zusammenfassung des Arbeitsbereichs, um Remediationsschritte zu verfolgen, ohne den Prüfungskontext zu verlieren.",
+        "Nutze geteilte Entwürfe, wenn ein Prüfer eine Notiz oder Folgeaufgabe beginnt und ein anderer sie später fertigstellen oder veröffentlichen muss.",
+        "Nutze Kommentare und Folgeanfragen, um die Koordination der Prüfer im selben Arbeitsbereich wie die Prüfungsnachweise und Entscheidungen zu halten.",
+        "Nutze Folgeübergaben, um zu zeigen, ob die nächste Aktion zur Prüfung, Remediation, Freigabe oder zum geschlossenen Kreislauf nach der Entscheidung gehört.",
+        "Erwähne funktionale Akteure, wenn verknüpfte Principals einen expliziten Hinweis sehen sollen, ohne die formale Verantwortlichkeit der Anfrage zu ändern.",
+        "Nutze die Zeitleiste, um Workflow-Übergänge, Nachweis-Uploads, Fragebogenänderungen, externe Kollaborationsereignisse und Kollaborationsereignisse an einem Ort zu prüfen."
+      ],
+      "relations": [
+        {
+          "type": "belongs-to",
+          "target": "vendor-record",
+          "summary": "Jede Prüfung gehört zu einem Lieferantendatensatz."
+        },
+        {
+          "type": "includes",
+          "target": "vendor-questionnaire-item",
+          "summary": "Fragebogenelemente bleiben an die Prüfung gebunden, die sie gesammelt hat."
+        },
+        {
+          "type": "may-link-to",
+          "target": "risk",
+          "summary": "Eine Prüfung kann auf einen bestehenden Risikodatensatz zeigen, wenn der Drittanbieter Teil einer größeren Risikolage ist."
+        },
+        {
+          "type": "may-link-to",
+          "target": "finding",
+          "summary": "Eine Prüfung kann Befunde verknüpfen oder auslösen, wenn die Sorgfaltsprüfung eine konkrete Lücke identifiziert."
+        },
+        {
+          "type": "may-include",
+          "target": "collaboration-draft",
+          "summary": "Geteilte Entwürfe halten unvollendete Zusammenarbeit vor Veröffentlichung in der Prüfung sichtbar."
+        },
+        {
+          "type": "may-include",
+          "target": "collaboration-comment",
+          "summary": "Kommentare halten Prüferdiskussion und operativen Kontext in der Prüfung."
+        },
+        {
+          "type": "may-include",
+          "target": "collaboration-request",
+          "summary": "Folgeanfragen halten die nächste Aktion im Prüf-Arbeitsbereich explizit."
+        }
+      ],
+      "order": 256
+    },
+    {
+      "id": "vendor-review-profile",
+      "label": "Lieferantenprüfprofil",
+      "category": "operations",
+      "summary": "Ein wiederverwendbares Prüfprofil für Tiefe und Taktung, das festlegt, wie eine Lieferantenprüfung durchgeführt werden soll.",
+      "why_it_exists": "Prüfprofile erlauben dem Team, ein konsistentes Sorgfaltsmuster für Lieferanten mit ähnlicher Exponierung, Stufe oder Servicecharakteristik anzuwenden.",
+      "how_to_use": [
+        "Wähle das Prüfprofil beim Erstellen oder Bearbeiten einer Lieferantenprüfung.",
+        "Nutze das Profil, um die Standard-Fragebogenvorlage und die erwartete Neubewertungstaktung zu steuern."
+      ],
+      "relations": [
+        {
+          "type": "may-shape",
+          "target": "vendor-review",
+          "summary": "Eine Prüfung kann ein Profil erhalten, das Tiefe und Taktung vorgibt."
+        },
+        {
+          "type": "may-have",
+          "target": "vendor-questionnaire-template",
+          "summary": "Profile können eine oder mehrere Fragebogenvorlagen besitzen."
+        }
+      ],
+      "order": 257
+    },
+    {
+      "id": "vendor-questionnaire-template",
+      "label": "Lieferanten-Fragebogenvorlage",
+      "category": "operations",
+      "summary": "Ein wiederverwendbarer Fragensatz, der mit einem Prüfprofil verknüpft und bei Anwendung in eine konkrete Lieferantenprüfung kopiert wird.",
+      "why_it_exists": "Vorlagen halten wiederkehrende Drittanbieterprüfungen konsistent, ohne jede Prüfung mit einem leeren Fragebogen beginnen zu lassen.",
+      "how_to_use": [
+        "Wähle für die Prüfung eine Fragebogenvorlage und wende sie an, um prüfungsgebundene Frageeinträge zu erzeugen.",
+        "Nutze die prüfungsgebundenen Einträge für echte Antworten, Status und Folgehinweise, nachdem die Vorlage kopiert wurde.",
+        "Nutze Abschnittstitel, um zusammenhängende Fragen wie Zugriffsgovernance, Incident-Behandlung oder Subunternehmer zu gruppieren.",
+        "Der gemeinsame Speicher und die Antwortsemantik kommen nun vom transversalen Fragebogen-Plugin, auch wenn dieser Arbeitsbereich weiterhin den Lieferantenprüf-Workflow besitzt."
+      ],
+      "relations": [
+        {
+          "type": "belongs-to",
+          "target": "vendor-review-profile",
+          "summary": "Jede Vorlage gehört zu einem Prüfprofil."
+        },
+        {
+          "type": "can-create",
+          "target": "vendor-questionnaire-item",
+          "summary": "Das Anwenden einer Vorlage erzeugt prüfungsgebundene Fragebogeneinträge."
+        }
+      ],
+      "order": 258
+    },
+    {
+      "id": "vendor-questionnaire-item",
+      "label": "Lieferanten-Fragebogeneintrag",
+      "category": "operations",
+      "summary": "Ein prüfungsgebundener Frage-und-Antwort-Eintrag zur Erfassung von Sorgfaltsantworten, ihres Prüfstatus und von Folgehinweisen.",
+      "why_it_exists": "Er erlaubt dem Team, strukturierte Antworten innerhalb einer konkreten Lieferantenprüfung zu sammeln und dabei das gemeinsame Fragebogen-Plugin für Speicher und Antwortsemantik wiederzuverwenden.",
+      "how_to_use": [
+        "Füge pro Frage, die du während der Prüfung verfolgen musst, einen Eintrag hinzu.",
+        "Aktualisiere Antwort, Antwortstatus und Folgehinweise, während die Prüfung voranschreitet.",
+        "Vergib einen Abschnittstitel, wenn verwandte Fragen für interne Prüfer und externe Lieferanten zusammen gerendert werden sollen.",
+        "Speichere stabile Antworten in der Fragebogenbibliothek, wenn ähnliche Lieferantenprüfungen dieselbe Basisantwort wiederverwenden sollen.",
+        "Nutze die spezielle Prüfaktion, um Antworten als akzeptiert oder nachverfolgungsbedürftig zu markieren und die Prüfernotizen direkt am Eintrag zu halten.",
+        "Setze einen Anhangsmodus und ein Upload-Profil, wenn die Frage eine unterstützende Datei erwartet, und nutze die Beförderung zu Nachweis nur dort, wo der Anhang zu gesteuertem Nachweis werden soll."
+      ],
+      "relations": [
+        {
+          "type": "belongs-to",
+          "target": "vendor-review",
+          "summary": "Fragebogeneinträge werden in einer konkreten Lieferantenprüfung gespeichert."
+        },
+        {
+          "type": "may-come-from",
+          "target": "vendor-questionnaire-template",
+          "summary": "Einige Fragen werden aus einer angewendeten Fragebogenvorlage kopiert."
+        }
+      ],
+      "order": 259
+    },
+    {
+      "id": "vendor-brokered-collection-request",
+      "label": "Vermittelte Lieferantenerfassungsanfrage",
+      "category": "operations",
+      "summary": "Eine nachverfolgte Erfassungsanfrage, bei der ein interner Broker Lieferantenantworten oder unterstützendes Material außerhalb der Plattform sammelt, ohne das externe Portal zu öffnen.",
+      "why_it_exists": "Sie bietet einen kontrollierten Mittelweg zwischen vollständig interner Bearbeitung und direktem externen Portalzugriff.",
+      "how_to_use": [
+        "Erstelle eine vermittelte Anfrage, wenn der Lieferant per E-Mail, Meeting, Anruf oder Dokumentenaustausch statt über das Portal antworten soll.",
+        "Weise den Broker-Principal zu oder bestätige ihn, erfasse die Sammelanweisungen und aktualisiere den Status der Anfrage, während der Intake voranschreitet.",
+        "Nutze Broker-Notizen, um zu erklären, was gesammelt wurde und was noch geprüft werden muss, bevor die Antwort akzeptiert werden kann."
+      ],
+      "relations": [
+        {
+          "type": "belongs-to",
+          "target": "vendor-review",
+          "summary": "Jede vermittelte Anfrage gehört zu einer konkreten Lieferantenprüfung."
+        },
+        {
+          "type": "supports",
+          "target": "vendor-questionnaire-item",
+          "summary": "Vermittelte Anfragen liefern den externen Sammelweg für prüfungsgebundene Fragebogenantworten."
+        }
+      ],
+      "order": 260
+    },
+    {
+      "id": "vendor-external-collaborator",
+      "label": "Externer Lieferantenbeteiligter",
+      "category": "operations",
+      "summary": "Eine prüfungsgebundene externe Teilnehmeridentität mit explizitem Lebenszyklusstatus.",
+      "why_it_exists": "Sie erlaubt dem Team, einen Beteiligten über alle seine Prüflinks hinweg zu sperren oder wiederherzustellen, ohne historische Datensätze zu löschen.",
+      "how_to_use": [
+        "Nutze einen Beteiligten-Datensatz pro Kontakt-E-Mail innerhalb jeder Lieferantenprüfung.",
+        "Setze den Lebenszyklus auf blockiert, wenn der externe Zugriff sofort über alle aktuellen Links stoppen muss.",
+        "Stelle den Lebenszyklus auf aktiv wieder her, wenn die Zusammenarbeit unter derselben begrenzten Identität fortgesetzt werden kann.",
+        "Die Durchsetzung des Portalzugriffs erfolgt zur Laufzeit, daher ist das Blockieren sofort wirksam und nicht von CRON abhängig."
+      ],
+      "relations": [
+        {
+          "type": "belongs-to",
+          "target": "vendor-review",
+          "summary": "Jeder Beteiligte ist auf eine konkrete Lieferantenprüfung begrenzt."
+        },
+        {
+          "type": "has-many",
+          "target": "vendor-external-review-link",
+          "summary": "Ein Beteiligter kann im Laufe der Zeit mehrere ausgegebene Links für dieselbe Prüfung haben."
+        }
+      ],
+      "order": 261
+    },
+    {
+      "id": "vendor-external-review-link",
+      "label": "Externer Lieferantenprüflink",
+      "category": "operations",
+      "summary": "Ein widerrufbarer, ablaufender externer Zugriffslink, der auf eine Lieferantenprüfung begrenzt ist.",
+      "why_it_exists": "Er ermöglicht kontrollierte externe Zusammenarbeit, ohne den gesamten internen Arbeitsbereich oder nicht verwandte Datensätze offenzulegen.",
+      "how_to_use": [
+        "Erstelle einen externen Link nur für die konkrete Prüfung, die du teilen willst.",
+        "Wähle, ob der Empfänger Fragebogeneinträge beantworten, Nachweise hochladen oder beides darf.",
+        "Entscheide, ob der Link manuell bleibt oder ob der Arbeitsbereich die Einladung über den SMTP-Connector der Organisation senden soll.",
+        "Widerrufe den Link, wenn das Kollaborationsfenster vorbei ist oder der Zugriff sofort enden soll.",
+        "Nutze den Lebenszyklusstatus des Beteiligten, um den gesamten Portalzugang für einen externen Kontakt zu blockieren oder wiederherzustellen."
+      ],
+      "relations": [
+        {
+          "type": "belongs-to",
+          "target": "vendor-external-collaborator",
+          "summary": "Jeder Link gehört zu einer externen Beteiligtenidentität für die Lebenszykluskontrolle."
+        },
+        {
+          "type": "belongs-to",
+          "target": "vendor-review",
+          "summary": "Jeder externe Link ist auf eine Lieferantenprüfung begrenzt."
+        },
+        {
+          "type": "may-allow",
+          "target": "vendor-questionnaire-item",
+          "summary": "Ein Link kann dem externen Teilnehmer erlauben, Antworten für prüfungsgebundene Fragebogeneinträge einzureichen."
+        },
+        {
+          "type": "may-allow",
+          "target": "artifact",
+          "summary": "Ein Link kann externe Nachweis-Uploads in den Prüf-Arbeitsbereich erlauben."
+        },
+        {
+          "type": "may-use",
+          "target": "notification-mail-settings",
+          "summary": "Die E-Mail-Einladung für den Link nutzt den ausgehenden Mail-Connector der Organisation, wenn er aktiviert ist."
+        }
+      ],
+      "order": 262
+    }
+  ]
+}

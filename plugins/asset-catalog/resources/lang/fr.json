@@ -1,8 +1,8 @@
 {
-    "plugin.asset-catalog.nav.root": "Actifs",
-    "plugin.asset-catalog.nav.lifecycle": "Cycle de vie",
-    "plugin.asset-catalog.screen.catalog.title": "Catalogue des Actifs",
-    "plugin.asset-catalog.screen.catalog.subtitle": "Gerez les actifs metier, leur ownership et leur cycle de vie.",
-    "plugin.asset-catalog.screen.lifecycle.title": "Tableau du Cycle de Vie",
-    "plugin.asset-catalog.screen.lifecycle.subtitle": "Consultez les transitions et l'etat courant des actifs."
+  "plugin.asset-catalog.nav.root": "Actifs",
+  "plugin.asset-catalog.nav.lifecycle": "Cycle de vie",
+  "plugin.asset-catalog.screen.catalog.title": "Catalogue des actifs",
+  "plugin.asset-catalog.screen.catalog.subtitle": "Suivez les actifs métier, la responsabilité et l'état du cycle de vie.",
+  "plugin.asset-catalog.screen.lifecycle.title": "Tableau du cycle de vie",
+  "plugin.asset-catalog.screen.lifecycle.subtitle": "Passez en revue les transitions du cycle de vie et l'état actuel des actifs."
 }

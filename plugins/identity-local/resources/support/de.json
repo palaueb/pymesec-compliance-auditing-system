@@ -1,0 +1,32 @@
+{
+  "guide": [
+    {
+      "id": "manage-people-and-access",
+      "title": "Verwalte Personen und Organisationszugriff getrennt",
+      "summary": "Eine Person anzulegen ist nicht dasselbe wie Zugriff auf eine Organisation zu gewähren.",
+      "body": [
+        "Lege zuerst die Person an oder synchronisiere sie, dann gewähre den Organisationszugriff über Mitgliedschaften.",
+        "So bleibt die Identitätsverwaltung getrennt von der operativen Zugriffsgovernance."
+      ],
+      "concept_ids": ["local-person", "membership"],
+      "order": 40
+    }
+  ],
+  "concepts": [
+    {
+      "id": "local-person",
+      "label": "Lokale Person",
+      "category": "identity",
+      "summary": "Ein lokal verwalteter Personendatensatz mit Benutzername, E-Mail und optionalen Anmeldemethoden.",
+      "why_it_exists": "Die Plattform braucht einen eingebauten Weg, um Administratoren, lokale Benutzer, temporäre Benutzer oder externe Mitwirkende anzulegen, selbst wenn kein externes Verzeichnis verfügbar ist.",
+      "how_to_use": [
+        "Lege lokale Personen in der Administration an, wenn sie eine Plattformidentität benötigen.",
+        "Gewähre den Organisationszugriff separat über Mitgliedschaften."
+      ],
+      "relations": [
+        { "type": "becomes", "target": "principal", "summary": "Eine lokale Person wird für Zugriffskontrollen als Principal dargestellt." }
+      ],
+      "order": 110
+    }
+  ]
+}

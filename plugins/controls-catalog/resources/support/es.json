@@ -1,0 +1,87 @@
+{
+  "guide": [
+    {
+      "id": "manage-control-coverage-in-one-place",
+      "title": "Usa el detalle del control para mantener juntas la responsabilidad, las evidencias, el flujo de trabajo y la cobertura de requisitos",
+      "summary": "La lista del catálogo sirve para explorar. El espacio de trabajo del control seleccionado es donde se mantienen los mapeos y el material de apoyo.",
+      "body": [
+        "Crea controles internos que describan la salvaguarda o práctica esperada que quieres gobernar.",
+        "Vincula los requisitos del marco a cada control cuando necesites demostrar cobertura frente a un estándar o una regulación.",
+        "Mantén al día los responsables, el estado del flujo de trabajo, el resumen de evidencias y los artefactos dentro del espacio de detalle del control."
+      ],
+      "concept_ids": [
+        "control",
+        "control-framework",
+        "control-requirement",
+        "control-coverage-mapping"
+      ],
+      "order": 220
+    }
+  ],
+  "concepts": [
+    {
+      "id": "control",
+      "label": "Control",
+      "category": "operations",
+      "summary": "Una salvaguarda, requisito o práctica esperada que debería existir y revisarse.",
+      "why_it_exists": "Los controles expresan cómo debería verse una buena gobernanza o protección. Se convierten en un punto central para las evidencias y la revisión.",
+      "how_to_use": [
+        "Crea controles para las salvaguardas que tu organización quiere seguir.",
+        "Revísalos con regularidad y adjunta evidencias cuando haga falta."
+      ],
+      "relations": [
+        { "type": "may-support", "target": "asset", "summary": "Los controles ayudan a proteger o gobernar los activos." },
+        { "type": "may-reduce", "target": "risk", "summary": "Los controles son una de las principales formas de reducir el riesgo." },
+        { "type": "may-map-to", "target": "control-framework", "summary": "Los controles pueden alinearse con marcos y requisitos." }
+      ],
+      "order": 220
+    },
+    {
+      "id": "control-framework",
+      "label": "Marco de control",
+      "category": "catalogue",
+      "summary": "Un marco o estándar con nombre que agrupa un conjunto de requisitos de control.",
+      "why_it_exists": "Los marcos ayudan a la organización a explicar de dónde sale una exigencia de control.",
+      "how_to_use": [
+        "Registra primero el marco y después añade los requisitos asociados.",
+        "Mapea tus controles internos con esos requisitos cuando necesites trazabilidad."
+      ],
+      "relations": [
+        { "type": "contains", "target": "control-requirement", "summary": "Los requisitos viven dentro de un marco." }
+      ],
+      "order": 225
+    },
+    {
+      "id": "control-requirement",
+      "label": "Requisito de control",
+      "category": "catalogue",
+      "summary": "Un requisito o cláusula dentro de un marco.",
+      "why_it_exists": "Los requisitos crean el vínculo trazable entre los controles internos y las obligaciones o estándares externos.",
+      "how_to_use": [
+        "Añade los requisitos bajo el marco al que pertenecen.",
+        "Mapea controles internos cuando necesites demostrar cobertura."
+      ],
+      "relations": [
+        { "type": "belongs-to", "target": "control-framework", "summary": "Un requisito forma parte de un único marco." },
+        { "type": "may-be-covered-by", "target": "control", "summary": "Los controles internos pueden cubrir uno o varios requisitos." }
+      ],
+      "order": 226
+    },
+    {
+      "id": "control-coverage-mapping",
+      "label": "Mapeo de cobertura de controles",
+      "category": "catalogue",
+      "summary": "La relación explícita entre un control interno y un requisito de marco, incluida la cobertura declarada.",
+      "why_it_exists": "El mapeo de cobertura hace tangible la adopción del marco y la trazabilidad de auditoría en lugar de implícitas.",
+      "how_to_use": [
+        "Vincula el requisito con el control y elige el nivel de cobertura que mejor refleje la realidad.",
+        "Añade una nota breve cuando la relación necesite contexto o matices."
+      ],
+      "relations": [
+        { "type": "connects", "target": "control", "summary": "El mapeo pertenece a un único control interno." },
+        { "type": "connects", "target": "control-requirement", "summary": "El mapeo apunta a un requisito de marco." }
+      ],
+      "order": 227
+    }
+  ]
+}

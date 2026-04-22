@@ -1,0 +1,54 @@
+{
+  "guide": [
+    {
+      "id": "manage-policies-and-approved-deviations",
+      "title": "Nutze die Richtliniendetails, um Regel und genehmigte Abweichungen gemeinsam zu verwalten",
+      "summary": "Der Richtliniendatensatz ist der Governance-Anker. Ausnahmen sind untergeordnete Datensätze, wenn eine Abweichung bewusst akzeptiert wird.",
+      "body": [
+        "Halte in der Richtlinienansicht die Richtlinie, die verknüpfte Kontrolle, den Prüfzyklus, die Verantwortlichen und die Dokumente aktuell.",
+        "Lege eine Ausnahme nur an, wenn die Organisation eine begrenzte Abweichung bewusst zulässt.",
+        "Nutze Ausnahmestatus, Ablauf, Begründung und Hinweise zu Kompensationskontrollen, damit die Abweichung weiter prüfbar bleibt."
+      ],
+      "concept_ids": [
+        "policy",
+        "policy-exception"
+      ],
+      "order": 250
+    }
+  ],
+  "concepts": [
+    {
+      "id": "policy",
+      "label": "Richtlinie",
+      "category": "governance",
+      "summary": "Eine gesteuerte Aussage zu erwarteter Praxis, Verantwortlichkeit und Prüffrequenz.",
+      "why_it_exists": "Richtlinien liefern die Regelbasis, auf die sich andere Datensätze wie Kontrollen und Ausnahmen beziehen können.",
+      "how_to_use": [
+        "Halte Aussage, Version, Verantwortliche, verknüpfte Kontrolle und Prüfdatum aktuell.",
+        "Nutze angehängte Dokumente für Arbeitsmaterial oder freigegebene Richtlinienartefakte."
+      ],
+      "relations": [
+        { "type": "may-link-to", "target": "control", "summary": "Richtlinien können auf die Kontrolle zeigen, die sie regeln oder begründen." },
+        { "type": "may-have", "target": "policy-exception", "summary": "Eine Richtlinie kann im Laufe der Zeit mehrere genehmigte oder beantragte Ausnahmen haben." }
+      ],
+      "order": 250
+    },
+    {
+      "id": "policy-exception",
+      "label": "Policy-Ausnahme",
+      "category": "governance",
+      "summary": "Eine formell erfasste Entscheidung, eine Abweichung von einer erwarteten Richtlinie oder Regel zu erlauben.",
+      "why_it_exists": "Organisationen akzeptieren manchmal begrenzte Abweichungen. Eine Policy-Ausnahme hält diese Entscheidung sichtbar, geprüft und zeitlich begrenzt.",
+      "how_to_use": [
+        "Nutze eine Ausnahme, wenn eine Regel nicht eingehalten werden kann und die Abweichung bewusst akzeptiert wird.",
+        "Erfasse den Grund, den Verantwortlichen, den Genehmigungsstatus, den Ablauf und die Kompensationskontrollen."
+      ],
+      "relations": [
+        { "type": "belongs-to", "target": "policy", "summary": "Ausnahmen werden im Kontext einer einzigen Richtlinie verwaltet." },
+        { "type": "may-relate-to", "target": "finding", "summary": "Eine Ausnahme kann auf einen Befund verweisen, der sie ausgelöst oder begründet hat." },
+        { "type": "may-increase", "target": "risk", "summary": "Eine Ausnahme kann ein Risiko teilweise unbehandelt lassen." }
+      ],
+      "order": 251
+    }
+  ]
+}

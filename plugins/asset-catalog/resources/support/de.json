@@ -1,0 +1,34 @@
+{
+  "guide": [
+    {
+      "id": "start-with-assets",
+      "title": "Beginne dein Betriebsmodell mit Assets",
+      "summary": "Assets beschreiben, was die Organisation schützen, betreiben oder wiederherstellen muss.",
+      "body": [
+        "Erfasse wichtige Systeme, Datensätze, Services und geschäftliche Ressourcen als Assets.",
+        "Später können andere Datensätze wie Risiken und Continuity-Pläne auf diese Assets verweisen."
+      ],
+      "concept_ids": ["asset"],
+      "order": 60
+    }
+  ],
+  "concepts": [
+    {
+      "id": "asset",
+      "label": "Asset",
+      "category": "operations",
+      "summary": "Ein geschäftliches, technisches oder informationelles Objekt, das die Organisation verwalten und schützen muss.",
+      "why_it_exists": "Assets geben dem restlichen Compliance-Modell ein konkretes Subjekt. Risiken, Kontrollen und Wiederherstellungsarbeit sind leichter zu verstehen, wenn sie auf das relevante Objekt zeigen.",
+      "how_to_use": [
+        "Lege Assets für wichtige Systeme, Datensätze, Services, Lieferanten oder kritische Geschäftsressourcen an.",
+        "Halte Eigentum, Lebenszyklusstatus und beschreibende Felder aktuell."
+      ],
+      "relations": [
+        { "type": "may-have", "target": "risk", "summary": "Risiken können Bedrohungen oder Schwächen beschreiben, die ein Asset betreffen." },
+        { "type": "may-be-covered-by", "target": "control", "summary": "Kontrollen können unterstützen, wie ein Asset geschützt oder gesteuert wird." },
+        { "type": "may-be-needed-by", "target": "continuity-service", "summary": "Services und Pläne können vom Asset abhängen." }
+      ],
+      "order": 210
+    }
+  ]
+}

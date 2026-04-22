@@ -1,41 +1,41 @@
 <section class="module-screen">
     <div class="surface-note">
-        Governance page. `Organization Access` defines workspace role sets and scope reach. Identity profile data stays in `People` so access governance remains separate from sign-in administration.
+        {{ __('Governance page. `Organization Access` defines workspace role sets and scope reach. Identity profile data stays in `People` so access governance remains separate from sign-in administration.') }}
     </div>
 
     @if (is_array($selected_row))
         @php $selectedMembership = $selected_row['membership']; @endphp
         <div class="surface-card" style="padding:16px; display:grid; gap:16px;">
             <div class="surface-note">
-                Access Detail keeps role sets, scope reach, and functional-profile links in one governance workspace. Use the access list to browse memberships and open the one you want to edit.
+                {{ __('Access Detail keeps role sets, scope reach, and functional-profile links in one governance workspace. Use the access list to browse memberships and open the one you want to edit.') }}
             </div>
 
             <div class="row-between" style="align-items:flex-start;">
                 <div>
-                    <div class="eyebrow">Access Detail</div>
+                    <div class="eyebrow">{{ __('Access Detail') }}</div>
                     <h2 class="screen-title" style="font-size:28px;">{{ $selected_row['user']['display_name'] ?? $selectedMembership['principal_id'] }}</h2>
                     <div class="table-note">{{ $selectedMembership['id'] }}</div>
                     <div class="table-note">{{ $selected_row['user']['email'] ?? 'No local profile' }}</div>
                 </div>
                 <div class="action-cluster">
-                    <a class="button button-ghost" href="{{ $memberships_list_url }}">Back to access</a>
+                    <a class="button button-ghost" href="{{ $memberships_list_url }}">{{ __('Back to access') }}</a>
                     <span class="pill">{{ $selectedMembership['is_active'] ? 'active' : 'inactive' }}</span>
                 </div>
             </div>
 
             <div class="overview-grid" style="grid-template-columns:repeat(4, minmax(0, 1fr));">
-                <div class="metric-card"><div class="metric-label">Role sets</div><div class="metric-value">{{ count($selectedMembership['roles']) }}</div></div>
-                <div class="metric-card"><div class="metric-label">Scopes</div><div class="metric-value">{{ count($selectedMembership['scope_ids']) }}</div></div>
-                <div class="metric-card"><div class="metric-label">Principal</div><div class="metric-value" style="font-size:18px;">{{ $selectedMembership['principal_id'] }}</div></div>
-                <div class="metric-card"><div class="metric-label">Organization</div><div class="metric-value" style="font-size:18px;">{{ $organization_id }}</div></div>
+                <div class="metric-card"><div class="metric-label">{{ __('Role sets') }}</div><div class="metric-value">{{ count($selectedMembership['roles']) }}</div></div>
+                <div class="metric-card"><div class="metric-label">{{ __('Scopes') }}</div><div class="metric-value">{{ count($selectedMembership['scope_ids']) }}</div></div>
+                <div class="metric-card"><div class="metric-label">{{ __('Principal') }}</div><div class="metric-value" style="font-size:18px;">{{ $selectedMembership['principal_id'] }}</div></div>
+                <div class="metric-card"><div class="metric-label">{{ __('Organization') }}</div><div class="metric-value" style="font-size:18px;">{{ $organization_id }}</div></div>
             </div>
 
             <div class="overview-grid" style="grid-template-columns:repeat(2, minmax(0, 1fr));">
                 <div class="surface-card" style="padding:14px;">
-                    <div class="metric-label">Role sets</div>
+                    <div class="metric-label">{{ __('Role sets') }}</div>
                     <div class="data-stack" style="margin-top:10px;">
                         @if ($selectedMembership['roles'] === [])
-                            <span class="muted-note">No role sets yet</span>
+                            <span class="muted-note">{{ __('No role sets yet') }}</span>
                         @else
                             @foreach ($role_option_groups as $group)
                                 @php
@@ -59,10 +59,10 @@
                 </div>
 
                 <div class="surface-card" style="padding:14px;">
-                    <div class="metric-label">Scopes</div>
+                    <div class="metric-label">{{ __('Scopes') }}</div>
                     <div class="data-stack" style="margin-top:10px;">
                         @if ($selectedMembership['scope_ids'] === [])
-                            <span class="muted-note">All organization scopes</span>
+                            <span class="muted-note">{{ __('All organization scopes') }}</span>
                         @else
                             @foreach ($selectedMembership['scope_ids'] as $scopeId)
                                 <div class="data-item">{{ $scopeId }}</div>
@@ -74,9 +74,9 @@
 
             <div class="surface-card" style="padding:14px;">
                 <div class="row-between">
-                    <div class="metric-label">Functional profiles</div>
+                    <div class="metric-label">{{ __('Functional profiles') }}</div>
                     @if (is_string($manage_functional_profiles_url ?? null))
-                        <a class="button button-ghost" href="{{ $manage_functional_profiles_url }}">Manage responsibilities</a>
+                        <a class="button button-ghost" href="{{ $manage_functional_profiles_url }}">{{ __('Manage responsibilities') }}</a>
                     @endif
                 </div>
                 <div class="data-stack" style="margin-top:10px;">
@@ -86,14 +86,14 @@
                             <div class="table-note">{{ $actor['kind'] }} · {{ $actor['id'] }}</div>
                         </div>
                     @empty
-                        <span class="muted-note">No functional profiles linked yet.</span>
+                        <span class="muted-note">{{ __('No functional profiles linked yet.') }}</span>
                     @endforelse
                 </div>
             </div>
 
             @if ($can_manage_memberships)
                 <div class="surface-card" style="padding:14px;">
-                    <div class="metric-label">Edit access</div>
+                    <div class="metric-label">{{ __('Edit access') }}</div>
                     <form class="upload-form" method="POST" action="{{ route('plugin.identity-local.memberships.update', ['membershipId' => $selectedMembership['id']]) }}" style="margin-top:10px;">
                         @csrf
                         <input type="hidden" name="principal_id" value="{{ $query['principal_id'] ?? '' }}">
@@ -103,7 +103,7 @@
                         <input type="hidden" name="selected_membership_id" value="{{ $selectedMembership['id'] }}">
                         <input type="hidden" name="membership_id" value="{{ $query['membership_ids'][0] ?? 'membership-org-a-hello' }}">
                         <div class="field">
-                            <label class="field-label">Person</label>
+                            <label class="field-label">{{ __('Person') }}</label>
                             <select class="field-select" name="subject_principal_id" required>
                                 @foreach ($user_options as $user)
                                     <option value="{{ $user['principal_id'] }}" @selected($selectedMembership['principal_id'] === $user['principal_id'])>{{ $user['label'] }}</option>
@@ -111,8 +111,8 @@
                             </select>
                         </div>
                         <div class="field">
-                            <label class="field-label">Role sets</label>
-                            <div class="table-note" style="margin:2px 0 10px;">Hold <kbd>Ctrl</kbd> (Windows/Linux) or <kbd>Cmd</kbd> (Mac) to select multiple roles. Click a selected role again to deselect it.</div>
+                            <label class="field-label">{{ __('Role sets') }}</label>
+                            <div class="table-note" style="margin:2px 0 10px;">{{ __('Hold `Ctrl` (Windows/Linux) or `Cmd` (Mac) to select multiple roles. Click a selected role again to deselect it.') }}</div>
                             <div class="overview-grid" style="grid-template-columns:repeat({{ max(1, count($role_option_groups)) }}, minmax(0, 1fr)); gap:12px;">
                                 @foreach ($role_option_groups as $group)
                                     <div class="surface-card" style="padding:12px;">
@@ -128,7 +128,7 @@
                             </div>
                         </div>
                         <div class="field">
-                            <label class="field-label">Scope access</label>
+                            <label class="field-label">{{ __('Scope access') }}</label>
                             <select class="field-select" name="scope_ids[]" multiple size="{{ max(3, count($scope_options)) }}">
                                 @foreach ($scope_options as $scope)
                                     <option value="{{ $scope['id'] }}" @selected(in_array($scope['id'], $selectedMembership['scope_ids'], true))>{{ $scope['name'] }}</option>
@@ -137,10 +137,10 @@
                         </div>
                         <label class="field-label" style="display:flex; gap:8px; align-items:center;">
                             <input type="checkbox" name="is_active" value="1" @checked($selectedMembership['is_active'])>
-                            Membership is active
+                            {{ __('Membership is active') }}
                         </label>
                         <div class="action-cluster">
-                            <button class="button button-secondary" type="submit">Save access</button>
+                            <button class="button button-secondary" type="submit">{{ __('Save access') }}</button>
                         </div>
                     </form>
                 </div>
@@ -151,8 +151,8 @@
             <div class="surface-card" id="identity-membership-editor" hidden>
                 <div class="row-between" style="margin-bottom:14px;">
                     <div>
-                        <div class="eyebrow">Access</div>
-                        <div class="entity-title" style="font-size:24px;">Grant organization access</div>
+                        <div class="eyebrow">{{ __('Access') }}</div>
+                        <div class="entity-title" style="font-size:24px;">{{ __('Grant organization access') }}</div>
                     </div>
                 </div>
 
@@ -165,16 +165,16 @@
                     <input type="hidden" name="membership_id" value="{{ $query['membership_ids'][0] ?? 'membership-org-a-hello' }}">
                     <div class="overview-grid" style="grid-template-columns:repeat(2, minmax(0, 1fr));">
                         <div class="field">
-                            <label class="field-label" for="identity-membership-user">Person</label>
+                            <label class="field-label" for="identity-membership-user">{{ __('Person') }}</label>
                             <select class="field-select" id="identity-membership-user" name="subject_principal_id" required>
-                                <option value="">Select a person</option>
+                                <option value="">{{ __('Select a person') }}</option>
                                 @foreach ($user_options as $user)
                                     <option value="{{ $user['principal_id'] }}">{{ $user['label'] }}</option>
                                 @endforeach
                             </select>
                         </div>
                         <div class="field">
-                            <label class="field-label" for="identity-membership-scopes">Scope access</label>
+                            <label class="field-label" for="identity-membership-scopes">{{ __('Scope access') }}</label>
                             <select class="field-select" id="identity-membership-scopes" name="scope_ids[]" multiple size="{{ max(3, count($scope_options)) }}">
                                 @foreach ($scope_options as $scope)
                                     <option value="{{ $scope['id'] }}">{{ $scope['name'] }}</option>
@@ -182,8 +182,8 @@
                             </select>
                         </div>
                         <div class="field" style="grid-column:1 / -1;">
-                            <label class="field-label">Role sets</label>
-                            <div class="table-note" style="margin:2px 0 10px;">Hold <kbd>Ctrl</kbd> (Windows/Linux) or <kbd>Cmd</kbd> (Mac) to select multiple roles. Click a selected role again to deselect it.</div>
+                            <label class="field-label">{{ __('Role sets') }}</label>
+                            <div class="table-note" style="margin:2px 0 10px;">{{ __('Hold `Ctrl` (Windows/Linux) or `Cmd` (Mac) to select multiple roles. Click a selected role again to deselect it.') }}</div>
                             <div class="overview-grid" style="grid-template-columns:repeat({{ max(1, count($role_option_groups)) }}, minmax(0, 1fr)); gap:12px;">
                                 @foreach ($role_option_groups as $group)
                                     <div class="surface-card" style="padding:12px;">
@@ -199,44 +199,44 @@
                             </div>
                         </div>
                     </div>
-                    <div class="action-cluster" style="margin-top:14px;"><button class="button button-primary" type="submit">Grant access</button></div>
+                    <div class="action-cluster" style="margin-top:14px;"><button class="button button-primary" type="submit">{{ __('Grant access') }}</button></div>
                 </form>
             </div>
         @endif
 
         <div class="overview-grid" style="grid-template-columns:repeat(4, minmax(0, 1fr));">
-            <div class="metric-card"><div class="metric-label">Memberships</div><div class="metric-value">{{ count($rows) }}</div></div>
-            <div class="metric-card"><div class="metric-label">Active</div><div class="metric-value">{{ collect($rows)->where('membership.is_active', true)->count() }}</div></div>
-            <div class="metric-card"><div class="metric-label">Role grants</div><div class="metric-value">{{ collect($rows)->sum(fn ($row) => count($row['membership']['roles'])) }}</div></div>
-            <div class="metric-card"><div class="metric-label">Scoped access</div><div class="metric-value">{{ collect($rows)->filter(fn ($row) => $row['membership']['scope_ids'] !== [])->count() }}</div></div>
+            <div class="metric-card"><div class="metric-label">{{ __('Memberships') }}</div><div class="metric-value">{{ count($rows) }}</div></div>
+            <div class="metric-card"><div class="metric-label">{{ __('Active') }}</div><div class="metric-value">{{ collect($rows)->where('membership.is_active', true)->count() }}</div></div>
+            <div class="metric-card"><div class="metric-label">{{ __('Role grants') }}</div><div class="metric-value">{{ collect($rows)->sum(fn ($row) => count($row['membership']['roles'])) }}</div></div>
+            <div class="metric-card"><div class="metric-label">{{ __('Scoped access') }}</div><div class="metric-value">{{ collect($rows)->filter(fn ($row) => $row['membership']['scope_ids'] !== [])->count() }}</div></div>
         </div>
 
         <div class="surface-card">
-            <div class="entity-title">Access list</div>
-            <div class="table-note" style="margin-top:6px;">This list stays focused on membership status, role-set summary, scope reach, and Open. Use Access Detail to manage grants and responsibility links.</div>
+            <div class="entity-title">{{ __('Access list') }}</div>
+            <div class="table-note" style="margin-top:6px;">{{ __('This list stays focused on membership status, role-set summary, scope reach, and Open. Use Access Detail to manage grants and responsibility links.') }}</div>
         </div>
 
         <div class="table-card">
             <table class="entity-table">
                 <thead>
                     <tr>
-                        <th>Person</th>
-                        <th>Membership</th>
-                        <th>Role sets</th>
-                        <th>Scopes</th>
-                        <th>Status</th>
-                        <th>{{ $can_manage_memberships ? 'Actions' : 'Access' }}</th>
+                        <th>{{ __('Person') }}</th>
+                        <th>{{ __('Membership') }}</th>
+                        <th>{{ __('Role sets') }}</th>
+                        <th>{{ __('Scopes') }}</th>
+                        <th>{{ __('Status') }}</th>
+                        <th>{{ $can_manage_memberships ? __('Actions') : __('Access') }}</th>
                     </tr>
                 </thead>
                 <tbody>
                     @foreach ($rows as $row)
                         <tr>
-                            <td><div class="entity-title">{{ $row['user']['display_name'] ?? $row['membership']['principal_id'] }}</div><div class="table-note">{{ $row['user']['email'] ?? 'No local profile' }}</div></td>
+                            <td><div class="entity-title">{{ $row['user']['display_name'] ?? $row['membership']['principal_id'] }}</div><div class="table-note">{{ $row['user']['email'] ?? __('No local profile') }}</div></td>
                             <td><div>{{ $row['membership']['principal_id'] }}</div><div class="entity-id">{{ $row['membership']['id'] }}</div></td>
-                            <td>@if ($row['membership']['roles'] === [])<span class="muted-note">No role sets yet</span>@else<div class="table-note">{{ count($row['membership']['roles']) }} roles</div>@endif</td>
-                            <td>@if ($row['membership']['scope_ids'] === [])<span class="muted-note">All organization scopes</span>@else<div class="table-note">{{ count($row['membership']['scope_ids']) }} scopes</div>@endif</td>
-                            <td><span class="pill">{{ $row['membership']['is_active'] ? 'active' : 'inactive' }}</span></td>
-                            <td><a class="button button-secondary" href="{{ $row['open_url'] }}">Open</a></td>
+                            <td>@if ($row['membership']['roles'] === [])<span class="muted-note">{{ __('No role sets yet') }}</span>@else<div class="table-note">{{ count($row['membership']['roles']) }} {{ __('roles') }}</div>@endif</td>
+                            <td>@if ($row['membership']['scope_ids'] === [])<span class="muted-note">{{ __('All organization scopes') }}</span>@else<div class="table-note">{{ count($row['membership']['scope_ids']) }} {{ __('scopes') }}</div>@endif</td>
+                            <td><span class="pill">{{ $row['membership']['is_active'] ? __('active') : __('inactive') }}</span></td>
+                            <td><a class="button button-secondary" href="{{ $row['open_url'] }}">{{ __('Open') }}</a></td>
                         </tr>
                     @endforeach
                 </tbody>

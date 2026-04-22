@@ -1,0 +1,35 @@
+{
+  "guide": [
+    {
+      "id": "evidence-library-overview",
+      "title": "Biblioteca de evidencias",
+      "summary": "Usa la biblioteca de evidencias para mantener el material probatorio en un solo lugar gobernado y reutilizarlo en evaluaciones, controles, hallazgos y otras áreas de trabajo.",
+      "body": [
+        "Un registro de evidencia encapsula un archivo o un artefacto existente con metadatos de negocio como estado, validez, fechas de revisión y registros vinculados.",
+        "Un único registro de evidencia puede apoyar a más de un control, evaluación o hallazgo sin volver a subir el mismo archivo."
+      ],
+      "order": 240
+    }
+  ],
+  "concepts": [
+    {
+      "id": "evidence-record",
+      "label": "Registro de evidencia",
+      "summary": "Un elemento probatorio gobernado con estado, fechas, notas de validación y vínculos a registros relacionados.",
+      "why_it_exists": "Convierte un archivo subido en bruto en algo que el equipo de cumplimiento puede revisar, reutilizar y seguir a lo largo del tiempo.",
+      "how_to_use_it": [
+        "Crea un registro de evidencia a partir de un archivo nuevo o promociona un artefacto existente.",
+        "Vincúlalo a los controles, evaluaciones, hallazgos, riesgos o planes que dependan de él.",
+        "Mantén actualizados el estado de validación y las fechas de validez."
+      ],
+      "related_to": [
+        "assessment-campaign",
+        "control",
+        "finding",
+        "risk"
+      ],
+      "area": "app",
+      "order": 240
+    }
+  ]
+}

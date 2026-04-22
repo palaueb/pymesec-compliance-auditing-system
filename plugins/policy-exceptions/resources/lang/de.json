@@ -1,0 +1,8 @@
+{
+  "plugin.policy-exceptions.nav.root": "Richtlinien",
+  "plugin.policy-exceptions.nav.exceptions": "Ausnahmen",
+  "plugin.policy-exceptions.screen.register.title": "Richtlinienregister",
+  "plugin.policy-exceptions.screen.register.subtitle": "Governance-Richtlinien mit Verantwortlichen, Lebenszyklus, Verknüpfungen zu Kontrollen und Prüfrhythmus.",
+  "plugin.policy-exceptions.screen.exceptions.title": "Richtlinienausnahmen",
+  "plugin.policy-exceptions.screen.exceptions.subtitle": "Verfolge genehmigte Abweichungen, kompensierende Kontrollen, Ablaufdaten und verknüpfte Feststellungen."
+}

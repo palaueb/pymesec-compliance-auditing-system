@@ -1,0 +1,8 @@
+{
+  "plugin.actor-directory.nav.root": "Actores",
+  "plugin.actor-directory.nav.assignments": "Asignaciones",
+  "plugin.actor-directory.screen.directory.title": "Actores funcionales",
+  "plugin.actor-directory.screen.directory.subtitle": "Directorio de personas y equipos responsables, separado de la identidad de acceso.",
+  "plugin.actor-directory.screen.assignments.title": "Asignaciones funcionales",
+  "plugin.actor-directory.screen.assignments.subtitle": "Vínculos de responsabilidad entre actores funcionales y objetos del dominio."
+}

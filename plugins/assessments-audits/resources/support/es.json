@@ -1,0 +1,93 @@
+{
+  "concepts": [
+    {
+      "id": "assessment-campaign",
+      "label": "Campaña de evaluación",
+      "category": "verification",
+      "summary": "Un ejercicio de revisión acotado para una organización, un ámbito, una ventana temporal y un conjunto de controles definidos.",
+      "why_it_exists": "Las evaluaciones organizan el trabajo de auditoría en un ejercicio repetible en lugar de dejar controles y evidencias desconectados.",
+      "how_to_use": [
+        "Crea una evaluación para un periodo de revisión concreto.",
+        "Limítala a un ámbito cuando la auditoría no sea de toda la organización.",
+        "Selecciona los controles que se comprobarán durante ese ejercicio."
+      ],
+      "related_to": [
+        "organization",
+        "scope",
+        "control"
+      ]
+    },
+    {
+      "id": "assessment-review",
+      "label": "Revisión de evaluación",
+      "category": "verification",
+      "summary": "El registro de revisión de un control dentro de una evaluación.",
+      "why_it_exists": "Las revisiones son donde se registra el trabajo de auditoría real: resultado, notas, conclusión, evidencias y cualquier hallazgo generado por la prueba.",
+      "how_to_use": [
+        "Abre la lista de comprobación de la evaluación.",
+        "Registra el resultado de cada control que pruebes.",
+        "Adjunta papeles de trabajo y crea un hallazgo cuando el control tenga una brecha."
+      ],
+      "related_to": [
+        "assessment-campaign",
+        "control",
+        "finding",
+        "artifact"
+      ]
+    },
+    {
+      "id": "assessment-workpaper",
+      "label": "Papel de trabajo de evaluación",
+      "category": "evidence",
+      "summary": "Un archivo adjunto a una revisión de control dentro de una evaluación.",
+      "why_it_exists": "Los papeles de trabajo mantienen juntos el muestreo de apoyo, la captura de pantalla, la exportación o el paquete de notas con la revisión que los utilizó.",
+      "how_to_use": [
+        "Sube el archivo desde el panel de revisión del control.",
+        "Dale una etiqueta clara para que el revisor sepa qué demuestra.",
+        "Usa los papeles de trabajo para respaldar la conclusión o el hallazgo vinculado."
+      ],
+      "related_to": [
+        "assessment-review",
+        "artifact"
+      ]
+    }
+  ],
+  "guide": [
+    {
+      "id": "assessment-campaigns",
+      "title": "Ejecuta una evaluación",
+      "summary": "Usa las evaluaciones para agrupar los controles que quieres revisar en un único ciclo de auditoría.",
+      "body": [
+        "Empieza eligiendo la organización, el ámbito opcional y la ventana temporal.",
+        "Después selecciona los controles que forman parte de la revisión.",
+        "Usa la lista de campañas para seguir si el ejercicio sigue en borrador, activo o ya cerrado.",
+        "Abre la lista de comprobación para registrar los resultados de control, subir papeles de trabajo y generar hallazgos."
+      ],
+      "concept_ids": [
+        "assessment-campaign",
+        "assessment-review",
+        "assessment-workpaper"
+      ]
+    }
+  ],
+  "relationships": [
+    {
+      "source": "assessment-campaign",
+      "type": "includes",
+      "target": "control",
+      "summary": "Una campaña de evaluación agrupa los controles que se revisarán durante el ejercicio."
+    },
+    {
+      "source": "assessment-review",
+      "type": "can-create",
+      "target": "finding",
+      "summary": "Una revisión puede crear un hallazgo cuando la prueba identifica una brecha o no conformidad."
+    },
+    {
+      "source": "assessment-review",
+      "type": "is-supported-by",
+      "target": "artifact",
+      "summary": "Una revisión puede tener papeles de trabajo adjuntos como evidencia de apoyo."
+    }
+  ]
+}

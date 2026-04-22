@@ -1,0 +1,69 @@
+{
+  "guide": [
+    {
+      "id": "run-continuity-planning-per-service",
+      "title": "Utilisez un espace de travail unique par service pour garder ensemble les objectifs de continuité, les dépendances, les plans et les documents",
+      "summary": "Le travail de continuité est plus facile à maintenir lorsque le registre de service devient l'ancrage de la planification de reprise et des preuves.",
+      "body": [
+        "Définissez d'abord le service, le niveau d'impact, les objectifs de reprise, l'actif ou le risque lié et la responsabilité.",
+        "Enregistrez les dépendances et un ou plusieurs plans de reprise afin que le service puisse être revu comme un tout opérationnel.",
+        "Utilisez le workflow, les détails du plan et les documents pour garder la posture de continuité à jour."
+      ],
+      "concept_ids": [
+        "continuity-service",
+        "service-dependency",
+        "recovery-plan"
+      ],
+      "order": 270
+    }
+  ],
+  "concepts": [
+    {
+      "id": "continuity-service",
+      "label": "Service de continuité",
+      "category": "continuity",
+      "summary": "Un service métier ou technique que l'organisation doit maintenir en fonctionnement ou rétablir rapidement.",
+      "why_it_exists": "Il est plus simple de planifier la continuité autour des services que autour d'obligations abstraites.",
+      "how_to_use": [
+        "Enregistrez chaque service important et décrivez de quoi il dépend.",
+        "Utilisez des plans de reprise, des exercices et des documents de soutien pour garder la préparation à jour."
+      ],
+      "relations": [
+        { "type": "may-depend-on", "target": "service-dependency", "summary": "Les services de continuité peuvent lister des dépendances opérationnelles importantes pour la reprise." },
+        { "type": "may-have", "target": "recovery-plan", "summary": "Un service de continuité peut avoir un ou plusieurs plans de reprise." }
+      ],
+      "order": 270
+    },
+    {
+      "id": "service-dependency",
+      "label": "Dépendance de service",
+      "category": "continuity",
+      "summary": "Une dépendance enregistrée dont le service a besoin pour son fonctionnement normal ou sa reprise.",
+      "why_it_exists": "La planification de reprise est plus faible lorsque les dépendances critiques restent implicites.",
+      "how_to_use": [
+        "Enregistrez la dépendance clé et son type afin que les hypothèses de reprise soient explicites.",
+        "Revenez sur les dépendances chaque fois que l'architecture du service, le modèle fournisseur ou le schéma de repli change."
+      ],
+      "relations": [
+        { "type": "belongs-to", "target": "continuity-service", "summary": "Les dépendances sont maintenues dans un seul espace de travail de service." },
+        { "type": "may-reference", "target": "asset", "summary": "Une dépendance peut pointer vers un actif ou un autre composant opérationnel." }
+      ],
+      "order": 271
+    },
+    {
+      "id": "recovery-plan",
+      "label": "Plan de reprise",
+      "category": "continuity",
+      "summary": "Un plan documenté décrivant comment restaurer ou maintenir un service après une interruption.",
+      "why_it_exists": "Un plan de reprise transforme l'intention de continuité en étapes actionnables qui peuvent être revues et testées.",
+      "how_to_use": [
+        "Rédigez un plan par approche de reprise importante ou par schéma de repli.",
+        "Utilisez la politique, le constat, les dates de test et les affectations de responsables liées pour garder le plan gouverné."
+      ],
+      "relations": [
+        { "type": "belongs-to", "target": "continuity-service", "summary": "Les plans sont créés pour soutenir un service." }
+      ],
+      "order": 272
+    }
+  ]
+}

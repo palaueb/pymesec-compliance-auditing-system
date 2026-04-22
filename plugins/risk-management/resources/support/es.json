@@ -1,0 +1,70 @@
+{
+  "guide": [
+    {
+      "id": "manage-risks-in-one-workspace",
+      "title": "Usa el espacio de trabajo de riesgos para mantener juntos la evaluación, el tratamiento, la titularidad y las evidencias",
+      "summary": "El registro de riesgos sirve para explorar. El espacio de trabajo del riesgo seleccionado es donde se mantienen la puntuación, el flujo de trabajo, los registros vinculados y las evidencias.",
+      "body": [
+        "Crea un riesgo con contexto claro y después mantén actualizadas las puntuaciones inherente y residual a medida que evoluciona la evaluación.",
+        "Vincula el riesgo al activo o control relevante cuando eso aporte mejor trazabilidad operativa.",
+        "Usa las notas de tratamiento, el estado del flujo de trabajo, los responsables y las evidencias para que el registro siga siendo revisable con el tiempo."
+      ],
+      "concept_ids": [
+        "risk",
+        "risk-treatment",
+        "risk-workflow"
+      ],
+      "order": 230
+    }
+  ],
+  "concepts": [
+    {
+      "id": "risk",
+      "label": "Riesgo",
+      "category": "operations",
+      "summary": "Un registro de incertidumbre, amenaza, debilidad o pérdida potencial que importa a la organización.",
+      "why_it_exists": "Los riesgos permiten a la organización identificar qué puede salir mal, evaluar la gravedad y decidir cómo responder.",
+      "how_to_use": [
+        "Registra los riesgos con una descripción clara, el contexto y los activos afectados cuando sea posible.",
+        "Actualiza el estado, las puntuaciones y los registros relacionados a medida que evoluciona la evaluación."
+      ],
+      "relations": [
+        { "type": "may-affect", "target": "asset", "summary": "Los riesgos suelen apuntar a los activos que amenazan." },
+        { "type": "may-be-reduced-by", "target": "control", "summary": "Los controles son respuestas habituales al riesgo." },
+        { "type": "may-lead-to", "target": "finding", "summary": "Una revisión de riesgo puede descubrir una incidencia concreta que se convierta en hallazgo." }
+      ],
+      "order": 230
+    },
+    {
+      "id": "risk-treatment",
+      "label": "Tratamiento del riesgo",
+      "category": "operations",
+      "summary": "La respuesta o enfoque de gestión elegido y registrado para un riesgo.",
+      "why_it_exists": "Un registro de riesgo está incompleto si no muestra qué planea hacer la organización al respecto.",
+      "how_to_use": [
+        "Registra un breve resumen de tratamiento que explique el plan de respuesta actual.",
+        "Actualiza el tratamiento cuando controles, excepciones, aceptaciones o trabajos de remediación cambien el enfoque de gestión."
+      ],
+      "relations": [
+        { "type": "belongs-to", "target": "risk", "summary": "El tratamiento se mantiene dentro del registro de riesgo." },
+        { "type": "may-reference", "target": "control", "summary": "El tratamiento suele depender de que los controles estén implantados o mejorados." }
+      ],
+      "order": 231
+    },
+    {
+      "id": "risk-workflow",
+      "label": "Flujo de trabajo del riesgo",
+      "category": "governance",
+      "summary": "El estado de ciclo de vida controlado por el sistema para un riesgo, como en evaluación, aceptado o cerrado.",
+      "why_it_exists": "Los estados del flujo de trabajo muestran si un riesgo sigue en curso, ha sido aceptado formalmente o ya no está activo.",
+      "how_to_use": [
+        "Mueve el riesgo por las transiciones del flujo de trabajo a medida que avanza la revisión y la decisión.",
+        "Usa el historial del flujo de trabajo junto con las evidencias y las notas de tratamiento para respaldar la auditabilidad."
+      ],
+      "relations": [
+        { "type": "applies-to", "target": "risk", "summary": "Cada registro de riesgo tiene un estado de flujo de trabajo actual." }
+      ],
+      "order": 232
+    }
+  ]
+}

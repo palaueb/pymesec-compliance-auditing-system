@@ -1,0 +1,93 @@
+{
+  "concepts": [
+    {
+      "id": "assessment-campaign",
+      "label": "Campagne d'évaluation",
+      "category": "verification",
+      "summary": "Un exercice de revue limité pour une organisation, un périmètre, une fenêtre temporelle et un ensemble de contrôles définis.",
+      "why_it_exists": "Les évaluations organisent le travail d'audit en un exercice répétable au lieu de laisser les contrôles et les preuves séparés.",
+      "how_to_use": [
+        "Créez une évaluation pour une période de revue précise.",
+        "Limitez-la à un périmètre lorsque l'audit n'est pas à l'échelle de l'organisation.",
+        "Sélectionnez les contrôles qui seront vérifiés pendant cet exercice."
+      ],
+      "related_to": [
+        "organization",
+        "scope",
+        "control"
+      ]
+    },
+    {
+      "id": "assessment-review",
+      "label": "Revue d'évaluation",
+      "category": "verification",
+      "summary": "Le registre de revue pour un contrôle dans une évaluation.",
+      "why_it_exists": "Les revues sont l'endroit où le travail d'audit réel est enregistré : résultat, notes, conclusion, preuves et tout constat généré par le test.",
+      "how_to_use": [
+        "Ouvrez la liste de contrôle de l'évaluation.",
+        "Enregistrez le résultat de chaque contrôle testé.",
+        "Joignez des feuilles de travail et créez un constat lorsque le contrôle présente un écart."
+      ],
+      "related_to": [
+        "assessment-campaign",
+        "control",
+        "finding",
+        "artifact"
+      ]
+    },
+    {
+      "id": "assessment-workpaper",
+      "label": "Feuille de travail d'évaluation",
+      "category": "evidence",
+      "summary": "Un fichier joint à une revue de contrôle dans une évaluation.",
+      "why_it_exists": "Les feuilles de travail gardent ensemble l'échantillon d'appui, la capture d'écran, l'export ou le lot de notes avec la revue qui les a utilisés.",
+      "how_to_use": [
+        "Téléversez le fichier depuis le panneau de revue du contrôle.",
+        "Donnez-lui une étiquette claire pour que le réviseur sache ce qu'il prouve.",
+        "Utilisez les feuilles de travail pour soutenir la conclusion ou le constat lié."
+      ],
+      "related_to": [
+        "assessment-review",
+        "artifact"
+      ]
+    }
+  ],
+  "guide": [
+    {
+      "id": "assessment-campaigns",
+      "title": "Lancez une évaluation",
+      "summary": "Utilisez les évaluations pour regrouper les contrôles que vous voulez revoir dans un seul cycle d'audit.",
+      "body": [
+        "Commencez par choisir l'organisation, le périmètre optionnel et la fenêtre temporelle.",
+        "Sélectionnez ensuite les contrôles qui font partie de la revue.",
+        "Utilisez la liste des campagnes pour suivre si l'exercice est encore en brouillon, actif ou déjà fermé.",
+        "Ouvrez la liste de contrôle pour enregistrer les résultats, téléverser les feuilles de travail et créer des constats."
+      ],
+      "concept_ids": [
+        "assessment-campaign",
+        "assessment-review",
+        "assessment-workpaper"
+      ]
+    }
+  ],
+  "relationships": [
+    {
+      "source": "assessment-campaign",
+      "type": "includes",
+      "target": "control",
+      "summary": "Une campagne d'évaluation regroupe les contrôles qui seront revus pendant l'exercice."
+    },
+    {
+      "source": "assessment-review",
+      "type": "can-create",
+      "target": "finding",
+      "summary": "Une revue peut créer un constat lorsque le test identifie un écart ou une non-conformité."
+    },
+    {
+      "source": "assessment-review",
+      "type": "is-supported-by",
+      "target": "artifact",
+      "summary": "Une revue peut avoir des feuilles de travail jointes comme preuve d'appui."
+    }
+  ]
+}

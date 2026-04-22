@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>Verify sign-in</title>
+    <title>{{ __('Verify sign-in') }}</title>
     <style>
         :root {
             --bg: #f4f0e8;
@@ -89,17 +89,17 @@
 </head>
 <body>
     <main class="login-card">
-        <div class="eyebrow">Identity</div>
-        <h1>Check your email</h1>
-        <p>Enter the 6-digit verification code sent to {{ $email }} to finish signing in.</p>
+        <div class="eyebrow">{{ __('Identity') }}</div>
+        <h1>{{ __('Check your email') }}</h1>
+        <p>{{ __('Enter the 6-digit verification code sent to :email to finish signing in.', ['email' => $email]) }}</p>
 
         <form method="POST" action="{{ route('plugin.identity-local.auth.verify.consume') }}">
             @csrf
             <div class="field">
-                <label class="field-label" for="login-code">Verification code</label>
+                <label class="field-label" for="login-code">{{ __('Verification code') }}</label>
                 <input class="field-input" id="login-code" name="code" inputmode="numeric" pattern="[0-9]*" maxlength="6" required autofocus>
             </div>
-            <button class="button button-primary" type="submit">Verify code</button>
+            <button class="button button-primary" type="submit">{{ __('Verify code') }}</button>
         </form>
 
         @if (session('status'))
