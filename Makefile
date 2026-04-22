@@ -1,10 +1,10 @@
 DOCKER_COMPOSE ?= docker compose
-MCP_TOKEN_PRINCIPAL ?= principal-org-a
+MCP_TOKEN_PRINCIPAL ?= principal-palaueb
 MCP_TOKEN_LABEL ?= MCP local test token
-MCP_TOKEN_ORG ?= org-a
-MCP_TOKEN_SCOPE ?= scope-eu
+MCP_TOKEN_ORG ?= org-museo-coconut
+MCP_TOKEN_SCOPE ?= MUSEO-COCONUT
 MCP_TOKEN_DAYS ?= 30
-MCP_TOKEN_CREATED_BY ?= principal-admin
+MCP_TOKEN_CREATED_BY ?= principal-palaueb
 MCP_SMOKE_BIN ?= ./dist/pymesec-mcp-linux-amd64
 MCP_SMOKE_API_BASE_URL ?= http://127.0.0.1:18080
 MCP_SMOKE_TOKEN ?=
@@ -72,4 +72,4 @@ token-issue:
 mcp-smoke:
 	@if [ -z "$(MCP_SMOKE_TOKEN)" ]; then echo "MCP_SMOKE_TOKEN is required"; exit 1; fi
 	@if [ ! -x "$(MCP_SMOKE_BIN)" ]; then echo "Missing MCP binary at $(MCP_SMOKE_BIN). Run 'make compile' or override MCP_SMOKE_BIN."; exit 1; fi
-	go run ./mcp/cmd/pymesec-mcp-smoke --mcp-bin="$(MCP_SMOKE_BIN)" --api-base-url="$(MCP_SMOKE_API_BASE_URL)" --api-token="$(MCP_SMOKE_TOKEN)" --operation-id="$(MCP_SMOKE_OPERATION_ID)" --request-timeout="$(MCP_SMOKE_REQUEST_TIMEOUT)"
+	@cd mcp && go run ./cmd/pymesec-mcp-smoke --mcp-bin="$(abspath $(MCP_SMOKE_BIN))" --api-base-url="$(MCP_SMOKE_API_BASE_URL)" --api-token="$(MCP_SMOKE_TOKEN)" --operation-id="$(MCP_SMOKE_OPERATION_ID)" --request-timeout="$(MCP_SMOKE_REQUEST_TIMEOUT)"

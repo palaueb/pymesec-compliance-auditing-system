@@ -28,6 +28,12 @@ interface FunctionalActorServiceInterface
         ?string $createdByPrincipalId = null,
     ): FunctionalActorReference;
 
+    public function archiveActor(
+        string $actorId,
+        ?string $archivedByPrincipalId = null,
+        bool $deactivateAssignments = false,
+    ): ?FunctionalActorReference;
+
     /**
      * @return array<int, FunctionalAssignment>
      */

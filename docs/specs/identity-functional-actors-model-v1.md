@@ -119,11 +119,24 @@ A functional actor may represent:
 - a team or committee
 - a department or organizational stakeholder
 
+The governed v1 API kind catalog is:
+
+- `employee`
+- `contractor`
+- `external-provider`
+- `team`
+- `service-account`
+- `person`
+
+Actor creation rejects unknown `kind` values with validation error 422. API clients discover the catalog through `GET /api/v1/lookups/functional-actor-kinds/options`.
+
 Rules:
 
 - a functional actor may exist without platform login access
 - a functional actor is not a permission-bearing access construct by default
 - concrete actor profile data belongs to plugins
+
+The core API persists only minimal functional actor metadata in v1: `email`, `role`, and `notes`. This metadata is descriptive and must not contain secrets or permission-bearing data.
 
 ### Functional Assignment
 
@@ -223,6 +236,8 @@ The model must support these cases:
 - a functional actor with assignments, but no principal and no login access
 - a linked human represented both as principal and as functional actor
 - a team actor linked to no principal at all
+
+Functional actor lifecycle is soft-delete oriented. `POST /api/v1/core/functional-actors/{actorId}/archive` marks an actor inactive so it disappears from default lookups. Actors with active assignments are blocked by default; callers must explicitly set `deactivate_assignments=true` to archive the actor and deactivate its active assignments in the same API operation. The archive operation is audited.
 
 ## 5. Linkage Rules
 

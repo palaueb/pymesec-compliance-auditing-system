@@ -42,13 +42,14 @@ Runtime command:
 
 Security boundary:
 
-- MCP tools call only `/api/v1/*` paths.
+- MCP tools call only `/api/v1/*` endpoints on the server.
+- `pymesec_api_request` accepts either full API paths such as `/api/v1/core/roles` or paths relative to the configured API prefix such as `/core/roles`; the MCP server normalizes the latter before making the HTTP request.
 - Every call flows through the same API middleware stack (`ResolveApiPrincipal`, `AuthorizePermission`, audit middleware, validation pipeline).
 - Result: MCP operations inherit API parity for tenancy, permission grants, token abilities, object access rules, and request auditing.
 
 # Official Tool Surface (v1)
 
-- `pymesec_api_request` (generic authenticated `/api/v1` request broker)
+- `pymesec_api_request` (generic authenticated request broker for full `/api/v1/...` or prefix-relative paths)
 - `pymesec_call_operation` (OpenAPI operationId-based call)
 - `pymesec_list_operations` (discover indexed operation IDs)
 - `pymesec_get_capabilities` (`GET /api/v1/meta/capabilities`)

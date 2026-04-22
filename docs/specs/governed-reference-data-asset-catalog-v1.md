@@ -63,6 +63,8 @@ Rules:
 - users must no longer edit `owner_label`
 - ownership is assigned through `owner actor`
 - list and detail views prefer resolved actor ownership
+- API list/detail/create/update responses include resolved `owner_label` plus `owner_assignments[]` with actor id, assignment id, display name, kind, and assignment metadata
+- API writes with `owner_actor_id` synchronize the single owner assignment represented by that request field
 - legacy `owner_label` may remain in stored records during transition, but runtime ownership is assignment-based
 
 This keeps the runtime compatible with seeded or migrated records without preserving the anti-pattern in the edit flow.

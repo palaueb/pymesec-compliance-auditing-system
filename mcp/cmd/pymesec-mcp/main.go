@@ -522,7 +522,7 @@ func (s *mcpServer) toolsList() []map[string]any {
 	return []map[string]any{
 		{
 			"name":        "pymesec_api_request",
-			"description": "Generic authenticated API request against /api/v1.",
+			"description": "Generic authenticated API request. Accepts /api/v1/... or paths relative to the configured API prefix, such as /core/roles.",
 			"inputSchema": map[string]any{
 				"type":     "object",
 				"required": []string{"method", "path"},
@@ -532,8 +532,8 @@ func (s *mcpServer) toolsList() []map[string]any {
 						"enum": []string{"GET", "POST", "PUT", "PATCH", "DELETE"},
 					},
 					"path": map[string]any{
-						"type":    "string",
-						"pattern": "^/api/v1/",
+						"type":        "string",
+						"description": "Absolute API path (/api/v1/...) or prefix-relative path (/core/...).",
 					},
 					"query": map[string]any{
 						"type":                 "object",
@@ -1026,11 +1026,12 @@ func (s *mcpServer) apiCall(
 	headers map[string]string,
 	token string,
 ) (map[string]any, error) {
-	if !strings.HasPrefix(path, "/api/") {
-		return nil, fmt.Errorf("path [%s] is outside api namespace", path)
+	normalizedPath, err := s.normalizeAPIPath(path)
+	if err != nil {
+		return nil, err
 	}
 
-	fullURL, err := appendPathAndQuery(s.cfg.APIBaseURL, path, query)
+	fullURL, err := appendPathAndQuery(s.cfg.APIBaseURL, normalizedPath, query)
 	if err != nil {
 		return nil, err
 	}
@@ -1095,6 +1096,28 @@ func (s *mcpServer) apiCall(
 		"headers": responseHeaders,
 		"body":    decodedBody,
 	}, nil
+}
+
+func (s *mcpServer) normalizeAPIPath(path string) (string, error) {
+	trimmed := strings.TrimSpace(path)
+	if trimmed == "" {
+		return "", errors.New("path cannot be empty")
+	}
+
+	if !strings.HasPrefix(trimmed, "/") {
+		trimmed = "/" + trimmed
+	}
+
+	apiPrefix := normalizePrefix(s.cfg.APIPrefix)
+	if trimmed == apiPrefix || strings.HasPrefix(trimmed, apiPrefix+"/") {
+		return trimmed, nil
+	}
+
+	if strings.HasPrefix(trimmed, "/api/") {
+		return "", fmt.Errorf("path [%s] is outside configured api namespace [%s]", path, apiPrefix)
+	}
+
+	return joinURLPath(apiPrefix, trimmed), nil
 }
 
 func appendPathAndQuery(baseURL string, path string, query map[string]any) (string, error) {

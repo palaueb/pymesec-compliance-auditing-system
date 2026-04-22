@@ -25,6 +25,7 @@ use PymeSec\Core\Audit\Contracts\AuditTrailInterface;
 use PymeSec\Core\Events\Contracts\EventBusInterface;
 use PymeSec\Core\Events\PublicEvent;
 use PymeSec\Core\FunctionalActors\Contracts\FunctionalActorServiceInterface;
+use PymeSec\Core\FunctionalActors\FunctionalActorKindCatalog;
 use PymeSec\Core\Notifications\NotificationMailSettingsRepository;
 use PymeSec\Core\Notifications\NotificationTemplateRepository;
 use PymeSec\Core\Notifications\OutboundNotificationMailer;
@@ -1934,10 +1935,19 @@ Route::prefix('v1')->group(function () use (
     ) use ($apiPrincipalId, $apiSuccess) {
         $validated = $request->validate([
             'display_name' => ['required', 'string', 'max:160'],
-            'kind' => ['required', 'string', 'max:40'],
+            'kind' => ['required', 'string', 'max:40', Rule::in(FunctionalActorKindCatalog::keys())],
             'organization_id' => ['required', 'string', 'max:64'],
             'scope_id' => ['nullable', 'string', 'max:64'],
+            'metadata' => ['nullable', 'array:email,role,notes'],
+            'metadata.email' => ['nullable', 'email:rfc', 'max:190'],
+            'metadata.role' => ['nullable', 'string', 'max:120'],
+            'metadata.notes' => ['nullable', 'string', 'max:1000'],
         ]);
+        $metadata = array_filter([
+            'email' => is_string($validated['metadata']['email'] ?? null) ? $validated['metadata']['email'] : null,
+            'role' => is_string($validated['metadata']['role'] ?? null) ? $validated['metadata']['role'] : null,
+            'notes' => is_string($validated['metadata']['notes'] ?? null) ? $validated['metadata']['notes'] : null,
+        ], static fn (?string $value): bool => is_string($value) && trim($value) !== '');
 
         $actor = $actors->createActor(
             provider: 'manual',
@@ -1945,7 +1955,7 @@ Route::prefix('v1')->group(function () use (
             displayName: (string) $validated['display_name'],
             organizationId: (string) $validated['organization_id'],
             scopeId: is_string($validated['scope_id'] ?? null) && $validated['scope_id'] !== '' ? $validated['scope_id'] : null,
-            metadata: [],
+            metadata: $metadata,
             createdByPrincipalId: $apiPrincipalId($request),
         );
 
@@ -1968,14 +1978,136 @@ Route::prefix('v1')->group(function () use (
                 'description' => 'Validation failed',
             ],
         ],
+        'request_body' => [
+            'required' => true,
+            'content' => [
+                'application/json' => [
+                    'schema' => [
+                        'type' => 'object',
+                        'required' => ['display_name', 'kind', 'organization_id'],
+                        'properties' => [
+                            'display_name' => [
+                                'type' => 'string',
+                                'maxLength' => 160,
+                            ],
+                            'kind' => [
+                                'type' => 'string',
+                                'enum' => FunctionalActorKindCatalog::keys(),
+                                'x-governed-source' => '/api/v1/lookups/functional-actor-kinds/options',
+                            ],
+                            'organization_id' => [
+                                'type' => 'string',
+                                'maxLength' => 64,
+                            ],
+                            'scope_id' => [
+                                'type' => ['string', 'null'],
+                                'maxLength' => 64,
+                            ],
+                            'metadata' => [
+                                'type' => ['object', 'null'],
+                                'additionalProperties' => false,
+                                'properties' => [
+                                    'email' => [
+                                        'type' => ['string', 'null'],
+                                        'format' => 'email',
+                                        'maxLength' => 190,
+                                    ],
+                                    'role' => [
+                                        'type' => ['string', 'null'],
+                                        'maxLength' => 120,
+                                    ],
+                                    'notes' => [
+                                        'type' => ['string', 'null'],
+                                        'maxLength' => 1000,
+                                    ],
+                                ],
+                            ],
+                        ],
+                    ],
+                ],
+            ],
+        ],
         'request_rules' => [
             'display_name' => ['required', 'string', 'max:160'],
-            'kind' => ['required', 'string', 'max:40'],
+            'kind' => ['required', 'string', 'max:40', 'in:'.implode(',', FunctionalActorKindCatalog::keys())],
             'organization_id' => ['required', 'string', 'max:64'],
             'scope_id' => ['nullable', 'string', 'max:64'],
+            'metadata' => ['nullable', 'array'],
+            'metadata.email' => ['nullable', 'string', 'max:190'],
+            'metadata.role' => ['nullable', 'string', 'max:120'],
+            'metadata.notes' => ['nullable', 'string', 'max:1000'],
         ],
         'lookup_fields' => [
+            'kind' => '/api/v1/lookups/functional-actor-kinds/options',
             'scope_id' => '/api/v1/automation-catalog/lookups/scopes/options',
+        ],
+    ])->middleware('core.permission:core.functional-actors.manage');
+
+    Route::post('/core/functional-actors/{actorId}/archive', function (
+        Request $request,
+        string $actorId,
+        FunctionalActorServiceInterface $actors,
+    ) use ($apiPrincipalId, $apiSuccess) {
+        $validated = $request->validate([
+            'organization_id' => ['required', 'string', 'max:64'],
+            'scope_id' => ['nullable', 'string', 'max:64'],
+            'deactivate_assignments' => ['nullable', 'boolean'],
+        ]);
+
+        $record = DB::table('functional_actors')->where('id', $actorId)->first();
+        abort_if($record === null, 404);
+        abort_unless((string) ($record->organization_id ?? '') === (string) $validated['organization_id'], 404);
+
+        $requestedScopeId = is_string($validated['scope_id'] ?? null) && $validated['scope_id'] !== ''
+            ? $validated['scope_id']
+            : null;
+        $actorScopeId = is_string($record->scope_id ?? null) && $record->scope_id !== ''
+            ? $record->scope_id
+            : null;
+        abort_if($requestedScopeId !== null && $actorScopeId !== null && $actorScopeId !== $requestedScopeId, 404);
+
+        $activeAssignmentCount = DB::table('functional_assignments')
+            ->where('functional_actor_id', $actorId)
+            ->where('is_active', true)
+            ->count();
+
+        $actor = $actors->archiveActor(
+            actorId: $actorId,
+            archivedByPrincipalId: $apiPrincipalId($request),
+            deactivateAssignments: $request->boolean('deactivate_assignments'),
+        );
+        abort_if($actor === null, 404);
+
+        return $apiSuccess([
+            'actor' => $actor->toArray(),
+            'archived' => true,
+            'deactivated_assignment_count' => $request->boolean('deactivate_assignments') ? $activeAssignmentCount : 0,
+        ]);
+    })->defaults('_openapi', [
+        'operation_id' => 'functionalActorsArchiveActor',
+        'tags' => ['core'],
+        'tag_descriptions' => [
+            'core' => 'Core platform and capability endpoints.',
+        ],
+        'summary' => 'Archive one functional actor profile',
+        'responses' => [
+            '200' => [
+                'description' => 'Functional actor archived',
+            ],
+            '403' => [
+                'description' => 'Caller is not authorized',
+            ],
+            '404' => [
+                'description' => 'Actor not found in current context',
+            ],
+            '422' => [
+                'description' => 'Validation failed or active assignments block archive',
+            ],
+        ],
+        'request_rules' => [
+            'organization_id' => ['required', 'string', 'max:64'],
+            'scope_id' => ['nullable', 'string', 'max:64'],
+            'deactivate_assignments' => ['nullable', 'boolean'],
         ],
     ])->middleware('core.permission:core.functional-actors.manage');
 
@@ -2745,7 +2877,7 @@ Route::prefix('v1')->group(function () use (
         }
 
         $query = DB::table('identity_local_users')
-            ->select(['principal_id', 'full_name', 'username', 'organization_id'])
+            ->select(['principal_id', 'display_name', 'username', 'email', 'organization_id'])
             ->where('is_active', true);
 
         if (is_string($organizationId) && $organizationId !== '') {
@@ -2753,19 +2885,20 @@ Route::prefix('v1')->group(function () use (
         }
 
         $rows = $query
-            ->orderBy('full_name')
+            ->orderBy('display_name')
             ->orderBy('username')
             ->limit(500)
             ->get()
             ->map(static function ($row): array {
                 $labelParts = array_values(array_filter([
-                    is_string($row->full_name ?? null) ? trim($row->full_name) : null,
+                    is_string($row->display_name ?? null) ? trim($row->display_name) : null,
                     is_string($row->username ?? null) ? '@'.trim($row->username) : null,
                 ], static fn (?string $value): bool => is_string($value) && $value !== '' && $value !== '@'));
 
                 return [
                     'id' => (string) $row->principal_id,
                     'label' => $labelParts !== [] ? implode(' ', $labelParts) : (string) $row->principal_id,
+                    'description' => is_string($row->email ?? null) && trim($row->email) !== '' ? trim($row->email) : null,
                     'organization_id' => is_string($row->organization_id ?? null) ? $row->organization_id : null,
                 ];
             })
@@ -2870,6 +3003,25 @@ Route::prefix('v1')->group(function () use (
             ],
         ],
     ]);
+
+    Route::get('/lookups/functional-actor-kinds/options', function () use ($apiSuccess) {
+        return $apiSuccess(FunctionalActorKindCatalog::options());
+    })->defaults('_openapi', [
+        'operation_id' => 'referenceDataListFunctionalActorKindOptions',
+        'tags' => ['reference-data'],
+        'tag_descriptions' => [
+            'reference-data' => 'Governed lookup and catalog endpoints.',
+        ],
+        'summary' => 'List governed functional actor kind options',
+        'responses' => [
+            '200' => [
+                'description' => 'Functional actor kind option list',
+            ],
+            '403' => [
+                'description' => 'Caller is not authorized',
+            ],
+        ],
+    ])->middleware('core.permission:plugin.actor-directory.actors.view');
 
     Route::get('/lookups/actors/options', function (
         Request $request,

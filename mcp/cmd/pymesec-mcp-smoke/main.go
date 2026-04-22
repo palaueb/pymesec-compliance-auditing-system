@@ -211,11 +211,11 @@ func run() error {
 		)
 	}
 
-	if !jsonEqual(callResponse["body"], apiResponse["body"]) {
+	if !jsonEqualIgnoringVolatileFields(callResponse["body"], apiResponse["body"]) {
 		return withStderr(errors.New("response body mismatch between pymesec_call_operation and pymesec_api_request"), stderr.String())
 	}
 
-	fmt.Println("OK parity: pymesec_call_operation and pymesec_api_request returned identical response bodies")
+	fmt.Println("OK parity: pymesec_call_operation and pymesec_api_request returned equivalent response bodies")
 	fmt.Println("MCP smoke checks passed.")
 
 	return nil
@@ -480,14 +480,36 @@ func anyToString(value any) string {
 	return fmt.Sprintf("%v", value)
 }
 
-func jsonEqual(left any, right any) bool {
-	leftJSON, leftErr := json.Marshal(left)
-	rightJSON, rightErr := json.Marshal(right)
+func jsonEqualIgnoringVolatileFields(left any, right any) bool {
+	leftJSON, leftErr := json.Marshal(stripVolatileAPIFields(left))
+	rightJSON, rightErr := json.Marshal(stripVolatileAPIFields(right))
 	if leftErr != nil || rightErr != nil {
 		return false
 	}
 
 	return bytes.Equal(leftJSON, rightJSON)
+}
+
+func stripVolatileAPIFields(value any) any {
+	switch typed := value.(type) {
+	case map[string]any:
+		out := make(map[string]any, len(typed))
+		for key, item := range typed {
+			if key == "request_id" {
+				continue
+			}
+			out[key] = stripVolatileAPIFields(item)
+		}
+		return out
+	case []any:
+		out := make([]any, 0, len(typed))
+		for _, item := range typed {
+			out = append(out, stripVolatileAPIFields(item))
+		}
+		return out
+	default:
+		return value
+	}
 }
 
 func resultText(result map[string]any) string {

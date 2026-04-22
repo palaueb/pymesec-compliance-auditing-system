@@ -5,6 +5,7 @@ use App\Http\Requests\Api\V1\AssetUpdateRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Validation\ValidationException;
 use PymeSec\Core\FunctionalActors\Contracts\FunctionalActorServiceInterface;
 use PymeSec\Core\ObjectAccess\ObjectAccessService;
 use PymeSec\Core\Principals\PrincipalReference;
@@ -17,11 +18,82 @@ use PymeSec\Plugins\AssetCatalog\AssetCatalogRepository;
 $apiContext = require base_path('routes/api_context.php');
 extract($apiContext, EXTR_SKIP);
 
+$assetWithOwners = static function (
+    array $asset,
+    FunctionalActorServiceInterface $actors,
+): array {
+    $organizationId = (string) ($asset['organization_id'] ?? '');
+    $scopeId = is_string($asset['scope_id'] ?? null) && $asset['scope_id'] !== ''
+        ? $asset['scope_id']
+        : null;
+    $owners = [];
+
+    foreach ($actors->assignmentsFor('asset', (string) $asset['id'], $organizationId, $scopeId) as $assignment) {
+        if ($assignment->assignmentType !== 'owner') {
+            continue;
+        }
+
+        $actor = $actors->findActor($assignment->functionalActorId);
+
+        if ($actor === null) {
+            continue;
+        }
+
+        $owners[] = [
+            'id' => $actor->id,
+            'actor_id' => $actor->id,
+            'assignment_id' => $assignment->id,
+            'display_name' => $actor->displayName,
+            'kind' => $actor->kind,
+            'metadata' => $assignment->metadata,
+        ];
+    }
+
+    return [
+        ...$asset,
+        'owner_label' => $owners !== []
+            ? implode(', ', array_map(static fn (array $owner): string => (string) $owner['display_name'], $owners))
+            : (string) ($asset['owner_label'] ?? ''),
+        'owner_assignments' => $owners,
+    ];
+};
+
+$assertOwnerActor = static function (
+    mixed $actorId,
+    string $organizationId,
+    ?string $scopeId,
+    FunctionalActorServiceInterface $actors,
+): void {
+    if (! is_string($actorId) || $actorId === '') {
+        return;
+    }
+
+    $actor = $actors->findActor($actorId);
+
+    if ($actor === null || $actor->organizationId !== $organizationId) {
+        throw ValidationException::withMessages([
+            'owner_actor_id' => 'The selected owner actor is invalid for this organization or scope.',
+        ]);
+    }
+
+    if (
+        is_string($scopeId) && $scopeId !== ''
+        && is_string($actor->scopeId)
+        && $actor->scopeId !== ''
+        && $actor->scopeId !== $scopeId
+    ) {
+        throw ValidationException::withMessages([
+            'owner_actor_id' => 'The selected owner actor is invalid for this organization or scope.',
+        ]);
+    }
+};
+
 Route::get('/assets', function (
     Request $request,
     AssetCatalogRepository $assets,
     ObjectAccessService $objectAccess,
-) use ($apiPrincipalId, $apiSuccess) {
+    FunctionalActorServiceInterface $actors,
+) use ($apiPrincipalId, $apiSuccess, $assetWithOwners) {
     $organizationId = (string) $request->input('organization_id');
     abort_if($organizationId === '', 422);
     $scopeId = $request->input('scope_id');
@@ -36,7 +108,10 @@ Route::get('/assets', function (
         domainObjectType: 'asset',
     );
 
-    return $apiSuccess($rows);
+    return $apiSuccess(array_map(
+        static fn (array $asset): array => $assetWithOwners($asset, $actors),
+        $rows,
+    ));
 })->defaults('_openapi', [
     'operation_id' => 'assetCatalogListAssets',
     'tags' => ['assets'],
@@ -59,7 +134,8 @@ Route::get('/assets/{assetId}', function (
     string $assetId,
     AssetCatalogRepository $assets,
     ObjectAccessService $objectAccess,
-) use ($apiPrincipalId, $apiSuccess) {
+    FunctionalActorServiceInterface $actors,
+) use ($apiPrincipalId, $apiSuccess, $assetWithOwners) {
     $asset = $assets->find($assetId);
     abort_if($asset === null, 404);
 
@@ -79,7 +155,7 @@ Route::get('/assets/{assetId}', function (
         abort(404);
     }
 
-    return $apiSuccess($asset);
+    return $apiSuccess($assetWithOwners($asset, $actors));
 })->defaults('_openapi', [
     'operation_id' => 'assetCatalogGetAsset',
     'tags' => ['assets'],
@@ -105,7 +181,7 @@ Route::post('/assets', function (
     AssetCatalogRepository $assets,
     ReferenceCatalogService $catalogs,
     FunctionalActorServiceInterface $actors,
-) use ($apiSuccess, $assetCreateContractRules, $assetRuntimeRules) {
+) use ($apiSuccess, $assetCreateContractRules, $assetRuntimeRules, $assetWithOwners, $assertOwnerActor) {
     $organizationId = (string) $request->input('organization_id');
     abort_if($organizationId === '', 422);
 
@@ -114,12 +190,16 @@ Route::post('/assets', function (
         organizationId: $organizationId,
         catalogs: $catalogs,
     ));
+    $scopeId = is_string($validated['scope_id'] ?? null) && $validated['scope_id'] !== ''
+        ? $validated['scope_id']
+        : null;
+    $assertOwnerActor($validated['owner_actor_id'] ?? null, $organizationId, $scopeId, $actors);
 
     $asset = $assets->create($validated);
     $principalId = (string) $request->input('principal_id');
 
     if (is_string($validated['owner_actor_id'] ?? null) && $validated['owner_actor_id'] !== '') {
-        $actors->assignActor(
+        $actors->syncSingleAssignment(
             actorId: $validated['owner_actor_id'],
             domainObjectType: 'asset',
             domainObjectId: $asset['id'],
@@ -131,7 +211,7 @@ Route::post('/assets', function (
         );
     }
 
-    return $apiSuccess($asset);
+    return $apiSuccess($assetWithOwners($asset, $actors));
 })->defaults('_openapi', [
     'operation_id' => 'assetCatalogCreateAsset',
     'tags' => ['assets'],
@@ -168,7 +248,7 @@ Route::patch('/assets/{assetId}', function (
     ReferenceCatalogService $catalogs,
     ObjectAccessService $objectAccess,
     FunctionalActorServiceInterface $actors,
-) use ($apiPrincipalId, $apiSuccess, $assetRuntimeRules, $assetUpdateContractRules) {
+) use ($apiPrincipalId, $apiSuccess, $assetRuntimeRules, $assetUpdateContractRules, $assetWithOwners, $assertOwnerActor) {
     $existing = $assets->find($assetId);
     abort_if($existing === null, 404);
     abort_unless($objectAccess->canAccessObject(
@@ -187,6 +267,10 @@ Route::patch('/assets/{assetId}', function (
         organizationId: $organizationId,
         catalogs: $catalogs,
     ));
+    $scopeId = is_string($validated['scope_id'] ?? null) && $validated['scope_id'] !== ''
+        ? $validated['scope_id']
+        : null;
+    $assertOwnerActor($validated['owner_actor_id'] ?? null, $organizationId, $scopeId, $actors);
 
     $asset = $assets->update($assetId, [
         ...$validated,
@@ -198,7 +282,7 @@ Route::patch('/assets/{assetId}', function (
     $principalId = (string) $request->input('principal_id');
 
     if (is_string($validated['owner_actor_id'] ?? null) && $validated['owner_actor_id'] !== '') {
-        $actors->assignActor(
+        $actors->syncSingleAssignment(
             actorId: $validated['owner_actor_id'],
             domainObjectType: 'asset',
             domainObjectId: $asset['id'],
@@ -220,7 +304,7 @@ Route::patch('/assets/{assetId}', function (
             'updated_at' => now(),
         ]);
 
-    return $apiSuccess($asset);
+    return $apiSuccess($assetWithOwners($asset, $actors));
 })->defaults('_openapi', [
     'operation_id' => 'assetCatalogUpdateAsset',
     'tags' => ['assets'],

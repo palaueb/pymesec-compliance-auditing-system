@@ -9,6 +9,8 @@ Current v1 scope:
 - role grant synchronization into `authorization_grants`
 - optional linkage from local users to functional actors
 - shell screens for people and organization access
+- API endpoints for listing, creating, updating, and deleting local users under `/api/v1/identity-local/users`
+- API endpoints for creating and updating memberships under `/api/v1/identity-local/memberships`
 
 Still out of scope:
 

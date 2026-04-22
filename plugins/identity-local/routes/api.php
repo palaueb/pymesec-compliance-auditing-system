@@ -13,11 +13,73 @@ use PymeSec\Plugins\IdentityLocal\IdentityUserImportService;
 $apiContext = require base_path('routes/api_context.php');
 extract($apiContext, EXTR_SKIP);
 
+$identityUserApiPayload = static function (array $user): array {
+    unset($user['password_hash']);
+
+    return $user;
+};
+
+Route::get('/identity-local/users', function (
+    Request $request,
+    IdentityLocalRepository $identity,
+) use ($apiSuccess, $identityUserApiPayload) {
+    $organizationId = (string) $request->input('organization_id');
+    abort_if($organizationId === '', 422);
+
+    $query = trim((string) $request->query('query', ''));
+    $users = array_values(array_filter(
+        $identity->usersForOrganization($organizationId),
+        static function (array $user) use ($query): bool {
+            if (! (bool) ($user['is_active'] ?? false)) {
+                return false;
+            }
+
+            if ($query === '') {
+                return true;
+            }
+
+            $haystack = implode(' ', [
+                (string) ($user['principal_id'] ?? ''),
+                (string) ($user['username'] ?? ''),
+                (string) ($user['display_name'] ?? ''),
+                (string) ($user['email'] ?? ''),
+            ]);
+
+            return str_contains(strtolower($haystack), strtolower($query));
+        },
+    ));
+
+    return $apiSuccess(array_map($identityUserApiPayload, $users), [
+        'organization_id' => $organizationId,
+    ]);
+})->defaults('_openapi', [
+    'operation_id' => 'identityLocalListUsers',
+    'tags' => ['identity'],
+    'tag_descriptions' => [
+        'identity' => 'Local and LDAP identity administration endpoints.',
+    ],
+    'summary' => 'List local directory users visible in current organization',
+    'responses' => [
+        '200' => [
+            'description' => 'User list',
+        ],
+        '401' => [
+            'description' => 'Authentication required',
+        ],
+        '403' => [
+            'description' => 'Caller is not authorized',
+        ],
+        '422' => [
+            'description' => 'Organization context required',
+        ],
+    ],
+])->middleware('core.permission:plugin.identity-local.users.view');
+
 Route::post('/identity-local/users', function (
     Request $request,
     IdentityLocalRepository $identity,
     FunctionalActorServiceInterface $actors,
-) use ($apiPrincipalId, $apiSuccess) {
+) use ($apiPrincipalId, $apiSuccess, $identityUserApiPayload) {
     $validated = $request->validate([
         'display_name' => ['required', 'string', 'max:120'],
         'username' => ['required', 'string', 'max:120', 'regex:/^[A-Za-z0-9._-]+$/', Rule::unique('identity_local_users', 'username')],
@@ -55,7 +117,7 @@ Route::post('/identity-local/users', function (
         );
     }
 
-    return $apiSuccess($user);
+    return $apiSuccess($identityUserApiPayload($user));
 })->defaults('_openapi', [
     'operation_id' => 'identityLocalCreateUser',
     'tags' => ['identity'],
@@ -96,7 +158,7 @@ Route::patch('/identity-local/users/{userId}', function (
     string $userId,
     IdentityLocalRepository $identity,
     FunctionalActorServiceInterface $actors,
-) use ($apiPrincipalId, $apiSuccess) {
+) use ($apiPrincipalId, $apiSuccess, $identityUserApiPayload) {
     $existing = $identity->findUser($userId);
     abort_if($existing === null, 404);
 
@@ -141,7 +203,7 @@ Route::patch('/identity-local/users/{userId}', function (
         );
     }
 
-    return $apiSuccess($user);
+    return $apiSuccess($identityUserApiPayload($user));
 })->defaults('_openapi', [
     'operation_id' => 'identityLocalUpdateUser',
     'tags' => ['identity'],

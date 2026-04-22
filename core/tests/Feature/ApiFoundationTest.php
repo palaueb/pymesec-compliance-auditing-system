@@ -1157,6 +1157,9 @@ class ApiFoundationTest extends TestCase
             ->assertSee('coreIssueApiToken')
             ->assertSee('coreRotateApiToken')
             ->assertSee('coreRevokeApiToken')
+            ->assertSee('functionalActorsArchiveActor')
+            ->assertSee('referenceDataListFunctionalActorKindOptions')
+            ->assertSee('identityLocalListUsers')
             ->assertSee('thirdPartyRiskListVendors')
             ->assertSee('thirdPartyRiskCreateVendorWithReview')
             ->assertSee('thirdPartyRiskUpdateVendorWithReview')
@@ -1213,6 +1216,26 @@ class ApiFoundationTest extends TestCase
         $this->assertContains(
             'name',
             data_get($openApi, 'paths./assets.post.requestBody.content.application/json.schema.required', []),
+        );
+        $this->assertSame(
+            '/api/v1/lookups/actors/options',
+            data_get($openApi, 'paths./assets.post.x-lookup-fields.owner_actor_id.source'),
+        );
+        $this->assertContains(
+            'employee',
+            data_get($openApi, 'paths./core/functional-actors.post.requestBody.content.application/json.schema.properties.kind.enum', []),
+        );
+        $this->assertSame(
+            'object',
+            data_get($openApi, 'paths./core/functional-actors.post.requestBody.content.application/json.schema.properties.metadata.type.0'),
+        );
+        $this->assertSame(
+            'functionalActorsArchiveActor',
+            data_get($openApi, 'paths./core/functional-actors/{actorId}/archive.post.operationId'),
+        );
+        $this->assertSame(
+            'identityLocalListUsers',
+            data_get($openApi, 'paths./identity-local/users.get.operationId'),
         );
         $this->assertContains(
             'array',

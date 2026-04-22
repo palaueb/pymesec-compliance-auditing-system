@@ -3388,6 +3388,11 @@
                         "application/json": {
                             "schema": {
                                 "type": "object",
+                                "required": [
+                                    "display_name",
+                                    "kind",
+                                    "organization_id"
+                                ],
                                 "properties": {
                                     "display_name": {
                                         "type": "string",
@@ -3395,7 +3400,15 @@
                                     },
                                     "kind": {
                                         "type": "string",
-                                        "maxLength": 40
+                                        "enum": [
+                                            "employee",
+                                            "contractor",
+                                            "external-provider",
+                                            "team",
+                                            "service-account",
+                                            "person"
+                                        ],
+                                        "x-governed-source": "/api/v1/lookups/functional-actor-kinds/options"
                                     },
                                     "organization_id": {
                                         "type": "string",
@@ -3407,13 +3420,39 @@
                                             "null"
                                         ],
                                         "maxLength": 64
+                                    },
+                                    "metadata": {
+                                        "type": [
+                                            "object",
+                                            "null"
+                                        ],
+                                        "additionalProperties": false,
+                                        "properties": {
+                                            "email": {
+                                                "type": [
+                                                    "string",
+                                                    "null"
+                                                ],
+                                                "format": "email",
+                                                "maxLength": 190
+                                            },
+                                            "role": {
+                                                "type": [
+                                                    "string",
+                                                    "null"
+                                                ],
+                                                "maxLength": 120
+                                            },
+                                            "notes": {
+                                                "type": [
+                                                    "string",
+                                                    "null"
+                                                ],
+                                                "maxLength": 1000
+                                            }
+                                        }
                                     }
-                                },
-                                "required": [
-                                    "display_name",
-                                    "kind",
-                                    "organization_id"
-                                ]
+                                }
                             }
                         }
                     }
@@ -3422,6 +3461,9 @@
                     "core.functional-actors.manage"
                 ],
                 "x-lookup-fields": {
+                    "kind": {
+                        "source": "/api/v1/lookups/functional-actor-kinds/options"
+                    },
                     "scope_id": {
                         "source": "/api/v1/automation-catalog/lookups/scopes/options"
                     }
@@ -3571,6 +3613,79 @@
                         "source": "/api/v1/lookups/principals/options"
                     }
                 }
+            }
+        },
+        "/core/functional-actors/{actorId}/archive": {
+            "post": {
+                "tags": [
+                    "core"
+                ],
+                "operationId": "functionalActorsArchiveActor",
+                "summary": "Archive one functional actor profile",
+                "responses": {
+                    "200": {
+                        "description": "Functional actor archived"
+                    },
+                    "403": {
+                        "description": "Caller is not authorized"
+                    },
+                    "404": {
+                        "description": "Actor not found in current context"
+                    },
+                    "422": {
+                        "description": "Validation failed or active assignments block archive"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "type": "object",
+                                "properties": {
+                                    "organization_id": {
+                                        "type": "string",
+                                        "maxLength": 64
+                                    },
+                                    "scope_id": {
+                                        "type": [
+                                            "string",
+                                            "null"
+                                        ],
+                                        "maxLength": 64
+                                    },
+                                    "deactivate_assignments": {
+                                        "type": [
+                                            "boolean",
+                                            "null"
+                                        ]
+                                    }
+                                },
+                                "required": [
+                                    "organization_id"
+                                ]
+                            }
+                        }
+                    }
+                },
+                "parameters": [
+                    {
+                        "name": "actorId",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "x-permissions": [
+                    "core.functional-actors.manage"
+                ]
             }
         },
         "/core/notifications/settings": {
@@ -7227,6 +7342,35 @@
             }
         },
         "/identity-local/users": {
+            "get": {
+                "tags": [
+                    "identity"
+                ],
+                "operationId": "identityLocalListUsers",
+                "summary": "List local directory users visible in current organization",
+                "responses": {
+                    "200": {
+                        "description": "User list"
+                    },
+                    "401": {
+                        "description": "Authentication required"
+                    },
+                    "403": {
+                        "description": "Caller is not authorized"
+                    },
+                    "422": {
+                        "description": "Organization context required"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "x-permissions": [
+                    "plugin.identity-local.users.view"
+                ]
+            },
             "post": {
                 "tags": [
                     "identity"
@@ -7873,6 +8017,31 @@
                 ],
                 "x-permissions": [
                     "plugin.controls-catalog.controls.view"
+                ]
+            }
+        },
+        "/lookups/functional-actor-kinds/options": {
+            "get": {
+                "tags": [
+                    "reference-data"
+                ],
+                "operationId": "referenceDataListFunctionalActorKindOptions",
+                "summary": "List governed functional actor kind options",
+                "responses": {
+                    "200": {
+                        "description": "Functional actor kind option list"
+                    },
+                    "403": {
+                        "description": "Caller is not authorized"
+                    }
+                },
+                "security": [
+                    {
+                        "bearerAuth": []
+                    }
+                ],
+                "x-permissions": [
+                    "plugin.actor-directory.actors.view"
                 ]
             }
         },

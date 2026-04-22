@@ -115,6 +115,91 @@ class DatabaseFunctionalActorService implements FunctionalActorServiceInterface
         return $actor;
     }
 
+    public function archiveActor(
+        string $actorId,
+        ?string $archivedByPrincipalId = null,
+        bool $deactivateAssignments = false,
+    ): ?FunctionalActorReference {
+        $record = DB::table('functional_actors')
+            ->where('id', $actorId)
+            ->first();
+
+        if ($record === null) {
+            return null;
+        }
+
+        $actor = $this->mapActor($record);
+
+        if (! (bool) ($record->is_active ?? false)) {
+            return $actor;
+        }
+
+        $activeAssignments = DB::table('functional_assignments')
+            ->where('functional_actor_id', $actorId)
+            ->where('is_active', true)
+            ->get(['id', 'domain_object_type', 'domain_object_id', 'assignment_type']);
+
+        if ($activeAssignments->isNotEmpty() && ! $deactivateAssignments) {
+            throw ValidationException::withMessages([
+                'actor_id' => 'Functional actor has active assignments. Set deactivate_assignments=true to archive it and deactivate those assignments.',
+            ]);
+        }
+
+        DB::table('functional_actors')
+            ->where('id', $actorId)
+            ->update([
+                'is_active' => false,
+                'updated_at' => now(),
+            ]);
+
+        if ($activeAssignments->isNotEmpty()) {
+            DB::table('functional_assignments')
+                ->where('functional_actor_id', $actorId)
+                ->where('is_active', true)
+                ->update([
+                    'is_active' => false,
+                    'updated_at' => now(),
+                ]);
+        }
+
+        $this->audit->record(new AuditRecordData(
+            eventType: 'core.functional-actors.actor.archived',
+            outcome: 'success',
+            originComponent: 'core',
+            principalId: $archivedByPrincipalId,
+            organizationId: $actor->organizationId,
+            scopeId: $actor->scopeId,
+            targetType: 'functional_actor',
+            targetId: $actorId,
+            summary: [
+                'deactivated_assignment_count' => $activeAssignments->count(),
+                'deactivate_assignments' => $deactivateAssignments,
+            ],
+            executionOrigin: 'functional-actors',
+        ));
+
+        $this->events->publish(new PublicEvent(
+            name: 'core.functional-actors.actor.archived',
+            originComponent: 'core',
+            organizationId: $actor->organizationId,
+            scopeId: $actor->scopeId,
+            payload: [
+                'functional_actor_id' => $actorId,
+                'deactivated_assignment_count' => $activeAssignments->count(),
+            ],
+        ));
+
+        return $this->mapActor((object) [
+            'id' => $actor->id,
+            'provider' => $actor->provider,
+            'kind' => $actor->kind,
+            'display_name' => $actor->displayName,
+            'organization_id' => $actor->organizationId,
+            'scope_id' => $actor->scopeId,
+            'metadata' => $this->encodeJson($actor->metadata),
+        ]);
+    }
+
     public function assignments(
         ?string $organizationId = null,
         ?string $scopeId = null,

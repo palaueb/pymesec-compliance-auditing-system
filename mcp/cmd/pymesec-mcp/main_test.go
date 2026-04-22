@@ -84,6 +84,49 @@ func TestFetchOpenAPIBuildsOperationIndex(t *testing.T) {
 	}
 }
 
+func TestAPIRequestAcceptsPrefixRelativePaths(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/api/v1/core/functional-actors" {
+			t.Fatalf("unexpected API path: %s", r.URL.Path)
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		_, _ = w.Write([]byte(`{"ok":true}`))
+	}))
+	defer server.Close()
+
+	s := &mcpServer{
+		cfg: config{
+			APIBaseURL: server.URL,
+			APIPrefix:  "/api/v1",
+		},
+		client: server.Client(),
+	}
+
+	response, err := s.apiCall(context.Background(), http.MethodGet, "/core/functional-actors", nil, nil, nil, "")
+	if err != nil {
+		t.Fatalf("apiCall returned error: %v", err)
+	}
+
+	if response["status"] != http.StatusOK {
+		t.Fatalf("unexpected response status: %#v", response["status"])
+	}
+}
+
+func TestAPIRequestStillRejectsWrongAPINamespace(t *testing.T) {
+	s := &mcpServer{
+		cfg: config{
+			APIBaseURL: "https://example.test",
+			APIPrefix:  "/api/v1",
+		},
+		client: &http.Client{},
+	}
+
+	if _, err := s.apiCall(context.Background(), http.MethodGet, "/api/v2/assets", nil, nil, nil, ""); err == nil {
+		t.Fatal("expected apiCall to reject path outside configured API namespace")
+	}
+}
+
 func TestWriteJSONRPCMessageUsesMinimalMCPStdioHeaders(t *testing.T) {
 	var output bytes.Buffer
 	writer := bufio.NewWriter(&output)

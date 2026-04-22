@@ -52,6 +52,7 @@ class DatabaseAuthorizationStore implements AuthorizationStoreInterface
                     $record['permissions'] ?? [],
                     static fn (mixed $permission): bool => is_string($permission) && $permission !== '',
                 )),
+                isSystem: (bool) ($record['is_system'] ?? false),
             );
         }
 
@@ -111,11 +112,15 @@ class DatabaseAuthorizationStore implements AuthorizationStoreInterface
                 'authorization_role_permissions.permission_key',
             ]);
 
-        if ($rows->isEmpty()) {
-            return $this->roleRecords = $this->fallbackRoleRecords();
-        }
-
         $grouped = [];
+
+        foreach ($this->fallbackRoleRecords() as $role) {
+            $key = $role['key'] ?? null;
+
+            if (is_string($key) && $key !== '') {
+                $grouped[$key] = $role;
+            }
+        }
 
         foreach ($rows as $row) {
             $key = (string) $row->key;
@@ -161,17 +166,29 @@ class DatabaseAuthorizationStore implements AuthorizationStoreInterface
             return $this->grantRecords = $this->fallbackGrantRecords();
         }
 
-        return $this->grantRecords = $rows->map(static fn ($row): array => [
-            'id' => (string) $row->id,
-            'target_type' => (string) $row->target_type,
-            'target_id' => (string) $row->target_id,
-            'grant_type' => (string) $row->grant_type,
-            'value' => (string) $row->value,
-            'context_type' => (string) $row->context_type,
-            'organization_id' => is_string($row->organization_id) ? $row->organization_id : null,
-            'scope_id' => is_string($row->scope_id) ? $row->scope_id : null,
-            'is_system' => (bool) $row->is_system,
-        ])->all();
+        $grouped = [];
+
+        foreach ($this->fallbackGrantRecords() as $record) {
+            $grouped[$this->grantRecordKey($record)] = $record;
+        }
+
+        foreach ($rows as $row) {
+            $record = [
+                'id' => (string) $row->id,
+                'target_type' => (string) $row->target_type,
+                'target_id' => (string) $row->target_id,
+                'grant_type' => (string) $row->grant_type,
+                'value' => (string) $row->value,
+                'context_type' => (string) $row->context_type,
+                'organization_id' => is_string($row->organization_id) ? $row->organization_id : null,
+                'scope_id' => is_string($row->scope_id) ? $row->scope_id : null,
+                'is_system' => (bool) $row->is_system,
+            ];
+
+            $grouped[$this->grantRecordKey($record)] = $record;
+        }
+
+        return $this->grantRecords = array_values($grouped);
     }
 
     public function upsertRole(string $key, string $label, array $permissions, bool $isSystem = false): RoleDefinition
@@ -327,5 +344,21 @@ class DatabaseAuthorizationStore implements AuthorizationStoreInterface
         $this->grantDefinitions = null;
         $this->roleRecords = null;
         $this->grantRecords = null;
+    }
+
+    /**
+     * @param  array<string, mixed>  $record
+     */
+    private function grantRecordKey(array $record): string
+    {
+        return implode('|', [
+            (string) ($record['target_type'] ?? ''),
+            (string) ($record['target_id'] ?? ''),
+            (string) ($record['grant_type'] ?? ''),
+            (string) ($record['value'] ?? ''),
+            (string) ($record['context_type'] ?? ''),
+            (string) ($record['organization_id'] ?? ''),
+            (string) ($record['scope_id'] ?? ''),
+        ]);
     }
 }
