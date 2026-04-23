@@ -93,7 +93,7 @@ class AssessmentsAuditsTest extends TestCase
             ->assertOk()
             ->assertSee('Supplier Access Review')
             ->assertSee('Updated review scope for supplier access and governance.')
-            ->assertSee('active');
+            ->assertSee('Active');
     }
 
     public function test_assessments_support_reviews_findings_workpapers_and_summary_export(): void

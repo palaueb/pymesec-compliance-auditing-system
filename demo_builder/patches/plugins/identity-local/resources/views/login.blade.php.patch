@@ -1,50 +1,50 @@
 diff --git a/plugins/identity-local/resources/views/login.blade.php b/plugins/identity-local/resources/views/login.blade.php
-index e11ad5e171e44551345a39729eadb6022694d4fc..c9e19a9ae3553541df637b480ca08b6c47cec955 100644
+index dbc6f0f7970b1f388bf925eb72a9956245fc19c3..a428ed54f09b77063cd22a354a5425c8be2aac7b 100644
 --- a/plugins/identity-local/resources/views/login.blade.php
 +++ b/plugins/identity-local/resources/views/login.blade.php
 @@ -89,24 +89,37 @@
  </head>
  <body>
      <main class="login-card">
--        <div class="eyebrow">Identity</div>
-+        <div class="eyebrow">{{ ($demo_enabled ?? false) ? 'Demo edition' : 'Identity' }}</div>
-         <h1>Sign in</h1>
--        <p>Use your username or work email. Local and directory-backed sign-in can require an email verification code, and some organizations also allow a cached email sign-in link.</p>
+-        <div class="eyebrow">{{ __('Identity') }}</div>
++        <div class="eyebrow">{{ ($demo_enabled ?? false) ? __('Demo edition') : __('Identity') }}</div>
+         <h1>{{ __('Sign in') }}</h1>
+-        <p>{{ __('Use your username or work email. Local and directory-backed sign-in can require an email verification code, and some organizations also allow a cached email sign-in link.') }}</p>
 +        @if (($demo_enabled ?? false) === true)
-+            <p>This installation runs as a disposable demo workspace. Each sign-in gets a private SQLite copy of the demo company data.</p>
++            <p>{{ __('This installation runs as a disposable demo workspace. Each sign-in gets a private SQLite copy of the demo company data.') }}</p>
 +            <div class="note">
-+                Demo credentials: <strong>{{ $demo_login['username'] ?? 'admin' }}</strong> /
++                {{ __('Demo credentials:') }} <strong>{{ $demo_login['username'] ?? 'admin' }}</strong> /
 +                <strong>{{ $demo_login['password'] ?? 'demo' }}</strong>
 +                @if (($demo_template_ready ?? false) !== true)
-+                    <br>The demo template database is missing. Run <code>php artisan demo:build-template</code> on the server.
++                    <br>{{ __('The demo template database is missing. Run `php artisan demo:build-template` on the server.') }}
 +                @endif
 +            </div>
 +        @else
-+            <p>Use your username or work email. Local and directory-backed sign-in can require an email verification code, and some organizations also allow a cached email sign-in link.</p>
++            <p>{{ __('Use your username or work email. Local and directory-backed sign-in can require an email verification code, and some organizations also allow a cached email sign-in link.') }}</p>
 +        @endif
  
          <form method="POST" action="{{ route('plugin.identity-local.auth.request') }}">
              @csrf
              <div class="field">
-                 <label class="field-label" for="login-identifier">Username or email</label>
+                 <label class="field-label" for="login-identifier">{{ __('Username or email') }}</label>
 -                <input class="field-input" id="login-identifier" name="login" required autofocus>
 +                <input class="field-input" id="login-identifier" name="login" required autofocus value="{{ ($demo_enabled ?? false) ? ($demo_login['username'] ?? 'admin') : '' }}">
              </div>
              <div class="field">
-                 <label class="field-label" for="login-password">Password</label>
+                 <label class="field-label" for="login-password">{{ __('Password') }}</label>
 -                <input class="field-input" id="login-password" name="password" type="password">
 +                <input class="field-input" id="login-password" name="password" type="password" value="{{ ($demo_enabled ?? false) ? ($demo_login['password'] ?? 'demo') : '' }}">
              </div>
 -            <label class="field-label" style="display:flex; gap:10px; align-items:center; margin-top:16px;">
 -                <input type="checkbox" name="use_email_link" value="1">
--                Sign in with email link instead
+-                {{ __('Sign in with email link instead') }}
 -            </label>
 +            @if (($demo_enabled ?? false) !== true)
 +                <label class="field-label" style="display:flex; gap:10px; align-items:center; margin-top:16px;">
 +                    <input type="checkbox" name="use_email_link" value="1">
-+                    Sign in with email link instead
++                    {{ __('Sign in with email link instead') }}
 +                </label>
 +            @endif
-             <button class="button button-primary" type="submit">Continue</button>
+             <button class="button button-primary" type="submit">{{ __('Continue') }}</button>
          </form>
  

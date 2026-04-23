@@ -36,7 +36,7 @@ class AssessmentsAuditsPlugin implements PluginInterface
                 if (is_string($screenContext->query['assessment_id'] ?? null) && ($screenContext->query['assessment_id'] ?? '') !== '') {
                     return [
                         new ToolbarAction(
-                            label: 'Back to assessments',
+                            label: __('Back to assessments'),
                             url: route('core.shell.index', [...$query, 'menu' => 'plugin.assessments-audits.root']),
                             variant: 'secondary',
                         ),
@@ -45,7 +45,7 @@ class AssessmentsAuditsPlugin implements PluginInterface
 
                 return [
                     new ToolbarAction(
-                        label: 'New assessment',
+                        label: __('New assessment'),
                         url: '#assessment-editor',
                         variant: 'primary',
                     ),
@@ -195,12 +195,8 @@ class AssessmentsAuditsPlugin implements PluginInterface
             'framework_options' => $frameworkOptions,
             'control_options' => $repository->controlOptions($organizationId, $screenContext->scopeId),
             'scope_options' => array_map(static fn ($scope): array => $scope->toArray(), $scopeContext->scopes),
-            'result_options' => [
-                ...AssessmentReferenceData::reviewResults(),
-            ],
-            'status_options' => [
-                ...AssessmentReferenceData::statuses(),
-            ],
+            'result_options' => array_map(static fn (string $label): string => __($label), AssessmentReferenceData::reviewResults()),
+            'status_options' => array_map(static fn (string $label): string => __($label), AssessmentReferenceData::statuses()),
             'assessments_list_url' => route('core.shell.index', [...$listQuery, 'menu' => 'plugin.assessments-audits.root']),
         ];
     }

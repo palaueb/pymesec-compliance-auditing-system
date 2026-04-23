@@ -45,7 +45,7 @@ class AutomationCatalogPlugin implements PluginInterface
                 if (is_string($screenContext->query['pack_id'] ?? null) && ($screenContext->query['pack_id'] ?? '') !== '') {
                     return [
                         new ToolbarAction(
-                            label: 'Back to catalog',
+                            label: __('Back to catalog'),
                             url: route('core.shell.index', [...$this->baseQuery($screenContext, false), 'menu' => 'plugin.automation-catalog.root']),
                             variant: 'secondary',
                         ),
@@ -54,12 +54,12 @@ class AutomationCatalogPlugin implements PluginInterface
 
                 return [
                     new ToolbarAction(
-                        label: 'Add repository of packs',
+                        label: __('Add repository of packs'),
                         url: route('core.shell.index', [...$this->baseQuery($screenContext, false), 'menu' => 'plugin.automation-catalog.root', 'automation_panel' => 'repository-editor']),
                         variant: 'primary',
                     ),
                     new ToolbarAction(
-                        label: 'Register local pack',
+                        label: __('Register local pack'),
                         url: route('core.shell.index', [...$this->baseQuery($screenContext, false), 'menu' => 'plugin.automation-catalog.root', 'automation_panel' => 'pack-editor']),
                         variant: 'secondary',
                     ),
@@ -101,8 +101,20 @@ class AutomationCatalogPlugin implements PluginInterface
         $packs = array_map(function (array $pack): array {
             return [
                 ...$pack,
-                'lifecycle_state_label' => ucwords(str_replace('-', ' ', $pack['lifecycle_state'])),
-                'health_state_label' => ucwords(str_replace('-', ' ', $pack['health_state'])),
+                'lifecycle_state_label' => match ($pack['lifecycle_state']) {
+                    'discovered' => __('Discovered'),
+                    'installed' => __('Installed'),
+                    'enabled' => __('Enabled'),
+                    'disabled' => __('Disabled'),
+                    default => __(ucwords(str_replace('-', ' ', $pack['lifecycle_state']))),
+                },
+                'health_state_label' => match ($pack['health_state']) {
+                    'unknown' => __('Unknown'),
+                    'healthy' => __('Healthy'),
+                    'degraded' => __('Degraded'),
+                    'failing' => __('Failing'),
+                    default => __(ucwords(str_replace('-', ' ', $pack['health_state']))),
+                },
             ];
         }, $repository->all($organizationId, $screenContext->scopeId));
         $installedPacks = array_values(array_filter($packs, static fn (array $pack): bool => $pack['is_installed'] === '1'));
@@ -130,32 +142,32 @@ class AutomationCatalogPlugin implements PluginInterface
 
                 return [
                     ...$mapping,
-                    'mapping_kind_label' => $mapping['mapping_kind'] === 'workflow-transition' ? 'Workflow transition' : 'Evidence refresh',
-                    'target_binding_mode_label' => ($mapping['target_binding_mode'] ?? 'explicit') === 'scope' ? 'Scope resolver' : 'Explicit object',
+                    'mapping_kind_label' => $mapping['mapping_kind'] === 'workflow-transition' ? __('Workflow transition') : __('Evidence refresh'),
+                    'target_binding_mode_label' => ($mapping['target_binding_mode'] ?? 'explicit') === 'scope' ? __('Scope resolver') : __('Explicit object'),
                     'posture_propagation_policy_label' => ($mapping['posture_propagation_policy'] ?? 'disabled') === 'status-only'
-                        ? 'Status only'
-                        : 'Disabled',
+                        ? __('Status only')
+                        : __('Disabled'),
                     'execution_mode_label' => match ($mapping['execution_mode'] ?? 'both') {
-                        'runtime-only' => 'Runtime only',
-                        'manual-only' => 'Manual only',
-                        default => 'Both',
+                        'runtime-only' => __('Runtime only'),
+                        'manual-only' => __('Manual only'),
+                        default => __('Both'),
                     },
                     'on_fail_policy_label' => ($mapping['on_fail_policy'] ?? 'no-op') === 'raise-finding'
-                        ? 'Raise finding'
+                        ? __('Raise finding')
                         : (($mapping['on_fail_policy'] ?? 'no-op') === 'raise-finding-and-action'
-                            ? 'Raise finding + action'
-                            : 'No-op'),
+                            ? __('Raise finding + action')
+                            : __('No-op')),
                     'evidence_policy_label' => match ($mapping['evidence_policy'] ?? 'always') {
-                        'on-fail' => 'On fail',
-                        'on-change' => 'On change',
-                        default => 'Always',
+                        'on-fail' => __('On fail'),
+                        'on-change' => __('On change'),
+                        default => __('Always'),
                     },
                     'target_selector_tags' => $selectorTags,
                     'last_status_label' => match ($mapping['last_status']) {
-                        'success' => 'Success',
-                        'skipped' => 'Skipped',
-                        'failed' => 'Failed',
-                        default => 'Never',
+                        'success' => __('Success'),
+                        'skipped' => __('Skipped'),
+                        'failed' => __('Failed'),
+                        default => __('Never'),
                     },
                     'apply_route' => route('plugin.automation-catalog.output-mappings.apply', [
                         'packId' => $mapping['automation_pack_id'],
@@ -169,13 +181,13 @@ class AutomationCatalogPlugin implements PluginInterface
                 return [
                     ...$run,
                     'status_label' => match ($run['status']) {
-                        'success' => 'Success',
-                        'partial' => 'Partial',
-                        'failed' => 'Failed',
-                        'running' => 'Running',
+                        'success' => __('Success'),
+                        'partial' => __('Partial'),
+                        'failed' => __('Failed'),
+                        'running' => __('Running'),
                         default => ucwords(str_replace('-', ' ', $run['status'])),
                     },
-                    'trigger_mode_label' => $run['trigger_mode'] === 'scheduled' ? 'Scheduled' : 'Manual',
+                    'trigger_mode_label' => $run['trigger_mode'] === 'scheduled' ? __('Scheduled') : __('Manual'),
                 ];
             }, $repository->recentRunsForPack((string) $selectedPack['id'], 20))
             : [];
@@ -200,16 +212,16 @@ class AutomationCatalogPlugin implements PluginInterface
                 return [
                     ...$result,
                     'status_label' => match ($result['status']) {
-                        'success' => 'Success',
-                        'skipped' => 'Skipped',
-                        'failed' => 'Failed',
+                        'success' => __('Success'),
+                        'skipped' => __('Skipped'),
+                        'failed' => __('Failed'),
                         default => ucwords(str_replace('-', ' ', $result['status'])),
                     },
                     'outcome_label' => match ($result['outcome']) {
-                        'pass' => 'Pass',
-                        'fail' => 'Fail',
-                        'warn' => 'Warn',
-                        'not-applicable' => 'Not applicable',
+                        'pass' => __('Pass'),
+                        'fail' => __('Fail'),
+                        'warn' => __('Warn'),
+                        'not-applicable' => __('Not applicable'),
                         default => ucwords(str_replace('-', ' ', $result['outcome'])),
                     },
                     'evidence_id' => $evidenceId,
@@ -243,9 +255,9 @@ class AutomationCatalogPlugin implements PluginInterface
             return [
                 ...$repository,
                 'last_status_label' => match ($repository['last_status']) {
-                    'success' => 'Success',
-                    'failed' => 'Failed',
-                    default => 'Never',
+                    'success' => __('Success'),
+                    'failed' => __('Failed'),
+                    default => __('Never'),
                 },
                 'refresh_route' => route('plugin.automation-catalog.repositories.refresh', [
                     'repositoryId' => $repository['id'],
@@ -357,59 +369,59 @@ class AutomationCatalogPlugin implements PluginInterface
             'repositories' => $repositories,
             'external_catalog_rows' => $externalCatalogRows,
             'trust_tier_options' => [
-                'trusted-first-party' => 'Trusted first-party',
-                'trusted-partner' => 'Trusted partner',
-                'community-reviewed' => 'Community reviewed',
-                'untrusted' => 'Untrusted',
+                'trusted-first-party' => __('Trusted first-party'),
+                'trusted-partner' => __('Trusted partner'),
+                'community-reviewed' => __('Community reviewed'),
+                'untrusted' => __('Untrusted'),
             ],
             'mapping_kind_options' => [
-                'evidence-refresh' => 'Evidence refresh',
-                'workflow-transition' => 'Workflow transition',
+                'evidence-refresh' => __('Evidence refresh'),
+                'workflow-transition' => __('Workflow transition'),
             ],
             'subject_type_options' => [
-                'asset' => 'Asset',
-                'control' => 'Control',
-                'risk' => 'Risk',
-                'finding' => 'Finding',
-                'policy' => 'Policy',
-                'policy-exception' => 'Policy exception',
-                'privacy-data-flow' => 'Privacy data flow',
-                'privacy-processing-activity' => 'Privacy processing activity',
-                'continuity-service' => 'Continuity service',
-                'continuity-plan' => 'Continuity plan',
-                'recovery-plan' => 'Recovery plan',
-                'assessment' => 'Assessment',
-                'assessment-review' => 'Assessment review',
-                'vendor-review' => 'Vendor review',
+                'asset' => __('Asset'),
+                'control' => __('Control'),
+                'risk' => __('Risk'),
+                'finding' => __('Finding'),
+                'policy' => __('Policy'),
+                'policy-exception' => __('Policy exception'),
+                'privacy-data-flow' => __('Privacy data flow'),
+                'privacy-processing-activity' => __('Privacy processing activity'),
+                'continuity-service' => __('Continuity service'),
+                'continuity-plan' => __('Continuity plan'),
+                'recovery-plan' => __('Recovery plan'),
+                'assessment' => __('Assessment'),
+                'assessment-review' => __('Assessment review'),
+                'vendor-review' => __('Vendor review'),
             ],
             'automation_workflow_catalog' => $workflowCatalog,
             'evidence_kind_options' => [
-                'document' => 'Document',
-                'workpaper' => 'Workpaper',
-                'snapshot' => 'System snapshot',
-                'report' => 'Report',
-                'ticket' => 'Ticket',
-                'log-export' => 'Log export',
-                'statement' => 'Statement',
-                'other' => 'Other',
+                'document' => __('Document'),
+                'workpaper' => __('Workpaper'),
+                'snapshot' => __('System snapshot'),
+                'report' => __('Report'),
+                'ticket' => __('Ticket'),
+                'log-export' => __('Log export'),
+                'statement' => __('Statement'),
+                'other' => __('Other'),
             ],
             'provider_type_options' => [
-                'native' => 'Native',
-                'community' => 'Community',
-                'vendor' => 'Vendor',
-                'internal' => 'Internal',
+                'native' => __('Native'),
+                'community' => __('Community'),
+                'vendor' => __('Vendor'),
+                'internal' => __('Internal'),
             ],
             'provenance_type_options' => [
-                'plugin' => 'Plugin',
-                'marketplace' => 'Marketplace',
-                'git' => 'Git',
-                'manual' => 'Manual',
+                'plugin' => __('Plugin'),
+                'marketplace' => __('Marketplace'),
+                'git' => __('Git'),
+                'manual' => __('Manual'),
             ],
             'health_state_options' => [
-                'unknown' => 'Unknown',
-                'healthy' => 'Healthy',
-                'degraded' => 'Degraded',
-                'failing' => 'Failing',
+                'unknown' => __('Unknown'),
+                'healthy' => __('Healthy'),
+                'degraded' => __('Degraded'),
+                'failing' => __('Failing'),
             ],
         ];
     }

@@ -72,11 +72,11 @@
                     <div class="metric-label">{{ __('Accountability') }}</div>
                     <div class="table-note" style="margin-top:10px;">{{ __('Owners: :count', ['count' => count($selected_plan['owner_assignments'])]) }}</div>
                     <div class="data-stack" style="margin-top:10px;">
-                        @forelse ($selected_plan['owner_assignments'] as $owner)
-                            <div class="data-item">
-                                <div class="entity-title">{{ $owner['display_name'] }}</div>
-                                <div class="table-note">{{ $owner['kind'] }}</div>
-                                @if ($can_manage_continuity)
+                            @forelse ($selected_plan['owner_assignments'] as $owner)
+                                <div class="data-item">
+                                    <div class="entity-title">{{ $owner['display_name'] }}</div>
+                                    <div class="table-note">{{ $owner['kind'] }}</div>
+                                    @if ($can_manage_continuity)
                                     <form method="POST" action="{{ str_replace('__ASSIGNMENT__', $owner['assignment_id'], $selected_plan['owner_remove_route']) }}" style="margin-top:8px;">
                                         @csrf
                                         <input type="hidden" name="principal_id" value="{{ $query['principal_id'] ?? '' }}">
@@ -410,7 +410,7 @@
                                     <div>{{ $plan['owner_assignments'][0]['display_name'] }}</div>
                                     @if (count($plan['owner_assignments']) > 1)
                                         @php $extraOwners = count($plan['owner_assignments']) - 1; @endphp
-                                        <div class="table-note">+{{ $extraOwners }} {{ __($extraOwners === 1 ? 'more owner' : 'more owners') }}</div>
+                                        <div class="table-note"><span aria-hidden="true">+</span>{{ $extraOwners }} {{ __($extraOwners === 1 ? 'more owner' : 'more owners') }}</div>
                                     @else
                                         <div class="table-note">{{ $plan['owner_assignments'][0]['kind'] }}</div>
                                     @endif

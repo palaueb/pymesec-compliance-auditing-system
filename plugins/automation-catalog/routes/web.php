@@ -115,7 +115,7 @@ Route::post('/plugins/automation-catalog', function (Request $request, Automatio
         'locale' => $request->input('locale', 'en'),
         'automation_panel' => is_string($automationPanel) && $automationPanel !== '' ? $automationPanel : null,
         'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
-    ]))->with('status', 'Automation pack saved.');
+    ]))->with('status', __('Automation pack saved.'));
 })->middleware('core.permission:plugin.automation-catalog.packs.manage')->name('plugin.automation-catalog.store');
 
 Route::post('/plugins/automation-catalog/{packId}/install', function (Request $request, string $packId, AutomationCatalogRepository $repository) {
@@ -134,7 +134,7 @@ Route::post('/plugins/automation-catalog/{packId}/install', function (Request $r
         'scope_id' => is_string($scopeId) && $scopeId !== '' ? $scopeId : null,
         'locale' => $request->input('locale', 'en'),
         'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
-    ]))->with('status', 'Automation pack installed.');
+    ]))->with('status', __('Automation pack installed.'));
 })->middleware('core.permission:plugin.automation-catalog.packs.manage')->name('plugin.automation-catalog.install');
 
 Route::post('/plugins/automation-catalog/{packId}/enable', function (Request $request, string $packId, AutomationCatalogRepository $repository) {
@@ -153,7 +153,7 @@ Route::post('/plugins/automation-catalog/{packId}/enable', function (Request $re
         'scope_id' => is_string($scopeId) && $scopeId !== '' ? $scopeId : null,
         'locale' => $request->input('locale', 'en'),
         'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
-    ]))->with('status', 'Automation pack enabled.');
+    ]))->with('status', __('Automation pack enabled.'));
 })->middleware('core.permission:plugin.automation-catalog.packs.manage')->name('plugin.automation-catalog.enable');
 
 Route::post('/plugins/automation-catalog/{packId}/disable', function (Request $request, string $packId, AutomationCatalogRepository $repository) {
@@ -172,7 +172,7 @@ Route::post('/plugins/automation-catalog/{packId}/disable', function (Request $r
         'scope_id' => is_string($scopeId) && $scopeId !== '' ? $scopeId : null,
         'locale' => $request->input('locale', 'en'),
         'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
-    ]))->with('status', 'Automation pack disabled.');
+    ]))->with('status', __('Automation pack disabled.'));
 })->middleware('core.permission:plugin.automation-catalog.packs.manage')->name('plugin.automation-catalog.disable');
 
 Route::post('/plugins/automation-catalog/{packId}/uninstall', function (Request $request, string $packId, AutomationCatalogRepository $repository) {
@@ -190,7 +190,7 @@ Route::post('/plugins/automation-catalog/{packId}/uninstall', function (Request 
         'scope_id' => is_string($scopeId) && $scopeId !== '' ? $scopeId : null,
         'locale' => $request->input('locale', 'en'),
         'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
-    ]))->with('status', 'Automation pack uninstalled and removed.');
+    ]))->with('status', __('Automation pack uninstalled and removed.'));
 })->middleware('core.permission:plugin.automation-catalog.packs.manage')->name('plugin.automation-catalog.uninstall');
 
 Route::post('/plugins/automation-catalog/{packId}/health', function (Request $request, string $packId, AutomationCatalogRepository $repository) {
@@ -214,7 +214,7 @@ Route::post('/plugins/automation-catalog/{packId}/health', function (Request $re
         'scope_id' => is_string($scopeId) && $scopeId !== '' ? $scopeId : null,
         'locale' => $request->input('locale', 'en'),
         'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
-    ]))->with('status', 'Automation health updated.');
+    ]))->with('status', __('Automation health updated.'));
 })->middleware('core.permission:plugin.automation-catalog.packs.manage')->name('plugin.automation-catalog.health.update');
 
 Route::post('/plugins/automation-catalog/{packId}/schedule', function (Request $request, string $packId, AutomationCatalogRepository $repository) {
@@ -243,7 +243,7 @@ Route::post('/plugins/automation-catalog/{packId}/schedule', function (Request $
 
     if ($scheduleEnabled && $scheduleCron === '') {
         throw ValidationException::withMessages([
-            'runtime_schedule_cron' => 'Cron expression is required when runtime schedule is enabled.',
+            'runtime_schedule_cron' => __('Cron expression is required when runtime schedule is enabled.'),
         ]);
     }
 
@@ -271,7 +271,7 @@ Route::post('/plugins/automation-catalog/{packId}/schedule', function (Request $
         'scope_id' => is_string($scopeId) && $scopeId !== '' ? $scopeId : null,
         'locale' => $request->input('locale', 'en'),
         'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
-    ]))->with('status', 'Runtime schedule updated.');
+    ]))->with('status', __('Runtime schedule updated.'));
 })->middleware('core.permission:plugin.automation-catalog.packs.manage')->name('plugin.automation-catalog.schedule.update');
 
 Route::post('/plugins/automation-catalog/{packId}/run', function (
@@ -348,7 +348,7 @@ Route::post('/plugins/automation-catalog/repositories', function (
         'locale' => $request->input('locale', 'en'),
         'automation_panel' => is_string($automationPanel) && $automationPanel !== '' ? $automationPanel : 'repository-editor',
         'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
-    ]))->with('status', 'Automation package repository saved.');
+    ]))->with('status', __('Automation package repository saved.'));
 })->middleware('core.permission:plugin.automation-catalog.packs.manage')->name('plugin.automation-catalog.repositories.store');
 
 Route::post('/plugins/automation-catalog/repositories/install-official', function (
@@ -372,7 +372,7 @@ Route::post('/plugins/automation-catalog/repositories/install-official', functio
             'locale' => $request->input('locale', 'en'),
             'automation_panel' => is_string($automationPanel) && $automationPanel !== '' ? $automationPanel : 'repository-editor',
             'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
-        ]))->with('status', 'Official repository is not configured. Set repository URL/sign/public key in plugin config.');
+        ]))->with('status', __('Official repository is not configured. Set repository URL/sign/public key in plugin config.'));
     }
 
     $repositoryRecord = $repository->saveRepository([
@@ -392,14 +392,14 @@ Route::post('/plugins/automation-catalog/repositories/install-official', functio
         $result = $syncService->sync($repositoryRecord);
         $repository->markRepositorySyncResult((string) $repositoryRecord['id'], 'success');
         $statusMessage = sprintf(
-            'Official repository installed and refreshed: %d releases and %d latest pack rows.',
+            __('Official repository installed and refreshed: %d releases and %d latest pack rows.'),
             (int) ($result['release_rows'] ?? 0),
             (int) ($result['latest_rows'] ?? 0),
         );
     } catch (Throwable $exception) {
         $repository->markRepositorySyncResult((string) $repositoryRecord['id'], 'failed', $exception->getMessage());
         $statusMessage = sprintf(
-            'Official repository installed but refresh failed: %s',
+            __('Official repository installed but refresh failed: %s'),
             $exception->getMessage()
         );
     }
@@ -434,13 +434,13 @@ Route::post('/plugins/automation-catalog/repositories/{repositoryId}/refresh', f
         $result = $syncService->sync($repositoryRecord);
         $repository->markRepositorySyncResult($repositoryId, 'success');
         $statusMessage = sprintf(
-            'Repository refreshed: %d releases and %d latest pack rows.',
+            __('Repository refreshed: %d releases and %d latest pack rows.'),
             (int) ($result['release_rows'] ?? 0),
             (int) ($result['latest_rows'] ?? 0),
         );
     } catch (Throwable $exception) {
         $repository->markRepositorySyncResult($repositoryId, 'failed', $exception->getMessage());
-        $statusMessage = sprintf('Repository refresh failed: %s', $exception->getMessage());
+        $statusMessage = sprintf(__('Repository refresh failed: %s'), $exception->getMessage());
     }
 
     return redirect()->route('core.shell.index', array_filter([
@@ -501,13 +501,13 @@ Route::post('/plugins/automation-catalog/{packId}/output-mappings', function (
 
     if ($bindingMode === 'scope' && ! in_array((string) $validated['target_subject_type'], ['asset', 'risk'], true)) {
         throw ValidationException::withMessages([
-            'target_subject_type' => 'Scope binding mode currently supports only asset and risk targets.',
+            'target_subject_type' => __('Scope binding mode currently supports only asset and risk targets.'),
         ]);
     }
 
     if ($bindingMode === 'explicit' && trim((string) ($validated['target_subject_id'] ?? '')) === '') {
         throw ValidationException::withMessages([
-            'target_subject_id' => 'Target subject id is required in explicit binding mode.',
+            'target_subject_id' => __('Target subject id is required in explicit binding mode.'),
         ]);
     }
 
@@ -526,7 +526,7 @@ Route::post('/plugins/automation-catalog/{packId}/output-mappings', function (
 
     if ($posturePolicy !== 'disabled' && ! in_array((string) $validated['target_subject_type'], ['asset', 'risk'], true)) {
         throw ValidationException::withMessages([
-            'posture_propagation_policy' => 'Posture propagation currently supports only asset and risk targets.',
+            'posture_propagation_policy' => __('Posture propagation currently supports only asset and risk targets.'),
         ]);
     }
 
@@ -561,7 +561,7 @@ Route::post('/plugins/automation-catalog/{packId}/output-mappings', function (
     if ($invalidSelectorTags !== []) {
         throw ValidationException::withMessages([
             'target_tags' => sprintf(
-                'Invalid selector tag format for: %s. Use key:value (comma-separated).',
+                __('Invalid selector tag format for: %s. Use key:value (comma-separated).'),
                 implode(', ', $invalidSelectorTags),
             ),
         ]);
@@ -597,7 +597,7 @@ Route::post('/plugins/automation-catalog/{packId}/output-mappings', function (
         'scope_id' => is_string($scopeId) && $scopeId !== '' ? $scopeId : null,
         'locale' => $request->input('locale', 'en'),
         'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
-    ]))->with('status', 'Automation output mapping saved.');
+    ]))->with('status', __('Automation output mapping saved.'));
 })->middleware('core.permission:plugin.automation-catalog.packs.manage')->name('plugin.automation-catalog.output-mappings.store');
 
 Route::post('/plugins/automation-catalog/{packId}/output-mappings/{mappingId}/apply', function (
@@ -633,7 +633,7 @@ Route::post('/plugins/automation-catalog/{packId}/output-mappings/{mappingId}/ap
             'scope_id' => $scopeId,
             'locale' => $request->input('locale', 'en'),
             'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
-        ]))->with('status', 'Scope resolver mappings execute from pack runtime. Use Run now (or scheduled runtime) instead.');
+        ]))->with('status', __('Scope resolver mappings execute from pack runtime. Use Run now (or scheduled runtime) instead.'));
     }
 
     if (($mapping['execution_mode'] ?? 'both') === 'runtime-only') {
@@ -645,7 +645,7 @@ Route::post('/plugins/automation-catalog/{packId}/output-mappings/{mappingId}/ap
             'scope_id' => $scopeId,
             'locale' => $request->input('locale', 'en'),
             'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
-        ]))->with('status', 'This mapping is runtime-only. Execute it from pack runtime.');
+        ]))->with('status', __('This mapping is runtime-only. Execute it from pack runtime.'));
     }
 
     $result = $delivery->deliver(
@@ -670,5 +670,5 @@ Route::post('/plugins/automation-catalog/{packId}/output-mappings/{mappingId}/ap
         'scope_id' => $scopeId,
         'locale' => $request->input('locale', 'en'),
         'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
-    ]))->with('status', $result['status'] === 'success' ? $result['message'] : sprintf('Mapping failed: %s', $result['message']));
+    ]))->with('status', $result['status'] === 'success' ? $result['message'] : sprintf(__('Mapping failed: %s'), $result['message']));
 })->middleware('core.permission:plugin.automation-catalog.packs.manage')->name('plugin.automation-catalog.output-mappings.apply');

@@ -162,13 +162,13 @@ class PolicyExceptionsTest extends TestCase
 
         $this->get('/app?menu=plugin.policy-exceptions.root&policy_id=policy-access-governance&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
             ->assertOk()
-            ->assertSee('submit-review')
+            ->assertSee('Submit review')
             ->assertSee('Policy approval memo')
             ->assertSee('policy-memo.pdf');
 
         $this->get('/app?menu=plugin.policy-exceptions.exceptions&exception_id=exception-break-glass-window&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
             ->assertOk()
-            ->assertSee('approve')
+            ->assertSee('Approve')
             ->assertSee('Exception sign-off')
             ->assertSee('exception-signoff.txt');
     }

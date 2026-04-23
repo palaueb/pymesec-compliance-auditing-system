@@ -1,13 +1,13 @@
 <section class="module-screen compact">
     <div class="overview-grid" style="grid-template-columns:repeat(4, minmax(0, 1fr));">
-        <div class="metric-card"><div class="metric-label">Modules</div><div class="metric-value">{{ $metrics['plugins'] }}</div></div>
-        <div class="metric-card"><div class="metric-label">Permissions</div><div class="metric-value">{{ $metrics['permissions'] }}</div></div>
-        <div class="metric-card"><div class="metric-label">Roles</div><div class="metric-value">{{ $metrics['roles'] }}</div></div>
-        <div class="metric-card"><div class="metric-label">Organizations</div><div class="metric-value">{{ $metrics['organizations'] }}</div></div>
+        <div class="metric-card"><div class="metric-label">{{ __('core.platform.metric.modules') }}</div><div class="metric-value">{{ $metrics['plugins'] }}</div></div>
+        <div class="metric-card"><div class="metric-label">{{ __('core.platform.metric.permissions') }}</div><div class="metric-value">{{ $metrics['permissions'] }}</div></div>
+        <div class="metric-card"><div class="metric-label">{{ __('core.platform.metric.roles') }}</div><div class="metric-value">{{ $metrics['roles'] }}</div></div>
+        <div class="metric-card"><div class="metric-label">{{ __('core.platform.metric.organizations') }}</div><div class="metric-value">{{ $metrics['organizations'] }}</div></div>
     </div>
 
     <div class="surface-note">
-        Administration stays separate from day-to-day workspaces. Use these areas to configure and supervise the application.
+        {{ __('core.platform.summary') }}
     </div>
 
     <div class="overview-grid" style="grid-template-columns:repeat(2, minmax(0, 1fr));">
@@ -22,17 +22,17 @@
     <div class="table-card">
         <div class="screen-header">
             <div>
-                <h2 class="screen-title" style="font-size:26px;">Recent audit activity</h2>
-                <p class="screen-subtitle">The latest sensitive changes across administration and work areas.</p>
+                <h2 class="screen-title" style="font-size:26px;">{{ __('core.platform.recent_title') }}</h2>
+                <p class="screen-subtitle">{{ __('core.platform.recent_subtitle') }}</p>
             </div>
         </div>
         <table class="entity-table">
             <thead>
                 <tr>
-                    <th>Event</th>
-                    <th>Outcome</th>
-                    <th>Component</th>
-                    <th>When</th>
+                    <th>{{ __('core.platform.table.event') }}</th>
+                    <th>{{ __('core.platform.table.outcome') }}</th>
+                    <th>{{ __('core.platform.table.component') }}</th>
+                    <th>{{ __('core.platform.table.when') }}</th>
                 </tr>
             </thead>
             <tbody>

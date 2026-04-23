@@ -816,7 +816,7 @@ class EvidenceManagementRepository
                 ->first();
 
             if ($artifact === null) {
-                throw new \RuntimeException('Selected artifact could not be found in this organization.');
+                throw new \RuntimeException(__('Selected artifact could not be found in this organization.'));
             }
 
             return [
@@ -825,7 +825,7 @@ class EvidenceManagementRepository
         }
 
         if (! $artifactFile instanceof UploadedFile) {
-            throw new \RuntimeException('A file or existing artifact is required to create evidence.');
+            throw new \RuntimeException(__('A file or existing artifact is required to create evidence.'));
         }
 
         $artifact = $this->artifacts->store(new ArtifactUploadData(
@@ -902,12 +902,12 @@ class EvidenceManagementRepository
             : (string) $record->valid_until;
 
         $title = $type === 'review-due'
-            ? sprintf('Evidence review due soon: %s', (string) $record->title)
-            : sprintf('Evidence expires soon: %s', (string) $record->title);
+            ? sprintf(__('Evidence review due soon: %s'), (string) $record->title)
+            : sprintf(__('Evidence expires soon: %s'), (string) $record->title);
 
         $body = $type === 'review-due'
-            ? sprintf('Review "%s" before %s to keep the evidence current.', (string) $record->title, $reminderDate)
-            : sprintf('Renew or replace "%s" before %s to avoid evidence gaps.', (string) $record->title, $reminderDate);
+            ? sprintf(__('Review "%s" before %s to keep the evidence current.'), (string) $record->title, $reminderDate)
+            : sprintf(__('Renew or replace "%s" before %s to avoid evidence gaps.'), (string) $record->title, $reminderDate);
 
         $this->notifications->notify(
             type: 'plugin.evidence-management.'.$type,
@@ -1014,14 +1014,14 @@ class EvidenceManagementRepository
 
         if (($source['label'] ?? '') !== '') {
             return sprintf(
-                'Promoted from %s in %s.',
+                __('Promoted from %s in %s.'),
                 strtolower((string) ($source['label'] ?? 'the workspace')),
                 str_replace('-', ' ', (string) $artifact->owner_component),
             );
         }
 
         return sprintf(
-            'Promoted from %s artifact %s.',
+            __('Promoted from %s artifact %s.'),
             str_replace('-', ' ', (string) $artifact->owner_component),
             (string) $artifact->original_filename,
         );
@@ -1280,17 +1280,17 @@ class EvidenceManagementRepository
     private function linkSourceDefinitions(): array
     {
         return [
-            ['domain_type' => 'asset', 'table' => 'assets', 'label_column' => 'name', 'scope_column' => 'scope_id', 'group_label' => 'Assets'],
-            ['domain_type' => 'control', 'table' => 'controls', 'label_column' => 'name', 'scope_column' => 'scope_id', 'group_label' => 'Controls'],
-            ['domain_type' => 'risk', 'table' => 'risks', 'label_column' => 'title', 'scope_column' => 'scope_id', 'group_label' => 'Risks'],
-            ['domain_type' => 'finding', 'table' => 'findings', 'label_column' => 'title', 'scope_column' => 'scope_id', 'group_label' => 'Findings'],
-            ['domain_type' => 'policy', 'table' => 'policies', 'label_column' => 'title', 'scope_column' => 'scope_id', 'group_label' => 'Policies'],
-            ['domain_type' => 'policy-exception', 'table' => 'policy_exceptions', 'label_column' => 'title', 'scope_column' => 'scope_id', 'group_label' => 'Exceptions'],
-            ['domain_type' => 'data-flow', 'table' => 'data_flows', 'label_column' => 'title', 'scope_column' => 'scope_id', 'group_label' => 'Data flows'],
-            ['domain_type' => 'processing-activity', 'table' => 'privacy_processing_activities', 'label_column' => 'title', 'scope_column' => 'scope_id', 'group_label' => 'Processing activities'],
-            ['domain_type' => 'continuity-service', 'table' => 'continuity_services', 'label_column' => 'title', 'scope_column' => 'scope_id', 'group_label' => 'Continuity services'],
-            ['domain_type' => 'recovery-plan', 'table' => 'continuity_recovery_plans', 'label_column' => 'title', 'scope_column' => 'scope_id', 'group_label' => 'Recovery plans'],
-            ['domain_type' => 'assessment', 'table' => 'assessment_campaigns', 'label_column' => 'title', 'scope_column' => 'scope_id', 'group_label' => 'Assessments'],
+            ['domain_type' => 'asset', 'table' => 'assets', 'label_column' => 'name', 'scope_column' => 'scope_id', 'group_label' => __('Assets')],
+            ['domain_type' => 'control', 'table' => 'controls', 'label_column' => 'name', 'scope_column' => 'scope_id', 'group_label' => __('Controls')],
+            ['domain_type' => 'risk', 'table' => 'risks', 'label_column' => 'title', 'scope_column' => 'scope_id', 'group_label' => __('Risks')],
+            ['domain_type' => 'finding', 'table' => 'findings', 'label_column' => 'title', 'scope_column' => 'scope_id', 'group_label' => __('Findings')],
+            ['domain_type' => 'policy', 'table' => 'policies', 'label_column' => 'title', 'scope_column' => 'scope_id', 'group_label' => __('Policies')],
+            ['domain_type' => 'policy-exception', 'table' => 'policy_exceptions', 'label_column' => 'title', 'scope_column' => 'scope_id', 'group_label' => __('Exceptions')],
+            ['domain_type' => 'data-flow', 'table' => 'data_flows', 'label_column' => 'title', 'scope_column' => 'scope_id', 'group_label' => __('Data flows')],
+            ['domain_type' => 'processing-activity', 'table' => 'privacy_processing_activities', 'label_column' => 'title', 'scope_column' => 'scope_id', 'group_label' => __('Processing activities')],
+            ['domain_type' => 'continuity-service', 'table' => 'continuity_services', 'label_column' => 'title', 'scope_column' => 'scope_id', 'group_label' => __('Continuity services')],
+            ['domain_type' => 'recovery-plan', 'table' => 'continuity_recovery_plans', 'label_column' => 'title', 'scope_column' => 'scope_id', 'group_label' => __('Recovery plans')],
+            ['domain_type' => 'assessment', 'table' => 'assessment_campaigns', 'label_column' => 'title', 'scope_column' => 'scope_id', 'group_label' => __('Assessments')],
         ];
     }
 }

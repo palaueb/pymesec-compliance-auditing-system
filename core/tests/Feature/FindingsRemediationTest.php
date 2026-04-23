@@ -284,7 +284,7 @@ class FindingsRemediationTest extends TestCase
 
         $this->get('/app?menu=plugin.findings-remediation.root&finding_id=finding-access-review-gap&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
             ->assertOk()
-            ->assertSee('triage')
+            ->assertSee('Triage')
             ->assertSee('Missing approval note')
             ->assertSee('approval-gap.txt');
     }

@@ -8,18 +8,18 @@
 
 <section class="module-screen">
     <div class="surface-card">
-        <div class="entity-title">Risk workflow board</div>
-        <div class="table-note" style="margin-top:6px;">This board stays focused on workflow state and review history. Open a risk from the Risk Register when you need to manage transitions, evidence, ownership, or treatment details.</div>
+        <div class="entity-title">{{ __('Risk workflow board') }}</div>
+        <div class="table-note" style="margin-top:6px;">{{ __('This board stays focused on workflow state and review history. Open a risk from the Risk Register when you need to manage transitions, evidence, ownership, or treatment details.') }}</div>
     </div>
 
     <div class="table-card">
         <table class="entity-table">
             <thead>
                 <tr>
-                    <th>Risk</th>
-                    <th>Current state</th>
-                    <th>Transitions</th>
-                    <th>Artifacts</th>
+                    <th>{{ __('Risk') }}</th>
+                    <th>{{ __('Current state') }}</th>
+                    <th>{{ __('Transitions') }}</th>
+                    <th>{{ __('Artifacts') }}</th>
                 </tr>
             </thead>
             <tbody>
@@ -42,7 +42,7 @@
                         </td>
                         <td>
                             @if ($row['history'] === [])
-                                <span class="muted-note">No transitions yet</span>
+                                <span class="muted-note">{{ __('No transitions yet') }}</span>
                             @else
                                 <div class="data-stack">
                                     @foreach ($row['history'] as $history)
@@ -56,7 +56,7 @@
                         </td>
                         <td>
                             @if ($row['artifacts'] === [])
-                                <span class="muted-note">None</span>
+                                <span class="muted-note">{{ __('None') }}</span>
                             @else
                                 <div class="data-stack">
                                     @foreach ($row['artifacts'] as $artifact)
@@ -71,7 +71,7 @@
                     </tr>
                 @empty
                     <tr>
-                        <td colspan="4"><span class="muted-note">No risks with workflow activity yet.</span></td>
+                        <td colspan="4"><span class="muted-note">{{ __('No risks with workflow activity yet.') }}</span></td>
                     </tr>
                 @endforelse
             </tbody>

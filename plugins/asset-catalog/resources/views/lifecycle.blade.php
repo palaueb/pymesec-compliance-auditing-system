@@ -8,8 +8,8 @@
 
 <section class="module-screen compact">
     <div class="surface-card">
-        <div class="entity-title">Asset lifecycle board</div>
-        <div class="table-note" style="margin-top:6px;">This board stays focused on lifecycle state and transition history. Open an asset from the catalog when you need to manage ownership, evidence, or asset maintenance.</div>
+        <div class="entity-title">{{ __('Asset lifecycle board') }}</div>
+        <div class="table-note" style="margin-top:6px;">{{ __('This board stays focused on lifecycle state and transition history. Open an asset from the catalog when you need to manage ownership, evidence, or asset maintenance.') }}</div>
     </div>
 
     <div class="workflow-stack">
@@ -38,13 +38,13 @@
                             <span>{{ $history->fromState }} → {{ $history->toState }}</span>
                         </div>
                     @empty
-                        <div class="muted-note">No transitions recorded yet.</div>
+                        <div class="muted-note">{{ __('No transitions recorded yet.') }}</div>
                     @endforelse
                 </div>
             </article>
         @empty
             <div class="surface-card">
-                <span class="muted-note">No assets with lifecycle activity yet.</span>
+                <span class="muted-note">{{ __('No assets with lifecycle activity yet.') }}</span>
             </div>
         @endforelse
     </div>

@@ -30,7 +30,7 @@ class FindingsRemediationPlugin implements PluginInterface
         $context->app()->make(WorkflowRegistryInterface::class)->register(new WorkflowDefinition(
             key: 'plugin.findings-remediation.finding-lifecycle',
             owner: 'findings-remediation',
-            label: 'Finding lifecycle',
+            label: __('Finding lifecycle'),
             initialState: 'open',
             states: ['open', 'triaged', 'remediating', 'resolved'],
             transitions: [
@@ -74,12 +74,12 @@ class FindingsRemediationPlugin implements PluginInterface
                 if (is_string($screenContext->query['finding_id'] ?? null) && ($screenContext->query['finding_id'] ?? '') !== '') {
                     return [
                         new ToolbarAction(
-                            label: 'Back to findings',
+                            label: __('Back to findings'),
                             url: route('core.shell.index', [...$query, 'menu' => 'plugin.findings-remediation.root']),
                             variant: 'secondary',
                         ),
                         new ToolbarAction(
-                            label: 'Remediation board',
+                            label: __('Remediation board'),
                             url: route('core.shell.index', [...$query, 'menu' => 'plugin.findings-remediation.board']),
                             variant: 'secondary',
                         ),
@@ -88,12 +88,12 @@ class FindingsRemediationPlugin implements PluginInterface
 
                 return [
                     new ToolbarAction(
-                        label: 'Add finding',
+                        label: __('Add finding'),
                         url: '#finding-editor',
                         variant: 'primary',
                     ),
                     new ToolbarAction(
-                        label: 'Remediation board',
+                        label: __('Remediation board'),
                         url: route('core.shell.index', [...$query, 'menu' => 'plugin.findings-remediation.board']),
                         variant: 'secondary',
                     ),
@@ -110,7 +110,7 @@ class FindingsRemediationPlugin implements PluginInterface
             dataResolver: fn (ScreenRenderContext $screenContext): array => $this->boardData($context, $screenContext),
             toolbarResolver: fn (ScreenRenderContext $screenContext): array => [
                 new ToolbarAction(
-                    label: 'Findings register',
+                    label: __('Findings register'),
                     url: route('core.shell.index', [...$this->baseQuery($screenContext), 'menu' => 'plugin.findings-remediation.root']),
                     variant: 'secondary',
                 ),

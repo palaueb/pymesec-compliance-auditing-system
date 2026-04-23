@@ -38,7 +38,7 @@ Route::post('/plugins/evidence', function (Request $request, EvidenceManagementR
 
     if (! $request->hasFile('artifact') && ! (is_string($validated['existing_artifact_id'] ?? null) && $validated['existing_artifact_id'] !== '')) {
         throw ValidationException::withMessages([
-            'artifact' => 'Provide a file or select an existing artifact.',
+            'artifact' => __('Provide a file or select an existing artifact.'),
         ]);
     }
 
@@ -59,7 +59,7 @@ Route::post('/plugins/evidence', function (Request $request, EvidenceManagementR
         'locale' => $request->input('locale', 'en'),
         'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
         'evidence_id' => $evidence['id'] ?? null,
-    ]))->with('status', 'Evidence saved.');
+    ]))->with('status', __('Evidence saved.'));
 })->middleware('core.permission:plugin.evidence-management.evidence.manage')->name('plugin.evidence-management.store');
 
 Route::post('/plugins/evidence/{evidenceId}', function (
@@ -106,7 +106,7 @@ Route::post('/plugins/evidence/{evidenceId}', function (
         'locale' => $request->input('locale', 'en'),
         'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
         'evidence_id' => $evidenceId,
-    ]))->with('status', 'Evidence updated.');
+    ]))->with('status', __('Evidence updated.'));
 })->middleware('core.permission:plugin.evidence-management.evidence.manage')->name('plugin.evidence-management.update');
 
 Route::post('/plugins/evidence/promote/{artifactId}', function (
@@ -139,7 +139,7 @@ Route::post('/plugins/evidence/promote/{artifactId}', function (
         'locale' => $request->input('locale', 'en'),
         'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
         'evidence_id' => $promotion['record']['id'] ?? null,
-    ]))->with('status', $promotion['created'] ? 'Evidence created from artifact.' : 'Artifact already promoted to evidence.');
+    ]))->with('status', $promotion['created'] ? __('Evidence created from artifact.') : __('Artifact already promoted to evidence.'));
 })->middleware('core.permission:plugin.evidence-management.evidence.manage')->name('plugin.evidence-management.promote');
 
 Route::get('/plugins/evidence/{evidenceId}/download', function (
@@ -221,5 +221,5 @@ Route::post('/plugins/evidence/{evidenceId}/reminders/{type}', function (
         'locale' => $request->input('locale', 'en'),
         'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
         'evidence_id' => $evidenceId,
-    ]))->with('status', 'Reminder queued.');
+    ]))->with('status', __('Reminder queued.'));
 })->middleware('core.permission:plugin.evidence-management.evidence.manage')->name('plugin.evidence-management.reminders.queue');

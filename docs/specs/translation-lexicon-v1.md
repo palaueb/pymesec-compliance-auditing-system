@@ -23,6 +23,22 @@ The goal is consistency across core, plugins, support guides, and framework pack
 | Remediation Action | acción de remediación | action de remédiation | Abhilfemaßnahme | Follow-up task for a finding |
 | Policy | política | politique | Richtlinie | Governed statement of practice |
 | Policy Exception | excepción de política | exception de politique | Ausnahme | Approved deviation |
+| Policy Detail | detalle de la política | détail de la politique | Richtliniendetail | Detail workspace for a governed policy |
+| Exception Detail | detalle de la excepción | détail de l'exception | Ausnahmedetail | Detail workspace for a policy exception |
+| Finding Detail | detalle del hallazgo | détail du constat | Feststellungsdetail | Detail workspace for a finding |
+| Remediation Board | panel de remediación | tableau de remédiation | Abhilfemaßnahmen-Board | Cross-finding action board |
+| Policy Register | registro de políticas | registre des politiques | Richtlinienregister | Policy list workspace |
+| Findings Register | registro de hallazgos | registre des constats | Feststellungsregister | Finding list workspace |
+| Policy Area | área de la política | zone de politique | Richtlinienbereich | Governed policy classification |
+| Review Due | revisión prevista | revue prévue | Prüftermin | Scheduled review date |
+| Compensating Control | control compensatorio | contrôle compensatoire | kompensierende Kontrolle | Alternative control used during an exception |
+| Linked Finding | hallazgo vinculado | constat lié | verknüpfte Feststellung | Finding referenced by a policy exception |
+| Remediation Action | acción de remediación | action de remédiation | Abhilfemaßnahme | Follow-up task for a finding |
+| Open Finding | abrir hallazgo | ouvrir le constat | Feststellung öffnen | Navigate to the linked finding detail |
+| View-only Access | solo lectura | lecture seule | Nur Lesezugriff | Read-only workspace state |
+| Document Label | etiqueta del documento | libellé du document | Dokumentenbezeichnung | Short label for an uploaded document |
+| Evidence Label | etiqueta de la evidencia | libellé de la preuve | Nachweisbezeichnung | Short label for an uploaded evidence item |
+| Current Owners | responsables actuales | responsables actuels | aktuelle Verantwortliche | Current active ownership set |
 | Data Flow | flujo de datos | flux de données | Datenfluss | Privacy flow record |
 | Processing Activity | actividad de tratamiento | activité de traitement | Verarbeitungstätigkeit | GDPR/privacy activity |
 | Data Flow Detail | detalle del flujo de datos | détail du flux de données | Detail des Datenflusses | Detail view used to manage a privacy flow |
@@ -54,6 +70,20 @@ The goal is consistency across core, plugins, support guides, and framework pack
 | Control Framework | marco de control | référentiel de contrôle | Kontrollrahmen | Framework or standard |
 | Control Requirement | requisito de control | exigence de contrôle | Kontrollanforderung | Clause or requirement in a framework |
 | Control Coverage Mapping | mapeo de cobertura de controles | correspondance de couverture des contrôles | Zuordnung der Kontrollabdeckung | Explicit control-to-requirement traceability |
+| Automation Pack | paquete de automatización | paquet d'automatisation | Automatisierungspaket | Installable compliance automation bundle |
+| Output Mapping | mapeo de salida | mappage de sortie | Ausgabenzuordnung | Automation output delivery or workflow bridge |
+| Package Repository | repositorio de paquetes | dépôt de paquets | Paket-Repository | Signed source for automation packs |
+| Runtime Execution | ejecución en tiempo de ejecución | exécution à l'exécution | Laufzeitausführung | Manual or scheduled automation run |
+| Evidence Library | biblioteca de evidencias | bibliothèque de preuves | Nachweisbibliothek | Workspace for governed evidence records |
+| Evidence Record | registro de evidencia | enregistrement de preuve | Nachweissatz | Individual evidence item with validity and links |
+| Review Queue | cola de revisión | file de revue | Überprüfungswarteschlange | Items awaiting review or renewal |
+| Reminder | recordatorio | rappel | Erinnerung | Scheduled follow-up notification |
+| Assessment | evaluación | évaluation | Bewertung | Audit campaign workspace and related review |
+| Assessment Campaign | campaña de evaluación | campagne d'évaluation | Bewertungskampagne | Bounded audit exercise across controls |
+| Assessment Review | revisión de evaluación | revue d'évaluation | Bewertungsprüfung | One control review inside an assessment campaign |
+| Assessment Workpaper | papel de trabajo de evaluación | feuille de travail d'évaluation | Bewertungsarbeitspapier | Attached evidence file for a control review |
+| Sign-off | firma de cierre | validation finale | Abschlussfreigabe | Formal approval of an assessment campaign |
+| Closure | cierre | clôture | Abschluss | Final closed state for an assessment campaign |
 | Vendor Review | revisión de proveedor | revue fournisseur | Lieferantenprüfung | Third-party risk review workspace |
 | Vendor Register | registro de proveedores | registre des fournisseurs | Lieferantenregister | Third-party vendor registry |
 | External Review Portal | portal de revisión externa | portail de revue externe | externes Prüfportal | External collaboration space for a review |

@@ -1,12 +1,12 @@
 <section class="module-screen compact">
     <div class="surface-note">
-        Governance page. This catalog stays read-only and explains which permissions exist, where they come from, and in which contexts they apply.
+        {{ __('core.permissions.summary') }}
     </div>
 
     <div class="overview-grid" style="grid-template-columns:repeat(4, minmax(0, 1fr));">
-        <div class="metric-card"><div class="metric-label">Registered</div><div class="metric-value">{{ $metrics['total'] }}</div></div>
-        <div class="metric-card"><div class="metric-label">Platform scope</div><div class="metric-value">{{ $metrics['platform'] }}</div></div>
-        <div class="metric-card"><div class="metric-label">Organization scope</div><div class="metric-value">{{ $metrics['organization'] }}</div></div>
+        <div class="metric-card"><div class="metric-label">{{ __('core.permissions.metric.registered') }}</div><div class="metric-value">{{ $metrics['total'] }}</div></div>
+        <div class="metric-card"><div class="metric-label">{{ __('core.permissions.metric.platform_scope') }}</div><div class="metric-value">{{ $metrics['platform'] }}</div></div>
+        <div class="metric-card"><div class="metric-label">{{ __('core.permissions.metric.organization_scope') }}</div><div class="metric-value">{{ $metrics['organization'] }}</div></div>
     </div>
 
     <div class="overview-grid" style="grid-template-columns:repeat(4, minmax(0, 1fr));">
@@ -22,10 +22,10 @@
         <table class="entity-table">
             <thead>
                 <tr>
-                    <th>Permission</th>
-                    <th>Label</th>
-                    <th>Origin</th>
-                    <th>Contexts</th>
+                    <th>{{ __('core.permissions.table.permission') }}</th>
+                    <th>{{ __('core.permissions.table.label') }}</th>
+                    <th>{{ __('core.permissions.table.origin') }}</th>
+                    <th>{{ __('core.permissions.table.contexts') }}</th>
                 </tr>
             </thead>
             <tbody>

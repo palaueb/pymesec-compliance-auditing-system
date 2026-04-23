@@ -66,7 +66,7 @@ Route::post('/evidence', function (
 
     if (! $request->hasFile('artifact') && ! (is_string($validated['existing_artifact_id'] ?? null) && $validated['existing_artifact_id'] !== '')) {
         throw ValidationException::withMessages([
-            'artifact' => 'Provide a file or select an existing artifact.',
+            'artifact' => __('Provide a file or select an existing artifact.'),
         ]);
     }
 

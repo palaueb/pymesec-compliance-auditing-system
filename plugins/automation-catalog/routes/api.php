@@ -35,7 +35,7 @@ $apiOrganizationId = static function (Request $request): string {
 
     if (! is_string($organizationId) || trim($organizationId) === '') {
         throw ValidationException::withMessages([
-            'organization_id' => 'Organization context is required.',
+            'organization_id' => __('Organization context is required.'),
         ]);
     }
 
@@ -605,7 +605,7 @@ Route::post('/packs/{packId}/schedule', function (string $packId, Request $reque
                 }
 
                 if (! in_array($value, timezone_identifiers_list(), true)) {
-                    $fail('Timezone must be a valid IANA timezone identifier.');
+                    $fail(__('Timezone must be a valid IANA timezone identifier.'));
                 }
             },
         ],
@@ -617,7 +617,7 @@ Route::post('/packs/{packId}/schedule', function (string $packId, Request $reque
 
     if ($scheduleEnabled && $scheduleCron === '') {
         throw ValidationException::withMessages([
-            'runtime_schedule_cron' => 'Cron expression is required when runtime schedule is enabled.',
+            'runtime_schedule_cron' => __('Cron expression is required when runtime schedule is enabled.'),
         ]);
     }
 
@@ -794,7 +794,7 @@ Route::post('/repositories/install-official', function (
     if ($official['repository_url'] === '' || $official['repository_sign_url'] === '' || $official['public_key_pem'] === '') {
         return $apiSuccess([
             'status' => 'failed',
-            'message' => 'Official repository is not configured. Set repository URL/sign/public key in plugin config.',
+            'message' => __('Official repository is not configured. Set repository URL/sign/public key in plugin config.'),
         ]);
     }
 
@@ -1016,7 +1016,7 @@ Route::post('/packs/{packId}/output-mappings', function (
     if ($invalidSelectorTags !== []) {
         throw ValidationException::withMessages([
             'target_tags' => sprintf(
-                'Invalid selector tag format for: %s. Use key:value (comma-separated).',
+                __('Invalid selector tag format for: %s. Use key:value (comma-separated).'),
                 implode(', ', $invalidSelectorTags),
             ),
         ]);
@@ -1125,7 +1125,7 @@ Route::post('/packs/{packId}/output-mappings/{mappingId}/apply', function (
     if (($mapping['target_binding_mode'] ?? 'explicit') === 'scope') {
         return $apiSuccess([
             'status' => 'skipped',
-            'message' => 'Scope resolver mappings execute from pack runtime. Use the run endpoint instead.',
+            'message' => __('Scope resolver mappings execute from pack runtime. Use the run endpoint instead.'),
             'mapping' => $mapping,
         ]);
     }
@@ -1133,7 +1133,7 @@ Route::post('/packs/{packId}/output-mappings/{mappingId}/apply', function (
     if (($mapping['execution_mode'] ?? 'both') === 'runtime-only') {
         return $apiSuccess([
             'status' => 'skipped',
-            'message' => 'This mapping is runtime-only. Execute it from pack runtime.',
+            'message' => __('This mapping is runtime-only. Execute it from pack runtime.'),
             'mapping' => $mapping,
         ]);
     }

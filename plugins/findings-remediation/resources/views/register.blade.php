@@ -18,20 +18,45 @@
     details > summary::-webkit-details-marker { display: none; }
 </style>
 
+@php
+    $findingStateLabels = [
+        'open' => __('Open'),
+        'triaged' => __('Triaged'),
+        'remediating' => __('Remediating'),
+        'resolved' => __('Resolved'),
+        'closed' => __('Closed'),
+        'archived' => __('Archived'),
+    ];
+
+    $findingTransitionLabels = [
+        'triage' => __('Triage'),
+        'start-remediation' => __('Start remediation'),
+        'resolve' => __('Resolve'),
+        'reopen' => __('Reopen'),
+    ];
+
+    $actionStatusLabels = [
+        'planned' => __('Planned'),
+        'in-progress' => __('In progress'),
+        'blocked' => __('Blocked'),
+        'done' => __('Done'),
+    ];
+@endphp
+
 <section class="module-screen">
     <div class="surface-note">
-        Finding severity is a business-managed catalog value from `Reference catalogs`. Finding workflow states and remediation action statuses remain system-controlled.
+        {{ __('Finding severity is a business-managed catalog value from `Reference catalogs`. Finding workflow states and remediation action statuses remain system-controlled.') }}
     </div>
 
     @if (is_array($selected_finding))
         <div class="surface-card" style="padding:16px; display:grid; gap:16px;">
             <div class="surface-note">
-                Finding Detail keeps workflow, evidence, remediation actions, ownership, and finding maintenance in one workspace. Use the findings register to browse findings and open the one you want to work on.
+                {{ __('Finding Detail keeps workflow, evidence, remediation actions, ownership, and finding maintenance in one workspace. Use the findings register to browse findings and open the one you want to work on.') }}
             </div>
 
             <div class="row-between" style="align-items:flex-start;">
                 <div>
-                    <div class="eyebrow">Finding Detail</div>
+                    <div class="eyebrow">{{ __('Finding Detail') }}</div>
                     <h2 class="screen-title" style="font-size:28px;">{{ $selected_finding['title'] }}</h2>
                     <div class="table-note">{{ $selected_finding['id'] }}</div>
                     <div class="table-note">{{ $selected_finding['severity_label'] }} severity</div>
@@ -41,23 +66,23 @@
                         $findingStatePill = match($selected_finding['state']) { 'open' => 'pill-open', 'remediating' => 'pill-remediating', 'closed' => 'pill-closed', 'archived' => 'pill-archived', default => '' };
                         $severityPill = match($selected_finding['severity']) { 'critical' => 'pill-critical', 'high' => 'pill-high', 'medium' => 'pill-medium', 'low' => 'pill-low', default => '' };
                     @endphp
-                    <span class="pill {{ $findingStatePill }}">{{ $selected_finding['state'] }}</span>
+                    <span class="pill {{ $findingStatePill }}">{{ $findingStateLabels[$selected_finding['state']] ?? $selected_finding['state'] }}</span>
                     <span class="pill {{ $severityPill }}">{{ $selected_finding['severity_label'] }}</span>
                 </div>
             </div>
 
             <div class="overview-grid" style="grid-template-columns:repeat(4, minmax(0, 1fr));">
-                <div class="metric-card"><div class="metric-label">Actions</div><div class="metric-value">{{ $selected_finding['action_count'] }}</div></div>
-                <div class="metric-card"><div class="metric-label">Actions open</div><div class="metric-value">{{ $selected_finding['open_action_count'] }}</div></div>
-                <div class="metric-card"><div class="metric-label">Evidence</div><div class="metric-value">{{ count($selected_finding['artifacts']) }}</div></div>
-                <div class="metric-card"><div class="metric-label">Due</div><div class="metric-value" style="font-size:20px;">{{ $selected_finding['due_on'] !== '' ? $selected_finding['due_on'] : 'No date' }}</div></div>
+                <div class="metric-card"><div class="metric-label">{{ __('Actions') }}</div><div class="metric-value">{{ $selected_finding['action_count'] }}</div></div>
+                <div class="metric-card"><div class="metric-label">{{ __('Actions open') }}</div><div class="metric-value">{{ $selected_finding['open_action_count'] }}</div></div>
+                <div class="metric-card"><div class="metric-label">{{ __('Evidence') }}</div><div class="metric-value">{{ count($selected_finding['artifacts']) }}</div></div>
+                <div class="metric-card"><div class="metric-label">{{ __('Due') }}</div><div class="metric-value" style="font-size:20px;">{{ $selected_finding['due_on'] !== '' ? $selected_finding['due_on'] : __('No date') }}</div></div>
             </div>
 
             <div class="overview-grid" style="grid-template-columns:repeat(2, minmax(0, 1fr));">
                 <div class="surface-card" style="padding:14px;">
-                    <div class="metric-label">Overview</div>
+                    <div class="metric-label">{{ __('Overview') }}</div>
                     <div class="table-note" style="margin-top:10px;">{{ $selected_finding['description'] }}</div>
-                    <div class="table-note">Owners: {{ count($selected_finding['owner_assignments']) }}</div>
+                    <div class="table-note">{{ __('Owners') }}: {{ count($selected_finding['owner_assignments']) }}</div>
                     <div class="data-stack" style="margin-top:10px;">
                         @forelse ($selected_finding['owner_assignments'] as $owner)
                             <div class="data-item">
@@ -72,35 +97,35 @@
                                         <input type="hidden" name="menu" value="plugin.findings-remediation.root">
                                         <input type="hidden" name="finding_id" value="{{ $selected_finding['id'] }}">
                                         <input type="hidden" name="membership_id" value="{{ $query['membership_ids'][0] ?? 'membership-org-a-hello' }}">
-                                        <button class="button button-ghost" type="submit">Remove owner</button>
+                                        <button class="button button-ghost" type="submit">{{ __('Remove owner') }}</button>
                                     </form>
                                 @endif
                             </div>
                         @empty
-                            <span class="muted-note">No owner assigned</span>
+                            <span class="muted-note">{{ __('No owner assigned') }}</span>
                         @endforelse
                     </div>
                     <div class="table-note">
-                        Control:
+                        {{ __('Control') }}:
                         @if ($selected_finding['linked_control_url'] !== null)
                             <a href="{{ $selected_finding['linked_control_url'] }}">{{ $selected_finding['linked_control_label'] ?? $selected_finding['linked_control_id'] }}</a>
                         @else
-                            {{ $selected_finding['linked_control_id'] !== '' ? $selected_finding['linked_control_id'] : 'None' }}
+                            {{ $selected_finding['linked_control_id'] !== '' ? $selected_finding['linked_control_id'] : __('None') }}
                         @endif
                     </div>
                     <div class="table-note">
-                        Risk:
+                        {{ __('Risk') }}:
                         @if ($selected_finding['linked_risk_url'] !== null)
                             <a href="{{ $selected_finding['linked_risk_url'] }}">{{ $selected_finding['linked_risk_label'] ?? $selected_finding['linked_risk_id'] }}</a>
                         @else
-                            {{ $selected_finding['linked_risk_id'] !== '' ? $selected_finding['linked_risk_id'] : 'None' }}
+                            {{ $selected_finding['linked_risk_id'] !== '' ? $selected_finding['linked_risk_id'] : __('None') }}
                         @endif
                     </div>
-                    <div class="table-note">Scope: {{ $selected_finding['scope_id'] !== '' ? $selected_finding['scope_id'] : 'Organization-wide' }}</div>
+                    <div class="table-note">{{ __('Scope') }}: {{ $selected_finding['scope_id'] !== '' ? $selected_finding['scope_id'] : __('Organization-wide') }}</div>
                 </div>
 
                 <div class="surface-card" style="padding:14px;">
-                    <div class="metric-label">Workflow</div>
+                    <div class="metric-label">{{ __('Workflow') }}</div>
                     @if ($selected_finding['transitions'] !== [])
                         <div class="action-cluster" style="margin-top:10px;">
                             @foreach ($selected_finding['transitions'] as $transition)
@@ -112,22 +137,22 @@
                                     <input type="hidden" name="menu" value="plugin.findings-remediation.root">
                                     <input type="hidden" name="finding_id" value="{{ $selected_finding['id'] }}">
                                     <input type="hidden" name="membership_id" value="{{ $query['membership_ids'][0] ?? 'membership-org-a-hello' }}">
-                                    <button class="button button-secondary" type="submit">{{ ucwords(str_replace('-', ' ', $transition)) }}</button>
+                                    <button class="button button-secondary" type="submit">{{ $findingTransitionLabels[$transition] ?? ucwords(str_replace('-', ' ', $transition)) }}</button>
                                 </form>
                             @endforeach
                         </div>
                     @else
-                        <div class="table-note" style="margin-top:10px;">View-only access</div>
+                        <div class="table-note" style="margin-top:10px;">{{ __('View-only access') }}</div>
                     @endif
 
                     <div class="data-stack" style="margin-top:12px;">
                         @forelse ($selected_finding['history'] as $history)
                             <div class="data-item">
-                                <div class="entity-title">{{ $history->transitionKey }}</div>
-                                <div class="table-note">{{ $history->fromState }} → {{ $history->toState }}</div>
+                                <div class="entity-title">{{ $findingTransitionLabels[$history->transitionKey] ?? $history->transitionKey }}</div>
+                                <div class="table-note">{{ $findingStateLabels[$history->fromState] ?? $history->fromState }} → {{ $findingStateLabels[$history->toState] ?? $history->toState }}</div>
                             </div>
                         @empty
-                            <span class="muted-note">No transitions recorded yet</span>
+                            <span class="muted-note">{{ __('No transitions recorded yet') }}</span>
                         @endforelse
                     </div>
                 </div>
@@ -136,10 +161,10 @@
             <div class="overview-grid" style="grid-template-columns:repeat(2, minmax(0, 1fr));">
                 <div class="surface-card" style="padding:14px;">
                     <div class="row-between">
-                        <div class="metric-label">Evidence</div>
+                        <div class="metric-label">{{ __('Evidence') }}</div>
                         @if ($can_manage_findings)
                             <details>
-                                <summary class="button button-ghost" style="display:inline-flex;">Attach evidence</summary>
+                                <summary class="button button-ghost" style="display:inline-flex;">{{ __('Attach evidence') }}</summary>
                                 <form class="upload-form" method="POST" action="{{ $selected_finding['artifact_upload_route'] }}" enctype="multipart/form-data" style="margin-top:10px;">
                                     @csrf
                                     <input type="hidden" name="principal_id" value="{{ $query['principal_id'] ?? '' }}">
@@ -149,9 +174,9 @@
                                     <input type="hidden" name="finding_id" value="{{ $selected_finding['id'] }}">
                                     <input type="hidden" name="membership_id" value="{{ $query['membership_ids'][0] ?? 'membership-org-a-hello' }}">
                                     <input type="hidden" name="artifact_type" value="evidence">
-                                    <input class="field-input" type="text" name="label" placeholder="Evidence label">
+                                    <input class="field-input" type="text" name="label" placeholder="{{ __('Evidence label') }}">
                                     <input class="field-input" type="file" name="artifact" required>
-                                    <button class="button button-secondary" type="submit">Upload evidence</button>
+                                    <button class="button button-secondary" type="submit">{{ __('Upload evidence') }}</button>
                                 </form>
                             </details>
                         @endif
@@ -171,22 +196,22 @@
                                         <input type="hidden" name="scope_id" value="{{ $selected_finding['scope_id'] }}">
                                         <input type="hidden" name="locale" value="{{ $query['locale'] }}">
                                         <input type="hidden" name="membership_id" value="{{ $query['membership_ids'][0] ?? 'membership-org-a-hello' }}">
-                                        <button class="button button-ghost" type="submit">Promote to evidence</button>
+                                        <button class="button button-ghost" type="submit">{{ __('Promote to evidence') }}</button>
                                     </form>
                                 </div>
                             </div>
                         @empty
-                            <span class="muted-note">No evidence yet</span>
+                            <span class="muted-note">{{ __('No evidence yet') }}</span>
                         @endforelse
                     </div>
                 </div>
 
                 <div class="surface-card" style="padding:14px;">
                     <div class="row-between">
-                        <div class="metric-label">Remediation actions</div>
+                        <div class="metric-label">{{ __('Remediation actions') }}</div>
                         @if ($can_manage_findings)
                             <details>
-                                <summary class="button button-ghost" style="display:inline-flex;">Add action</summary>
+                                <summary class="button button-ghost" style="display:inline-flex;">{{ __('Add action') }}</summary>
                                 <form class="upload-form" method="POST" action="{{ $selected_finding['action_store_route'] }}" style="margin-top:10px;">
                                     @csrf
                                     <input type="hidden" name="principal_id" value="{{ $query['principal_id'] ?? '' }}">
@@ -196,36 +221,36 @@
                                     <input type="hidden" name="finding_id" value="{{ $selected_finding['id'] }}">
                                     <input type="hidden" name="membership_id" value="{{ $query['membership_ids'][0] ?? 'membership-org-a-hello' }}">
                                     <div class="field">
-                                        <label class="field-label">Action title</label>
+                                        <label class="field-label">{{ __('Action title') }}</label>
                                         <input class="field-input" name="title" required>
                                     </div>
                                     <div class="field">
-                                        <label class="field-label">Status</label>
+                                        <label class="field-label">{{ __('Status') }}</label>
                                         <select class="field-select" name="status" required>
                                             @foreach ($action_status_options as $status)
-                                                <option value="{{ $status['id'] }}">{{ $status['label'] }}</option>
+                                                <option value="{{ $status['id'] }}">{{ $actionStatusLabels[$status['id']] ?? $status['label'] }}</option>
                                             @endforeach
                                         </select>
                                     </div>
                                     <div class="field">
-                                        <label class="field-label">Due date</label>
+                                        <label class="field-label">{{ __('Due date') }}</label>
                                         <input class="field-input" name="due_on" type="date">
                                     </div>
                                     <div class="field">
-                                        <label class="field-label">Initial owner actor</label>
+                                        <label class="field-label">{{ __('Initial owner actor') }}</label>
                                         <select class="field-select" name="owner_actor_id">
-                                            <option value="">No owner</option>
+                                            <option value="">{{ __('No owner') }}</option>
                                             @foreach ($owner_actor_options as $actor)
                                                 <option value="{{ $actor['id'] }}">{{ $actor['label'] }}</option>
                                             @endforeach
                                         </select>
                                     </div>
                                     <div class="field">
-                                        <label class="field-label">Notes</label>
+                                        <label class="field-label">{{ __('Notes') }}</label>
                                         <textarea class="field-input" name="notes" rows="2"></textarea>
                                     </div>
                                     <div class="action-cluster">
-                                        <button class="button button-secondary" type="submit">Create action</button>
+                                        <button class="button button-secondary" type="submit">{{ __('Create action') }}</button>
                                     </div>
                                 </form>
                             </details>
@@ -237,12 +262,12 @@
                                 <div class="row-between" style="align-items:flex-start;">
                                     <div>
                                         <div class="entity-title">{{ $action['title'] }}</div>
-                                        <div class="table-note">{{ $action['status_label'] }}{{ $action['due_on'] !== '' ? ' · due '.$action['due_on'] : '' }}</div>
+                                        <div class="table-note">{{ $actionStatusLabels[$action['status']] ?? $action['status_label'] }}{{ $action['due_on'] !== '' ? ' · '.__('due'). ' '.$action['due_on'] : '' }}</div>
                                         <div class="table-note">
                                             @if (($action['owner_assignments'] ?? []) !== [])
                                                 {{ $action['owner_assignments'][0]['display_name'] }}{{ count($action['owner_assignments']) > 1 ? ' +'.(count($action['owner_assignments']) - 1).' more' : '' }}
                                             @else
-                                                No owner assigned
+                                                {{ __('No owner assigned') }}
                                             @endif
                                         </div>
                                         @if ($action['notes'] !== '')
@@ -250,11 +275,11 @@
                                         @endif
                                     </div>
                                     @php $actionPill = match($action['status']) { 'planned' => 'pill-planned', 'in-progress' => 'pill-in-progress', 'blocked' => 'pill-blocked', 'done' => 'pill-done', default => '' }; @endphp
-                                    <span class="pill {{ $actionPill }}">{{ $action['status_label'] }}</span>
+                                    <span class="pill {{ $actionPill }}">{{ $actionStatusLabels[$action['status']] ?? $action['status_label'] }}</span>
                                 </div>
                                 @if ($can_manage_findings)
                                     <details style="margin-top:10px;">
-                                        <summary class="button button-ghost" style="display:inline-flex;">Edit action</summary>
+                                        <summary class="button button-ghost" style="display:inline-flex;">{{ __('Edit action') }}</summary>
                                         <form class="upload-form" method="POST" action="{{ $action['update_route'] }}" style="margin-top:10px;">
                                             @csrf
                                             <input type="hidden" name="principal_id" value="{{ $query['principal_id'] ?? '' }}">
@@ -264,43 +289,43 @@
                                             <input type="hidden" name="finding_id" value="{{ $selected_finding['id'] }}">
                                             <input type="hidden" name="membership_id" value="{{ $query['membership_ids'][0] ?? 'membership-org-a-hello' }}">
                                             <div class="field">
-                                                <label class="field-label">Action title</label>
+                                                <label class="field-label">{{ __('Action title') }}</label>
                                                 <input class="field-input" name="title" value="{{ $action['title'] }}" required>
                                             </div>
                                             <div class="field">
-                                                <label class="field-label">Status</label>
+                                                <label class="field-label">{{ __('Status') }}</label>
                                                 <select class="field-select" name="status" required>
                                                     @foreach ($action_status_options as $status)
-                                                        <option value="{{ $status['id'] }}" @selected($action['status'] === $status['id'])>{{ $status['label'] }}</option>
+                                                        <option value="{{ $status['id'] }}" @selected($action['status'] === $status['id'])>{{ $actionStatusLabels[$status['id']] ?? $status['label'] }}</option>
                                                     @endforeach
                                                 </select>
                                             </div>
                                             <div class="field">
-                                                <label class="field-label">Due date</label>
+                                                <label class="field-label">{{ __('Due date') }}</label>
                                                 <input class="field-input" name="due_on" type="date" value="{{ $action['due_on'] }}">
                                             </div>
                                             <div class="field">
-                                                <label class="field-label">Scope</label>
+                                                <label class="field-label">{{ __('Scope') }}</label>
                                                 <select class="field-select" name="scope_id">
-                                                    <option value="">Organization-wide</option>
+                                                    <option value="">{{ __('Organization-wide') }}</option>
                                                     @foreach ($scope_options as $scope)
                                                         <option value="{{ $scope['id'] }}" @selected($action['scope_id'] === $scope['id'])>{{ $scope['name'] }}</option>
                                                     @endforeach
                                                 </select>
                                             </div>
                                             <div class="field">
-                                                <label class="field-label">Add owner actor</label>
+                                                <label class="field-label">{{ __('Add owner actor') }}</label>
                                                 <select class="field-select" name="owner_actor_id">
-                                                    <option value="">Do not add owner</option>
+                                                    <option value="">{{ __('Do not add owner') }}</option>
                                                     @foreach ($owner_actor_options as $actor)
                                                         <option value="{{ $actor['id'] }}">{{ $actor['label'] }}</option>
                                                     @endforeach
                                                 </select>
-                                                <div class="table-note">Selecting an actor adds another owner instead of replacing the current set.</div>
+                                                <div class="table-note">{{ __('Selecting an actor adds another owner instead of replacing the current set.') }}</div>
                                             </div>
                                             @if (($action['owner_assignments'] ?? []) !== [])
                                                 <div class="field" style="grid-column:1 / -1;">
-                                                    <label class="field-label">Current owners</label>
+                                                    <label class="field-label">{{ __('Current owners') }}</label>
                                                     <div class="data-stack">
                                                         @foreach ($action['owner_assignments'] as $owner)
                                                             <div class="data-item">
@@ -314,7 +339,7 @@
                                                                     <input type="hidden" name="menu" value="plugin.findings-remediation.root">
                                                                     <input type="hidden" name="finding_id" value="{{ $selected_finding['id'] }}">
                                                                     <input type="hidden" name="membership_id" value="{{ $query['membership_ids'][0] ?? 'membership-org-a-hello' }}">
-                                                                    <button class="button button-ghost" type="submit">Remove owner</button>
+                                                                    <button class="button button-ghost" type="submit">{{ __('Remove owner') }}</button>
                                                                 </form>
                                                             </div>
                                                         @endforeach
@@ -322,18 +347,18 @@
                                                 </div>
                                             @endif
                                             <div class="field">
-                                                <label class="field-label">Notes</label>
+                                                <label class="field-label">{{ __('Notes') }}</label>
                                                 <textarea class="field-input" name="notes" rows="2">{{ $action['notes'] }}</textarea>
                                             </div>
                                             <div class="action-cluster">
-                                                <button class="button button-secondary" type="submit">Save action</button>
+                                                <button class="button button-secondary" type="submit">{{ __('Save action') }}</button>
                                             </div>
                                         </form>
                                     </details>
                                 @endif
                             </div>
                         @empty
-                            <span class="muted-note">No remediation actions yet</span>
+                            <span class="muted-note">{{ __('No remediation actions yet') }}</span>
                         @endforelse
                     </div>
                 </div>
@@ -343,7 +368,7 @@
                 <div class="surface-card" style="padding:14px;">
                     <hr style="border:none; border-top:1px solid rgba(31,42,34,0.07); margin:0 0 14px;">
                     <details>
-                        <summary class="button button-ghost" style="display:inline-flex; width:fit-content;">Edit finding details</summary>
+                        <summary class="button button-ghost" style="display:inline-flex; width:fit-content;">{{ __('Edit finding details') }}</summary>
                         <form class="upload-form" method="POST" action="{{ $selected_finding['update_route'] }}" style="margin-top:14px;">
                             @csrf
                             <input type="hidden" name="principal_id" value="{{ $query['principal_id'] ?? '' }}">
@@ -354,11 +379,11 @@
                             <input type="hidden" name="membership_id" value="{{ $query['membership_ids'][0] ?? 'membership-org-a-hello' }}">
                             <div class="overview-grid" style="grid-template-columns:repeat(2, minmax(0, 1fr));">
                                 <div class="field">
-                                    <label class="field-label">Title</label>
+                                    <label class="field-label">{{ __('Title') }}</label>
                                     <input class="field-input" name="title" value="{{ $selected_finding['title'] }}" required>
                                 </div>
                                 <div class="field">
-                                    <label class="field-label">Severity</label>
+                                    <label class="field-label">{{ __('Severity') }}</label>
                                     <select class="field-select" name="severity" required>
                                         @foreach ($severity_options as $severity)
                                             <option value="{{ $severity['id'] }}" @selected($selected_finding['severity'] === $severity['id'])>{{ $severity['label'] }}</option>
@@ -366,49 +391,49 @@
                                     </select>
                                 </div>
                                 <div class="field">
-                                    <label class="field-label">Linked control</label>
+                                    <label class="field-label">{{ __('Linked control') }}</label>
                                     <select class="field-select" name="linked_control_id">
-                                        <option value="">No linked control</option>
+                                        <option value="">{{ __('No linked control') }}</option>
                                         @foreach ($control_options as $control)
                                             <option value="{{ $control['id'] }}" @selected($selected_finding['linked_control_id'] === $control['id'])>{{ $control['label'] }}</option>
                                         @endforeach
                                     </select>
                                 </div>
                                 <div class="field">
-                                    <label class="field-label">Linked risk</label>
+                                    <label class="field-label">{{ __('Linked risk') }}</label>
                                     <select class="field-select" name="linked_risk_id">
-                                        <option value="">No linked risk</option>
+                                        <option value="">{{ __('No linked risk') }}</option>
                                         @foreach ($risk_options as $risk)
                                             <option value="{{ $risk['id'] }}" @selected($selected_finding['linked_risk_id'] === $risk['id'])>{{ $risk['label'] }}</option>
                                         @endforeach
                                     </select>
                                 </div>
                                 <div class="field">
-                                    <label class="field-label">Due date</label>
+                                    <label class="field-label">{{ __('Due date') }}</label>
                                     <input class="field-input" name="due_on" type="date" value="{{ $selected_finding['due_on'] }}">
                                 </div>
                                 <div class="field">
-                                    <label class="field-label">Scope</label>
+                                    <label class="field-label">{{ __('Scope') }}</label>
                                     <select class="field-select" name="scope_id">
-                                        <option value="">Organization-wide</option>
+                                        <option value="">{{ __('Organization-wide') }}</option>
                                         @foreach ($scope_options as $scope)
                                             <option value="{{ $scope['id'] }}" @selected($selected_finding['scope_id'] === $scope['id'])>{{ $scope['name'] }}</option>
                                         @endforeach
                                     </select>
                                 </div>
                                 <div class="field">
-                                    <label class="field-label">Add owner actor</label>
+                                    <label class="field-label">{{ __('Add owner actor') }}</label>
                                     <select class="field-select" name="owner_actor_id">
-                                        <option value="">Do not add owner</option>
+                                        <option value="">{{ __('Do not add owner') }}</option>
                                         @foreach ($owner_actor_options as $actor)
                                             <option value="{{ $actor['id'] }}">{{ $actor['label'] }}</option>
                                         @endforeach
                                     </select>
-                                    <div class="table-note">Selecting an actor adds another owner instead of replacing the current set.</div>
+                                    <div class="table-note">{{ __('Selecting an actor adds another owner instead of replacing the current set.') }}</div>
                                 </div>
                                 @if (($selected_finding['owner_assignments'] ?? []) !== [])
                                     <div class="field" style="grid-column:1 / -1;">
-                                        <label class="field-label">Current owners</label>
+                                        <label class="field-label">{{ __('Current owners') }}</label>
                                         <div class="data-stack">
                                             @foreach ($selected_finding['owner_assignments'] as $owner)
                                                 <div class="data-item">
@@ -422,7 +447,7 @@
                                                         <input type="hidden" name="menu" value="plugin.findings-remediation.root">
                                                         <input type="hidden" name="finding_id" value="{{ $selected_finding['id'] }}">
                                                         <input type="hidden" name="membership_id" value="{{ $query['membership_ids'][0] ?? 'membership-org-a-hello' }}">
-                                                        <button class="button button-ghost" type="submit">Remove owner</button>
+                                                        <button class="button button-ghost" type="submit">{{ __('Remove owner') }}</button>
                                                     </form>
                                                 </div>
                                             @endforeach
@@ -430,12 +455,12 @@
                                     </div>
                                 @endif
                                 <div class="field" style="grid-column:1 / -1;">
-                                    <label class="field-label">Description</label>
+                                    <label class="field-label">{{ __('Description') }}</label>
                                     <textarea class="field-input" name="description" rows="3" required>{{ $selected_finding['description'] }}</textarea>
                                 </div>
                             </div>
                             <div class="action-cluster" style="margin-top:14px;">
-                                <button class="button button-secondary" type="submit">Save changes</button>
+                                <button class="button button-secondary" type="submit">{{ __('Save changes') }}</button>
                             </div>
                         </form>
                     </details>
@@ -447,8 +472,8 @@
             <div class="surface-card" id="finding-editor" hidden>
                 <div class="row-between" style="margin-bottom:14px;">
                     <div>
-                        <div class="eyebrow">Create</div>
-                        <div class="entity-title" style="font-size:24px;">New finding</div>
+                        <div class="eyebrow">{{ __('Create') }}</div>
+                        <div class="entity-title" style="font-size:24px;">{{ __('New finding') }}</div>
                     </div>
                 </div>
 
@@ -462,11 +487,11 @@
 
                     <div class="overview-grid" style="grid-template-columns:repeat(2, minmax(0, 1fr));">
                         <div class="field">
-                            <label class="field-label" for="finding-title">Title</label>
+                            <label class="field-label" for="finding-title">{{ __('Title') }}</label>
                             <input class="field-input" id="finding-title" name="title" required>
                         </div>
                         <div class="field">
-                            <label class="field-label" for="finding-severity">Severity</label>
+                            <label class="field-label" for="finding-severity">{{ __('Severity') }}</label>
                             <select class="field-select" id="finding-severity" name="severity" required>
                                 @foreach ($severity_options as $severity)
                                     <option value="{{ $severity['id'] }}" @selected($severity['id'] === 'medium')>{{ $severity['label'] }}</option>
@@ -474,82 +499,82 @@
                             </select>
                         </div>
                         <div class="field">
-                            <label class="field-label" for="finding-control">Linked control</label>
+                            <label class="field-label" for="finding-control">{{ __('Linked control') }}</label>
                             <select class="field-select" id="finding-control" name="linked_control_id">
-                                <option value="">No linked control</option>
+                                <option value="">{{ __('No linked control') }}</option>
                                 @foreach ($control_options as $control)
                                     <option value="{{ $control['id'] }}">{{ $control['label'] }}</option>
                                 @endforeach
                             </select>
                         </div>
                         <div class="field">
-                            <label class="field-label" for="finding-risk">Linked risk</label>
+                            <label class="field-label" for="finding-risk">{{ __('Linked risk') }}</label>
                             <select class="field-select" id="finding-risk" name="linked_risk_id">
-                                <option value="">No linked risk</option>
+                                <option value="">{{ __('No linked risk') }}</option>
                                 @foreach ($risk_options as $risk)
                                     <option value="{{ $risk['id'] }}">{{ $risk['label'] }}</option>
                                 @endforeach
                             </select>
                         </div>
                         <div class="field">
-                            <label class="field-label" for="finding-due-on">Due date</label>
+                            <label class="field-label" for="finding-due-on">{{ __('Due date') }}</label>
                             <input class="field-input" id="finding-due-on" name="due_on" type="date">
                         </div>
                         <div class="field">
-                            <label class="field-label" for="finding-scope">Scope</label>
+                            <label class="field-label" for="finding-scope">{{ __('Scope') }}</label>
                             <select class="field-select" id="finding-scope" name="scope_id">
-                                <option value="">Organization-wide</option>
+                                <option value="">{{ __('Organization-wide') }}</option>
                                 @foreach ($scope_options as $scope)
                                     <option value="{{ $scope['id'] }}" @selected(($query['scope_id'] ?? null) === $scope['id'])>{{ $scope['name'] }}</option>
                                 @endforeach
                             </select>
                         </div>
                         <div class="field">
-                            <label class="field-label" for="finding-owner">Initial owner actor</label>
+                            <label class="field-label" for="finding-owner">{{ __('Initial owner actor') }}</label>
                             <select class="field-select" id="finding-owner" name="owner_actor_id">
-                                <option value="">No owner</option>
+                                <option value="">{{ __('No owner') }}</option>
                                 @foreach ($owner_actor_options as $actor)
                                     <option value="{{ $actor['id'] }}">{{ $actor['label'] }}</option>
                                 @endforeach
                             </select>
                         </div>
                         <div class="field" style="grid-column:1 / -1;">
-                            <label class="field-label" for="finding-description">Description</label>
+                            <label class="field-label" for="finding-description">{{ __('Description') }}</label>
                             <textarea class="field-input" id="finding-description" name="description" rows="3" required></textarea>
                         </div>
                     </div>
 
                     <div class="action-cluster" style="margin-top:14px;">
-                        <button class="button button-primary" type="submit">Create finding</button>
+                        <button class="button button-primary" type="submit">{{ __('Create finding') }}</button>
                     </div>
                 </form>
             </div>
         @endif
 
         <div class="overview-grid" style="grid-template-columns:repeat(4, minmax(0, 1fr));">
-            <div class="metric-card"><div class="metric-label">Findings</div><div class="metric-value">{{ count($findings) }}</div></div>
-            <div class="metric-card"><div class="metric-label">Open</div><div class="metric-value">{{ collect($findings)->where('state', 'open')->count() }}</div></div>
-            <div class="metric-card"><div class="metric-label">Remediating</div><div class="metric-value">{{ collect($findings)->where('state', 'remediating')->count() }}</div></div>
-            <div class="metric-card"><div class="metric-label">Actions open</div><div class="metric-value">{{ collect($findings)->sum('open_action_count') }}</div></div>
+            <div class="metric-card"><div class="metric-label">{{ __('Findings') }}</div><div class="metric-value">{{ count($findings) }}</div></div>
+            <div class="metric-card"><div class="metric-label">{{ __('Open') }}</div><div class="metric-value">{{ collect($findings)->where('state', 'open')->count() }}</div></div>
+            <div class="metric-card"><div class="metric-label">{{ __('Remediating') }}</div><div class="metric-value">{{ collect($findings)->where('state', 'remediating')->count() }}</div></div>
+            <div class="metric-card"><div class="metric-label">{{ __('Actions open') }}</div><div class="metric-value">{{ collect($findings)->sum('open_action_count') }}</div></div>
         </div>
 
         <div class="surface-card">
-            <div class="entity-title">Findings register list</div>
-            <div class="table-note" style="margin-top:6px;">This list stays focused on severity, owner summary, due date, state, and Open. Use Finding Detail to manage workflow, remediation actions, evidence, and linked records.</div>
+            <div class="entity-title">{{ __('Findings register list') }}</div>
+            <div class="table-note" style="margin-top:6px;">{{ __('This list stays focused on severity, owner summary, due date, state, and Open. Use Finding Detail to manage workflow, remediation actions, evidence, and linked records.') }}</div>
         </div>
 
         <div class="table-card">
             <table class="entity-table">
                 <thead>
                     <tr>
-                        <th>Finding</th>
-                        <th>Severity</th>
-                        <th>Owner</th>
-                        <th>Control</th>
-                        <th>Risk</th>
-                        <th>Due</th>
-                        <th>State</th>
-                        <th>{{ $can_manage_findings ? 'Actions' : 'Access' }}</th>
+                        <th>{{ __('Finding') }}</th>
+                        <th>{{ __('Severity') }}</th>
+                        <th>{{ __('Owner') }}</th>
+                        <th>{{ __('Control') }}</th>
+                        <th>{{ __('Risk') }}</th>
+                        <th>{{ __('Due') }}</th>
+                        <th>{{ __('State') }}</th>
+                        <th>{{ $can_manage_findings ? __('Actions') : __('Access') }}</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -559,7 +584,7 @@
                                 <div class="entity-title">{{ $finding['title'] }}</div>
                                 <div class="entity-id">{{ $finding['id'] }}</div>
                                 <div class="table-note">{{ $finding['description'] }}</div>
-                                <div class="table-note">{{ $finding['action_count'] }} remediation actions</div>
+                                <div class="table-note">{{ $finding['action_count'] }} {{ __('remediation actions') }}</div>
                             </td>
                             <td>
                                 @php $sSevPill = match($finding['severity']) { 'critical' => 'pill-critical', 'high' => 'pill-high', 'medium' => 'pill-medium', 'low' => 'pill-low', default => '' }; @endphp
@@ -569,35 +594,35 @@
                                 @if (($finding['owner_assignments'] ?? []) !== [])
                                     <div>{{ $finding['owner_assignments'][0]['display_name'] }}</div>
                                     @if (count($finding['owner_assignments']) > 1)
-                                        <div class="table-note">+{{ count($finding['owner_assignments']) - 1 }} more owner{{ count($finding['owner_assignments']) > 2 ? 's' : '' }}</div>
+                                        <div class="table-note">+{{ count($finding['owner_assignments']) - 1 }} {{ (count($finding['owner_assignments']) - 1) === 1 ? __('more owner') : __('more owners') }}</div>
                                     @else
                                         <div class="table-note">{{ $finding['owner_assignments'][0]['kind'] }}</div>
                                     @endif
                                 @else
-                                    <span class="muted-note">No owner assigned</span>
+                                    <span class="muted-note">{{ __('No owner assigned') }}</span>
                                 @endif
                             </td>
                             <td>
                                 @if ($finding['linked_control_url'] !== null)
                                     <a href="{{ $finding['linked_control_url'] }}">{{ $finding['linked_control_label'] ?? $finding['linked_control_id'] }}</a>
                                 @else
-                                    <span class="muted-note">{{ $finding['linked_control_id'] !== '' ? $finding['linked_control_id'] : 'None' }}</span>
+                                    <span class="muted-note">{{ $finding['linked_control_id'] !== '' ? $finding['linked_control_id'] : __('None') }}</span>
                                 @endif
                             </td>
                             <td>
                                 @if ($finding['linked_risk_url'] !== null)
                                     <a href="{{ $finding['linked_risk_url'] }}">{{ $finding['linked_risk_label'] ?? $finding['linked_risk_id'] }}</a>
                                 @else
-                                    <span class="muted-note">{{ $finding['linked_risk_id'] !== '' ? $finding['linked_risk_id'] : 'None' }}</span>
+                                    <span class="muted-note">{{ $finding['linked_risk_id'] !== '' ? $finding['linked_risk_id'] : __('None') }}</span>
                                 @endif
                             </td>
-                            <td>{{ $finding['due_on'] !== '' ? $finding['due_on'] : 'No target date' }}</td>
+                            <td>{{ $finding['due_on'] !== '' ? $finding['due_on'] : __('No target date') }}</td>
                             <td>
                                 @php $sFindPill = match($finding['state']) { 'open' => 'pill-open', 'remediating' => 'pill-remediating', 'closed' => 'pill-closed', 'archived' => 'pill-archived', default => '' }; @endphp
-                                <span class="pill {{ $sFindPill }}">{{ $finding['state'] }}</span>
+                                <span class="pill {{ $sFindPill }}">{{ $findingStateLabels[$finding['state']] ?? $finding['state'] }}</span>
                             </td>
                             <td>
-                                <a class="button button-secondary" href="{{ $finding['open_url'] }}&{{ http_build_query(['context_label' => 'Findings', 'context_back_url' => $findings_list_url]) }}">Open</a>
+                                <a class="button button-secondary" href="{{ $finding['open_url'] }}&{{ http_build_query(['context_label' => __('Findings'), 'context_back_url' => $findings_list_url]) }}">{{ __('Open') }}</a>
                             </td>
                         </tr>
                     @endforeach

@@ -30,7 +30,7 @@ class PolicyExceptionsPlugin implements PluginInterface
         $context->app()->make(WorkflowRegistryInterface::class)->register(new WorkflowDefinition(
             key: 'plugin.policy-exceptions.policy-lifecycle',
             owner: 'policy-exceptions',
-            label: 'Policy lifecycle',
+            label: __('Policy lifecycle'),
             initialState: 'draft',
             states: ['draft', 'review', 'active', 'retired'],
             transitions: [
@@ -64,7 +64,7 @@ class PolicyExceptionsPlugin implements PluginInterface
         $context->app()->make(WorkflowRegistryInterface::class)->register(new WorkflowDefinition(
             key: 'plugin.policy-exceptions.exception-lifecycle',
             owner: 'policy-exceptions',
-            label: 'Policy exception lifecycle',
+            label: __('Policy exception lifecycle'),
             initialState: 'requested',
             states: ['requested', 'approved', 'expired', 'revoked'],
             transitions: [
@@ -108,12 +108,12 @@ class PolicyExceptionsPlugin implements PluginInterface
                 if (is_string($screenContext->query['policy_id'] ?? null) && ($screenContext->query['policy_id'] ?? '') !== '') {
                     return [
                         new ToolbarAction(
-                            label: 'Back to policies',
+                            label: __('Back to policies'),
                             url: route('core.shell.index', [...$query, 'menu' => 'plugin.policy-exceptions.root']),
                             variant: 'secondary',
                         ),
                         new ToolbarAction(
-                            label: 'Exceptions board',
+                            label: __('Exceptions board'),
                             url: route('core.shell.index', [...$query, 'menu' => 'plugin.policy-exceptions.exceptions']),
                             variant: 'secondary',
                         ),
@@ -122,12 +122,12 @@ class PolicyExceptionsPlugin implements PluginInterface
 
                 return [
                     new ToolbarAction(
-                        label: 'Add policy',
+                        label: __('Add policy'),
                         url: '#policy-editor',
                         variant: 'primary',
                     ),
                     new ToolbarAction(
-                        label: 'Exceptions board',
+                        label: __('Exceptions board'),
                         url: route('core.shell.index', [...$query, 'menu' => 'plugin.policy-exceptions.exceptions']),
                         variant: 'secondary',
                     ),
@@ -148,12 +148,12 @@ class PolicyExceptionsPlugin implements PluginInterface
                 if (is_string($screenContext->query['exception_id'] ?? null) && ($screenContext->query['exception_id'] ?? '') !== '') {
                     return [
                         new ToolbarAction(
-                            label: 'Back to exceptions',
+                            label: __('Back to exceptions'),
                             url: route('core.shell.index', [...$query, 'menu' => 'plugin.policy-exceptions.exceptions']),
                             variant: 'secondary',
                         ),
                         new ToolbarAction(
-                            label: 'Policies register',
+                            label: __('Policies register'),
                             url: route('core.shell.index', [...$query, 'menu' => 'plugin.policy-exceptions.root']),
                             variant: 'secondary',
                         ),
@@ -162,7 +162,7 @@ class PolicyExceptionsPlugin implements PluginInterface
 
                 return [
                     new ToolbarAction(
-                        label: 'Policies register',
+                        label: __('Policies register'),
                         url: route('core.shell.index', [...$query, 'menu' => 'plugin.policy-exceptions.root']),
                         variant: 'secondary',
                     ),

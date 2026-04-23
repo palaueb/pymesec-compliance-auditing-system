@@ -1,5 +1,5 @@
 diff --git a/core/routes/console.php b/core/routes/console.php
-index 8eb0048b421002402be5887491751a9f4e654f0c..93b23828a28409261fabf83483009872a65002ed 100644
+index cacf5ae0e75a5a8ecad2bc766552fcab3731703a..abc42ce2b1795ad02249869bce64592692debdba 100644
 --- a/core/routes/console.php
 +++ b/core/routes/console.php
 @@ -3,6 +3,7 @@
@@ -7,10 +7,10 @@ index 8eb0048b421002402be5887491751a9f4e654f0c..93b23828a28409261fabf83483009872
  use Illuminate\Foundation\Inspiring;
  use Illuminate\Support\Facades\Artisan;
 +use Illuminate\Support\Facades\File;
+ use Illuminate\Support\Facades\DB;
+ use Illuminate\Support\Facades\Schema;
  use PymeSec\Core\Artifacts\Contracts\ArtifactServiceInterface;
- use PymeSec\Core\Audit\AuditRecordData;
- use PymeSec\Core\Audit\Contracts\AuditTrailInterface;
-@@ -22,11 +23,52 @@
+@@ -24,11 +25,52 @@
  use PymeSec\Plugins\AutomationCatalog\AutomationCatalogRepository;
  use PymeSec\Plugins\AutomationCatalog\AutomationPackRuntimeService;
  use PymeSec\Plugins\EvidenceManagement\EvidenceManagementRepository;

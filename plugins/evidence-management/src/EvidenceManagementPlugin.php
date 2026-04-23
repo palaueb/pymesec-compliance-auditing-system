@@ -40,7 +40,7 @@ class EvidenceManagementPlugin implements PluginInterface
                 if (is_string($screenContext->query['evidence_id'] ?? null) && ($screenContext->query['evidence_id'] ?? '') !== '') {
                     return [
                         new ToolbarAction(
-                            label: 'Back to evidence',
+                            label: __('Back to evidence'),
                             url: route('core.shell.index', [...$query, 'menu' => 'plugin.evidence-management.root']),
                             variant: 'secondary',
                         ),
@@ -49,7 +49,7 @@ class EvidenceManagementPlugin implements PluginInterface
 
                 return [
                     new ToolbarAction(
-                        label: 'New evidence record',
+                        label: __('New evidence record'),
                         url: '#evidence-editor',
                         variant: 'primary',
                     ),
@@ -186,21 +186,21 @@ class EvidenceManagementPlugin implements PluginInterface
             'artifact_options' => $repository->artifactOptions($organizationId, $screenContext->scopeId),
             'link_option_groups' => $repository->linkOptions($organizationId, $screenContext->scopeId),
             'kind_options' => [
-                'document' => 'Document',
-                'workpaper' => 'Workpaper',
-                'snapshot' => 'System snapshot',
-                'report' => 'Report',
-                'ticket' => 'Ticket',
-                'log-export' => 'Log export',
-                'statement' => 'Statement',
-                'other' => 'Other',
+                'document' => __('Document'),
+                'workpaper' => __('Workpaper'),
+                'snapshot' => __('System snapshot'),
+                'report' => __('Report'),
+                'ticket' => __('Ticket'),
+                'log-export' => __('Log export'),
+                'statement' => __('Statement'),
+                'other' => __('Other'),
             ],
             'status_options' => [
-                'draft' => 'Draft',
-                'active' => 'Active',
-                'approved' => 'Approved',
-                'expired' => 'Expired',
-                'superseded' => 'Superseded',
+                'draft' => __('Draft'),
+                'active' => __('Active'),
+                'approved' => __('Approved'),
+                'expired' => __('Expired'),
+                'superseded' => __('Superseded'),
             ],
             'metrics' => [
                 'records' => count($evidenceRows),

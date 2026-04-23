@@ -3,7 +3,6 @@
 namespace Tests\Feature;
 
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\DB;
 use PymeSec\Core\Security\ApiAccessTokenRepository;
 use Tests\TestCase;
 

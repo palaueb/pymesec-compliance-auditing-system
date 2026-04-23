@@ -5,7 +5,7 @@
             <p class="screen-subtitle">{{ $subtitle }}</p>
         </div>
         @if (is_string($section['section_url'] ?? null))
-            <a class="button button-secondary" href="{{ $section['section_url'] }}">Open module</a>
+            <a class="button button-secondary" href="{{ $section['section_url'] }}">{{ __('core.actions.open') }}</a>
         @endif
     </div>
     <div class="summary-grid">

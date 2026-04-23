@@ -114,47 +114,53 @@ Route::get('/plugins/assessments/{assessmentId}/report', function (
         '',
         $assessment['summary'],
         '',
-        'Organization: '.$assessment['organization_id'],
-        'Scope: '.($assessment['scope_id'] !== '' ? $assessment['scope_id'] : 'organization-wide'),
-        'Framework: '.($assessment['framework_id'] !== '' ? $assessment['framework_id'] : 'any'),
-        'Status: '.$assessment['status'],
-        'Dates: '.$assessment['starts_on'].' -> '.$assessment['ends_on'],
-        'Signed off on: '.($assessment['signed_off_on'] !== '' ? $assessment['signed_off_on'] : 'not signed off'),
-        'Signed off by: '.($assessment['signed_off_by_principal_id'] !== '' ? $assessment['signed_off_by_principal_id'] : 'n/a'),
-        'Closed on: '.($assessment['closed_on'] !== '' ? $assessment['closed_on'] : 'not closed'),
-        'Closed by: '.($assessment['closed_by_principal_id'] !== '' ? $assessment['closed_by_principal_id'] : 'n/a'),
+        __('Organization').': '.$assessment['organization_id'],
+        __('Scope').': '.($assessment['scope_id'] !== '' ? $assessment['scope_id'] : __('Organization-wide')),
+        __('Framework').': '.($assessment['framework_id'] !== '' ? $assessment['framework_id'] : __('Any framework')),
+        __('Status').': '.$assessment['status'],
+        __('Dates').': '.$assessment['starts_on'].' -> '.$assessment['ends_on'],
+        __('Signed off on').': '.($assessment['signed_off_on'] !== '' ? $assessment['signed_off_on'] : __('Not signed off yet')),
+        __('Signed off by').': '.($assessment['signed_off_by_principal_id'] !== '' ? $assessment['signed_off_by_principal_id'] : __('n/a')),
+        __('Closed on').': '.($assessment['closed_on'] !== '' ? $assessment['closed_on'] : __('Not closed yet')),
+        __('Closed by').': '.($assessment['closed_by_principal_id'] !== '' ? $assessment['closed_by_principal_id'] : __('n/a')),
         '',
-        'Summary',
-        '- Pass: '.$summary['pass'],
-        '- Partial: '.$summary['partial'],
-        '- Fail: '.$summary['fail'],
-        '- Not tested: '.$summary['not-tested'],
-        '- Not applicable: '.$summary['not-applicable'],
-        '- Linked findings: '.$summary['linked_findings'],
-        '- Workpapers: '.$summary['artifacts'],
-        '- Sign-off notes: '.($assessment['signoff_notes'] !== '' ? $assessment['signoff_notes'] : 'n/a'),
-        '- Closure summary: '.($assessment['closure_summary'] !== '' ? $assessment['closure_summary'] : 'n/a'),
+        __('Summary'),
+        '- '.__('Pass').': '.$summary['pass'],
+        '- '.__('Partial').': '.$summary['partial'],
+        '- '.__('Fail').': '.$summary['fail'],
+        '- '.__('Not tested').': '.$summary['not-tested'],
+        '- '.__('Not applicable').': '.$summary['not-applicable'],
+        '- '.__('Linked findings').': '.$summary['linked_findings'],
+        '- '.__('Workpapers').': '.$summary['artifacts'],
+        '- '.__('Sign-off notes').': '.($assessment['signoff_notes'] !== '' ? $assessment['signoff_notes'] : 'n/a'),
+        '- '.__('Closure summary').': '.($assessment['closure_summary'] !== '' ? $assessment['closure_summary'] : 'n/a'),
         '',
-        'Framework coverage',
+        __('Framework coverage'),
     ];
 
     foreach ($frameworkBreakdown as $framework) {
         $lines[] = sprintf(
-            '- %s · %s mapped requirements · %s linked controls · %s pass / %s partial / %s fail / %s pending',
+            '- %s · %s %s · %s %s · %s %s / %s %s / %s %s / %s %s',
             trim(sprintf('%s %s', $framework['framework_code'], $framework['framework_name'])),
             $framework['requirement_count'],
+            __('Mapped requirements'),
             $framework['control_count'],
+            __('Linked controls'),
             $framework['result_summary']['pass'],
+            __('Pass'),
             $framework['result_summary']['partial'],
+            __('Partial'),
             $framework['result_summary']['fail'],
+            __('Fail'),
             $framework['result_summary']['not-tested'],
+            __('Pending'),
         );
     }
 
     $lines = [
         ...$lines,
         '',
-        'Checklist',
+        __('Checklist'),
     ];
 
     foreach ($reviews as $review) {
@@ -165,19 +171,19 @@ Route::get('/plugins/assessments/{assessmentId}/report', function (
         );
 
         if ($review['conclusion'] !== '') {
-            $lines[] = '  Conclusion: '.$review['conclusion'];
+            $lines[] = '  '.__('Conclusion').': '.$review['conclusion'];
         }
 
         if ($review['test_notes'] !== '') {
-            $lines[] = '  Test notes: '.$review['test_notes'];
+            $lines[] = '  '.__('Test notes').': '.$review['test_notes'];
         }
 
         if (is_array($review['linked_finding'] ?? null)) {
-            $lines[] = '  Finding: '.$review['linked_finding']['title'].' ('.$review['linked_finding']['severity'].')';
+            $lines[] = '  '.__('Finding').': '.$review['linked_finding']['title'].' ('.$review['linked_finding']['severity'].')';
         }
 
         if (($review['artifacts'] ?? []) !== []) {
-            $lines[] = '  Workpapers: '.implode(', ', array_map(
+            $lines[] = '  '.__('Workpapers').': '.implode(', ', array_map(
                 static fn (array $artifact): string => $artifact['original_filename'],
                 $review['artifacts'],
             ));
@@ -243,7 +249,7 @@ Route::post('/plugins/assessments', function (
         'scope_id' => $assessment['scope_id'] !== '' ? $assessment['scope_id'] : null,
         'locale' => $request->input('locale', 'en'),
         'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
-    ]))->with('status', 'Saved.');
+    ]))->with('status', __('Saved.'));
 })->middleware('core.permission:plugin.assessments-audits.assessments.manage')->name('plugin.assessments-audits.store');
 
 Route::post('/plugins/assessments/{assessmentId}', function (
@@ -318,7 +324,7 @@ Route::post('/plugins/assessments/{assessmentId}', function (
         'scope_id' => $assessment['scope_id'] !== '' ? $assessment['scope_id'] : null,
         'locale' => $request->input('locale', 'en'),
         'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
-    ]))->with('status', 'Saved.');
+    ]))->with('status', __('Saved.'));
 })->middleware('core.permission:plugin.assessments-audits.assessments.manage')->name('plugin.assessments-audits.update');
 
 Route::post('/plugins/assessments/{assessmentId}/owners/{assignmentId}/remove', function (
@@ -365,7 +371,7 @@ Route::post('/plugins/assessments/{assessmentId}/owners/{assignmentId}/remove', 
         'scope_id' => $assessment['scope_id'] !== '' ? $assessment['scope_id'] : null,
         'locale' => $request->input('locale', 'en'),
         'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
-    ]))->with('status', 'Owner removed.');
+    ]))->with('status', __('Owner removed.'));
 })->middleware('core.permission:plugin.assessments-audits.assessments.manage')->name('plugin.assessments-audits.owners.destroy');
 
 Route::post('/plugins/assessments/{assessmentId}/reviews/{controlId}', function (
@@ -403,7 +409,7 @@ Route::post('/plugins/assessments/{assessmentId}/reviews/{controlId}', function 
         'scope_id' => $request->input('scope_id'),
         'locale' => $request->input('locale', 'en'),
         'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
-    ]))->with('status', 'Saved.');
+    ]))->with('status', __('Saved.'));
 })->middleware('core.permission:plugin.assessments-audits.assessments.manage')->name('plugin.assessments-audits.reviews.update');
 
 Route::post('/plugins/assessments/{assessmentId}/reviews/{controlId}/artifacts', function (
@@ -583,5 +589,5 @@ Route::post('/plugins/assessments/{assessmentId}/transitions/{transitionKey}', f
         'scope_id' => $updated['scope_id'] !== '' ? $updated['scope_id'] : null,
         'locale' => $request->input('locale', 'en'),
         'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
-    ]))->with('status', 'Assessment updated.');
+    ]))->with('status', __('Assessment updated.'));
 })->middleware('core.permission:plugin.assessments-audits.assessments.manage')->name('plugin.assessments-audits.transition');
