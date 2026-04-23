@@ -18,7 +18,7 @@ class IdentityLdapTest extends TestCase
         $this->get('/admin?menu=plugin.identity-ldap.directory&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
             ->assertOk()
             ->assertSee('Directory Sync')
-            ->assertSee('Governance page. Directory connector settings and group mappings live here')
+            ->assertSee('Keep one LDAP connector per organization, map external groups, and cache people for local fallback.')
             ->assertSee('Northwind Directory')
             ->assertSee('Lars Heidt');
     }

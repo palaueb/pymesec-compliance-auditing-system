@@ -32,8 +32,8 @@ class ThirdPartyRiskTest extends TestCase
     {
         $this->get('/app?menu=plugin.third-party-risk.root&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
             ->assertOk()
-            ->assertSee('Vendor Reviews')
-            ->assertSee('Vendor register and current review workspace')
+            ->assertSee('Vendor review')
+            ->assertSee('Vendor reviews keep intake, current review posture, linked records, evidence, and approval decisions in one workspace. Use the register to browse vendors and open the current review you want to work on.')
             ->assertSee('Vendor register list')
             ->assertSee('This list stays focused on tier, current review, vendor status, owner summary, and Open.')
             ->assertSee('Northbridge Payroll Services')

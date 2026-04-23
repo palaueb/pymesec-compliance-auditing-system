@@ -36,7 +36,7 @@ class ContinuityBcmTest extends TestCase
     {
         $this->get('/app?menu=plugin.continuity-bcm.root&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
             ->assertOk()
-            ->assertSee('Continuity Services')
+            ->assertSee('Continuity services')
             ->assertSee('Impact tiers and dependency kinds are business-managed catalog values')
             ->assertSee('Continuity service list')
             ->assertSee('This list stays focused on impact summary, owner summary, linked records, state, and Open.')
@@ -56,7 +56,7 @@ class ContinuityBcmTest extends TestCase
 
         $this->get('/app?menu=plugin.continuity-bcm.plans&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
             ->assertOk()
-            ->assertSee('Recovery Plans')
+            ->assertSee('Recovery plans')
             ->assertSee('system-controlled continuity values')
             ->assertSee('Support fallback rota')
             ->assertSee('Choose service')
@@ -103,7 +103,8 @@ class ContinuityBcmTest extends TestCase
 
         $this->get('/app?menu=plugin.continuity-bcm.root&service_id=continuity-service-customer-support&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
             ->assertOk()
-            ->assertSee('Activate');
+            ->assertSee('Continuity Service Detail')
+            ->assertSee('Workflow');
 
         $this->get('/app?menu=plugin.continuity-bcm.plans&plan_id=continuity-plan-support-fallback&principal_id=principal-org-a&organization_id=org-a&membership_ids[]=membership-org-a-hello')
             ->assertOk()

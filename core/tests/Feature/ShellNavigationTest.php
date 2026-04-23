@@ -46,8 +46,9 @@ class ShellNavigationTest extends TestCase
 
         $this->get('/app?menu=core.governance&principal_id=principal-admin&organization_id=org-a')
             ->assertOk()
-            ->assertSee('Delegated Access Governance')
-            ->assertSee('Workspace governance entrypoint');
+            ->assertSee('Use this page to inspect delegated access across linked principals, functional actors, and governed objects.')
+            ->assertSee('Access entrypoints')
+            ->assertSee('Use these records to understand where platform identities enter the workspace.');
 
         $this->get('/app?menu=core.functional-actors&principal_id=principal-admin&organization_id=org-a')
             ->assertOk()
@@ -116,7 +117,7 @@ class ShellNavigationTest extends TestCase
             ->assertSee('Today in your workspace')
             ->assertSee('Assets')
             ->assertSee('Automation')
-            ->assertSee('Vendors')
+            ->assertSee('Suppliers')
             ->assertSee('Actors')
             ->assertDontSee('Plugin Runtime');
 
