@@ -1,6 +1,6 @@
 # Project TODO (Canonical Single File)
 
-Snapshot date: 2026-04-17
+Snapshot date: 2026-04-23
 
 This is the only active TODO checklist for product work.
 
@@ -85,6 +85,21 @@ Archived (non-canonical) backlog history:
 - [ ] Review linked object fields for multi-select governance where needed.
 - [ ] Standardize placement of page-level primary actions.
 
+## Active Pending: Framework Packs and Regulatory Operations
+
+- [ ] Add framework-specific onboarding kits so adopting GDPR, ENS, NIS2, or ISO 27001 creates a usable starter workspace instead of only enabling library content.
+- [ ] Add approval/governance workflow for framework adoption changes, including who approved, when, and why the framework became active or retired for an org/scope.
+- [ ] Add framework-specific reporting presets, management views, and export bundles per adopted framework and scope.
+- [ ] Add readiness summaries and progress dashboards per organization, scope, and adopted framework.
+- [ ] Add legal/framework update ingestion so framework packs can publish change notices, version deltas, and upgrade guidance without manual diff work.
+- [ ] Add starter control/policy/evidence mapping packs per framework so adoption produces operational objects, not only framework elements.
+- [ ] Complete GDPR operational coverage beyond the starter pack: full RoPA legal model and richer record-of-processing fields.
+- [ ] Add GDPR DPIA workflows and artifacts so high-risk processing can be assessed as a first-class privacy object.
+- [ ] Add GDPR data breach / privacy incident register and workflow, including supervisory notification handling.
+- [ ] Add GDPR data subject rights case handling (access, rectification, erasure, objection, portability, restriction).
+- [ ] Add GDPR consent and retention governance where processing depends on consent or time-bound retention rules.
+- [ ] Add processor/subprocessor governance links between third-party risk, privacy records, and GDPR obligations.
+
 ## Active Pending: Post-Current-Work Competitive Gaps
 
 - [ ] Connector depth: cloud (AWS/Azure/GCP), identity (Okta/Azure AD/Google Workspace), and code platforms (GitHub/GitLab).
@@ -94,7 +109,6 @@ Archived (non-canonical) backlog history:
 - [ ] Dynamic risk posture recalculation from threat signals/CVEs.
 - [ ] Full vendor portal maturity for supplier-provided certifications/evidence.
 - [ ] Remediation workflow integration with delivery tools (Jira/Linear).
-- [ ] Push updates for legal/framework changes (for example ENS revisions).
 - [ ] Expand framework pack coverage beyond current baseline (including SOC 2 and NIST families).
 - [ ] Build certification-grade assurance track (evidence integrity, process controls, attestable operation logs).
 - [ ] Introduce anonymized cross-tenant benchmark signals (remediation times, control failure patterns, recurring audit gaps) with strict privacy model.
