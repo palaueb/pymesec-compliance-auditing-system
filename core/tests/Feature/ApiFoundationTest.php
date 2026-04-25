@@ -1489,6 +1489,7 @@ class ApiFoundationTest extends TestCase
             'plugin.controls-catalog.transition' => 'controlsCatalogTransitionControl',
             'plugin.controls-catalog.frameworks.store' => 'controlsCatalogCreateFramework',
             'plugin.controls-catalog.frameworks.adoption.upsert' => 'controlsCatalogUpsertFrameworkAdoption',
+            'plugin.controls-catalog.frameworks.onboarding.apply' => 'controlsCatalogApplyFrameworkOnboardingKit',
             'plugin.controls-catalog.requirements.store' => 'controlsCatalogCreateRequirement',
             'plugin.controls-catalog.requirements.attach' => 'controlsCatalogAttachRequirement',
             'plugin.assessments-audits.store' => 'assessmentsAuditsCreateAssessment',

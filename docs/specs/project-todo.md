@@ -87,12 +87,12 @@ Archived (non-canonical) backlog history:
 
 ## Active Pending: Framework Packs and Regulatory Operations
 
-- [ ] Add framework-specific onboarding kits so adopting GDPR, ENS, NIS2, or ISO 27001 creates a usable starter workspace instead of only enabling library content.
-- [ ] Add approval/governance workflow for framework adoption changes, including who approved, when, and why the framework became active or retired for an org/scope.
-- [ ] Add framework-specific reporting presets, management views, and export bundles per adopted framework and scope.
-- [ ] Add readiness summaries and progress dashboards per organization, scope, and adopted framework.
+- [x] Add framework-specific onboarding kits so adopting GDPR, ENS, NIS2, or ISO 27001 creates a usable starter workspace instead of only enabling library content.
+- [x] Add approval/governance workflow for framework adoption changes, including who approved, when, and why the framework became active or retired for an org/scope.
+- [x] Add framework-specific reporting presets, management views, and export bundles per adopted framework and scope.
+- [x] Add readiness summaries and progress dashboards per organization, scope, and adopted framework.
 - [ ] Add legal/framework update ingestion so framework packs can publish change notices, version deltas, and upgrade guidance without manual diff work.
-- [ ] Add starter control/policy/evidence mapping packs per framework so adoption produces operational objects, not only framework elements.
+- [x] Add starter control/policy/evidence mapping packs per framework so adoption produces operational objects, not only framework elements.
 - [ ] Complete GDPR operational coverage beyond the starter pack: full RoPA legal model and richer record-of-processing fields.
 - [ ] Add GDPR DPIA workflows and artifacts so high-risk processing can be assessed as a first-class privacy object.
 - [ ] Add GDPR data breach / privacy incident register and workflow, including supervisory notification handling.
@@ -114,6 +114,10 @@ Archived (non-canonical) backlog history:
 - [ ] Introduce anonymized cross-tenant benchmark signals (remediation times, control failure patterns, recurring audit gaps) with strict privacy model.
 - [ ] Add agent desire-path telemetry for failed/abandoned API flows and use it to prioritize aliases and contract ergonomics.
 - [ ] Define long-term open-source distribution strategy separating open interoperability layers from advanced proprietary assurance signals.
+
+## Future Architecture Refactors. Not to be done yet.
+
+- [ ] Separate framework-pack availability from plugin enabled state so framework metadata, onboarding kits, and reporting presets can be discovered without treating every `framework-*` plugin as an enabled runtime module by default.
 
 ## Completed Baseline (Reference)
 

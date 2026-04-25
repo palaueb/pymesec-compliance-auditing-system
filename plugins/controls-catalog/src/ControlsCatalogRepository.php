@@ -92,6 +92,14 @@ class ControlsCatalogRepository
                 'adoptions.target_level',
                 'adoptions.adopted_at',
                 'adoptions.status',
+                'adoptions.requested_by_principal_id',
+                'adoptions.approved_by_principal_id',
+                'adoptions.change_reason',
+                'adoptions.approved_at',
+                'adoptions.retired_at',
+                'adoptions.starter_pack_version',
+                'adoptions.starter_pack_applied_by_principal_id',
+                'adoptions.starter_pack_applied_at',
                 'frameworks.code as framework_code',
                 'frameworks.name as framework_name',
             ]);
@@ -115,6 +123,14 @@ class ControlsCatalogRepository
                 'target_level' => is_string($row->target_level) ? $row->target_level : '',
                 'adopted_at' => is_string($row->adopted_at) ? $row->adopted_at : '',
                 'status' => is_string($row->status) ? $row->status : 'active',
+                'requested_by_principal_id' => is_string($row->requested_by_principal_id) ? $row->requested_by_principal_id : '',
+                'approved_by_principal_id' => is_string($row->approved_by_principal_id) ? $row->approved_by_principal_id : '',
+                'change_reason' => is_string($row->change_reason) ? $row->change_reason : '',
+                'approved_at' => is_string($row->approved_at) ? $row->approved_at : '',
+                'retired_at' => is_string($row->retired_at) ? $row->retired_at : '',
+                'starter_pack_version' => is_string($row->starter_pack_version) ? $row->starter_pack_version : '',
+                'starter_pack_applied_by_principal_id' => is_string($row->starter_pack_applied_by_principal_id) ? $row->starter_pack_applied_by_principal_id : '',
+                'starter_pack_applied_at' => is_string($row->starter_pack_applied_at) ? $row->starter_pack_applied_at : '',
             ];
         }
 
@@ -343,6 +359,14 @@ class ControlsCatalogRepository
                 'adoptions.target_level',
                 'adoptions.adopted_at',
                 'adoptions.status',
+                'adoptions.requested_by_principal_id',
+                'adoptions.approved_by_principal_id',
+                'adoptions.change_reason',
+                'adoptions.approved_at',
+                'adoptions.retired_at',
+                'adoptions.starter_pack_version',
+                'adoptions.starter_pack_applied_by_principal_id',
+                'adoptions.starter_pack_applied_at',
                 'frameworks.code as framework_code',
                 'frameworks.name as framework_name',
             ]);
@@ -361,6 +385,14 @@ class ControlsCatalogRepository
             'target_level' => is_string($row->target_level) ? $row->target_level : '',
             'adopted_at' => is_string($row->adopted_at) ? $row->adopted_at : '',
             'status' => is_string($row->status) ? $row->status : 'active',
+            'requested_by_principal_id' => is_string($row->requested_by_principal_id) ? $row->requested_by_principal_id : '',
+            'approved_by_principal_id' => is_string($row->approved_by_principal_id) ? $row->approved_by_principal_id : '',
+            'change_reason' => is_string($row->change_reason) ? $row->change_reason : '',
+            'approved_at' => is_string($row->approved_at) ? $row->approved_at : '',
+            'retired_at' => is_string($row->retired_at) ? $row->retired_at : '',
+            'starter_pack_version' => is_string($row->starter_pack_version) ? $row->starter_pack_version : '',
+            'starter_pack_applied_by_principal_id' => is_string($row->starter_pack_applied_by_principal_id) ? $row->starter_pack_applied_by_principal_id : '',
+            'starter_pack_applied_at' => is_string($row->starter_pack_applied_at) ? $row->starter_pack_applied_at : '',
         ];
     }
 
@@ -430,6 +462,11 @@ class ControlsCatalogRepository
                 'target_level' => is_string($data['target_level'] ?? null) && $data['target_level'] !== '' ? (string) $data['target_level'] : null,
                 'adopted_at' => is_string($data['adopted_at'] ?? null) && $data['adopted_at'] !== '' ? (string) $data['adopted_at'] : null,
                 'status' => (string) ($data['status'] ?? 'active'),
+                'requested_by_principal_id' => is_string($data['requested_by_principal_id'] ?? null) && $data['requested_by_principal_id'] !== '' ? (string) $data['requested_by_principal_id'] : null,
+                'approved_by_principal_id' => is_string($data['approved_by_principal_id'] ?? null) && $data['approved_by_principal_id'] !== '' ? (string) $data['approved_by_principal_id'] : null,
+                'change_reason' => is_string($data['change_reason'] ?? null) && $data['change_reason'] !== '' ? (string) $data['change_reason'] : null,
+                'approved_at' => is_string($data['approved_at'] ?? null) && $data['approved_at'] !== '' ? (string) $data['approved_at'] : null,
+                'retired_at' => is_string($data['retired_at'] ?? null) && $data['retired_at'] !== '' ? (string) $data['retired_at'] : null,
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
@@ -440,6 +477,11 @@ class ControlsCatalogRepository
                     'target_level' => is_string($data['target_level'] ?? null) && $data['target_level'] !== '' ? (string) $data['target_level'] : null,
                     'adopted_at' => is_string($data['adopted_at'] ?? null) && $data['adopted_at'] !== '' ? (string) $data['adopted_at'] : null,
                     'status' => (string) ($data['status'] ?? 'active'),
+                    'requested_by_principal_id' => is_string($data['requested_by_principal_id'] ?? null) && $data['requested_by_principal_id'] !== '' ? (string) $data['requested_by_principal_id'] : null,
+                    'approved_by_principal_id' => is_string($data['approved_by_principal_id'] ?? null) && $data['approved_by_principal_id'] !== '' ? (string) $data['approved_by_principal_id'] : null,
+                    'change_reason' => is_string($data['change_reason'] ?? null) && $data['change_reason'] !== '' ? (string) $data['change_reason'] : null,
+                    'approved_at' => is_string($data['approved_at'] ?? null) && $data['approved_at'] !== '' ? (string) $data['approved_at'] : null,
+                    'retired_at' => is_string($data['retired_at'] ?? null) && $data['retired_at'] !== '' ? (string) $data['retired_at'] : null,
                     'updated_at' => now(),
                 ]);
         }
@@ -447,6 +489,34 @@ class ControlsCatalogRepository
         $adoptions = $this->frameworkAdoptionMap($organizationId, $scopeId);
 
         return $adoptions[$frameworkId] ?? null;
+    }
+
+    /**
+     * @return array<string, string>|null
+     */
+    public function markFrameworkStarterPackApplied(
+        string $organizationId,
+        string $frameworkId,
+        ?string $scopeId,
+        string $starterPackVersion,
+        string $principalId,
+    ): ?array {
+        $adoption = $this->findFrameworkAdoption($organizationId, $frameworkId, $scopeId);
+
+        if ($adoption === null) {
+            return null;
+        }
+
+        DB::table('org_framework_adoptions')
+            ->where('id', $adoption['id'])
+            ->update([
+                'starter_pack_version' => $starterPackVersion,
+                'starter_pack_applied_by_principal_id' => $principalId,
+                'starter_pack_applied_at' => now(),
+                'updated_at' => now(),
+            ]);
+
+        return $this->findFrameworkAdoption($organizationId, $frameworkId, $scopeId);
     }
 
     /**

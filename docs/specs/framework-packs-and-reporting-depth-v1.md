@@ -10,6 +10,7 @@ Increase product value in two related areas:
 
 1. ship more reusable framework content as global packs
 2. make framework coverage visible in day-to-day governance and audit reporting
+3. turn framework adoption into a reusable plugin-governed platform layer
 
 ## Scope
 
@@ -19,19 +20,22 @@ The product now includes additional framework-pack plugins:
 
 - `framework-ens`
 - `framework-gdpr`
+- `framework-platform`
 
 Together with the existing packs:
 
 - `framework-iso27001`
 - `framework-nis2`
 
-These packs are discovered automatically by `SystemBootstrapSeeder` under the rules defined in `ADR-020`.
+The framework packs are discovered automatically by `SystemBootstrapSeeder` under the rules defined in `ADR-020`.
+The shared framework lifecycle registry now lives in the dedicated `framework-platform` plugin, which framework packs and consuming workspaces depend on explicitly.
 
 ### Reporting depth
 
 The first reporting-depth slice is intentionally pragmatic:
 
 - `Controls Catalog` now shows per-framework coverage summaries
+- `Controls Catalog` now shows per-framework onboarding starter packs, management views, export bundles, and pack update notices
 - `Assessments` now exposes framework coverage in the detail screen
 - assessment report exports now include a framework coverage section
 
@@ -102,14 +106,16 @@ It also gives management and auditors a faster answer to:
 - which frameworks are present
 - how much mapped coverage exists
 - how assessment results distribute across those frameworks
+- which starter operational objects a framework can publish
+- which report presets and exports are available for an adopted framework
+- what upgrade guidance a framework pack is currently surfacing
 
 ## Remaining Work
 
 This does not yet include:
 
-- explicit framework adoption workflows
-- target-level selection for ENS in the UI
-- framework-specific reporting packs
-- a dedicated management reporting module
+- external update ingestion or signed framework delta feeds
+- deeper operational GDPR objects beyond the starter onboarding pack
+- a standalone framework management module outside `Controls Catalog`
 
 Those remain follow-up work.

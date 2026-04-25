@@ -1,0 +1,39 @@
+{
+  "plugin": {
+    "id": "framework-platform",
+    "name": "Framework Platform",
+    "version": "0.1.0",
+    "type": "domain",
+    "description": "Shared framework adoption and lifecycle contracts for framework-pack plugins and consuming workspaces.",
+    "vendor": "pymesec",
+    "license": "AGPL-3.0-or-later"
+  },
+  "compatibility": {
+    "core": "^0.3.0",
+    "sdk": "^0.1.0"
+  },
+  "dependencies": [],
+  "permissions": [],
+  "routes": [],
+  "menus": [],
+  "migrations": [],
+  "translations": {
+    "default_locale": "en",
+    "supported_locales": [
+      "en",
+      "es",
+      "fr",
+      "de"
+    ],
+    "path": "resources/lang"
+  },
+  "lifecycle": {},
+  "runtime": {
+    "class": "PymeSec\\Plugins\\FrameworkPlatform\\FrameworkPlatformPlugin",
+    "autoload": {
+      "psr-4": {
+        "PymeSec\\Plugins\\FrameworkPlatform\\": "src"
+      }
+    }
+  }
+}

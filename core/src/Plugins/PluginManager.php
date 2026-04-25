@@ -46,7 +46,7 @@ class PluginManager implements PluginManagerInterface
 
         $contexts = [];
 
-        foreach ($this->discovery->discover() as $descriptor) {
+        foreach ($this->descriptorsInLoadOrder() as $descriptor) {
             $manifest = $descriptor->manifest();
             $enabled = in_array($descriptor->id(), $this->enabledPluginIds, true);
             $compatible = VersionConstraint::matches($this->coreVersion, $manifest->coreConstraint());
@@ -225,6 +225,42 @@ class PluginManager implements PluginManagerInterface
     public function plugin(string $pluginId): ?PluginInterface
     {
         return $this->activePlugins[$pluginId] ?? null;
+    }
+
+    /**
+     * @return array<int, PluginDescriptor>
+     */
+    private function descriptorsInLoadOrder(): array
+    {
+        $descriptors = [];
+
+        foreach ($this->discovery->discover() as $descriptor) {
+            $descriptors[$descriptor->id()] = $descriptor;
+        }
+
+        $ordered = [];
+        $visiting = [];
+
+        $visit = function (string $pluginId) use (&$visit, &$ordered, &$visiting, $descriptors): void {
+            if (isset($ordered[$pluginId]) || isset($visiting[$pluginId]) || ! isset($descriptors[$pluginId])) {
+                return;
+            }
+
+            $visiting[$pluginId] = true;
+
+            foreach ($descriptors[$pluginId]->manifest()->requiredDependencyPluginIds() as $dependencyId) {
+                $visit($dependencyId);
+            }
+
+            unset($visiting[$pluginId]);
+            $ordered[$pluginId] = $descriptors[$pluginId];
+        };
+
+        foreach (array_keys($descriptors) as $pluginId) {
+            $visit($pluginId);
+        }
+
+        return array_values($ordered);
     }
 
     private function registerAutoloadMappings(PluginDescriptor $descriptor): void

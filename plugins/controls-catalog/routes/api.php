@@ -15,6 +15,7 @@ use PymeSec\Core\Tenancy\Contracts\TenancyServiceInterface;
 use PymeSec\Core\Workflows\Contracts\WorkflowServiceInterface;
 use PymeSec\Core\Workflows\WorkflowExecutionContext;
 use PymeSec\Plugins\ControlsCatalog\ControlsCatalogRepository;
+use PymeSec\Plugins\ControlsCatalog\FrameworkOnboardingService;
 
 $apiContext = require base_path('routes/api_context.php');
 extract($apiContext, EXTR_SKIP);
@@ -188,6 +189,7 @@ Route::post('/controls/frameworks/{frameworkId}/adoption', function (
         'status' => ['required', 'in:active,in-progress,inactive'],
         'target_level' => ['nullable', 'in:basic,medium,high'],
         'adopted_at' => ['nullable', 'date'],
+        'change_reason' => ['required', 'string', 'max:1000'],
         'mandate_document' => ['nullable', 'file', 'max:10240'],
     ]);
 
@@ -219,10 +221,26 @@ Route::post('/controls/frameworks/{frameworkId}/adoption', function (
         ]);
     }
 
+    $existingStatus = $existingAdoption['status'] ?? null;
+
     $adoption = $controls->upsertFrameworkAdoption(
         organizationId: (string) $validated['organization_id'],
         frameworkId: $frameworkId,
-        data: $validated,
+        data: [
+            ...$validated,
+            'requested_by_principal_id' => ($existingAdoption['requested_by_principal_id'] ?? '') !== ''
+                ? (string) $existingAdoption['requested_by_principal_id']
+                : $principalId,
+            'approved_by_principal_id' => in_array($validated['status'], ['active', 'inactive'], true) && $existingStatus !== $validated['status']
+                ? $principalId
+                : ($existingAdoption['approved_by_principal_id'] ?? null),
+            'approved_at' => in_array($validated['status'], ['active', 'inactive'], true) && $existingStatus !== $validated['status']
+                ? now()->toDateTimeString()
+                : ($existingAdoption['approved_at'] ?? null),
+            'retired_at' => $validated['status'] === 'inactive'
+                ? now()->toDateTimeString()
+                : null,
+        ],
     );
     abort_if($adoption === null, 404);
 
@@ -285,18 +303,95 @@ Route::post('/controls/frameworks/{frameworkId}/adoption', function (
             'multipart/form-data' => [
                 'schema' => [
                     'type' => 'object',
-                    'required' => ['organization_id', 'status'],
+                    'required' => ['organization_id', 'status', 'change_reason'],
                     'properties' => [
                         'organization_id' => ['type' => 'string'],
                         'scope_id' => ['type' => 'string'],
                         'status' => ['type' => 'string', 'enum' => ['active', 'in-progress', 'inactive']],
                         'target_level' => ['type' => 'string', 'enum' => ['basic', 'medium', 'high']],
                         'adopted_at' => ['type' => 'string', 'format' => 'date'],
+                        'change_reason' => ['type' => 'string'],
                         'mandate_document' => ['type' => 'string', 'format' => 'binary'],
                     ],
                 ],
             ],
         ],
+    ],
+])->middleware('core.permission:plugin.controls-catalog.controls.manage');
+
+Route::post('/controls/frameworks/{frameworkId}/onboarding/apply', function (
+    Request $request,
+    string $frameworkId,
+    ControlsCatalogRepository $controls,
+    FrameworkOnboardingService $onboarding,
+    \PymeSec\Plugins\FrameworkPlatform\Contracts\FrameworkPlatformRegistryInterface $platforms,
+) use ($apiPrincipalId, $apiSuccess) {
+    $validated = $request->validate([
+        'organization_id' => ['required', 'string', 'max:64'],
+        'scope_id' => ['nullable', 'string', 'max:64'],
+    ]);
+
+    $principalId = $apiPrincipalId($request);
+    abort_unless(is_string($principalId) && $principalId !== '', 401);
+    $membershipId = $request->input('membership_id');
+    $scopeId = is_string($validated['scope_id'] ?? null) && $validated['scope_id'] !== ''
+        ? (string) $validated['scope_id']
+        : null;
+    $adoption = $controls->findFrameworkAdoption((string) $validated['organization_id'], $frameworkId, $scopeId);
+    abort_if($adoption === null, 404);
+    abort_unless(in_array($adoption['status'] ?? '', ['active', 'in-progress'], true), 422);
+
+    $platform = $platforms->definition($frameworkId);
+    abort_if(! is_array($platform), 404);
+
+    $result = $onboarding->apply(
+        frameworkId: $frameworkId,
+        organizationId: (string) $validated['organization_id'],
+        scopeId: $scopeId,
+        principalId: $principalId,
+        membershipId: is_string($membershipId) && $membershipId !== '' ? $membershipId : null,
+        platform: $platform,
+    );
+
+    $adoption = $controls->markFrameworkStarterPackApplied(
+        organizationId: (string) $validated['organization_id'],
+        frameworkId: $frameworkId,
+        scopeId: $scopeId,
+        starterPackVersion: (string) ($result['onboarding_version'] ?? '1'),
+        principalId: $principalId,
+    );
+
+    return $apiSuccess([
+        'adoption' => $adoption,
+        'result' => $result,
+    ]);
+})->defaults('_openapi', [
+    'operation_id' => 'controlsCatalogApplyFrameworkOnboardingKit',
+    'tags' => ['controls'],
+    'tag_descriptions' => [
+        'controls' => 'Controls catalog and mapping API surface.',
+    ],
+    'summary' => 'Apply one framework onboarding kit',
+    'responses' => [
+        '200' => [
+            'description' => 'Starter pack applied',
+        ],
+        '401' => [
+            'description' => 'Authentication required',
+        ],
+        '403' => [
+            'description' => 'Caller is not authorized',
+        ],
+        '404' => [
+            'description' => 'Framework adoption or onboarding kit not found',
+        ],
+        '422' => [
+            'description' => 'The framework is not in an adoptable state for onboarding',
+        ],
+    ],
+    'request_rules' => [
+        'organization_id' => ['required', 'string', 'max:64'],
+        'scope_id' => ['nullable', 'string', 'max:64'],
     ],
 ])->middleware('core.permission:plugin.controls-catalog.controls.manage');
 

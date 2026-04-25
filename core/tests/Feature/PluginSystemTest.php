@@ -143,6 +143,22 @@ class PluginSystemTest extends TestCase
                 'route_count' => 1,
                 'menu_count' => 2,
                 'runtime_contract_satisfied' => true,
+            ])
+            ->assertJsonFragment([
+                'id' => 'framework-platform',
+                'enabled' => true,
+                'booted' => true,
+                'route_count' => 0,
+                'menu_count' => 0,
+                'runtime_contract_satisfied' => true,
+            ])
+            ->assertJsonFragment([
+                'id' => 'framework-gdpr',
+                'enabled' => true,
+                'booted' => true,
+                'route_count' => 0,
+                'menu_count' => 0,
+                'runtime_contract_satisfied' => true,
             ]);
     }
 
@@ -213,7 +229,8 @@ class PluginSystemTest extends TestCase
         $this->artisan('plugins:list')
             ->expectsOutputToContain('| ID')
             ->expectsOutputToContain('| controls-catalog     | domain         | yes     | yes    | 2           | 2      | 4')
-            ->expectsOutputToContain('| framework-gdpr       | framework-pack | no      | no     | 0           | 0      | 0     | plugin_not_enabled |')
+            ->expectsOutputToContain('| framework-gdpr       | framework-pack | yes     | yes    | 0           | 0      | 0')
+            ->expectsOutputToContain('| framework-platform   | domain         | yes     | yes    | 0           | 0      | 0')
             ->expectsOutputToContain('| risk-management      | domain         | yes     | yes    | 2           | 2      | 2')
             ->assertExitCode(0);
     }
@@ -289,7 +306,7 @@ class PluginSystemTest extends TestCase
 
         $effective = $this->app->make(PluginStateStore::class)->effectiveEnabled(config('plugins.enabled', []));
 
-        $this->assertSame(['hello-world', 'asset-catalog', 'actor-directory', 'controls-catalog', 'risk-management', 'questionnaires', 'collaboration', 'third-party-risk', 'findings-remediation', 'policy-exceptions', 'data-flows-privacy', 'continuity-bcm', 'automation-catalog', 'assessments-audits', 'evidence-management', 'identity-local', 'identity-ldap'], $effective);
+        $this->assertSame(config('plugins.enabled', []), $effective);
     }
 
     public function test_the_plugins_disable_command_persists_a_local_override(): void
@@ -300,7 +317,12 @@ class PluginSystemTest extends TestCase
 
         $effective = $this->app->make(PluginStateStore::class)->effectiveEnabled(config('plugins.enabled', []));
 
-        $this->assertSame(['asset-catalog', 'actor-directory', 'controls-catalog', 'risk-management', 'questionnaires', 'collaboration', 'third-party-risk', 'findings-remediation', 'policy-exceptions', 'data-flows-privacy', 'continuity-bcm', 'automation-catalog', 'assessments-audits', 'evidence-management', 'identity-local', 'identity-ldap'], $effective);
+        $expected = array_values(array_filter(
+            config('plugins.enabled', []),
+            static fn (string $pluginId): bool => $pluginId !== 'hello-world',
+        ));
+
+        $this->assertSame($expected, $effective);
     }
 
     public function test_the_plugins_disable_command_rejects_disabling_a_required_dependency(): void
@@ -311,7 +333,7 @@ class PluginSystemTest extends TestCase
 
         $effective = $this->app->make(PluginStateStore::class)->effectiveEnabled(config('plugins.enabled', []));
 
-        $this->assertSame(['hello-world', 'asset-catalog', 'actor-directory', 'controls-catalog', 'risk-management', 'questionnaires', 'collaboration', 'third-party-risk', 'findings-remediation', 'policy-exceptions', 'data-flows-privacy', 'continuity-bcm', 'automation-catalog', 'assessments-audits', 'evidence-management', 'identity-local', 'identity-ldap'], $effective);
+        $this->assertSame(config('plugins.enabled', []), $effective);
     }
 
     public function test_the_plugins_enable_command_rejects_when_required_dependencies_are_disabled(): void
@@ -328,7 +350,12 @@ class PluginSystemTest extends TestCase
 
         $effective = $this->app->make(PluginStateStore::class)->effectiveEnabled(config('plugins.enabled', []));
 
-        $this->assertSame(['hello-world', 'asset-catalog', 'actor-directory', 'controls-catalog', 'risk-management', 'questionnaires', 'collaboration', 'third-party-risk', 'findings-remediation', 'policy-exceptions', 'data-flows-privacy', 'continuity-bcm', 'automation-catalog', 'assessments-audits', 'evidence-management'], $effective);
+        $expected = array_values(array_filter(
+            config('plugins.enabled', []),
+            static fn (string $pluginId): bool => ! in_array($pluginId, ['identity-local', 'identity-ldap'], true),
+        ));
+
+        $this->assertSame($expected, $effective);
     }
 
     public function test_the_plugins_enable_command_rejects_unknown_plugins(): void

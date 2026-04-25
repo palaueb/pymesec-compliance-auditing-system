@@ -62,6 +62,8 @@ class ControlsCatalogTest extends TestCase
             ->assertSee('ISO 27001')
             ->assertSee('GDPR')
             ->assertSee('Signed mandate document')
+            ->assertSee('Onboarding kit')
+            ->assertSee('Framework pack updates')
             ->assertSee('Ready now')
             ->assertSee('Needs attention')
             ->assertSee('Readiness snapshot')
@@ -79,6 +81,8 @@ class ControlsCatalogTest extends TestCase
             ->assertSee('Open report')
             ->assertSee('Export CSV')
             ->assertSee('Export JSON')
+            ->assertSee('Management views')
+            ->assertSee('Export bundles')
             ->assertSee('Signed mandate document still missing.')
             ->assertSee('Onboarding');
     }
@@ -100,6 +104,7 @@ class ControlsCatalogTest extends TestCase
             'scope_id' => 'scope-eu',
             'status' => 'active',
             'adopted_at' => '2026-03-01',
+            'change_reason' => 'Privacy program approved by leadership.',
             'mandate_document' => UploadedFile::fake()->createWithContent('gdpr-mandate.pdf', 'signed-by-management'),
         ])->assertFound();
 
@@ -108,6 +113,8 @@ class ControlsCatalogTest extends TestCase
             ->assertSee('GDPR')
             ->assertSee('active')
             ->assertSee('2026-03-01')
+            ->assertSee('principal-org-a')
+            ->assertSee('Privacy program approved by leadership.')
             ->assertSee('gdpr-mandate.pdf');
     }
 
@@ -127,8 +134,63 @@ class ControlsCatalogTest extends TestCase
                 'scope_id' => 'scope-eu',
                 'status' => 'active',
                 'adopted_at' => '2026-03-01',
+                'change_reason' => 'Leadership requested activation.',
             ])
             ->assertSessionHasErrors('mandate_document');
+    }
+
+    public function test_framework_onboarding_kit_creates_starter_controls_policies_and_marks_the_adoption(): void
+    {
+        $this->post('/plugins/controls/frameworks/framework-gdpr/onboarding/apply', [
+            'principal_id' => 'principal-org-a',
+            'organization_id' => 'org-a',
+            'scope_id' => 'scope-eu',
+            'locale' => 'en',
+            'membership_id' => 'membership-org-a-hello',
+        ])->assertFound();
+
+        $this->assertDatabaseHas('controls', [
+            'organization_id' => 'org-a',
+            'scope_id' => 'scope-eu',
+            'framework_id' => 'framework-gdpr',
+            'name' => 'Records of processing activities',
+        ]);
+
+        $this->assertDatabaseHas('policies', [
+            'organization_id' => 'org-a',
+            'scope_id' => 'scope-eu',
+            'title' => 'Personal data protection policy',
+        ]);
+
+        $this->assertDatabaseHas('org_framework_adoptions', [
+            'organization_id' => 'org-a',
+            'framework_id' => 'framework-gdpr',
+            'scope_id' => 'scope-eu',
+            'starter_pack_version' => '2026.04',
+            'starter_pack_applied_by_principal_id' => 'principal-org-a',
+        ]);
+
+        $this->get('/app?menu=plugin.controls-catalog.framework-adoption&principal_id=principal-org-a&organization_id=org-a&scope_id=scope-eu&membership_ids[]=membership-org-a-hello')
+            ->assertOk()
+            ->assertSee('Records of processing activities')
+            ->assertSee('Personal data protection policy')
+            ->assertSee('Starter pack applied on');
+    }
+
+    public function test_framework_onboarding_kit_can_be_applied_over_the_api(): void
+    {
+        $response = $this->postJson('/api/v1/controls/frameworks/framework-gdpr/onboarding/apply', [
+            'principal_id' => 'principal-org-a',
+            'organization_id' => 'org-a',
+            'scope_id' => 'scope-eu',
+            'membership_id' => 'membership-org-a-hello',
+        ]);
+
+        $response
+            ->assertOk()
+            ->assertJsonPath('data.adoption.framework_id', 'framework-gdpr')
+            ->assertJsonPath('data.adoption.starter_pack_version', '2026.04')
+            ->assertJsonPath('data.result.onboarding_version', '2026.04');
     }
 
     public function test_control_review_transition_creates_due_notification_and_scheduler_dispatches_it(): void

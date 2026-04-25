@@ -12,7 +12,9 @@
     "core": "^0.3.0",
     "sdk": "^0.1.0"
   },
-  "dependencies": [],
+  "dependencies": [
+    "framework-platform"
+  ],
   "permissions": [],
   "routes": [],
   "menus": [],

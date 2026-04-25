@@ -180,6 +180,93 @@
 
                 <div class="overview-grid" style="grid-template-columns:repeat(2, minmax(0, 1fr)); margin-top:16px;">
                     <div class="surface-card" style="padding:16px;">
+                        <div class="field-label">{{ __('Onboarding kit') }}</div>
+                        <div class="table-note" style="margin-top:6px;">
+                            {{ $framework['platform']['onboarding']['summary'] !== '' ? $framework['platform']['onboarding']['summary'] : __('No onboarding kit published yet for this framework.') }}
+                        </div>
+
+                        @if (($framework['platform']['onboarding']['controls'] ?? []) !== [])
+                            <div class="data-stack" style="margin-top:12px;">
+                                @foreach ($framework['platform']['onboarding']['controls'] as $starterControl)
+                                    <div class="data-item">
+                                        <div class="entity-title">{{ $starterControl['name'] }}</div>
+                                        <div class="table-note">{{ $starterControl['domain'] }}</div>
+                                        <div class="table-note">{{ $starterControl['evidence'] }}</div>
+                                    </div>
+                                @endforeach
+                            </div>
+                        @endif
+
+                        @if (($framework['platform']['onboarding']['policies'] ?? []) !== [])
+                            <div class="data-stack" style="margin-top:12px;">
+                                @foreach ($framework['platform']['onboarding']['policies'] as $starterPolicy)
+                                    <div class="data-item">
+                                        <div class="entity-title">{{ $starterPolicy['title'] }}</div>
+                                        <div class="table-note">{{ __('Starter policy') }}</div>
+                                    </div>
+                                @endforeach
+                            </div>
+                        @endif
+
+                        @if (($framework['platform']['onboarding']['evidence_requests'] ?? []) !== [])
+                            <details style="margin-top:12px;">
+                                <summary class="button button-ghost" style="display:inline-flex;">{{ __('Evidence checklist') }}</summary>
+                                <div class="data-stack" style="margin-top:12px;">
+                                    @foreach ($framework['platform']['onboarding']['evidence_requests'] as $evidenceRequest)
+                                        <div class="data-item">
+                                            <div class="entity-title">{{ $evidenceRequest['label'] }}</div>
+                                            <div class="table-note">{{ $evidenceRequest['summary'] }}</div>
+                                        </div>
+                                    @endforeach
+                                </div>
+                            </details>
+                        @endif
+
+                        @if ($framework['starter_pack_applied_at'] !== '')
+                            <div class="surface-note" style="margin-top:12px;">
+                                {{ __('Starter pack applied on :date by :principal (version :version).', [
+                                    'date' => $framework['starter_pack_applied_at'],
+                                    'principal' => $framework['starter_pack_applied_by_principal_id'] !== '' ? $framework['starter_pack_applied_by_principal_id'] : __('Unknown'),
+                                    'version' => $framework['starter_pack_version'] !== '' ? $framework['starter_pack_version'] : __('Not set'),
+                                ]) }}
+                            </div>
+                        @endif
+
+                        @if ($can_manage_controls && ($framework['platform']['onboarding']['controls'] ?? []) !== [] && $framework['adoption_id'] !== '' && in_array($framework['adoption_status'], ['active', 'in-progress'], true))
+                            <form class="upload-form" method="POST" action="{{ $framework['onboarding_apply_route'] }}" style="margin-top:12px;">
+                                @csrf
+                                <input type="hidden" name="principal_id" value="{{ $query['principal_id'] ?? '' }}">
+                                <input type="hidden" name="organization_id" value="{{ $query['organization_id'] }}">
+                                <input type="hidden" name="locale" value="{{ $query['locale'] }}">
+                                <input type="hidden" name="scope_id" value="{{ $framework['adoption_scope_id'] }}">
+                                <input type="hidden" name="membership_id" value="{{ $query['membership_ids'][0] ?? 'membership-org-a-hello' }}">
+                                <div class="action-cluster">
+                                    <button class="button button-secondary" type="submit">{{ $framework['starter_pack_applied_at'] !== '' ? __('Reapply onboarding kit') : __('Apply onboarding kit') }}</button>
+                                </div>
+                            </form>
+                        @elseif (($framework['platform']['onboarding']['controls'] ?? []) !== [])
+                            <div class="surface-note" style="margin-top:12px;">
+                                {{ __('Adopt the framework first and keep it active or in progress before applying its onboarding kit.') }}
+                            </div>
+                        @endif
+                    </div>
+
+                    <div class="surface-card" style="padding:16px;">
+                        <div class="field-label">{{ __('Framework pack updates') }}</div>
+                        @if (($framework['platform']['updates']['channel'] ?? '') !== '')
+                            <div class="entity-title" style="margin-top:10px;">{{ $framework['platform']['updates']['channel'] }}</div>
+                        @endif
+                        @if (($framework['platform']['updates']['summary'] ?? '') !== '')
+                            <div class="table-note" style="margin-top:6px;">{{ $framework['platform']['updates']['summary'] }}</div>
+                        @endif
+                        @if (($framework['platform']['updates']['guidance'] ?? '') !== '')
+                            <div class="surface-note" style="margin-top:12px;">{{ $framework['platform']['updates']['guidance'] }}</div>
+                        @endif
+                    </div>
+                </div>
+
+                <div class="overview-grid" style="grid-template-columns:repeat(2, minmax(0, 1fr)); margin-top:16px;">
+                    <div class="surface-card" style="padding:16px;">
                         <div class="row-between">
                             <div class="field-label">{{ __('Readiness snapshot') }}</div>
                             <span class="pill {{ $readinessPill }}">{{ $framework['readiness']['label'] }}</span>
@@ -241,6 +328,30 @@
                                 {{ __('Reporting presets will appear once an assessment is linked to this framework.') }}
                             </div>
                         @endif
+
+                        @if (($framework['platform']['reporting']['management_views'] ?? []) !== [])
+                            <div class="field-label" style="margin-top:16px;">{{ __('Management views') }}</div>
+                            <div class="data-stack" style="margin-top:10px;">
+                                @foreach ($framework['platform']['reporting']['management_views'] as $managementView)
+                                    <div class="data-item">
+                                        <div class="entity-title">{{ $managementView['label'] }}</div>
+                                        <div class="table-note">{{ $managementView['summary'] }}</div>
+                                    </div>
+                                @endforeach
+                            </div>
+                        @endif
+
+                        @if (($framework['platform']['reporting']['export_bundles'] ?? []) !== [])
+                            <div class="field-label" style="margin-top:16px;">{{ __('Export bundles') }}</div>
+                            <div class="data-stack" style="margin-top:10px;">
+                                @foreach ($framework['platform']['reporting']['export_bundles'] as $exportBundle)
+                                    <div class="data-item">
+                                        <div class="entity-title">{{ $exportBundle['label'] }}</div>
+                                        <div class="table-note">{{ $exportBundle['summary'] }}</div>
+                                    </div>
+                                @endforeach
+                            </div>
+                        @endif
                     </div>
                 </div>
 
@@ -260,6 +371,30 @@
                                 <div class="entity-title">{{ __('Target level') }}</div>
                                 <div class="table-note">{{ $framework['target_level'] !== '' ? __($framework['target_level']) : __('Not set') }}</div>
                             </div>
+                            <div class="data-item">
+                                <div class="entity-title">{{ __('Requested by') }}</div>
+                                <div class="table-note">{{ $framework['requested_by_principal_id'] !== '' ? $framework['requested_by_principal_id'] : __('Not set') }}</div>
+                            </div>
+                            <div class="data-item">
+                                <div class="entity-title">{{ __('Approved by') }}</div>
+                                <div class="table-note">{{ $framework['approved_by_principal_id'] !== '' ? $framework['approved_by_principal_id'] : __('Not set') }}</div>
+                            </div>
+                            <div class="data-item">
+                                <div class="entity-title">{{ __('Approved on') }}</div>
+                                <div class="table-note">{{ $framework['approved_at'] !== '' ? $framework['approved_at'] : __('Not set') }}</div>
+                            </div>
+                            @if ($framework['retired_at'] !== '')
+                                <div class="data-item">
+                                    <div class="entity-title">{{ __('Retired on') }}</div>
+                                    <div class="table-note">{{ $framework['retired_at'] }}</div>
+                                </div>
+                            @endif
+                            @if ($framework['change_reason'] !== '')
+                                <div class="data-item">
+                                    <div class="entity-title">{{ __('Change reason') }}</div>
+                                    <div class="table-note">{{ $framework['change_reason'] }}</div>
+                                </div>
+                            @endif
                         </div>
 
                         @if ($mandateDocument !== null)
@@ -376,6 +511,13 @@
                                 <div class="field">
                                     <label class="field-label">{{ __('Adopted on') }}</label>
                                     <input class="field-input" type="date" name="adopted_at" value="{{ $framework['adopted_at'] !== '' ? substr($framework['adopted_at'], 0, 10) : '' }}">
+                                </div>
+                                <div class="field" style="grid-column:1 / -1;">
+                                    <label class="field-label">{{ __('Change reason') }}</label>
+                                    <textarea class="field-input" name="change_reason" rows="3" required>{{ $framework['change_reason'] }}</textarea>
+                                    <div class="table-note" style="margin-top:6px;">
+                                        {{ __('Explain why this framework is being activated, updated, or retired for the current workspace.') }}
+                                    </div>
                                 </div>
                                 <div class="field" style="grid-column:1 / -1;">
                                     <label class="field-label">{{ __('Signed mandate document') }}</label>

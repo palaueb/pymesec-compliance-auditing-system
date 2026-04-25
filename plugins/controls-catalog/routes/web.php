@@ -13,6 +13,7 @@ use PymeSec\Core\Workflows\WorkflowExecutionContext;
 use PymeSec\Core\Principals\MembershipReference;
 use PymeSec\Core\Principals\PrincipalReference;
 use PymeSec\Plugins\ControlsCatalog\ControlsCatalogRepository;
+use PymeSec\Plugins\ControlsCatalog\FrameworkOnboardingService;
 
 Route::get('/plugins/controls', function (Request $request, ControlsCatalogRepository $repository, ObjectAccessService $objectAccess) {
     $organizationId = (string) $request->query('organization_id', 'org-a');
@@ -145,6 +146,7 @@ Route::post('/plugins/controls/frameworks/{frameworkId}/adoption', function (
         'status' => ['required', 'in:active,in-progress,inactive'],
         'target_level' => ['nullable', 'in:basic,medium,high'],
         'adopted_at' => ['nullable', 'date'],
+        'change_reason' => ['required', 'string', 'max:1000'],
         'mandate_document' => ['nullable', 'file', 'max:10240'],
     ]);
 
@@ -179,10 +181,26 @@ Route::post('/plugins/controls/frameworks/{frameworkId}/adoption', function (
         ]);
     }
 
+    $existingStatus = $existingAdoption['status'] ?? null;
+
     $adoption = $repository->upsertFrameworkAdoption(
         organizationId: (string) $validated['organization_id'],
         frameworkId: $frameworkId,
-        data: $validated,
+        data: [
+            ...$validated,
+            'requested_by_principal_id' => ($existingAdoption['requested_by_principal_id'] ?? '') !== ''
+                ? (string) $existingAdoption['requested_by_principal_id']
+                : $principalId,
+            'approved_by_principal_id' => in_array($validated['status'], ['active', 'inactive'], true) && $existingStatus !== $validated['status']
+                ? $principalId
+                : ($existingAdoption['approved_by_principal_id'] ?? null),
+            'approved_at' => in_array($validated['status'], ['active', 'inactive'], true) && $existingStatus !== $validated['status']
+                ? now()->toDateTimeString()
+                : ($existingAdoption['approved_at'] ?? null),
+            'retired_at' => $validated['status'] === 'inactive'
+                ? now()->toDateTimeString()
+                : null,
+        ],
     );
 
     if ($request->hasFile('mandate_document') && $adoption !== null) {
@@ -217,6 +235,63 @@ Route::post('/plugins/controls/frameworks/{frameworkId}/adoption', function (
         'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
     ]))->with('status', 'Framework adoption updated.');
 })->middleware('core.permission:plugin.controls-catalog.controls.manage')->name('plugin.controls-catalog.frameworks.adoption.upsert');
+
+Route::post('/plugins/controls/frameworks/{frameworkId}/onboarding/apply', function (
+    Request $request,
+    string $frameworkId,
+    ControlsCatalogRepository $repository,
+    FrameworkOnboardingService $onboarding,
+    \PymeSec\Plugins\FrameworkPlatform\Contracts\FrameworkPlatformRegistryInterface $platforms,
+) {
+    $validated = $request->validate([
+        'organization_id' => ['required', 'string', 'max:64'],
+        'scope_id' => ['nullable', 'string', 'max:64'],
+    ]);
+
+    $principalId = (string) $request->input('principal_id', 'principal-org-a');
+    $membershipId = $request->input('membership_id');
+    $scopeId = is_string($validated['scope_id'] ?? null) && $validated['scope_id'] !== ''
+        ? (string) $validated['scope_id']
+        : null;
+    $adoption = $repository->findFrameworkAdoption((string) $validated['organization_id'], $frameworkId, $scopeId);
+
+    abort_if($adoption === null, 404, 'Adopt the framework before applying its onboarding kit.');
+    abort_unless(in_array($adoption['status'] ?? '', ['active', 'in-progress'], true), 422, 'Only active or in-progress adoptions can apply onboarding kits.');
+
+    $platform = $platforms->definition($frameworkId);
+    abort_if(! is_array($platform), 404, 'No onboarding kit is published for this framework.');
+
+    $result = $onboarding->apply(
+        frameworkId: $frameworkId,
+        organizationId: (string) $validated['organization_id'],
+        scopeId: $scopeId,
+        principalId: $principalId,
+        membershipId: is_string($membershipId) && $membershipId !== '' ? $membershipId : null,
+        platform: $platform,
+    );
+
+    $repository->markFrameworkStarterPackApplied(
+        organizationId: (string) $validated['organization_id'],
+        frameworkId: $frameworkId,
+        scopeId: $scopeId,
+        starterPackVersion: (string) ($result['onboarding_version'] ?? '1'),
+        principalId: $principalId,
+    );
+
+    return redirect()->route('core.shell.index', array_filter([
+        'menu' => 'plugin.controls-catalog.framework-adoption',
+        'principal_id' => $principalId,
+        'organization_id' => $validated['organization_id'],
+        'scope_id' => $scopeId,
+        'locale' => $request->input('locale', 'en'),
+        'membership_ids' => is_string($membershipId) && $membershipId !== '' ? [$membershipId] : null,
+    ]))->with('status', sprintf(
+        'Starter pack applied: %d controls, %d policies, %d mappings.',
+        count($result['created_controls'] ?? []),
+        count($result['created_policies'] ?? []),
+        (int) ($result['attached_mapping_count'] ?? 0),
+    ));
+})->middleware('core.permission:plugin.controls-catalog.controls.manage')->name('plugin.controls-catalog.frameworks.onboarding.apply');
 
 Route::post('/plugins/controls/requirements', function (
     Request $request,

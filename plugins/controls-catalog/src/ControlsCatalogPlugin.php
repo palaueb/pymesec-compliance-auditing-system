@@ -21,12 +21,14 @@ use PymeSec\Core\Workflows\Contracts\WorkflowServiceInterface;
 use PymeSec\Core\Workflows\WorkflowDefinition;
 use PymeSec\Core\Workflows\WorkflowTransitionDefinition;
 use PymeSec\Plugins\AssessmentsAudits\AssessmentReferenceData;
+use PymeSec\Plugins\FrameworkPlatform\Contracts\FrameworkPlatformRegistryInterface;
 
 class ControlsCatalogPlugin implements PluginInterface
 {
     public function register(PluginContext $context): void
     {
         $context->app()->singleton(ControlsCatalogRepository::class);
+        $context->app()->singleton(FrameworkOnboardingService::class);
 
         $context->app()->make(WorkflowRegistryInterface::class)->register(new WorkflowDefinition(
             key: 'plugin.controls-catalog.control-lifecycle',
@@ -496,6 +498,7 @@ class ControlsCatalogPlugin implements PluginInterface
     private function frameworkWorkspaceData(PluginContext $context, ScreenRenderContext $screenContext, array $controls): array
     {
         $repository = $context->app()->make(ControlsCatalogRepository::class);
+        $platformRegistry = $context->app()->make(FrameworkPlatformRegistryInterface::class);
         $artifacts = $context->app()->make(ArtifactServiceInterface::class);
         $tenancy = $context->app()->make(TenancyServiceInterface::class);
         $organizationId = $screenContext->organizationId ?? 'org-a';
@@ -532,7 +535,8 @@ class ControlsCatalogPlugin implements PluginInterface
             $artifacts,
             $organizationId,
             $requirementsByFramework,
-            $frameworkAssessmentSnapshots
+            $frameworkAssessmentSnapshots,
+            $platformRegistry
         ): array {
             $adoption = $frameworkAdoptions[$framework['id']] ?? null;
             $scopeLabel = __('Not adopted');
@@ -568,11 +572,21 @@ class ControlsCatalogPlugin implements PluginInterface
                 'adoption_scope_label' => $scopeLabel,
                 'target_level' => is_array($adoption) ? (string) ($adoption['target_level'] ?? '') : '',
                 'adopted_at' => is_array($adoption) ? (string) ($adoption['adopted_at'] ?? '') : '',
+                'requested_by_principal_id' => is_array($adoption) ? (string) ($adoption['requested_by_principal_id'] ?? '') : '',
+                'approved_by_principal_id' => is_array($adoption) ? (string) ($adoption['approved_by_principal_id'] ?? '') : '',
+                'change_reason' => is_array($adoption) ? (string) ($adoption['change_reason'] ?? '') : '',
+                'approved_at' => is_array($adoption) ? (string) ($adoption['approved_at'] ?? '') : '',
+                'retired_at' => is_array($adoption) ? (string) ($adoption['retired_at'] ?? '') : '',
+                'starter_pack_version' => is_array($adoption) ? (string) ($adoption['starter_pack_version'] ?? '') : '',
+                'starter_pack_applied_by_principal_id' => is_array($adoption) ? (string) ($adoption['starter_pack_applied_by_principal_id'] ?? '') : '',
+                'starter_pack_applied_at' => is_array($adoption) ? (string) ($adoption['starter_pack_applied_at'] ?? '') : '',
                 'adoption_update_route' => route('plugin.controls-catalog.frameworks.adoption.upsert', ['frameworkId' => $framework['id']]),
+                'onboarding_apply_route' => route('plugin.controls-catalog.frameworks.onboarding.apply', ['frameworkId' => $framework['id']]),
                 'requirements' => $requirementsByFramework[$framework['id']] ?? [],
                 'mandate_document' => $mandateArtifacts[0] ?? null,
                 'mandate_document_count' => count($mandateArtifacts),
                 'assessment_snapshot' => $frameworkAssessmentSnapshots[$framework['id']] ?? null,
+                'platform' => $this->platformData($platformRegistry->definition($framework['id'])),
             ];
         }, $frameworks);
 
@@ -688,6 +702,57 @@ class ControlsCatalogPlugin implements PluginInterface
                 'review_summary' => $reviewSummary,
                 'reviewed_control_count' => (int) ($snapshot['reviewed_control_count'] ?? 0),
                 'report_presets' => $this->assessmentReportPresets($snapshot, $screenContext),
+            ],
+        ];
+    }
+
+    /**
+     * @param  array<string, mixed>|null  $definition
+     * @return array<string, mixed>
+     */
+    private function platformData(?array $definition): array
+    {
+        $definition = is_array($definition) ? $definition : [];
+        $onboarding = is_array($definition['onboarding'] ?? null) ? $definition['onboarding'] : [];
+        $reporting = is_array($definition['reporting'] ?? null) ? $definition['reporting'] : [];
+        $updates = is_array($definition['updates'] ?? null) ? $definition['updates'] : [];
+
+        return [
+            'onboarding' => [
+                'version' => is_string($onboarding['version'] ?? null) ? $onboarding['version'] : '',
+                'summary' => is_string($onboarding['summary'] ?? null) ? (string) __((string) $onboarding['summary']) : '',
+                'controls' => array_values(array_map(static fn (array $control): array => [
+                    ...$control,
+                    'name' => (string) __((string) ($control['name'] ?? '')),
+                    'domain' => (string) ($control['domain'] ?? ''),
+                    'evidence' => (string) ($control['evidence'] ?? ''),
+                ], array_values(array_filter($onboarding['controls'] ?? [], 'is_array')))),
+                'policies' => array_values(array_map(static fn (array $policy): array => [
+                    ...$policy,
+                    'title' => (string) __((string) ($policy['title'] ?? '')),
+                ], array_values(array_filter($onboarding['policies'] ?? [], 'is_array')))),
+                'evidence_requests' => array_values(array_map(static fn (array $evidence): array => [
+                    ...$evidence,
+                    'label' => (string) __((string) ($evidence['label'] ?? '')),
+                    'summary' => (string) __((string) ($evidence['summary'] ?? '')),
+                ], array_values(array_filter($onboarding['evidence_requests'] ?? [], 'is_array')))),
+            ],
+            'reporting' => [
+                'management_views' => array_values(array_map(static fn (array $view): array => [
+                    ...$view,
+                    'label' => (string) __((string) ($view['label'] ?? '')),
+                    'summary' => (string) __((string) ($view['summary'] ?? '')),
+                ], array_values(array_filter($reporting['management_views'] ?? [], 'is_array')))),
+                'export_bundles' => array_values(array_map(static fn (array $bundle): array => [
+                    ...$bundle,
+                    'label' => (string) __((string) ($bundle['label'] ?? '')),
+                    'summary' => (string) __((string) ($bundle['summary'] ?? '')),
+                ], array_values(array_filter($reporting['export_bundles'] ?? [], 'is_array')))),
+            ],
+            'updates' => [
+                'channel' => is_string($updates['channel'] ?? null) ? (string) __((string) $updates['channel']) : '',
+                'summary' => is_string($updates['summary'] ?? null) ? (string) __((string) $updates['summary']) : '',
+                'guidance' => is_string($updates['guidance'] ?? null) ? (string) __((string) $updates['guidance']) : '',
             ],
         ];
     }

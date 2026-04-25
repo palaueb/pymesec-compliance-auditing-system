@@ -10,4 +10,4 @@ index 0464054eb12e1e64122a67edd9344bb45ac1c9f2..8deeb1847f19eecf5e27df7d9e9f3576
 +    : storage_path('app/private/plugin-state.demo.json');
  
  return [
-    'core_version' => env('CORE_VERSION', '0.3.0'),
+     'core_version' => env('CORE_VERSION', '0.1.0'),

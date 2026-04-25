@@ -17,6 +17,9 @@ It adds:
 - adoption status per `organization + optional scope + framework`
 - target level support for frameworks such as `ENS`
 - adoption management inside `Controls Catalog`
+- governance metadata for adoption changes, including requester, approver, approval time, retirement time, and change reason
+- framework-platform registration through a dedicated plugin instead of core-owned framework behavior
+- framework-specific onboarding kits that can be applied and re-applied from the framework adoption workspace
 - assessment framework selection based on adopted frameworks in the current workspace
 
 ## Data Model
@@ -29,6 +32,14 @@ It adds:
 - `target_level`
 - `adopted_at`
 - `status`
+- `requested_by_principal_id`
+- `approved_by_principal_id`
+- `change_reason`
+- `approved_at`
+- `retired_at`
+- `starter_pack_version`
+- `starter_pack_applied_by_principal_id`
+- `starter_pack_applied_at`
 
 The runtime uses the effective adoption for the current scope:
 
@@ -45,8 +56,13 @@ The framework library now shows:
 - scope of adoption
 - adopted date
 - target level when set
+- governance context for the adoption decision
+- onboarding starter content per framework
+- framework-specific reporting presets and management views
+- framework pack update notices and upgrade guidance
 
 Operators can update adoption directly from the framework card.
+Active or in-progress adoptions can also apply the published onboarding kit for the selected framework.
 
 ### Assessments
 
@@ -67,6 +83,8 @@ This makes framework use intentional:
 - organizations can declare what they are actually working against
 - scope-specific work can target different frameworks or maturity levels
 - assessments stop behaving like the full library is always in force
+- starter operational objects can be created directly from the adopted framework context
+- governance history for adoption decisions is visible without leaving the workspace
 
 ## Demo Data
 
@@ -81,7 +99,6 @@ The demo seed now includes:
 
 This does not yet include:
 
-- guided onboarding checklists per framework
-- adoption approval workflow
-- framework-specific reporting presets beyond the current summaries
-- management dashboards dedicated to adoption progress
+- legal/framework update ingestion from external feeds
+- richer workflow states beyond the current adoption metadata and activation rules
+- dedicated framework management dashboards outside the controls workspace
