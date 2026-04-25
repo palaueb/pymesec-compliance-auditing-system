@@ -18,7 +18,7 @@ $statePath = is_string($configuredStatePath) && $configuredStatePath !== ''
     : storage_path('app/private/plugin-state.json');
 
 return [
-    'core_version' => env('CORE_VERSION', '0.1.0'),
+    'core_version' => env('CORE_VERSION', '0.3.0'),
     'repository_url' => env('CORE_REPOSITORY_URL', 'https://github.com/palaueb/pymesec-compliance-auditing-system'),
     'automation_catalog' => [
         'official_repository' => [

@@ -9,7 +9,7 @@
     "license": "AGPL-3.0-or-later"
   },
   "compatibility": {
-    "core": "^0.1.0",
+    "core": "^0.3.0",
     "sdk": "^0.1.0"
   },
   "dependencies": [],

@@ -8,6 +8,7 @@ Documentation rule:
 - A slice is not considered complete if specs change but the user-facing `support` content remains stale.
 - Execution status source of truth is `project-todo.md` (single canonical TODO).
 - Delivery quality gates are defined in `delivery-guardrails-v1.md` and are mandatory.
+- The shell footer version is driven by `CORE_VERSION`; bump it alongside a release tag so the visible application footer stays aligned with the published version.
 
 Current notable documents:
 

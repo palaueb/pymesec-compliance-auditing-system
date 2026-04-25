@@ -79,7 +79,7 @@ Current skeleton expects the existing manifest sections plus a temporary runtime
     "type": "ui"
   },
   "compatibility": {
-    "core": "^0.1.0"
+    "core": "^0.3.0"
   },
   "routes": [
     {

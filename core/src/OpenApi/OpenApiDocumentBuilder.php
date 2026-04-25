@@ -18,7 +18,7 @@ class OpenApiDocumentBuilder
             'openapi' => '3.1.0',
             'info' => [
                 'title' => 'PymeSec API',
-                'version' => (string) config('app.version', '0.1.0'),
+                'version' => (string) config('app.version', '0.3.0'),
                 'description' => 'Canonical REST API contract for PymeSec.',
             ],
             'servers' => [

@@ -40,7 +40,7 @@ class PluginServiceProvider extends ServiceProvider
                 permissions: $app->make(PermissionRegistryInterface::class),
                 menus: $app->make(MenuRegistryInterface::class),
                 enabledPluginIds: $app->make(PluginStateStore::class)->effectiveEnabled($configuredEnabledPlugins),
-                coreVersion: (string) config('plugins.core_version', '0.1.0'),
+                coreVersion: (string) config('plugins.core_version', '0.3.0'),
             );
         });
     }
