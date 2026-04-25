@@ -16,6 +16,18 @@ Build artifacts are generated in `dist/` for:
 - macOS: `amd64`, `arm64`
 - Windows: `amd64`, `arm64`
 
+To package release artifacts for GitHub uploads, run:
+
+```bash
+make release
+```
+
+This creates compressed archives under `dist/releases/v<version>/` for each
+binary in `dist/`. Each binary is packaged as a `.tar.gz`; if `zip` is
+available on your system, a matching `.zip` is created too. The same release
+directory also includes `SHA256SUMS` covering the binaries and the compressed
+archives.
+
 ## Run
 
 ```bash

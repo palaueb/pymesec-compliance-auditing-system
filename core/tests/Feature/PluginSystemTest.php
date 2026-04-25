@@ -15,7 +15,7 @@ class PluginSystemTest extends TestCase
     {
         $this->get('/core/plugins')
             ->assertOk()
-            ->assertJsonPath('core_version', '0.3.0')
+            ->assertJsonPath('core_version', '0.3.1')
             ->assertJsonFragment([
                 'id' => 'hello-world',
                 'enabled' => true,
