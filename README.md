@@ -117,6 +117,30 @@ docker compose exec app php artisan plugins:enable identity-local
 docker compose exec app php artisan plugins:enable identity-ldap
 docker compose exec app php artisan plugins:disable hello-world
 ```
+
+## MCP Installation
+
+If you already have a PymeSec server running and want to use it from Codex CLI or Claude CLI on your local machine, use the interactive MCP installer:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/palaueb/pymesec-compliance-auditing-system/main/scripts/install-pymesec-mcp.sh | bash
+```
+
+The installer:
+
+- detects the local platform and downloads the matching MCP binary release
+- downloads `SHA256SUMS` and verifies the archive checksum before installation
+- asks where to install the local PymeSec MCP files
+- validates the PymeSec host plus API key
+- runs a real MCP smoke check against your server
+- can register the MCP server automatically in Codex CLI or Claude CLI
+
+Supported environments for the installer:
+
+- Linux
+- macOS
+- Windows through WSL or Git Bash
+
 ## Email login on test
 
 If you are on development you can check for code and email magic link at command:

@@ -97,6 +97,14 @@ Add a stdio MCP server named `pymesec` to the AI client configuration.
 
 This configuration does not go in the prompt. It goes in the configuration of the MCP-capable client that will run the AI session. The prompt only asks the AI what to do after the MCP tools are already available.
 
+For interactive end-user setup on Linux, macOS, WSL, or Git Bash, there is also an installer script:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/palaueb/pymesec-compliance-auditing-system/main/scripts/install-pymesec-mcp.sh | bash
+```
+
+The installer downloads the correct release asset, verifies it against `SHA256SUMS`, installs the binary locally, validates the server endpoints, and can register the MCP entry in Codex CLI or Claude CLI automatically.
+
 Examples:
 
 - Codex CLI: use `codex mcp add ...`, which writes to `~/.codex/config.toml`.

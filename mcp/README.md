@@ -2,6 +2,29 @@
 
 Official MCP sidecar implemented in Go, designed for local execution next to LLM clients without PHP runtime dependencies.
 
+## Interactive Installer
+
+For end users who already have a PymeSec server and want local AI setup with Codex CLI or Claude CLI, use the interactive installer:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/palaueb/pymesec-compliance-auditing-system/main/scripts/install-pymesec-mcp.sh | bash
+```
+
+The installer:
+
+- detects Linux, macOS, WSL, or Git Bash on Windows and selects the right binary
+- downloads the matching release asset and `SHA256SUMS`
+- verifies checksums before extraction
+- installs the binary in a stable local directory
+- validates `/openapi/v1.json`, `/api/v1/meta/mcp-server`, and a live MCP `tools/call` smoke check
+- can register the server in Codex CLI or Claude CLI automatically
+
+You can also run it from a local checkout:
+
+```bash
+scripts/install-pymesec-mcp.sh
+```
+
 ## Build
 
 From repository root:
