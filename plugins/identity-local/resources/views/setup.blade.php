@@ -116,6 +116,7 @@
     </style>
 </head>
 <body>
+    @php($selectedTimezone = old('default_timezone', 'UTC'))
     <main class="setup-card">
         <div class="eyebrow">{{ __('First run') }}</div>
         <h1>{{ __('Create the first administrator') }}</h1>
@@ -161,7 +162,15 @@
                     </div>
                     <div class="field field-wide">
                         <label class="field-label" for="setup-default-timezone">{{ __('Default timezone') }}</label>
-                        <input class="field-input" id="setup-default-timezone" name="default_timezone" value="{{ old('default_timezone', 'UTC') }}" required @error('default_timezone') aria-invalid="true" @enderror>
+                        <select class="field-input" id="setup-default-timezone" name="default_timezone" required @error('default_timezone') aria-invalid="true" @enderror>
+                            @foreach ($timezoneOptions as $group => $timezones)
+                                <optgroup label="{{ $group }}">
+                                    @foreach ($timezones as $timezone => $label)
+                                        <option value="{{ $timezone }}" @selected($selectedTimezone === $timezone)>{{ $timezone === $label ? $timezone : $timezone.' - '.$label }}</option>
+                                    @endforeach
+                                </optgroup>
+                            @endforeach
+                        </select>
                         @error('default_timezone')
                             <div class="field-error">{{ $message }}</div>
                         @enderror

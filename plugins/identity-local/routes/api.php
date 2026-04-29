@@ -448,7 +448,7 @@ Route::post('/identity-local/setup', function (
         'organization_name' => $requiresOrganizationSetup ? ['required', 'string', 'max:160'] : null,
         'organization_slug' => $requiresOrganizationSetup ? ['nullable', 'string', 'max:160', 'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/'] : null,
         'default_locale' => $requiresOrganizationSetup ? ['required', 'string', 'in:en,es,fr,de'] : null,
-        'default_timezone' => $requiresOrganizationSetup ? ['required', 'string', 'max:64'] : null,
+        'default_timezone' => $requiresOrganizationSetup ? ['required', 'string', 'max:64', Rule::in(timezone_identifiers_list())] : null,
     ]));
 
     return $apiSuccess($auth->bootstrapSuperAdmin($validated));

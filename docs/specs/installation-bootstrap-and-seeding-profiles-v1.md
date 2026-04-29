@@ -89,6 +89,8 @@ The wizard then creates:
 
 Validation failures must return the user to the setup wizard with visible field errors. Non-sensitive fields should be preserved after validation failure; password fields must stay empty. The first administrator password remains optional, but when supplied it must satisfy the local identity password rules, including the minimum length enforced by the application.
 
+When organization bootstrap is required, the setup wizard should offer the default timezone as a select control populated from valid IANA timezone identifiers instead of requiring free-text entry.
+
 ## 3. Developer Workflow
 
 Recommended developer operations:

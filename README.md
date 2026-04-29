@@ -94,6 +94,65 @@ Fresh install behavior:
 - `/` is the product entrypoint: if no session exists it redirects to login, and after sign-in it lands in the application workspace
 - `/admin` is a separate administration shell for platform settings and core operations
 
+## Server Install Without Docker
+
+If you want to install PymeSec in a regular server checkout instead of the local Docker stack, work inside `core/` after cloning the repository.
+
+1. Copy the core environment file:
+
+```bash
+cp .env.example .env
+```
+
+2. Update `.env` for the target server:
+
+You can configure the .env file within the wizard at https://www.pimesec.com/env.html?lang=en
+
+- set `APP_ENV=production`
+- set `APP_DEBUG=false`
+- set `APP_URL` to the public URL
+- set the real database credentials
+- if MySQL runs on the same host, prefer `DB_HOST=127.0.0.1` instead of `localhost` when you need TCP rather than a Unix socket (may be needed within jailed terminals withou access to mysql.socket)
+
+3. Install PHP dependencies:
+
+```bash
+composer install --no-dev --optimize-autoloader --no-interaction
+```
+
+4. Generate the application key:
+
+```bash
+php artisan key:generate --force
+```
+
+5. Run migrations:
+
+```bash
+php artisan migrate --force
+```
+
+6. Seed the install-safe bootstrap profile:
+
+```bash
+php artisan db:seed --class=Database\\Seeders\\SystemBootstrapSeeder --force
+```
+
+7. Verify the application:
+
+```bash
+php artisan about
+curl https://your-host.example/up
+```
+
+8. Open `/app` in the browser and complete the setup wizard to create the first organization and the first administrator.
+
+Notes:
+
+- route metadata is cacheable on current `main`, but if you are deploying an older checkout and `php artisan optimize` generates a broken `bootstrap/cache/routes-v7.php`, update to the latest `main`, remove `bootstrap/cache/routes-*.php`, and rebuild the cache
+- make sure `storage/` and `bootstrap/cache/` are writable by the web server user
+- `public/storage` is optional on first install and can be linked later with `php artisan storage:link` if your deployment needs public file exposure
+
 ## Common Commands
 
 ```bash

@@ -10,7 +10,29 @@ use PymeSec\Plugins\IdentityLocal\IdentityLocalAuthService;
 use PymeSec\Plugins\IdentityLocal\IdentityLocalRepository;
 use PymeSec\Plugins\IdentityLocal\IdentityUserImportService;
 
-Route::get('/setup', function (IdentityLocalAuthService $auth) {
+$setupTimezoneOptions = static function (): array {
+    $grouped = [];
+
+    foreach (timezone_identifiers_list() as $timezone) {
+        $segments = explode('/', $timezone, 2);
+        $group = $segments[0] ?? 'Other';
+        $label = str_replace(['/', '_'], [' / ', ' '], $segments[1] ?? $timezone);
+
+        $grouped[$group][$timezone] = $label;
+    }
+
+    ksort($grouped);
+
+    if (isset($grouped['UTC'])) {
+        $utc = ['UTC' => 'UTC'];
+        unset($grouped['UTC']);
+        $grouped = ['UTC' => $utc] + $grouped;
+    }
+
+    return $grouped;
+};
+
+Route::get('/setup', function (IdentityLocalAuthService $auth) use ($setupTimezoneOptions) {
     if (! $auth->requiresBootstrap()) {
         return redirect()->route('plugin.identity-local.auth.login');
     }
@@ -18,6 +40,7 @@ Route::get('/setup', function (IdentityLocalAuthService $auth) {
     return view()->file(base_path('../plugins/identity-local/resources/views/setup.blade.php'), [
         'locale' => app()->getLocale(),
         'requiresOrganizationSetup' => ! app(\PymeSec\Plugins\IdentityLocal\IdentityLocalRepository::class)->firstOrganizationId(),
+        'timezoneOptions' => $setupTimezoneOptions(),
     ]);
 })->name('plugin.identity-local.setup');
 
@@ -36,7 +59,7 @@ Route::post('/setup', function (Request $request, IdentityLocalAuthService $auth
         'organization_name' => $requiresOrganizationSetup ? ['required', 'string', 'max:160'] : null,
         'organization_slug' => $requiresOrganizationSetup ? ['nullable', 'string', 'max:160', 'regex:/^[a-z0-9]+(?:-[a-z0-9]+)*$/'] : null,
         'default_locale' => $requiresOrganizationSetup ? ['required', 'string', 'in:en,es,fr,de'] : null,
-        'default_timezone' => $requiresOrganizationSetup ? ['required', 'string', 'max:64'] : null,
+        'default_timezone' => $requiresOrganizationSetup ? ['required', 'string', 'max:64', Rule::in(timezone_identifiers_list())] : null,
     ]));
 
     $auth->bootstrapSuperAdmin($validated);

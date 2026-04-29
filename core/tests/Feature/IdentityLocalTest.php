@@ -551,4 +551,38 @@ class IdentityLocalTest extends TestCase
             ->assertSee('value="root.admin"', false)
             ->assertSee('value="root.admin@pymesec.test"', false);
     }
+
+    public function test_first_run_setup_wizard_shows_timezone_select_and_accepts_valid_timezone_when_creating_first_organization(): void
+    {
+        DB::table('authorization_grants')->delete();
+        DB::table('memberships')->delete();
+        DB::table('scopes')->delete();
+        DB::table('identity_local_users')->delete();
+        DB::table('organizations')->delete();
+
+        $this->get('/setup')
+            ->assertOk()
+            ->assertSee('name="default_timezone"', false)
+            ->assertSee('option value="Europe/Madrid"', false)
+            ->assertSee('option value="UTC"', false);
+
+        $this->post('/setup', [
+            'organization_name' => 'Timezone Org',
+            'organization_slug' => 'timezone-org',
+            'default_locale' => 'es',
+            'default_timezone' => 'Europe/Madrid',
+            'display_name' => 'Root Admin',
+            'username' => 'root.admin',
+            'email' => 'root.admin@pymesec.test',
+            'password' => 'initial-pass-123',
+            'password_confirmation' => 'initial-pass-123',
+        ])->assertRedirect('/login');
+
+        $this->assertDatabaseHas('organizations', [
+            'name' => 'Timezone Org',
+            'slug' => 'timezone-org',
+            'default_locale' => 'es',
+            'default_timezone' => 'Europe/Madrid',
+        ]);
+    }
 }
