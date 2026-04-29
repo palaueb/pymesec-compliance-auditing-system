@@ -5488,10 +5488,10 @@
                                     "tier": {
                                         "type": "string",
                                         "enum": [
-                                            "\"low\"",
-                                            "\"medium\"",
-                                            "\"high\"",
-                                            "\"critical\""
+                                            "low",
+                                            "medium",
+                                            "high",
+                                            "critical"
                                         ]
                                     },
                                     "website": {
@@ -5548,10 +5548,10 @@
                                     "inherent_risk": {
                                         "type": "string",
                                         "enum": [
-                                            "\"low\"",
-                                            "\"medium\"",
-                                            "\"high\"",
-                                            "\"critical\""
+                                            "low",
+                                            "medium",
+                                            "high",
+                                            "critical"
                                         ]
                                     },
                                     "review_summary": {
@@ -5731,10 +5731,10 @@
                                     "tier": {
                                         "type": "string",
                                         "enum": [
-                                            "\"low\"",
-                                            "\"medium\"",
-                                            "\"high\"",
-                                            "\"critical\""
+                                            "low",
+                                            "medium",
+                                            "high",
+                                            "critical"
                                         ]
                                     },
                                     "website": {
@@ -5787,10 +5787,10 @@
                                     "inherent_risk": {
                                         "type": "string",
                                         "enum": [
-                                            "\"low\"",
-                                            "\"medium\"",
-                                            "\"high\"",
-                                            "\"critical\""
+                                            "low",
+                                            "medium",
+                                            "high",
+                                            "critical"
                                         ]
                                     },
                                     "review_summary": {
