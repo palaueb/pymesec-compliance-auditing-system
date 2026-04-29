@@ -360,9 +360,9 @@ Route::post('/packs', function (Request $request, AutomationCatalogRepository $r
         'name' => ['required', 'string', 'max:180'],
         'summary' => ['nullable', 'string', 'max:400'],
         'version' => ['nullable', 'string', 'max:64'],
-        'provider_type' => ['required', 'string', Rule::in(['native', 'community', 'vendor', 'internal'])],
+        'provider_type' => ['required', 'string', 'in:native,community,vendor,internal'],
         'source_ref' => ['nullable', 'url', 'max:512'],
-        'provenance_type' => ['required', 'string', Rule::in(['plugin', 'marketplace', 'git', 'manual'])],
+        'provenance_type' => ['required', 'string', 'in:plugin,marketplace,git,manual'],
         'scope_id' => ['nullable', 'string', 'max:64'],
     ]);
 
@@ -403,9 +403,9 @@ Route::post('/packs', function (Request $request, AutomationCatalogRepository $r
         'name' => ['required', 'string', 'max:180'],
         'summary' => ['nullable', 'string', 'max:400'],
         'version' => ['nullable', 'string', 'max:64'],
-        'provider_type' => ['required', 'string', Rule::in(['native', 'community', 'vendor', 'internal'])],
+        'provider_type' => ['required', 'string', 'in:native,community,vendor,internal'],
         'source_ref' => ['nullable', 'url', 'max:512'],
-        'provenance_type' => ['required', 'string', Rule::in(['plugin', 'marketplace', 'git', 'manual'])],
+        'provenance_type' => ['required', 'string', 'in:plugin,marketplace,git,manual'],
         'organization_id' => ['required', 'string', 'max:64'],
         'scope_id' => ['nullable', 'string', 'max:64'],
     ],
@@ -556,7 +556,7 @@ Route::post('/packs/{packId}/uninstall', function (string $packId, AutomationCat
 
 Route::post('/packs/{packId}/health', function (string $packId, Request $request, AutomationCatalogRepository $repository) use ($apiSuccess) {
     $validated = $request->validate([
-        'health_state' => ['required', 'string', Rule::in(['unknown', 'healthy', 'degraded', 'failing'])],
+        'health_state' => ['required', 'string', 'in:unknown,healthy,degraded,failing'],
         'last_failure_reason' => ['nullable', 'string', 'max:2000'],
     ]);
 
@@ -586,7 +586,7 @@ Route::post('/packs/{packId}/health', function (string $packId, Request $request
         ],
     ],
     'request_rules' => [
-        'health_state' => ['required', 'string', Rule::in(['unknown', 'healthy', 'degraded', 'failing'])],
+        'health_state' => ['required', 'string', 'in:unknown,healthy,degraded,failing'],
         'last_failure_reason' => ['nullable', 'string', 'max:2000'],
     ],
 ]);
@@ -720,7 +720,7 @@ Route::post('/repositories', function (
         'repository_url' => ['required', 'url', 'max:1024'],
         'repository_sign_url' => ['nullable', 'url', 'max:1024'],
         'public_key_pem' => ['required', 'string', 'max:12000'],
-        'trust_tier' => ['required', 'string', Rule::in(['trusted-first-party', 'trusted-partner', 'community-reviewed', 'untrusted'])],
+        'trust_tier' => ['required', 'string', 'in:trusted-first-party,trusted-partner,community-reviewed,untrusted'],
         'scope_id' => ['nullable', 'string', 'max:64'],
         'is_enabled' => ['nullable', 'boolean'],
     ]);
@@ -764,7 +764,7 @@ Route::post('/repositories', function (
         'repository_url' => ['required', 'url', 'max:1024'],
         'repository_sign_url' => ['nullable', 'url', 'max:1024'],
         'public_key_pem' => ['required', 'string', 'max:12000'],
-        'trust_tier' => ['required', 'string', Rule::in(['trusted-first-party', 'trusted-partner', 'community-reviewed', 'untrusted'])],
+        'trust_tier' => ['required', 'string', 'in:trusted-first-party,trusted-partner,community-reviewed,untrusted'],
         'organization_id' => ['required', 'string', 'max:64'],
         'scope_id' => ['nullable', 'string', 'max:64'],
         'is_enabled' => ['nullable', 'boolean'],
@@ -916,8 +916,8 @@ Route::post('/packs/{packId}/output-mappings', function (
 ) use ($apiSuccess, $apiPrincipalId) {
     $validated = $request->validate([
         'mapping_label' => ['required', 'string', 'max:180'],
-        'mapping_kind' => ['required', 'string', Rule::in(['evidence-refresh', 'workflow-transition'])],
-        'target_binding_mode' => ['nullable', 'string', Rule::in(['explicit', 'scope'])],
+        'mapping_kind' => ['required', 'string', 'in:evidence-refresh,workflow-transition'],
+        'target_binding_mode' => ['nullable', 'string', 'in:explicit,scope'],
         'target_subject_type' => ['required', 'string', Rule::in([
             'asset',
             'control',
@@ -937,10 +937,10 @@ Route::post('/packs/{packId}/output-mappings', function (
         'target_subject_id' => ['nullable', 'string', 'max:80', 'required_if:target_binding_mode,explicit'],
         'target_scope_id' => ['nullable', 'string', 'max:64'],
         'target_tags' => ['nullable', 'string', 'max:600'],
-        'posture_propagation_policy' => ['nullable', 'string', Rule::in(['disabled', 'status-only'])],
-        'execution_mode' => ['nullable', 'string', Rule::in(['both', 'runtime-only', 'manual-only'])],
-        'on_fail_policy' => ['nullable', 'string', Rule::in(['no-op', 'raise-finding', 'raise-finding-and-action'])],
-        'evidence_policy' => ['nullable', 'string', Rule::in(['always', 'on-fail', 'on-change'])],
+        'posture_propagation_policy' => ['nullable', 'string', 'in:disabled,status-only'],
+        'execution_mode' => ['nullable', 'string', 'in:both,runtime-only,manual-only'],
+        'on_fail_policy' => ['nullable', 'string', 'in:no-op,raise-finding,raise-finding-and-action'],
+        'evidence_policy' => ['nullable', 'string', 'in:always,on-fail,on-change'],
         'runtime_retry_max_attempts' => ['nullable', 'integer', 'min:0', 'max:5'],
         'runtime_retry_backoff_ms' => ['nullable', 'integer', 'min:0', 'max:60000'],
         'runtime_max_targets' => ['nullable', 'integer', 'min:1', 'max:2000'],
@@ -1069,16 +1069,16 @@ Route::post('/packs/{packId}/output-mappings', function (
     ],
     'request_rules' => [
         'mapping_label' => ['required', 'string', 'max:180'],
-        'mapping_kind' => ['required', 'string', Rule::in(['evidence-refresh', 'workflow-transition'])],
-        'target_binding_mode' => ['nullable', 'string', Rule::in(['explicit', 'scope'])],
+        'mapping_kind' => ['required', 'string', 'in:evidence-refresh,workflow-transition'],
+        'target_binding_mode' => ['nullable', 'string', 'in:explicit,scope'],
         'target_subject_type' => ['required', 'string'],
         'target_subject_id' => ['nullable', 'string', 'max:80'],
         'target_scope_id' => ['nullable', 'string', 'max:64'],
         'target_tags' => ['nullable', 'string', 'max:600'],
-        'posture_propagation_policy' => ['nullable', 'string', Rule::in(['disabled', 'status-only'])],
-        'execution_mode' => ['nullable', 'string', Rule::in(['both', 'runtime-only', 'manual-only'])],
-        'on_fail_policy' => ['nullable', 'string', Rule::in(['no-op', 'raise-finding', 'raise-finding-and-action'])],
-        'evidence_policy' => ['nullable', 'string', Rule::in(['always', 'on-fail', 'on-change'])],
+        'posture_propagation_policy' => ['nullable', 'string', 'in:disabled,status-only'],
+        'execution_mode' => ['nullable', 'string', 'in:both,runtime-only,manual-only'],
+        'on_fail_policy' => ['nullable', 'string', 'in:no-op,raise-finding,raise-finding-and-action'],
+        'evidence_policy' => ['nullable', 'string', 'in:always,on-fail,on-change'],
         'runtime_retry_max_attempts' => ['nullable', 'integer', 'min:0', 'max:5'],
         'runtime_retry_backoff_ms' => ['nullable', 'integer', 'min:0', 'max:60000'],
         'runtime_max_targets' => ['nullable', 'integer', 'min:1', 'max:2000'],
@@ -1109,7 +1109,7 @@ Route::post('/packs/{packId}/output-mappings/{mappingId}/apply', function (
     $validated = $request->validate([
         'existing_artifact_id' => ['nullable', 'string', 'max:64'],
         'output_file' => ['nullable', 'file', 'max:10240'],
-        'evidence_kind' => ['nullable', 'string', Rule::in(['document', 'workpaper', 'snapshot', 'report', 'ticket', 'log-export', 'statement', 'other'])],
+        'evidence_kind' => ['nullable', 'string', 'in:document,workpaper,snapshot,report,ticket,log-export,statement,other'],
     ]);
 
     $principalId = $apiPrincipalId($request);
@@ -1184,7 +1184,7 @@ Route::post('/packs/{packId}/output-mappings/{mappingId}/apply', function (
     'request_rules' => [
         'existing_artifact_id' => ['nullable', 'string', 'max:64'],
         'output_file' => ['nullable', 'file', 'max:10240'],
-        'evidence_kind' => ['nullable', 'string', Rule::in(['document', 'workpaper', 'snapshot', 'report', 'ticket', 'log-export', 'statement', 'other'])],
+        'evidence_kind' => ['nullable', 'string', 'in:document,workpaper,snapshot,report,ticket,log-export,statement,other'],
         'organization_id' => ['required', 'string', 'max:64'],
         'scope_id' => ['nullable', 'string', 'max:64'],
         'membership_id' => ['nullable', 'string', 'max:64'],
